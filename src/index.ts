@@ -3,8 +3,9 @@ import cors from "cors";
 import http from "http";
 import bodyParser from "body-parser";
 import * as packageInfo from "../package.json";
-import { router } from "./Routes";
-import { ConnectDb } from "./Database/Connection";
+import { ConnectDb } from "./database/connection";
+import { router } from "./routes";
+
 
 const app = express();
 
