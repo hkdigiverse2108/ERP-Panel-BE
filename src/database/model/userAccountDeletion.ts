@@ -12,4 +12,4 @@ const userAccountDeletionSchema = new mongoose.Schema(
   { timestamps: true, versionKey: false }
 );
 
-export const userAccountDeletionModel = mongoose.model("userAccountDeletion", userAccountDeletionSchema);
+export const userAccountDeletionModel = mongoose.model("user-account-deletion", userAccountDeletionSchema);

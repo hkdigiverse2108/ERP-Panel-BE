@@ -1,4 +1,4 @@
 export * from "./winstonLogger";
-export * from "./database_services";
+export * from "./databaseServices";
 export * from "./responseMessage";
 export * from "./jwt";

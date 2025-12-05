@@ -1,3 +1,5 @@
+import { commonFields } from "./commonFields";
+
 const mongoose = require("mongoose");
 
 const companySchema: any = new mongoose.Schema(
@@ -59,10 +61,11 @@ const companySchema: any = new mongoose.Schema(
     authorizedSignature: { type: String },
 
     // ******************* Common *******************
-    isDeleted: { type: Boolean, default: false },
-    isBlocked: { type: Boolean, default: false },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, default: null },
-    updatedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
+    // isDeleted: { type: Boolean, default: false },
+    // isBlocked: { type: Boolean, default: false },
+    // createdBy: { type: mongoose.Schema.Types.ObjectId, default: null },
+    // updatedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
+    ...commonFields,
   },
   { timestamps: true, versionKey: false }
 );

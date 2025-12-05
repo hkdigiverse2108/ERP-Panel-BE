@@ -46,6 +46,9 @@ export const responseMessage = {
   accessDenied: "Access denied",
   invalidToken: "Invalid token",
   noFileUploaded: "No files uploaded",
+  invalidImageUrl: "invalid Image URL",
+  invalidPdfUrl: "invalid Pdf URL",
+
   customMessage: (message: string): any => {
     return `${message[0].toUpperCase() + message.slice(1).toLowerCase()}`;
   },

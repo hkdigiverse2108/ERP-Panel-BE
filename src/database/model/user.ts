@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { USER_ROLES } from "../../common";
+import { commonFields } from "./commonFields";
 
 const userSchema = new mongoose.Schema(
   {
@@ -14,10 +15,11 @@ const userSchema = new mongoose.Schema(
       enum: Object.values(USER_ROLES),
       default: USER_ROLES.USER,
     },
-    isDeleted: { type: Boolean, default: false },
-    isBlocked: { type: Boolean, default: false },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, default: null },
-    updatedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
+    ...commonFields,
+    // isDeleted: { type: Boolean, default: false },
+    // isBlocked: { type: Boolean, default: false },
+    // createdBy: { type: mongoose.Schema.Types.ObjectId, default: null },
+    // updatedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
   },
   {
     timestamps: true,
@@ -25,4 +27,4 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-export const userModel = mongoose.model("User", userSchema);
+export const userModel = mongoose.model("user", userSchema);
