@@ -1,6 +1,5 @@
 import { commonFields } from "./commonFields";
-
-const mongoose = require("mongoose");
+import mongoose from 'mongoose'
 
 const companySchema: any = new mongoose.Schema(
   {

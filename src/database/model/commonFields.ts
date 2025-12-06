@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose"
 
 export const commonFields = {
   isDeleted: { type: Boolean, default: false },
@@ -6,4 +6,3 @@ export const commonFields = {
   createdBy: { type: mongoose.Schema.Types.ObjectId, default: null },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
 };
-
