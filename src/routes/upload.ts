@@ -3,7 +3,6 @@ import multer from "multer";
 import { uploadController } from "../controllers";
 import { fileFilter, fileStorage } from "../middleware";
 
-
 const router = express.Router();
 
 const upload = multer({
@@ -15,5 +14,6 @@ const upload = multer({
 ]);
 
 router.post("/", upload, uploadController.uploadFile);
+router.delete("/", uploadController.deleteUploadedFile);
 
 export const uploadRoute = router;

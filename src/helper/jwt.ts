@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { getFirstMatch } from "./database_services";
+import { getFirstMatch } from "./databaseServices";
 import { userModel } from "../database/model";
 import { apiResponse, HTTP_STATUS } from "../common";
 import { responseMessage } from "./responseMessage";
@@ -13,7 +13,7 @@ export const adminJwt = async (req, res, next) => {
     if (!authorization) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage.tokenNotFound, {}, {}));
 
     const token = authorization.split(" ")[1];
-    
+
     if (!token) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage.invalidToken, {}, {}));
 
     let decoded;
@@ -43,7 +43,7 @@ export const userJwt = async (req, res, next) => {
   try {
     if (!authorization) return next();
 
-    const token = authorization?.split("")[0];
+    const token = authorization?.split(" ")[1];
 
     if (!token) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.tokenNotFound, {}, {}));
 
