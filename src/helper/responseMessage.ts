@@ -48,6 +48,7 @@ export const responseMessage = {
   noFileUploaded: "No files uploaded",
   invalidImageUrl: "invalid Image URL",
   invalidPdfUrl: "invalid Pdf URL",
+  unsupportedFileType: "Unsupported file type in URL",
 
   customMessage: (message: string): any => {
     return `${message[0].toUpperCase() + message.slice(1).toLowerCase()}`;
