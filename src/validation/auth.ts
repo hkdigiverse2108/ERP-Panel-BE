@@ -4,10 +4,9 @@ export const registerSchema = Joi.object().keys({
   fullName: Joi.string().required(),
   email: Joi.string().email().required(),
   password: Joi.string().required(),
-  profilePhoto: Joi.string().required(),
+  profileImage: Joi.string().required(),
   role: Joi.string().required(),
-  phone: Joi.string().optional(),
-  agreeTerms: Joi.boolean().optional().default(false),
+  phoneNumber: Joi.string().optional(),
 });
 
 export const loginSchema = Joi.object().keys({

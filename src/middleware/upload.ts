@@ -5,7 +5,7 @@ import fs from "fs";
 export const fileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     // console.log("Upload Destination Reach", req?.query?.folder);
-    console.log("fileStorage Destination Reach", req.headers.user); // for company Name as Folder Name
+    // console.log("fileStorage Destination Reach", req.headers.user); // for company Name as Folder Name
     // const user = req.headers.user;
     // if (user) {
     // }

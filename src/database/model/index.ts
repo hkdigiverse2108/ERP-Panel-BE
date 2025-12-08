@@ -6,7 +6,6 @@ export * from "./accountGroup";
 export * from "./base";
 export * from "./brand";
 export * from "./category";
-export * from "./commonFields";
 export * from "./contact";
 export * from "./coupon";
 export * from "./creditNote";

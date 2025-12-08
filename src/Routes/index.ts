@@ -14,5 +14,4 @@ router.use("/company", companyRouter);
 router.use("/announcement", announcementRouter);
 router.use("/upload", userJwt, uploadRoute);
 
-
 export { router };

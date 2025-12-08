@@ -1,5 +1,5 @@
-import { commonFields } from "./commonFields";
 import mongoose from 'mongoose'
+import { baseCommonFields } from './base';
 
 const companySchema: any = new mongoose.Schema(
   {
@@ -61,10 +61,10 @@ const companySchema: any = new mongoose.Schema(
 
     // ******************* Common *******************
     // isDeleted: { type: Boolean, default: false },
-    // isBlocked: { type: Boolean, default: false },
+    // isActive: { type: Boolean, default: false },
     // createdBy: { type: mongoose.Schema.Types.ObjectId, default: null },
     // updatedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
-    ...commonFields,
+    ...baseCommonFields,
   },
   { timestamps: true, versionKey: false }
 );

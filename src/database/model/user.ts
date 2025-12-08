@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { USER_ROLES } from "../../common";
-import { commonFields } from "./commonFields";
+import { baseCommonFields } from "./base";
 
 const userSchema = new mongoose.Schema(
   {
@@ -8,16 +8,15 @@ const userSchema = new mongoose.Schema(
     email: { type: String },
     phoneNumber: { type: String },
     password: { type: String },
-    profilePhoto: { type: String },
-    agreeTerms: { type: Boolean, default: false },
+    profileImage: { type: String },
     role: {
       type: String,
       enum: Object.values(USER_ROLES),
       default: USER_ROLES.USER,
     },
-    ...commonFields,
+    ...baseCommonFields,
     // isDeleted: { type: Boolean, default: false },
-    // isBlocked: { type: Boolean, default: false },
+    // isActive: { type: Boolean, default: false },
     // createdBy: { type: mongoose.Schema.Types.ObjectId, default: null },
     // updatedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
   },

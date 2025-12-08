@@ -29,7 +29,7 @@ export const adminJwt = async (req, res, next) => {
 
     if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage.invalidToken, {}, {}));
 
-    if (user?.isBlocked === true) return res.status(HTTP_STATUS?.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
+    if (user?.isActive === true) return res.status(HTTP_STATUS?.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
 
     req.headers.user = user;
     next();
@@ -60,7 +60,7 @@ export const userJwt = async (req, res, next) => {
 
     if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage.invalidToken, {}, {}));
 
-    if (user?.isBlocked === true) return res.status(HTTP_STATUS?.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
+    if (user?.isActive === true) return res.status(HTTP_STATUS?.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
 
     req.headers.user = user;
     next();
