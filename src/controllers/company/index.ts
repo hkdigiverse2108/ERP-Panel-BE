@@ -115,8 +115,8 @@ export const getCompanyList = async (req, res) => {
 export const deleteCompany = async (req, res) => {
   reqInfo(req);
   try {
-    const { companyId } = req.query;
-
+    const { companyId } = req.params;
+    
     if (!companyId) {
       return res
         .status(HTTP_STATUS.NOT_FOUND)
