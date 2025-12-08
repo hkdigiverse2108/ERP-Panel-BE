@@ -80,7 +80,7 @@ export const addCompany = async (req, res) => {
           )
         );
   } catch (error) {
-    console.log("error : ", error);
+    console.error("error : ", error);
   }
 };
 
@@ -116,7 +116,7 @@ export const deleteCompany = async (req, res) => {
   reqInfo(req);
   try {
     const { companyId } = req.params;
-    
+
     if (!companyId) {
       return res
         .status(HTTP_STATUS.NOT_FOUND)
@@ -141,6 +141,18 @@ export const deleteCompany = async (req, res) => {
             {}
           )
         );
+    }
+
+    const existingCompany = await getFirstMatch(
+      companyModel,
+      { isDeleted: false, _id: companyId },
+      {},
+      {}
+    );
+
+
+    if(!existingCompany){
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company details"), {}, {}));
     }
 
     let companyDetails = await updateData(
@@ -186,7 +198,9 @@ export const updateCompanyDetails = async (req, res) => {
           )
         );
 
-    if (!mongoose.Types.ObjectId.isValid(value.companyId || objCompany.companyId)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(value.companyId || objCompany.companyId)
+    ) {
       return res
         .status(HTTP_STATUS.BAD_REQUEST)
         .json(
