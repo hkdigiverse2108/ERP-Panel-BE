@@ -1,7 +1,6 @@
 import { apiResponse, generateHash, HTTP_STATUS, isValidObjectId, USER_ROLES } from "../../common";
 import { userModel } from "../../database/model";
 import { countData, createOne, findAllAndPopulate, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { userAccountDeletionModel } from "../../database/model/userAccountDeletion";
 import { addUserSchema, deleteUserSchema, editUserSchema, getUserSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -186,54 +185,5 @@ export const getUserById = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).status(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
-  }
-};
-
-export const getAllDeletedUser = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { page, limit, search, startDate, endDate } = req.query;
-    let criteria: any = { isDeleted: false },
-      options: any = { lean: true };
-
-    if (search) {
-      criteria.$or = [{ fullName: { $regex: search, $options: "si" } }];
-    }
-
-    if (startDate && endDate) criteria.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
-
-    options.sort = { createdAt: -1 };
-
-    if (page && limit) {
-      options.skip = (parseInt(page) - 1) * parseInt(limit);
-      options.limit = parseInt(limit);
-    }
-
-    let populateModel = [{ path: "userId" }];
-
-    const response = await findAllAndPopulate(userAccountDeletionModel, criteria, {}, options, populateModel);
-    const countTotal = await countData(userAccountDeletionModel, criteria);
-
-    const stateObj = {
-      page: parseInt(page) || 1,
-      limit: parseInt(limit) || countTotal,
-      page_limit: Math.ceil(countTotal / (parseInt(limit) || countTotal)) || 1,
-    };
-
-    return res.status(HTTP_STATUS.OK).json(
-      new apiResponse(
-        HTTP_STATUS.OK,
-        responseMessage?.getDataSuccess("user"),
-        {
-          deletedUser_data: response,
-          totalData: countTotal,
-          state: stateObj,
-        },
-        {}
-      )
-    );
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };

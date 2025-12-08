@@ -1,6 +1,5 @@
 export * from "./company";
 export * from "./user";
-export * from "./userAccountDeletion";
 export * from "./account";
 export * from "./accountGroup";
 export * from "./base";
@@ -30,4 +29,3 @@ export * from "./tax";
 export * from "./stocks";
 export * from "./voucher";
 export * from "./announcement";
-
