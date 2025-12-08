@@ -1,8 +1,9 @@
 import { appendFile } from "fs";
 import { apiResponse, HTTP_STATUS, isValidObjectId } from "../../common";
 import { roleModel } from "../../database/model/role";
-import { createOne, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addRoleSchema, deleteRoleSchema, editRoleSchema } from "../../validation";
+import { userModel } from "../../database";
 
 export const addRole = async (req, res) => {
   reqInfo(req);
@@ -91,9 +92,57 @@ export const deleteRole = async (req, res) => {
 export const getAllRole = async (req, res) => {
   reqInfo(req);
   try {
+    let { page, limit, search, startDate, endDate, activeFilter, filterDate } = req.query;
 
-    
+    page = Number(page);
+    limit = Number(limit);
 
+    let criteria: any = { isDeleted: false };
+
+    if (search) {
+      criteria.$or = [{ role: { $regex: search, $options: "si" } }];
+    }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        criteria.createdAt = {
+          $gte: start,
+          $lte: end,
+        };
+      }
+    }
+
+    const options: any = {
+      sort: { createdAt: -1 },
+      skip: (page - 1) * limit,
+      limit,
+    };
+
+    if (page && limit) {
+      options.page = (parseInt(page) + 1) * parseInt(limit);
+      options.limit = parseInt(limit);
+    }
+
+    const response = await getDataWithSorting(roleModel, criteria, {}, options);
+    const totalData = await countData(roleModel, criteria);
+
+    const totalPages = Math.ceil(totalData / limit) || 1;
+
+    const stateObj = {
+      page,
+      limit,
+      totalPages,
+      totalData,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Role"), { role_data: response, totalData, state: stateObj }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

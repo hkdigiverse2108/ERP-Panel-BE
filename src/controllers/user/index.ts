@@ -108,7 +108,7 @@ export const deleteUserById = async (req, res) => {
 export const getAllUser = async (req, res) => {
   reqInfo(req);
   try {
-    let { page, limit, search, startDate, endDate, activeFilter, deleteFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -119,9 +119,7 @@ export const getAllUser = async (req, res) => {
       criteria.$or = [{ fullName: { $regex: search, $options: "i" } }];
     }
 
-    if (activeFilter !== undefined) criteria.isActive = activeFilter === "true";
-
-    if (deleteFilter !== undefined) criteria.isDeleted = deleteFilter === "true";
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (startDate && endDate) {
       const start = new Date(startDate);
@@ -136,13 +134,11 @@ export const getAllUser = async (req, res) => {
     }
 
     const options: any = {
-      lean: true,
       sort: { createdAt: -1 },
       skip: (page - 1) * limit,
       limit,
     };
-
-    options.sort = { createdAt: -1 };
+      
     if (page && limit) {
       options.page = (parseInt(page) + 1) * parseInt(limit);
       options.limit = parseInt(limit);
@@ -157,7 +153,7 @@ export const getAllUser = async (req, res) => {
       page,
       limit,
       totalPages,
-      countData,
+      countTotal: countData,
       hasNextPage: page < totalPages,
       hasPrevPage: page > 1,
       // page_limit: Math.ceil(countTotal / (parseInt(limit) || countTotal)) || 1,
