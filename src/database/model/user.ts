@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { USER_ROLES } from "../../common";
-import { baseCommonFields } from "./base";
+import { baseCommonFields, baseSchemaOptions } from "./base";
 
 const userSchema = new mongoose.Schema(
   {
@@ -15,15 +15,8 @@ const userSchema = new mongoose.Schema(
       default: USER_ROLES.USER,
     },
     ...baseCommonFields,
-    // isDeleted: { type: Boolean, default: false },
-    // isActive: { type: Boolean, default: false },
-    // createdBy: { type: mongoose.Schema.Types.ObjectId, default: null },
-    // updatedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
   },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
+  baseSchemaOptions
 );
 
 export const userModel = mongoose.model("user", userSchema);

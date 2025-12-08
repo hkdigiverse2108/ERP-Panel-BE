@@ -3,3 +3,5 @@ export * as userController from "./user";
 export * as companyController from "./company";
 export * as announcementController from "./announcement";
 export * as uploadController from "./upload";
+export * as roleController from "./role";
+

@@ -77,4 +77,7 @@ export const responseMessage = {
   deleteDataSuccess: (message: string): any => {
     return `Your ${message.toLowerCase()} has been successfully deleted!`;
   },
+  deleteDataError: (message: string): any => {
+    return `${message[0].toUpperCase() + message.slice(1).toLowerCase()} deleting time getting an error!`;
+  },
 };

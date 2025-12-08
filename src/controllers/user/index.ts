@@ -2,14 +2,14 @@ import { apiResponse, generateHash, HTTP_STATUS, isValidObjectId, USER_ROLES } f
 import { userModel } from "../../database/model";
 import { countData, createOne, findAllAndPopulate, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { userAccountDeletionModel } from "../../database/model/userAccountDeletion";
-import { createUserSchema, deleteUserSchema, editUserSchema, getUserSchema } from "../../validation";
+import { addUserSchema, deleteUserSchema, editUserSchema, getUserSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addUser = async (req, res) => {
   reqInfo(req);
   try {
-    const { error, value } = createUserSchema.validate(req.body);
+    const { error, value } = addUserSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
 
@@ -25,7 +25,6 @@ export const addUser = async (req, res) => {
       updatedBy: req?.headers?.user?._id || null,
     };
     payload.password = await generateHash(value?.password);
-
 
     const response = await createOne(userModel, payload);
 
@@ -72,7 +71,6 @@ export const editUserById = async (req, res) => {
       payload.password = await generateHash(value?.password);
     }
 
-
     const response = await updateData(userModel, { _id: new ObjectId(value?.userId), isDeleted: false }, payload, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("user"), {}, {}));
@@ -99,7 +97,7 @@ export const deleteUserById = async (req, res) => {
     if (!isUserExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("user"), {}, {}));
 
     const response = await updateData(userModel, { _id: new ObjectId(value?.id) }, { isDeleted: true }, {});
-    if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("user"), {}, {}));
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("user"), {}, {}));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("user"), response, {}));
   } catch (error) {
@@ -117,7 +115,6 @@ export const getAllUser = async (req, res) => {
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false, role: USER_ROLES.USER };
-
 
     if (search) {
       criteria.$or = [{ fullName: { $regex: search, $options: "i" } }];
