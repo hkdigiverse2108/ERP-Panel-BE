@@ -1,17 +1,114 @@
+import path, { parse } from "path";
+import url from "url";
+import fs from "fs";
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { responseMessage } from "../../helper";
+import { reqInfo, responseMessage } from "../../helper";
+import { deleteImageSchema } from "../../validation";
 
 export const uploadFile = async (req, res) => {
+  reqInfo(req);
   try {
-    console.log(req);
     const hasImage = req?.files && req?.files?.images && req?.files?.images?.length > 0;
     const hasPdf = req?.files && req?.files?.pdf && req?.files?.pdf?.length > 0;
 
     if (!hasImage && !hasPdf) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.noFileUploaded, {}, {}));
     }
+
+    const uploadedImages = [];
+    const uploadedPdfs = [];
+
+    if (hasImage) {
+      req.files.images.forEach((file) => {
+        const cleanPath = file.path.replace(/\\/g, "/");
+        const imageUrl = `${process.env.BACKEND_URL}/${cleanPath}`;
+        uploadedImages.push(imageUrl);
+      });
+    }
+
+    if (hasPdf) {
+      req.files.pdf.forEach((file) => {
+        const cleanPath = file.path.replace(/\\/g, "/");
+        const pdfUrl = `${process.env.BACKEND_URL}/${cleanPath}`;
+        uploadedPdfs.push(pdfUrl);
+      });
+    }
+
+    return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage.fileUploadSuccess, { images: uploadedImages, pdfs: uploadedPdfs }, {}));
   } catch (error) {
     console.log(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
   }
+};
+
+export const deleteUploadedFile = async (req, res) => {
+  reqInfo(req);
+  try {
+    console.log(req.body);
+
+    const { error, value } = deleteImageSchema.validate(req.body);
+
+    if (error) res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0].message, {}, {}));
+
+    const { fileUrl } = value;
+
+    const parsedUrl = url.parse(fileUrl);
+    const pathParts = (parsedUrl.pathname || "").split("/").filter(Boolean);
+
+    const allowedTypes = ["images", "pdfs"];
+    const type = pathParts.find((p) => allowedTypes.includes(p));
+
+    if (!type) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.unsupportedFileType, {}, {}));
+    }
+
+    const filePath = path.join(process.cwd(), parsedUrl.pathname.replace(/^\\/, ""));
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound(type), {}, {}));
+    }
+
+    fs.unlinkSync(filePath);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.deleteDataSuccess(type), {}, {}));
+  } catch (error) {
+    console.log(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
+};
+
+export const getAllImages = async (req, res) => {
+  reqInfo(req);
+  try {
+    // console.log("req.headers -->", req.headers.user);
+    // const folderName = req.headers.user.company;
+
+    const folderName = "shakil";
+    const dir = path.join("public/images", folderName);
+    console.log("folderName -->", folderName, dir);
+
+    if (!fs.existsSync(dir)) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.getDataNotFound("Images"), {}, {}));
+    }
+
+    const images = fs.readdirSync(dir).map((file) => `${process.env.BACKEND_URL}/public/images/${folderName}/${file}`);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Images"), images, {}));
+  } catch (error) {}
+};
+
+export const getAllPdf = async (req, res) => {
+  reqInfo(req);
+  try {
+    // const folderName = req.headers.user.company;
+
+    const folderName = "shakil";
+    const dir = path.join("public/pdfs", folderName);
+    console.log("folderName -->", folderName, dir);
+
+    if (!fs.existsSync(dir)) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.getDataNotFound("pdfs"), {}, {}));
+    }
+
+    const pdfs = fs.readdirSync(dir).map((file) => `${process.env.BACKEND_URL}/public/pdfs/${folderName}/${file}`);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("pdf"), pdfs, {}));
+  } catch (error) {}
 };

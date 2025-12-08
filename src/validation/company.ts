@@ -121,4 +121,3 @@ export const deleteCompanySchema = Joi.object().keys({
   id: Joi.string().required(),
 });
 
-

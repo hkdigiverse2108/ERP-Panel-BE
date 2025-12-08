@@ -1,5 +1,10 @@
 // ================ All Find Services ================
 
+export const deleteSingleRecord = async (modelName, criteria, projection, options) => {
+  options.lean = true;
+  return modelName.deleteOne(criteria, projection, options);
+};
+
 export const getData = async (modelName, criteria, projection, options) => {
   options.lean = true;
   return modelName.find(criteria, projection, options);

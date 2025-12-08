@@ -7,11 +7,11 @@ import * as packageInfo from "../package.json";
 import { connectDb } from "./database/connection";
 import { router } from "./routes";
 import path from "path";
+import { HTTP_STATUS } from "./common";
 
 const app = express();
 
-app.use("/images", express.static(path.join(__dirname, "..", "..", "images")));
-app.use("/pdf", express.static(path.join(__dirname, "..", "..", "pdf")));
+app.use("/public", express.static(path.join(__dirname, "..", "..", "public")));
 
 app.use(cors());
 app.use(express.json());
@@ -20,7 +20,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 connectDb();
 
-const health = (req, res) => {
+const health = (_, res) => {
   return res.status(200).json({
     message: `Project Name Server is Running, Server health is green`,
     app: packageInfo.name,
@@ -32,16 +32,16 @@ const health = (req, res) => {
 
 app.get("/", health);
 app.get("/health", health);
-app.get("/isServerUp", (req, res) => {
+app.get("/isServerUp", (_, res) => {
   res.send("Server is running");
 });
 
 app.use(router);
 // app.use("/*", bad_gateway);
 
-app.use((req, res) => {
-  res.status(502).json({
-    status: 502,
+app.use((_, res) => {
+  res.status(HTTP_STATUS.NOT_FOUND).json({
+    status: HTTP_STATUS.NOT_FOUND,
     message: "Project Name Backend API Bad Gateway",
   });
 });

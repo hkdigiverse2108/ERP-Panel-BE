@@ -46,11 +46,15 @@ export const responseMessage = {
   accessDenied: "Access denied",
   invalidToken: "Invalid token",
   noFileUploaded: "No files uploaded",
+  invalidImageUrl: "invalid Image URL",
+  invalidPdfUrl: "invalid Pdf URL",
+  unsupportedFileType: "Unsupported file type in URL",
+
   customMessage: (message: string): any => {
     return `${message[0].toUpperCase() + message.slice(1).toLowerCase()}`;
   },
   invalidId: (message: string): any => {
-    return `invalid ${message}!`;
+    return `Invalid ${message}!`;
   },
   dataAlreadyExist: (message: any): any => {
     return `Please change ${message}, ${message} is already exists!`;
