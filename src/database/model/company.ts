@@ -26,7 +26,7 @@ const companySchema: any = new mongoose.Schema(
     bankName: { type: String },
     bankIFSC: { type: String },
     upiId: { type: String },
-    branchName: { type: String },
+    branch: { type: mongoose.Schema.Types.ObjectId, ref: "branch", default: null },
     accountHolderName: { type: String },
     bankAccountNumber: { type: String },
 

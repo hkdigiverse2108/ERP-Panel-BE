@@ -24,7 +24,7 @@ export const addCompanySchema = Joi.object().keys({
   bankName: Joi.string().optional(),
   bankIFSC: Joi.string().optional(),
   upiId: Joi.string().optional(),
-  branchName: Joi.string().optional(),
+  branch: Joi.array().items(Joi.string().optional()).optional(),
   accountHolderName: Joi.string().optional(),
   bankAccountNumber: Joi.string().optional(),
 
@@ -83,7 +83,7 @@ export const editCompanySchema = Joi.object().keys({
   bankName: Joi.string().optional(),
   bankIFSC: Joi.string().optional(),
   upiId: Joi.string().optional(),
-  branchName: Joi.string().optional(),
+  branch: Joi.array().items(Joi.string().optional()).optional(),
   accountHolderName: Joi.string().optional(),
   bankAccountNumber: Joi.string().optional(),
 
