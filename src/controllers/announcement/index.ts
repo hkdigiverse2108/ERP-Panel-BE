@@ -28,17 +28,21 @@ export const addAnnouncement = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.invalidId("comapny Id"), {}, {}));
     }
 
+<<<<<<< HEAD
     if (error)
       return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
+        .status(HTTP_STATUS.BAD_REQUEST)
         .json(
           new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
+            HTTP_STATUS.BAD_REQUEST,
             error?.details[0].message,
             {},
             {}
           )
         );
+=======
+    if (error) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, error?.details[0].message, {}, {}));
+>>>>>>> 271fcd60350219e50baf5fa563c461c7fd325aaa
 
     let existingCompany = await getFirstMatch(companyModel, { _id: value?.companyId, isDeleted: false }, {}, {});
 
@@ -123,37 +127,13 @@ export const deleteAnnouncementById = async (req, res) => {
   try {
     const { error, value } = deleteAnnoucementSchema.validate(req.params);
 
-    if (!mongoose.Types.ObjectId.isValid(value?._id)) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            responseMessage.invalidId("Announcement Id"),
-            {},
-            {}
-          )
-        );
+    if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).status(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
+
+    if (!isValidObjectId(value?.id)) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Announcement Id"), {}, {}));
     }
 
-    if (error)
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            error?.details[0].message,
-            {},
-            {}
-          )
-        );
-
-    let existingAnnouncement = await getFirstMatch(
-      announcementModel,
-      { _id: value?._id, isDeleted: false },
-      {},
-      {}
-    );
+    const isAnnouncementExist = await getFirstMatch(announcementModel, { _id: new ObjectId(value?.id), isDeleted: false }, {}, {});
 
     if (!isAnnouncementExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Announcement"), {}, {}));
 
