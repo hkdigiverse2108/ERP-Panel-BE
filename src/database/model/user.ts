@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { USER_ROLES } from "../../common";
-import { baseCommonFields, baseSchemaOptions } from "./base";
+import { baseSchemaFields, baseSchemaOptions } from "./base";
 
 const userSchema = new mongoose.Schema(
   {
@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
       enum: Object.values(USER_ROLES),
       default: USER_ROLES.USER,
     },
-    ...baseCommonFields,
+    ...baseSchemaFields,
   },
   baseSchemaOptions
 );

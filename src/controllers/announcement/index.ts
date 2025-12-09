@@ -33,10 +33,10 @@ export const addAnnouncement = async (req, res) => {
 
     if (error)
       return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
+        .status(HTTP_STATUS.BAD_REQUEST)
         .json(
           new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
+            HTTP_STATUS.BAD_REQUEST,
             error?.details[0].message,
             {},
             {}
@@ -131,10 +131,10 @@ export const updateAnnouncement = async (req, res) => {
 
     if (error)
       return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
+        .status(HTTP_STATUS.BAD_REQUEST)
         .json(
           new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
+            HTTP_STATUS.BAD_REQUEST,
             error?.details[0].message,
             {},
             {}

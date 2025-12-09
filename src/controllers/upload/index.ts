@@ -44,10 +44,9 @@ export const uploadFile = async (req, res) => {
 export const deleteUploadedFile = async (req, res) => {
   reqInfo(req);
   try {
-
     const { error, value } = deleteImageSchema.validate(req.body);
 
-    if (error) res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0].message, {}, {}));
+    if (error) res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
     const { fileUrl } = value;
 
@@ -101,7 +100,7 @@ export const getAllPdf = async (req, res) => {
     const dir = path.join("public/pdfs", folderName);
 
     if (!fs.existsSync(dir)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.getDataNotFound("pdfs"), {}, {}));
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.getDataNotFound("PDF"), {}, {}));
     }
 
     const pdfs = fs.readdirSync(dir).map((file) => `${process.env.BACKEND_URL}/public/pdfs/${folderName}/${file}`);

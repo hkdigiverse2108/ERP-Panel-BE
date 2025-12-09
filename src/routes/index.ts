@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { AuthRoute } from "./auth";
+import { authRoute } from "./auth";
 import { userRoute } from "./user";
 import { uploadRoute } from "./upload";
 import { userJwt } from "../helper";
@@ -9,7 +9,7 @@ import { roleRoute } from "./role";
 
 const router = Router();
 
-router.use("/auth", AuthRoute);
+router.use("/auth", authRoute);
 router.use("/user", userRoute);
 router.use("/company", companyRouter);
 router.use("/announcement", announcementRouter);

@@ -14,3 +14,7 @@ export const editRoleSchema = Joi.object().keys({
 export const deleteRoleSchema = Joi.object().keys({
   id: Joi.string().required(),
 });
+
+export const getRoleSchema = Joi.object().keys({
+  id: Joi.string().required(),
+});

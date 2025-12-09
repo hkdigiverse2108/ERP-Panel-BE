@@ -4,13 +4,8 @@ import fs from "fs";
 
 export const fileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // console.log("Upload Destination Reach", req?.query?.folder);
-    // console.log("fileStorage Destination Reach", req.headers.user); // for company Name as Folder Name
-    // const user = req.headers.user;
-    // if (user) {
-    // }
-
-    let folderName = req?.query?.folder || "default";
+    const companyName = req?.headers?.user?.companyId?.name;
+    let folderName = companyName || "default";
     folderName = folderName.replace(/[^a-zA-Z0-9_-]/g, "_");
 
     const isPdf = file.mimetype === "application/pdf";
@@ -41,17 +36,3 @@ export const fileFilter = (_, file, cb) => {
   cb(null, allowed.includes(file.mimetype));
 };
 
-// export const fileStorage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     const dir = path.join(process.cwd(), "images");
-
-//     if (!fs.existsSync(dir)) {
-//       fs.mkdirSync(dir, { recursive: true });
-//     }
-//     cb(null, "images");
-//   },
-//   filename: (req, file, cb) => {
-//     const sanitizedOriginalName = file.originalname.replace(/\s+/g, "-");
-//     cb(null, `${Date.now()}_${sanitizedOriginalName}`);
-//   },
-// });

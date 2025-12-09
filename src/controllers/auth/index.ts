@@ -1,4 +1,4 @@
-import { HTTP_STATUS, USER_ROLES } from "../../common";
+import { HTTP_STATUS } from "../../common";
 import { apiResponse, generateHash, generateToken, getUniqueOtp } from "../../common/utils";
 import { userModel } from "../../database/model/user";
 import { createOne, getFirstMatch, reqInfo, responseMessage } from "../../helper";
@@ -12,7 +12,7 @@ export const register = async (req, res) => {
     const { error, value } = registerSchema.validate(req.body);
 
     if (error) {
-      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, error?.details[0]?.message, {}, {}));
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     let existingUser = await getFirstMatch(userModel, { email: value?.email, isDeleted: false }, {}, {});
@@ -50,7 +50,7 @@ export const login = async (req, res) => {
     const { error, value } = loginSchema.validate(req.body);
 
     if (error) {
-      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, error?.details[0]?.message, {}, {}));
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     let response = await getFirstMatch(userModel, { email: value?.email, isDeleted: false }, {}, {});
