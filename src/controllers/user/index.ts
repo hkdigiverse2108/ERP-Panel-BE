@@ -1,6 +1,6 @@
 import { apiResponse, generateHash, HTTP_STATUS, isValidObjectId, USER_ROLES } from "../../common";
 import { userModel } from "../../database/model";
-import { countData, createOne, findAllAndPopulate, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addUserSchema, deleteUserSchema, editUserSchema, getUserSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -138,7 +138,7 @@ export const getAllUser = async (req, res) => {
       skip: (page - 1) * limit,
       limit,
     };
-      
+
     if (page && limit) {
       options.page = (parseInt(page) + 1) * parseInt(limit);
       options.limit = parseInt(limit);
