@@ -26,7 +26,7 @@ export const addProductSchema = Joi.object().keys({
   landingCost: Joi.number().min(0).default(0),
 
   hsnCode: Joi.string().optional(),
-  purchaseTaxId: Joi.string().optional(),
+  purchaseTaxId: objectId().optional(),
   salesTaxId: Joi.string().optional(),
 
   isPurchaseTaxInclusive: Joi.boolean().default(false),
@@ -78,7 +78,7 @@ export const editProductSchema = Joi.object().keys({
   landingCost: Joi.number().min(0).default(0),
 
   hsnCode: Joi.string().optional(),
-  purchaseTaxId: Joi.string().optional(),
+  purchaseTaxId: objectId().optional(),
   salesTaxId: Joi.string().optional(),
 
   isPurchaseTaxInclusive: Joi.boolean().default(false),
@@ -102,4 +102,12 @@ export const editProductSchema = Joi.object().keys({
   status: Joi.string()
     .valid(...PRODUCT_STATUS)
     .default(PRODUCT_STATUS[0]),
+});
+
+export const deleteProductSchema = Joi.object().keys({
+  id: objectId().required(),
+});
+
+export const getProductSchema = Joi.object().keys({
+  id: objectId().required(),
 });

@@ -116,7 +116,7 @@ export const getAllUser = async (req, res) => {
     let criteria: any = { isDeleted: false, role: USER_ROLES.USER };
 
     if (search) {
-      criteria.$or = [{ fullName: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ fullName: { $regex: search, $options: "s  i" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -153,7 +153,7 @@ export const getAllUser = async (req, res) => {
       page,
       limit,
       totalPages,
-      countTotal: countData,
+      countTotal,
       hasNextPage: page < totalPages,
       hasPrevPage: page > 1,
       // page_limit: Math.ceil(countTotal / (parseInt(limit) || countTotal)) || 1,
