@@ -80,13 +80,13 @@ export const getAllCompany = async (req, res) => {
     }
 
     const response = await getDataWithSorting(companyModel, criteria, {}, options);
-    const countTotal = await countData(companyModel, criteria);
+    const totalData = await countData(companyModel, criteria);
 
-    const totalPages = Math.ceil(countTotal / limit) || 1;
+    const totalPages = Math.ceil(totalData / limit) || 1;
 
-    const stateObj = { page, limit, totalPages, countTotal: countData, hasNextPage: page < totalPages, hasPrevPage: page > 1 };
+    const stateObj = { page, limit, totalPages, totalData, hasNextPage: page < totalPages, hasPrevPage: page > 1 };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company"), { company_data: response, totalData: countTotal, state: stateObj }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company"), { company_data: response, totalData, state: stateObj }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

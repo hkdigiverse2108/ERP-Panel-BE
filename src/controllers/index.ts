@@ -1,5 +1,4 @@
 export * as authController from "./auth";
-export * as commonController from "./common";
 export * as userController from "./user";
 export * as companyController from "./company";
 export * as announcementController from "./announcement";
@@ -8,5 +7,3 @@ export * as roleController from "./role";
 export * as branchController from "./branch";
 export * as employeeController from "./employee";
 export * as productController from "./product";
-
-
