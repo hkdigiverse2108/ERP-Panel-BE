@@ -4,6 +4,7 @@ import { roleModel } from "../../database/model/role";
 import { countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addRoleSchema, deleteRoleSchema, editRoleSchema, getRoleSchema } from "../../validation";
 import { userModel } from "../../database";
+import { deleteController, getAllController, getOneController } from "../common";
 
 export const addRole = async (req, res) => {
   reqInfo(req);
@@ -64,109 +65,112 @@ export const editRole = async (req, res) => {
 };
 
 export const deleteRole = async (req, res) => {
-  reqInfo(req);
-  try {
-    let { error, value } = deleteRoleSchema.validate(req.params);
+  deleteController(req, res, deleteRoleSchema, roleModel, "Role");
+  // reqInfo(req);
+  // try {
+  //   let { error, value } = deleteRoleSchema.validate(req.params);
 
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+  //   if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    // if (!isValidObjectId(value?.id)) {
-    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Role Id"), {}, {}));
-    // }
+  //   // if (!isValidObjectId(value?.id)) {
+  //   //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Role Id"), {}, {}));
+  //   // }
 
-    const existingRole = await getFirstMatch(roleModel, { _id: value?.id, isDeleted: false }, {}, {});
+  //   const existingRole = await getFirstMatch(roleModel, { _id: value?.id, isDeleted: false }, {}, {});
 
-    if (!existingRole) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Role"), {}, {}));
+  //   if (!existingRole) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Role"), {}, {}));
 
-    const response = await updateData(roleModel, { _id: value?.id }, { isDeleted: true }, {});
+  //   const response = await updateData(roleModel, { _id: value?.id }, { isDeleted: true }, {});
 
-    if (!response) return res.status(HTTP_STATUS?.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Role"), {}, {}));
+  //   if (!response) return res.status(HTTP_STATUS?.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Role"), {}, {}));
 
-    return res.status(HTTP_STATUS?.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Role"), response, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
+  //   return res.status(HTTP_STATUS?.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Role"), response, {}));
+  // } catch (error) {
+  //   console.error(error);
+  //   return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  // }
 };
 
 export const getAllRole = async (req, res) => {
-  reqInfo(req);
-  try {
-    let { page, limit, search, startDate, endDate, activeFilter, filterDate } = req.query;
+  getAllController(req, res, roleModel, "Role");
+  // reqInfo(req);
+  // try {
+  //   let { page, limit, search, startDate, endDate, activeFilter, filterDate } = req.query;
 
-    page = Number(page);
-    limit = Number(limit);
+  //   page = Number(page);
+  //   limit = Number(limit);
 
-    let criteria: any = { isDeleted: false };
+  //   let criteria: any = { isDeleted: false };
 
-    if (search) {
-      criteria.$or = [{ role: { $regex: search, $options: "si" } }];
-    }
+  //   if (search) {
+  //     criteria.$or = [{ role: { $regex: search, $options: "si" } }];
+  //   }
 
-    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+  //   if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
+  //   if (startDate && endDate) {
+  //     const start = new Date(startDate);
+  //     const end = new Date(endDate);
 
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.createdAt = {
-          $gte: start,
-          $lte: end,
-        };
-      }
-    }
+  //     if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+  //       criteria.createdAt = {
+  //         $gte: start,
+  //         $lte: end,
+  //       };
+  //     }
+  //   }
 
-    const options: any = {
-      sort: { createdAt: -1 },
-      skip: (page - 1) * limit,
-      limit,
-    };
+  //   const options: any = {
+  //     sort: { createdAt: -1 },
+  //     skip: (page - 1) * limit,
+  //     limit,
+  //   };
 
-    if (page && limit) {
-      options.page = (parseInt(page) + 1) * parseInt(limit);
-      options.limit = parseInt(limit);
-    }
+  //   if (page && limit) {
+  //     options.page = (parseInt(page) + 1) * parseInt(limit);
+  //     options.limit = parseInt(limit);
+  //   }
 
-    const response = await getDataWithSorting(roleModel, criteria, {}, options);
-    const totalData = await countData(roleModel, criteria);
+  //   const response = await getDataWithSorting(roleModel, criteria, {}, options);
+  //   const totalData = await countData(roleModel, criteria);
 
-    const totalPages = Math.ceil(totalData / limit) || 1;
+  //   const totalPages = Math.ceil(totalData / limit) || 1;
 
-    const stateObj = {
-      page,
-      limit,
-      totalPages,
-      totalData,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
-    };
+  //   const stateObj = {
+  //     page,
+  //     limit,
+  //     totalPages,
+  //     totalData,
+  //     hasNextPage: page < totalPages,
+  //     hasPrevPage: page > 1,
+  //   };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Role"), { role_data: response, totalData, state: stateObj }, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
+  //   return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Role"), { role_data: response, totalData, state: stateObj }, {}));
+  // } catch (error) {
+  //   console.error(error);
+  //   return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  // }
 };
 
 export const getRoleById = async (req, res) => {
-  try {
-    const { error, value } = getRoleSchema.validate(req.params);
-    const { id } = value;
+  getOneController(req, res, deleteRoleSchema, roleModel, "Role");
+  // try {
+  //   const { error, value } = getRoleSchema.validate(req.params);
+  //   const { id } = value;
 
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).status(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+  //   if (error) return res.status(HTTP_STATUS.BAD_REQUEST).status(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (!isValidObjectId(id)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Role Id"), {}, {}));
-    }
+  //   if (!isValidObjectId(id)) {
+  //     return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Role Id"), {}, {}));
+  //   }
 
-    const response = await getFirstMatch(roleModel, { _id: id }, {}, {});
+  //   const response = await getFirstMatch(roleModel, { _id: id }, {}, {});
 
-    if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Role"), {}, {}));
+  //   if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Role"), {}, {}));
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), response, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
-  }
+  //   return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), response, {}));
+  // } catch (error) {
+  //   console.error(error);
+  //   return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  // }
 };
