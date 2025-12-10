@@ -1,12 +1,11 @@
 import { apiResponse, HTTP_STATUS, isValidObjectId } from "../../common";
 import { productModel } from "../../database";
-import { createOne, getFirstMatch, reqInfo, responseMessage } from "../../helper";
-import { addProductSchema } from "../../validation/product";
+import { createOne, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { addProductSchema, editProductSchema } from "../../validation/product";
 
 export const addProduct = async (req, res) => {
   reqInfo(req);
   try {
-    // console.log("req --> ", req.body);
     const { error, value } = addProductSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -35,7 +34,28 @@ export const addProduct = async (req, res) => {
 export const editProduct = async (req, res) => {
   reqInfo(req);
   try {
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Product"), {}, {}));
+    const { error, value } = editProductSchema.validate(req.body);
+
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    let isExist = await getFirstMatch(productModel, { _id: value?.productId, isDeleted: false }, {}, {});
+
+    if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
+
+    isExist = await getFirstMatch(productModel, { isDeleted: false, $or: [{ name: value?.name }, { itemCode: value?.itemCode }], _id: { $ne: value?.productId } }, {}, {});
+
+    if (isExist) {
+      let errorText = "";
+      if (isExist?.name === value?.name) errorText = "Product Name";
+      if (isExist?.itemCode === value?.itemCode) errorText = "Product Item Code";
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.dataAlreadyExist(errorText), {}, {}));
+    }
+
+    const response = await updateData(productModel, { _id: value?.productId }, value, {});
+
+    if (!response) return res.status(HTTP_STATUS?.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Product"), {}, {}));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Product"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
