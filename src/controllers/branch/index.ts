@@ -1,7 +1,6 @@
 import { HTTP_STATUS } from "../../common";
 import { apiResponse, isValidObjectId } from "../../common/utils";
-import { announcementModel, companyModel } from "../../database/model";
-import { branchModel } from "../../database/model/branch";
+import { branchModel } from "../../database";
 import {
     countData,
     createOne,
@@ -11,7 +10,7 @@ import {
     responseMessage,
     updateData
 } from "../../helper";
-import { addAnnouncementSchema, addBranchSchema, deleteAnnoucementSchema, deleteBranchSchema, editAnnouncementSchema, editBranchSchema, getAnnouncementSchema, getBranchSchema } from "../../validation";
+import { addBranchSchema, deleteBranchSchema, editBranchSchema, getBranchSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 

@@ -1,9 +1,8 @@
-import mongoose from "mongoose";
-import { HTTP_STATUS, USER_ROLES } from "../../common";
+import { HTTP_STATUS } from "../../common";
 import { apiResponse, isValidObjectId } from "../../common/utils";
 import { companyModel } from "../../database/model";
-import { countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addCompanySchema, deleteUserSchema, editCompanySchema, getCompanySchema, getUserSchema } from "../../validation";
+import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { addCompanySchema, deleteCompanySchema, editCompanySchema, getCompanySchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -97,7 +96,7 @@ export const getAllCompany = async (req, res) => {
 export const deleteCompanyById = async (req, res) => {
   reqInfo(req);
   try {
-    const { error, value } = deleteUserSchema.validate(req.params);
+    const { error, value } = deleteCompanySchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).status(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
 
@@ -116,7 +115,7 @@ export const deleteCompanyById = async (req, res) => {
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Company details"), response, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.internalServerError, {}, error));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 

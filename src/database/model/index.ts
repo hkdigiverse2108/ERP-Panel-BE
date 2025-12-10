@@ -29,3 +29,5 @@ export * from "./tax";
 export * from "./stocks";
 export * from "./voucher";
 export * from "./announcement";
+export * from "./branch";
+export * from "./employee";
