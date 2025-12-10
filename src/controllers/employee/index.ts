@@ -32,7 +32,7 @@ export const addEmployee = async (req, res) => {
       updatedBy: user?._id || null,
     };
 
-    const response = await createOne(companyModel, payload);
+    const response = await createOne(employeeModel, payload);
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Employee"), response, {}));
@@ -147,7 +147,7 @@ export const editEmployeeById = async (req, res) => {
       updatedBy: user?._id || null,
     };
 
-    const response = await updateData(employeeModel, { _id: new ObjectId(value?.companyId), isDeleted: false }, payload, {});
+    const response = await updateData(employeeModel, { _id: new ObjectId(value?.id), isDeleted: false }, payload, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Employee details"), {}, {}));
 

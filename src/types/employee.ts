@@ -18,7 +18,7 @@ export interface IEmployee extends IBase {
         city: string;
         postalCode:string;
     };
-    bankDetiails:{
+    bankDetails:{
         bankHolderName:string;
         bankName:string;
         branch:string;
