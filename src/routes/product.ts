@@ -1,11 +1,13 @@
 import { Router } from "express";
+import { productController } from "../controllers";
 
 const router = Router();
 
-// router.get("/all");
-// router.post("/add");
-// router.post("/edit");
-// router.delete("/:");
-// router.get("/:");
+// router.use(adminJwt);
+router.get("/all", productController.getAllProduct);
+router.post("/add", productController.addProduct);
+router.post("/edit", productController.editProduct);
+router.delete("/:id", productController.deleteProduct);
+router.get("/:id", productController.getOneProduct);
 
 export const productRouter = router;

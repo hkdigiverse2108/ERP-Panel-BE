@@ -1,22 +1,6 @@
-import Joi, { object } from "joi";
-
-export const PRODUCT_TYPE = {
-  FINISHED: "finished",
-  RAW: "raw",
-  SERVICE: "service",
-};
-
-export const PRODUCT_EXPIRY_TYPE = {
-  DAYS: "days",
-  MONTHS: "months",
-  YEAR: "year",
-};
-
-export const PRODUCT_STATUS = {
-  ACTIVE: "active",
-  INACTIVE: "active",
-  DRAFT: "draft",
-};
+import Joi from "joi";
+import { PRODUCT_EXPIRY_TYPE, PRODUCT_STATUS, PRODUCT_TYPE } from "../common";
+import { objectId } from "./common";
 
 export const addProductSchema = Joi.object().keys({
   itemCode: Joi.string().required(),
@@ -24,17 +8,17 @@ export const addProductSchema = Joi.object().keys({
   printName: Joi.string().optional(),
   slug: Joi.string().optional(),
 
-  categoryId: Joi.string().required(),
-  subCategoryId: Joi.string().optional(),
-  brandId: Joi.string().optional(),
-  subBrandId: Joi.string().optional(),
-  departmentId: Joi.string().optional(),
+  categoryId: objectId().required(),
+  subCategoryId: objectId().optional(),
+  brandId: objectId().optional(),
+  subBrandId: objectId().optional(),
+  departmentId: objectId().optional(),
 
   productType: Joi.string()
-    .valid(...Object.values(PRODUCT_TYPE))
-    .default("finished"),
+    .valid(...PRODUCT_TYPE)
+    .default(PRODUCT_TYPE[0]),
 
-  uomId: Joi.string().required(),
+  uomId: objectId().required(),
 
   mrp: Joi.number().min(0).default(0),
   sellingPrice: Joi.number().min(0).default(0),
@@ -52,7 +36,9 @@ export const addProductSchema = Joi.object().keys({
   manageBatch: Joi.boolean().default(false),
   hasExpiry: Joi.boolean().default(false),
   expiryDays: Joi.number().optional(),
-  expiryType: Joi.string().valid(...Object.values(PRODUCT_EXPIRY_TYPE)).optional(),
+  expiryType: Joi.string()
+    .valid(...PRODUCT_EXPIRY_TYPE)
+    .optional(),
 
   description: Joi.string().optional(),
   shortDescription: Joi.string().optional(),
@@ -61,5 +47,7 @@ export const addProductSchema = Joi.object().keys({
   ingredients: Joi.string().optional(),
   image: Joi.string().optional(),
 
-  status: Joi.string().valid("active", "inactive", "draft").default("active"),
+  status: Joi.string()
+    .valid(...PRODUCT_STATUS)
+    .default(PRODUCT_STATUS[0]),
 });

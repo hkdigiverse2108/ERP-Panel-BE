@@ -4,7 +4,7 @@ import { adminJwt } from "../helper";
 
 const router = express.Router();
 
-router.use(adminJwt);
+// router.use(adminJwt);
 router.get("/all", userController.getAllUser);
 router.post("/add", userController.addUser);
 router.put("/edit", userController.editUserById);

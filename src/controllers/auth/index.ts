@@ -1,5 +1,5 @@
 import { HTTP_STATUS } from "../../common";
-import { apiResponse, generateHash, generateToken, getUniqueOtp } from "../../common/utils";
+import { apiResponse, generateHash, generateToken} from "../../common/utils";
 import { userModel } from "../../database/model/user";
 import { createOne, getFirstMatch, reqInfo, responseMessage } from "../../helper";
 import { loginSchema, registerSchema } from "../../validation/auth";
@@ -9,7 +9,7 @@ export const register = async (req, res) => {
   reqInfo(req);
 
   try {
-    const { error, value } = registerSchema.validate(req.body);
+    let { error, value } = registerSchema.validate(req.body);
 
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -24,16 +24,15 @@ export const register = async (req, res) => {
     existingUser = await getFirstMatch(userModel, { phoneNumber: value?.phoneNumber, isDeleted: false }, {}, {});
     if (existingUser) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Phone Number"), {}, {}));
 
-    const payload = { ...value };
+    value.password = await generateHash(value.password);
 
-    payload.password = await generateHash(payload.password);
-
-    let response = await createOne(userModel, payload);
+    let response = await createOne(userModel, value);
 
     const token = await generateToken({ _id: response?._id, status: "Register", generatedOn: new Date().getTime() }, { expiresIn: "24h" });
 
+    const { password, ...rest } = response?._doc || {};
     response = {
-      data: response,
+      ...rest,
       token,
     };
 
@@ -67,7 +66,7 @@ export const login = async (req, res) => {
     const { password, ...rest } = response;
 
     response = {
-      data: rest,
+      ...rest,
       token,
     };
 
