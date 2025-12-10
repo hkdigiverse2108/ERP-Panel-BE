@@ -6,7 +6,7 @@ const router = Router();
 // router.use(adminJwt);
 router.get("/all", productController.getAllProduct);
 router.post("/add", productController.addProduct);
-router.post("/edit", productController.editProduct);
+router.put("/edit", productController.editProduct);
 router.delete("/:id", productController.deleteProduct);
 router.get("/:id", productController.getOneProduct);
 
