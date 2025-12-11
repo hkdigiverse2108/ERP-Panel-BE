@@ -77,9 +77,9 @@ export const deleteUploadedFile = async (req, res) => {
 export const getAllImages = async (req, res) => {
   reqInfo(req);
   try {
-    // const folderName = req.headers.user.company;
+    let folderName = req.headers.user?.companyId?.name || "default";
+    folderName = folderName?.replace(/[^a-zA-Z0-9_-]/g, "_");
 
-    const folderName = "shakil";
     const dir = path.join("public/images", folderName);
 
     if (!fs.existsSync(dir)) {
@@ -88,15 +88,19 @@ export const getAllImages = async (req, res) => {
 
     const images = fs.readdirSync(dir).map((file) => `${process.env.BACKEND_URL}/public/images/${folderName}/${file}`);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Images"), images, {}));
-  } catch (error) {}
+  } catch (error) {
+    console.error(error);
+
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
 };
 
 export const getAllPdf = async (req, res) => {
   reqInfo(req);
   try {
-    // const folderName = req.headers.user.company;
-
-    const folderName = "shakil";
+    let folderName = req?.headers?.user?.companyId?.name || "default";
+    folderName = folderName?.replace(/[^a-zA-Z0-9_-]/g, "_");
+    
     const dir = path.join("public/pdfs", folderName);
 
     if (!fs.existsSync(dir)) {
@@ -105,5 +109,9 @@ export const getAllPdf = async (req, res) => {
 
     const pdfs = fs.readdirSync(dir).map((file) => `${process.env.BACKEND_URL}/public/pdfs/${folderName}/${file}`);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("pdf"), pdfs, {}));
-  } catch (error) {}
+  } catch (error) {
+    console.error(error);
+
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
 };
