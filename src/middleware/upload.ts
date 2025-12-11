@@ -4,29 +4,36 @@ import fs from "fs";
 
 export const fileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const companyName = req?.headers?.user?.companyId?.name;
-    let folderName = companyName || "default";
-    folderName = folderName.replace(/[^a-zA-Z0-9_-]/g, "_");
+    try {
+      const companyName = req?.headers?.user?.companyId?.name;
+      let folderName = companyName || "default";
+      folderName = folderName.replace(/[^a-zA-Z0-9_-]/g, "_");
 
-    const isPdf = file.mimetype === "application/pdf";
-    const isImage = file.mimetype.startsWith("image/");
+      const isPdf = file.mimetype === "application/pdf";
+      const isImage = file.mimetype.startsWith("image/");
 
-    let baseDir = "";
-    if (isPdf) baseDir = "public/pdfs";
-    else if (isImage) baseDir = "public/images";
-    else baseDir = "public/others";
+      let baseDir = "";
+      if (isPdf) baseDir = "public/pdfs";
+      else if (isImage) baseDir = "public/images";
+      else baseDir = "public/others";
 
-    const dir = path.join(process.cwd(), baseDir, folderName);
+      const dir = path.join(process.cwd(), baseDir, folderName);
 
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      cb(null, path.join(baseDir, folderName));
+    } catch (error) {
+      cb(error); // <-- THROW error to Multer properly
     }
-
-    cb(null, path.join(baseDir, folderName));
   },
   filename: (_, file, cb) => {
-    const sanitizedOriginalName = file.originalname.replace(/\s+/g, "-");
-    cb(null, `${Date.now()}_${sanitizedOriginalName}`);
+    try {
+      const sanitizedOriginalName = file.originalname.replace(/\s+/g, "-");
+      cb(null, `${Date.now()}_${sanitizedOriginalName}`);
+    } catch (error) {
+      cb(error);
+    }
   },
 });
 
@@ -35,4 +42,3 @@ export const fileFilter = (_, file, cb) => {
 
   cb(null, allowed.includes(file.mimetype));
 };
-
