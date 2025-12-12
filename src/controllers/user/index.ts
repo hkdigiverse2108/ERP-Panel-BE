@@ -42,9 +42,9 @@ export const editUserById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
-    if (!isValidObjectId(value?.userId)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("User Id"), {}, {}));
-    }
+    // if (!isValidObjectId(value?.userId)) {
+    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("User Id"), {}, {}));
+    // }
 
     // check user exist
     let existingUser = await getFirstMatch(userModel, { _id: new ObjectId(value?.userId), isDeleted: false }, {}, {});
@@ -168,9 +168,9 @@ export const getUserById = async (req, res) => {
     const { id } = value;
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (!isValidObjectId(id)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("User Id"), {}, {}));
-    }
+    // if (!isValidObjectId(id)) {
+    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("User Id"), {}, {}));
+    // }
 
     const response = await getFirstMatch(userModel, { _id: id, isDeleted: false }, { password: 0 }, {});
 

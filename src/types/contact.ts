@@ -2,19 +2,54 @@ import { Schema } from "mongoose";
 import { IBase } from "./base";
 
 export interface IContact extends IBase {
-    name: string;
+    firstName: string;
+    lastName: string;
+    companyCode?: string;
     contactPerson?: string;
-    mobileNo: string;
-    whatsappNo?: string;
+    creditAmount?: number;
+    debitAmount?: number;
     email?: string;
-    gstin?: string;
-    address?: string;
-    city?: string;
-    state?: string;
-    pincode?: string;
+    transporterId?: string;
+    TANNo?: string;
+    companyName: string
+    mobileNo?: string;
     panNo?: string;
-
-    type: 'customer' | 'supplier' | 'both';
+    telephoneNo?: string;
+    remarks?: string;
+    whatsappNo?: string;
+    productDetails?: [string];
+    gstin?: string;
+    dob?: Date;
+    anniversaryDate?: Date;
+    customerType?: 'retailer' | 'customer' | 'wholesaler' | 'merchant' | 'other';
+    supplierType?: 'manufacturer' | 'stockiest' | 'trader' | 'other';
+    addressDetails: [
+        {
+            GSTType?: string;
+            GSTIn: string,
+            contactFirstName?: string;
+            contactLastName?: string;
+            contactCompanyName?: string;
+            contactNo?: string;
+            contactEmail?: string;
+            addressLine1?: string;
+            addressLine2?: string;
+            state: string,
+            city: string,
+            country?: {
+                id: string;
+                name: string;
+            },
+            pinCode?: string;
+        }
+    ],
+    bankDetails?:{
+        IFSCCode:string;
+        name:string;
+        branch:string;
+        accountNumber:string;
+    },
+    type: 'customer' | 'supplier' | 'transport' | 'both';
     status: 'active' | 'inactive';
 
     // CRM
