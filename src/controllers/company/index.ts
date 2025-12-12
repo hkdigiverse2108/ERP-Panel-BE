@@ -9,7 +9,7 @@ const ObjectId = require("mongoose").Types.ObjectId;
 export const addCompany = async (req, res) => {
   reqInfo(req);
   try {
-    const user = req.headers;
+    const { user } = req?.headers;
     const { error, value } = addCompanySchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
@@ -29,16 +29,81 @@ export const addCompany = async (req, res) => {
     existingCompany = await getFirstMatch(companyModel, { supportEmail: value?.supportEmail, isDeleted: false }, {}, {});
     if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Support email"), {}, {}));
 
-    let payload = {
-      ...value,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(companyModel, payload);
+    const response = await createOne(companyModel, value);
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Company"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const deleteCompanyById = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = deleteCompanySchema.validate(req.params);
+
+    if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).status(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
+
+    const isCompanyExist = await getFirstMatch(companyModel, { _id: new ObjectId(value?.id), isDeleted: false }, {}, {});
+
+    if (!isCompanyExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Company"), {}, {}));
+
+    const payload = {
+      isDeleted: true,
+      updatedBy: user?._id || null,
+    };
+    const response = await updateData(companyModel, { _id: new ObjectId(value?.id) }, payload, {});
+
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Company details"), {}, {}));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Company details"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const editCompanyById = async (req, res) => {
+  reqInfo(req);
+
+  try {
+    const { user } = req?.headers;
+    const { error, value } = editCompanySchema.validate(req.body);
+
+    if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0].message, {}, {}));
+
+    if (!isValidObjectId(value?.companyId)) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Company Id"), {}, {}));
+    }
+
+    let existingCompany = await getFirstMatch(companyModel, { email: value?.email, isDeleted: false }, {}, {});
+    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
+
+    existingCompany = await getFirstMatch(companyModel, { phoneNumber: value?.phoneNumber, isDeleted: false }, {}, {});
+    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {}));
+
+    existingCompany = await getFirstMatch(companyModel, { displayName: value?.displayName, isDeleted: false }, {}, {});
+    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Display name"), {}, {}));
+
+    existingCompany = await getFirstMatch(companyModel, { contactName: value?.contactName, isDeleted: false }, {}, {});
+    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Contact name"), {}, {}));
+
+    existingCompany = await getFirstMatch(companyModel, { supportEmail: value?.supportEmail, isDeleted: false }, {}, {});
+    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Support email"), {}, {}));
+
+    value.updatedBy = user?._id || null;
+
+    const response = await updateData(companyModel, { _id: new ObjectId(value?.companyId), isDeleted: false }, value, {});
+
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Company details"), {}, {}));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Company details"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -87,73 +152,6 @@ export const getAllCompany = async (req, res) => {
     const stateObj = { page, limit, totalPages, totalData, hasNextPage: page < totalPages, hasPrevPage: page > 1 };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company"), { company_data: response, totalData, state: stateObj }, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
-
-export const deleteCompanyById = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { error, value } = deleteCompanySchema.validate(req.params);
-
-    if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).status(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
-
-    const isCompanyExist = await getFirstMatch(companyModel, { _id: new ObjectId(value?.id), isDeleted: false }, {}, {});
-
-    if (!isCompanyExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Company"), {}, {}));
-
-    const response = await updateData(companyModel, { _id: new ObjectId(value?.id) }, { isDeleted: true }, {});
-
-    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Company details"), {}, {}));
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Company details"), response, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
-
-export const editCompanyById = async (req, res) => {
-  reqInfo(req);
-
-  try {
-    const user = req.headers;
-    const { error, value } = editCompanySchema.validate(req.body);
-
-    if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0].message, {}, {}));
-
-    if (!isValidObjectId(value?.companyId)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Company Id"), {}, {}));
-    }
-
-    let existingCompany = await getFirstMatch(companyModel, { email: value?.email, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
-
-    existingCompany = await getFirstMatch(companyModel, { phoneNumber: value?.phoneNumber, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {}));
-
-    existingCompany = await getFirstMatch(companyModel, { displayName: value?.displayName, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Display name"), {}, {}));
-
-    existingCompany = await getFirstMatch(companyModel, { contactName: value?.contactName, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Contact name"), {}, {}));
-
-    existingCompany = await getFirstMatch(companyModel, { supportEmail: value?.supportEmail, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Support email"), {}, {}));
-
-    let payload = {
-      ...value,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
-
-    const response = await updateData(companyModel, { _id: new ObjectId(value?.companyId), isDeleted: false }, payload, {});
-
-    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Company details"), {}, {}));
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Company details"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

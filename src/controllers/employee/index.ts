@@ -9,7 +9,8 @@ const ObjectId = require("mongoose").Types.ObjectId;
 export const addEmployee = async (req, res) => {
   reqInfo(req);
   try {
-    const user = req.headers;
+    const { user } = req?.headers;
+
     const { error, value } = addEmployeeSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
@@ -26,13 +27,10 @@ export const addEmployee = async (req, res) => {
     existingEmployee = await getFirstMatch(employeeModel, { panNumber: value?.panNumber, isDeleted: false }, {}, {});
     if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("PAN Number"), {}, {}));
 
-    let payload = {
-      ...value,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(employeeModel, payload);
+    const response = await createOne(employeeModel, value);
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Employee"), response, {}));
@@ -90,22 +88,25 @@ export const getAllEmployee = async (req, res) => {
   }
 };
 
-export const deleteEployeeById = async (req, res) => {
+export const deleteEmployeeById = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+
     const { error, value } = deleteEmployeeSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).status(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
-
-    // if (!isValidObjectId(value?.id)) {
-    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Employee Id"), {}, {}));
-    // }
 
     const isEmployeeExist = await getFirstMatch(employeeModel, { _id: new ObjectId(value?.id), isDeleted: false }, {}, {});
 
     if (!isEmployeeExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Employee"), {}, {}));
 
-    const response = await updateData(employeeModel, { _id: new ObjectId(value?.id) }, { isDeleted: true }, {});
+    const payload = {
+      isDeleted: true,
+      updatedBy: user?._id || null,
+    };
+
+    const response = await updateData(employeeModel, { _id: new ObjectId(value?.id) }, payload, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Employee details"), {}, {}));
 
@@ -120,8 +121,9 @@ export const editEmployeeById = async (req, res) => {
   reqInfo(req);
 
   try {
-    const user = req.headers;
-    const { error, value } = editEmployeeSchema.validate(req.body);
+    const { user } = req?.headers;
+
+    let { error, value } = editEmployeeSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0].message, {}, {}));
 
@@ -141,13 +143,9 @@ export const editEmployeeById = async (req, res) => {
     existingEmployee = await getFirstMatch(employeeModel, { panNumber: value?.panNumber, isDeleted: false }, {}, {});
     if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Pan Card Number"), {}, {}));
 
-    let payload = {
-      ...value,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.updatedBy = user?._id || null;
 
-    const response = await updateData(employeeModel, { _id: new ObjectId(value?.id), isDeleted: false }, payload, {});
+    const response = await updateData(employeeModel, { _id: new ObjectId(value?.id), isDeleted: false }, value, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Employee details"), {}, {}));
 

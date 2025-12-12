@@ -10,17 +10,16 @@ export const addAnnouncementSchema = Joi.object().keys({
 
 export const editAnnouncementSchema = Joi.object().keys({
   companyId: objectId().required(),
-  _id:objectId().required(),
+  _id: objectId().required(),
   version: Joi.string().required(),
   link: Joi.string().optional(),
   desc: Joi.array().items(Joi.string().required()).required(),
 });
 
-export const deleteAnnoucementSchema = Joi.object().keys({
+export const deleteAnnouncementSchema = Joi.object().keys({
   id: objectId().required(),
 });
 
 export const getAnnouncementSchema = Joi.object().keys({
   id: objectId().required(),
 });
-

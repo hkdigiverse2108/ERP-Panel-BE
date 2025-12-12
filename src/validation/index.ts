@@ -6,3 +6,4 @@ export * from "./announcement";
 export * from "./role";
 export * from "./branch";
 export * from "./common";
+export * from "./callRequest";

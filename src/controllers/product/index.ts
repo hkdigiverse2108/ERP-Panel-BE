@@ -6,7 +6,8 @@ import { addProductSchema, deleteProductSchema, editProductSchema, getProductSch
 export const addProduct = async (req, res) => {
   reqInfo(req);
   try {
-    const { error, value } = addProductSchema.validate(req.body);
+    const { user } = req.headers;
+    let { error, value } = addProductSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
@@ -19,6 +20,9 @@ export const addProduct = async (req, res) => {
 
       return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist(errorText), {}, {}));
     }
+
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
     let response = await createOne(productModel, value);
 
@@ -34,6 +38,7 @@ export const addProduct = async (req, res) => {
 export const editProduct = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req.headers;
     const { error, value } = editProductSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -51,6 +56,8 @@ export const editProduct = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.dataAlreadyExist(errorText), {}, {}));
     }
 
+    value.updatedBy = user?._id || null;
+
     const response = await updateData(productModel, { _id: value?.productId }, value, {});
 
     if (!response) return res.status(HTTP_STATUS?.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Product"), {}, {}));
@@ -65,6 +72,7 @@ export const editProduct = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req.headers;
     const { error, value } = deleteProductSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -73,7 +81,12 @@ export const deleteProduct = async (req, res) => {
 
     if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Product"), {}, {}));
 
-    const response = await updateData(productModel, { _id: value?.id }, { isDeleted: true }, {});
+    const payload = {
+      updatedBy: user?._id || null,
+      isDeleted: true,
+    };
+
+    const response = await updateData(productModel, { _id: value?.id }, payload, {});
 
     if (!response) return res.status(HTTP_STATUS?.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS?.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Product"), {}, {}));
 

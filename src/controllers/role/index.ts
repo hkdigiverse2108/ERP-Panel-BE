@@ -5,9 +5,9 @@ import { addRoleSchema, deleteRoleSchema, editRoleSchema, getRoleSchema } from "
 
 export const addRole = async (req, res) => {
   reqInfo(req);
-  const { user } = req?.headers;
   try {
-    const { error, value } = addRoleSchema.validate(req.body);
+    const { user } = req?.headers;
+    let { error, value } = addRoleSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
@@ -15,13 +15,10 @@ export const addRole = async (req, res) => {
 
     if (existingRole) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Role"), {}, {}));
 
-    const payload = {
-      ...value,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(roleModel, payload);
+    const response = await createOne(roleModel, value);
 
     if (!response) res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
@@ -34,8 +31,8 @@ export const addRole = async (req, res) => {
 
 export const editRole = async (req, res) => {
   reqInfo(req);
-  const { user } = req?.headers;
   try {
+    const { user } = req?.headers;
     let { error, value } = editRoleSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -64,16 +61,21 @@ export const editRole = async (req, res) => {
 export const deleteRole = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+
     let { error, value } = deleteRoleSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-
 
     const existingRole = await getFirstMatch(roleModel, { _id: value?.id, isDeleted: false }, {}, {});
 
     if (!existingRole) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Role"), {}, {}));
 
-    const response = await updateData(roleModel, { _id: value?.id }, { isDeleted: true }, {});
+    const payload = {
+      isDeleted: true,
+      updatedBy: user?._id || null,
+    };
+    const response = await updateData(roleModel, { _id: value?.id }, payload, {});
 
     if (!response) return res.status(HTTP_STATUS?.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Role"), {}, {}));
 
@@ -145,6 +147,8 @@ export const getAllRole = async (req, res) => {
 };
 
 export const getRoleById = async (req, res) => {
+  reqInfo(req);
+
   try {
     const { error, value } = getRoleSchema.validate(req.params);
     const { id } = value;

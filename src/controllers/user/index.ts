@@ -8,6 +8,7 @@ const ObjectId = require("mongoose").Types.ObjectId;
 export const addUser = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
     const { error, value } = addUserSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -18,14 +19,11 @@ export const addUser = async (req, res) => {
     existingUser = await getFirstMatch(userModel, { phoneNumber: value?.phoneNumber, isDeleted: false }, {}, {});
     if (existingUser) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Phone Number"), {}, {}));
 
-    let payload = {
-      ...value,
-      createdBy: req?.headers?.user?._id || null,
-      updatedBy: req?.headers?.user?._id || null,
-    };
-    payload.password = await generateHash(value?.password);
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
+    value.password = await generateHash(value?.password);
 
-    const response = await createOne(userModel, payload);
+    const response = await createOne(userModel, value);
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
@@ -38,8 +36,8 @@ export const addUser = async (req, res) => {
 
 export const editUserById = async (req, res) => {
   reqInfo(req);
-
   try {
+    const { user } = req?.headers;
     const { error, value } = editUserSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
@@ -62,15 +60,13 @@ export const editUserById = async (req, res) => {
       if (existingUser) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Phone Number"), {}, {}));
     }
 
-    let payload = {
-      ...value,
-      updatedBy: req?.headers?.user?._id || null,
-    };
+    value.updatedBy = user?._id || null;
+
     if (value?.password) {
-      payload.password = await generateHash(value?.password);
+      value.password = await generateHash(value?.password);
     }
 
-    const response = await updateData(userModel, { _id: new ObjectId(value?.userId), isDeleted: false }, payload, {});
+    const response = await updateData(userModel, { _id: new ObjectId(value?.userId), isDeleted: false }, value, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("User"), {}, {}));
 
@@ -83,19 +79,20 @@ export const editUserById = async (req, res) => {
 
 export const deleteUserById = async (req, res) => {
   try {
+    const { user } = req?.headers;
     const { error, value } = deleteUserSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).status(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-
-    // if (!isValidObjectId(value?.id)) {
-    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("User Id"), {}, {}));
-    // }
-
+    
     const isUserExist = await getFirstMatch(userModel, { _id: new ObjectId(value?.id), isDeleted: false }, {}, {});
 
     if (!isUserExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("User"), {}, {}));
+    const payload = {
+      isDeleted: true,
+      updatedBy: user?._id || null,
+    };
 
-    const response = await updateData(userModel, { _id: new ObjectId(value?.id) }, { isDeleted: true }, {});
+    const response = await updateData(userModel, { _id: new ObjectId(value?.id) }, payload, {});
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("User"), {}, {}));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("User"), response, {}));
