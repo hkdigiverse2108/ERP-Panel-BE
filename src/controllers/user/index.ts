@@ -66,11 +66,11 @@ export const editUserById = async (req, res) => {
       value.password = await generateHash(value?.password);
     }
 
-    const response = await updateData(userModel, { _id: new ObjectId(value?.userId), isDeleted: false }, value, {});
+    let response = await updateData(userModel, { _id: new ObjectId(value?.userId), isDeleted: false }, value, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("User"), {}, {}));
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("User"), response, {}));
+    const { password, ...rest } = response;
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("User"), rest, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -83,7 +83,7 @@ export const deleteUserById = async (req, res) => {
     const { error, value } = deleteUserSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).status(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    
+
     const isUserExist = await getFirstMatch(userModel, { _id: new ObjectId(value?.id), isDeleted: false }, {}, {});
 
     if (!isUserExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("User"), {}, {}));
@@ -144,7 +144,6 @@ export const getAllUser = async (req, res) => {
 
     const response = await getDataWithSorting(userModel, criteria, { password: 0 }, options);
 
-
     const totalData = await countData(userModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -188,7 +187,7 @@ export const getUserById = async (req, res) => {
 
 export const superAdminOverridePermissions = async (req, res) => {
   try {
-    const superAdmin = { role: 'superAdmin' };
+    const superAdmin = { role: "superAdmin" };
     const adminId = req.params.id;
     const newPermissions = req.body.permissions;
 
@@ -206,13 +205,10 @@ export const superAdminOverridePermissions = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Target user is not an Admin.", {}, {}));
     }
 
-
     adminUser.permissions = newPermissions;
-    await updateData(userModel, { _id: adminId }, adminUser, {})
-
+    await updateData(userModel, { _id: adminId }, adminUser, {});
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Admin permissions updated by Super Admin.", adminUser, {}));
-
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).status(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
