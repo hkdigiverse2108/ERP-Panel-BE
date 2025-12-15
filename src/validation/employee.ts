@@ -1,76 +1,82 @@
 import Joi from "joi";
 import { objectId } from "./common";
 
+const addressSchema = Joi.object({
+  address: Joi.string().allow("").optional(),
+  country: Joi.string().required(),
+  state: Joi.string().required(),
+  city: Joi.string().required(),
+  postalCode: Joi.string().allow("").optional(),
+});
+
+const addressSchemaOptional = Joi.object({
+  address: Joi.string().allow("").optional(),
+  country: Joi.string().optional(),
+  state: Joi.string().optional(),
+  city: Joi.string().optional(),
+  postalCode: Joi.string().allow("").optional(),
+});
+
+const bankDetailsSchema = Joi.object({
+  bankHolderName: Joi.string().allow("").optional(),
+  bankName: Joi.string().allow("").optional(),
+  branch: Joi.string().allow("").optional(),
+  accountNumber: Joi.string().allow("").optional(),
+  IFSCCode: Joi.string().allow("").optional(),
+  swiftCode: Joi.string().allow("").optional(),
+});
+
 export const addEmployeeSchema = Joi.object({
-    name: Joi.string().required(),
-    companyId: objectId().optional(),
-    branch: objectId().optional(),
-    email: Joi.string().email().optional(),
-    mobileNo: Joi.string().required(),
-    username: Joi.string().required(),
-    role: objectId().optional(),
-    address: Joi.object({
-        address: Joi.string().optional(),
-        country: Joi.string().required(),
-        state: Joi.string().required(),
-        city: Joi.string().required(),
-        postalCode: Joi.string().optional(),
-    }).required(),
+  name: Joi.string().trim().required(),
 
-    bankDetails: Joi.object({
-        bankHolderName: Joi.string().optional(),
-        bankName: Joi.string().optional(),
-        branch: Joi.string().optional(),
-        accountNumber: Joi.string().optional(),
-        IFSCCode: Joi.string().optional(),
-        swiftCode: Joi.string().optional(),
-    }).optional(),
+  companyId: objectId().optional(),
+  branch: objectId().optional(),
 
-    panNumber: Joi.string().optional(),
-    wages: Joi.number().optional(),
-    commission: Joi.number().optional(),
-    extraWages: Joi.number().optional(),
-    target: Joi.number().optional(),
+  email: Joi.string().email().optional(),
+  mobileNo: Joi.string().trim().required(),
+
+  username: Joi.string().trim().required(),
+  role: objectId().optional(),
+
+  address: addressSchema.required(),
+
+  bankDetails: bankDetailsSchema.optional(),
+
+  panNumber: Joi.string().uppercase().optional(),
+
+  wages: Joi.number().min(0).optional(),
+  commission: Joi.number().min(0).optional(),
+  extraWages: Joi.number().min(0).optional(),
+  target: Joi.number().min(0).optional(),
 });
 
 export const editEmployeeSchema = Joi.object({
-    id: objectId().required(),
+  employeeId: objectId().required(),
 
-    name: Joi.string().optional(),
-    companyId: objectId().optional(),
-    branch: objectId().optional(),
-    email: Joi.string().email().optional(),
-    mobileNo: Joi.string().optional(),
+  name: Joi.string().trim().optional(),
+  companyId: objectId().optional(),
+  branch: objectId().optional(),
 
-    address: Joi.object({
-        address: Joi.string().optional(),
-        country: Joi.string().optional(),
-        state: Joi.string().optional(),
-        city: Joi.string().optional(),
-        postalCode: Joi.string().optional(),
-    }).optional(),
+  email: Joi.string().email().optional(),
+  mobileNo: Joi.string().trim().optional(),
+  role: objectId().optional(),
 
-    bankDetails: Joi.object({
-        bankHolderName: Joi.string().optional(),
-        bankName: Joi.string().optional(),
-        branch: Joi.string().optional(),
-        accountNumber: Joi.string().optional(),
-        IFSCCode: Joi.string().optional(),
-        swiftCode: Joi.string().optional(),
-    }).optional(),
+  address: addressSchemaOptional.optional(),
 
-    panNumber: Joi.string().optional(),
-    wages: Joi.number().optional(),
-    commission: Joi.number().optional(),
-    extraWages: Joi.number().optional(),
-    target: Joi.number().optional(),
+  bankDetails: bankDetailsSchema.optional(),
+
+  panNumber: Joi.string().uppercase().optional(),
+
+  wages: Joi.number().min(0).optional(),
+  commission: Joi.number().min(0).optional(),
+  extraWages: Joi.number().min(0).optional(),
+  target: Joi.number().min(0).optional(),
 });
 
-
 export const deleteEmployeeSchema = Joi.object({
-    id: objectId().required(),
+  id: objectId().required(),
 });
 
 export const getEmployeeSchema = Joi.object({
-    id: objectId().required(),
+  id: objectId().required(),
 });

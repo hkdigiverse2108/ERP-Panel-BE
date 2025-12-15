@@ -20,7 +20,7 @@ export const editUserSchema = Joi.object().keys({
   fullName: Joi.string().optional(),
   email: Joi.string().email().optional(),
   password: Joi.string().optional(),
-  profileImage: Joi.string().optional(),
+  profileImage: Joi.string().optional().allow(""),
   role: Joi.string().optional(),
   phoneNumber: Joi.string().optional(),
   isActive: Joi.boolean().optional().default(false),
