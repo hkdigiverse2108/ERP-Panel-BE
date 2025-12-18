@@ -11,10 +11,12 @@ export const USER_TYPES = {
 
 export const PRODUCT_TYPE = ['finished', 'raw_material', 'semi_finished', 'service', 'non_inventory'] as const;
 
+export const RECIPE_TYPE = ['assemble','unassemble'] as const;
+
 export const PRODUCT_STATUS = ["active", "inactive"] as const;
 export const ACCOUNT_TYPE = ['bank', 'cash', 'other'] as const;
 export const ACCOUNT_NATURE = ['assets', 'liabilities', 'income', 'expenses']  as const;
-export const CONTACT_TYPE = ['customer', 'supplier', 'transport', 'both']  as const;
+export const CONTACT_TYPE = ['customer', 'supplier', 'transporter', 'both']  as const;
 export const CUSTOMER_TYPE = ['retailer', 'wholesaler', 'merchant', 'other']  as const;
 export const SUPPLIER_TYPE = ['manufacturer', 'stockiest', 'trader', 'other']  as const;
 export const CONTACT_STATUS = ['active', 'inactive']  as const;

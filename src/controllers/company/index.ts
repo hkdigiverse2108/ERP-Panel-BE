@@ -1,5 +1,5 @@
 import { HTTP_STATUS } from "../../common";
-import { apiResponse, isValidObjectId } from "../../common/utils";
+import { apiResponse } from "../../common/utils";
 import { companyModel } from "../../database/model";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCompanySchema, deleteCompanySchema, editCompanySchema, getCompanySchema } from "../../validation";
@@ -10,7 +10,7 @@ export const addCompany = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { error, value } = addCompanySchema.validate(req.body);
+    let { error, value } = addCompanySchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
@@ -46,7 +46,7 @@ export const deleteCompanyById = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { error, value } = deleteCompanySchema.validate(req.params);
+    let { error, value } = deleteCompanySchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).status(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
 
@@ -54,11 +54,10 @@ export const deleteCompanyById = async (req, res) => {
 
     if (!isCompanyExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Company"), {}, {}));
 
-    const payload = {
-      isDeleted: true,
-      updatedBy: user?._id || null,
-    };
-    const response = await updateData(companyModel, { _id: new ObjectId(value?.id) }, payload, {});
+    value.isDeleted = true;
+    value.updatedBy = user?._id || null
+
+    const response = await updateData(companyModel, { _id: new ObjectId(value?.id) }, value, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Company details"), {}, {}));
 
@@ -74,13 +73,13 @@ export const editCompanyById = async (req, res) => {
 
   try {
     const { user } = req?.headers;
-    const { error, value } = editCompanySchema.validate(req.body);
+    let { error, value } = editCompanySchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0].message, {}, {}));
 
-    if (!isValidObjectId(value?.companyId)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Company Id"), {}, {}));
-    }
+    // if (!isValidObjectId(value?.companyId)) {
+    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Company Id"), {}, {}));
+    // }
 
     let existingCompany = await getFirstMatch(companyModel, { email: value?.email, isDeleted: false }, {}, {});
     if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));

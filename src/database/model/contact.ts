@@ -44,8 +44,8 @@ const contactSchema = new Schema<IContact>({
     },
     panNo: { type: String },
     type: { type: String, enum: CONTACT_TYPE, default: 'customer' },
-    customerType: { type: String, enum: CUSTOMER_TYPE, default: 'retailer' },
-    supplierType: { type: String, enum: SUPPLIER_TYPE, default: 'manufacturer' },
+    customerType: { type: String, enum: CUSTOMER_TYPE },
+    supplierType: { type: String, enum: SUPPLIER_TYPE },
     status: { type: String, enum: CONTACT_STATUS, default: 'active' },
     loyaltyPoints: { type: Number, default: 0 },
     membershipId: { type: Schema.Types.ObjectId, ref: 'membership' }

@@ -49,7 +49,7 @@ export interface IContact extends IBase {
         branch:string;
         accountNumber:string;
     },
-    type: 'customer' | 'supplier' | 'transport' | 'both';
+    type: 'customer' | 'supplier' | 'transporter' | 'both';
     status: 'active' | 'inactive';
 
     // CRM

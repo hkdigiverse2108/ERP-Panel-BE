@@ -1,0 +1,226 @@
+import { HTTP_STATUS } from "../../common";
+import { apiResponse } from "../../common/utils";
+import { productModel, recipeModel } from "../../database/model";
+import {
+    countData,
+    createOne,
+    getDataWithSorting,
+    getFirstMatch,
+    reqInfo,
+    responseMessage,
+    updateData,
+} from "../../helper";
+import { addRecipeSchema, deleteRecipeSchema, editRecipeSchema, getRecipeSchema } from "../../validation";
+const ObjectId = require("mongoose").Types.ObjectId;
+
+export const addRecipe = async (req, res) => {
+    reqInfo(req);
+    try {
+        const { user } = req?.headers;
+        let { error, value } = addRecipeSchema.validate(req.body);
+        if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+        const existingRecipe = await getFirstMatch(recipeModel, { recipeNo: value.recipeNo, isDeleted: false }, {}, {});
+
+        if (existingRecipe)
+            return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Recipe No"), {}, {}));
+
+        value.createdBy = user?._id || null;
+        value.updatedBy = user?._id || null;
+
+        const response = await createOne(recipeModel, value);
+
+        if (!response)
+            return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage.addDataError, {}, {}));
+
+        return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage.addDataSuccess("Recipe"), response, {}));
+    } catch (error) {
+        console.error(error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+    }
+};
+
+export const deleteRecipeById = async (req, res) => {
+    reqInfo(req);
+    try {
+        const { user } = req?.headers;
+        let { error, value } = deleteRecipeSchema.validate(req.params);
+
+        if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST,error.details[0].message,{},{}));
+
+        const isRecipeExist = await getFirstMatch(recipeModel,{ _id: new ObjectId(value.id), isDeleted: false },{},{});
+
+        if (!isRecipeExist)
+            return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND,responseMessage.getDataNotFound("Recipe"),{},{}));
+
+        const response = await updateData(recipeModel,{ _id: new ObjectId(value.id) },{isDeleted: true,updatedBy: user?._id || null,},{});
+
+        if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED,responseMessage.deleteDataError("Recipe"),{},{}));
+
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK,responseMessage.deleteDataSuccess("Recipe"),response,{}));
+    } catch (error) {
+        console.error(error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR,responseMessage.internalServerError,{},error));
+    }
+};
+
+export const editRecipeById = async (req, res) => {
+    reqInfo(req);
+    try {
+        const { user } = req?.headers;
+        let { error, value } = editRecipeSchema.validate(req.body);
+
+        if (error)
+            return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+        value.updatedBy = user?._id || null;
+
+        const response = await updateData(recipeModel, { _id: new ObjectId(value.id), isDeleted: false }, value, {});
+
+        if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage.updateDataError("Recipe"), {}, {}));
+
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.updateDataSuccess("Recipe"), response, {}));
+    } catch (error) {
+        console.error(error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR,responseMessage.internalServerError,{},error));
+    }
+};
+
+export const getAllRecipe = async (req, res) => {
+    reqInfo(req);
+    try {
+        let { page, limit, search, startDate, endDate } = req.query;
+
+        page = Number(page);
+        limit = Number(limit);
+
+        const criteria: any = { isDeleted: false };
+
+        if (search) {
+            criteria.$or = [
+                { recipeName: { $regex: search, $options: "i" } },
+                { recipeNo: { $regex: search, $options: "i" } },
+                { recipeType: { $regex: search, $options: "i" } },
+            ];
+        }
+
+        if (startDate && endDate) {
+            criteria.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate),
+            };
+        }
+
+        const options: any = {
+            sort: { createdAt: -1 },
+            skip: (page - 1) * limit,
+            limit,
+        };
+
+        const response = await getDataWithSorting(recipeModel, criteria, {}, options);
+
+        const totalData = await countData(recipeModel, criteria);
+        const totalPages = Math.ceil(totalData / limit) || 1;
+
+        const stateObj = {
+            page,
+            limit,
+            totalPages,
+            totalData,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+        };
+
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Recipe"), { recipe_data: response, totalData, state: stateObj }, {}));
+    } catch (error) {
+        console.error(error);
+        return res
+            .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+            .json(
+                new apiResponse(
+                    HTTP_STATUS.INTERNAL_SERVER_ERROR,
+                    responseMessage.internalServerError,
+                    {},
+                    error
+                )
+            );
+    }
+};
+
+export const getRecipeById = async (req, res) => {
+    reqInfo(req);
+    try {
+        let { error, value } = getRecipeSchema.validate(req.params);
+
+        if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+        const response = await getFirstMatch(recipeModel, { _id: new ObjectId(value.id), isDeleted: false }, {}, {});
+
+        if (!response)
+            return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Recipe"), {}, {}));
+
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Recipe"), response, {}));
+    } catch (error) {
+        console.error(error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+    }
+};
+
+export const getRecipeForBOM = async (req, res) => {
+  reqInfo(req);
+  try {
+    const recipeId = req.params.id;
+
+    const recipe = await getFirstMatch(recipeModel,{ _id: new ObjectId(recipeId), isDeleted: false },{},{});
+
+    if (!recipe) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND,responseMessage.getDataNotFound("Recipe"),{},{}));
+
+
+    const finalProducts = await Promise.all(recipe.finalProducts.map(async (fp) => { const product = await getFirstMatch(productModel,{ _id: fp._id, isDeleted: false },{},{});
+        return {
+          itemCode: product?.itemCode || "",
+          productId: product?._id,
+          productName: product?.name,
+          qty: fp.qtyGenerate,
+          purchasePrice: product?.purchasePrice || 0,
+          landingCost: product?.landingCost || 0,
+          mrp: product?.mrp || 0,
+          sellingPrice: product?.sellingPrice || 0,
+          mfgDate: new Date(),
+          expiryDays: product?.expiryDays || 0,
+          expiryDate: product?.expiryDays
+            ? new Date(
+                Date.now() + product.expiryDays * 24 * 60 * 60 * 1000
+              )
+            : null,
+          batchNo: "",
+        };
+      })
+    );
+
+    const rawProducts = await Promise.all(recipe.rawProducts.map(async (rp) => { 
+        const product = await getFirstMatch(productModel,{ _id: rp.productId, isDeleted: false },{},{});
+        return {
+          itemCode: product?.itemCode || "",
+          productId: product?._id,
+          productName: product?.name,
+          batchNo: "",
+          availableQty: product?.availableQty || 0,
+          useQty: rp.useQty,
+        };
+      })
+    );
+
+    return res.status(HTTP_STATUS.OK).json( new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Recipe BOM Data"),
+        {
+          recipeId: recipe._id,
+          recipeName: recipe.recipeName,
+          finalProducts,
+          rawProducts,
+        },{})
+    );
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json( new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR,responseMessage.internalServerError,{},error));
+  }
+};
