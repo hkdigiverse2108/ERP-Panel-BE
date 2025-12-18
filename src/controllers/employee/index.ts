@@ -30,7 +30,7 @@ export const addEmployee = async (req, res) => {
       existingEmployee = await getFirstMatch(employeeModel, { panNumber: value?.panNumber, isDeleted: false }, {}, {});
       if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("PAN Number"), {}, {}));
     }
-    
+
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
@@ -142,21 +142,31 @@ export const editEmployeeById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0].message, {}, {}));
 
-    // if (!isValidObjectId(value?.companyId)) {
-    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Company Id"), {}, {}));
-    // }
+    let existingEmployee;
+    if (value?.branch) {
+      existingEmployee = await getFirstMatch(employeeModel, { branch: value?.branch, isDeleted: false, _id: { $ne: value?.employeeId } }, {}, {});
+      if (!existingEmployee) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.getDataNotFound("Branch"), {}, {}));
+    }
 
-    let existingEmployee = await getFirstMatch(employeeModel, { email: value?.email, isDeleted: false }, {}, {});
-    if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
+    if (value?.email) {
+      existingEmployee = await getFirstMatch(employeeModel, { email: value?.email, isDeleted: false, _id: { $ne: value?.employeeId } }, {}, {});
+      if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
+    }
 
-    existingEmployee = await getFirstMatch(employeeModel, { mobileNo: value?.mobileNo, isDeleted: false }, {}, {});
-    if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Mobile Number"), {}, {}));
+    if (value?.mobileNo) {
+      existingEmployee = await getFirstMatch(employeeModel, { mobileNo: value?.mobileNo, isDeleted: false, _id: { $ne: value?.employeeId } }, {}, {});
+      if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Mobile Number"), {}, {}));
+    }
 
-    existingEmployee = await getFirstMatch(employeeModel, { username: value?.username, isDeleted: false }, {}, {});
-    if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Username"), {}, {}));
+    if (value?.username) {
+      existingEmployee = await getFirstMatch(employeeModel, { username: value?.username, isDeleted: false, _id: { $ne: value?.employeeId } }, {}, {});
+      if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Username"), {}, {}));
+    }
 
-    existingEmployee = await getFirstMatch(employeeModel, { panNumber: value?.panNumber, isDeleted: false }, {}, {});
-    if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Pan Card Number"), {}, {}));
+    if (value?.panNumber) {
+      existingEmployee = await getFirstMatch(employeeModel, { panNumber: value?.panNumber, isDeleted: false, _id: { $ne: value?.employeeId } }, {}, {});
+      if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Pan Card Number"), {}, {}));
+    }
 
     value.updatedBy = user?._id || null;
 
