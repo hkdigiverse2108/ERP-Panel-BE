@@ -1,6 +1,6 @@
 import { HTTP_STATUS, USER_TYPES } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { employeeModel } from "../../database/model";
+import { companyModel, employeeModel } from "../../database/model";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addEmployeeSchema, deleteEmployeeSchema, editEmployeeSchema, getEmployeeSchema } from "../../validation/employee";
 
@@ -14,6 +14,9 @@ export const addEmployee = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
+    const isCompanyAvailable = await getFirstMatch(companyModel, { _id: value?.companyId }, {}, {});
+    if (!isCompanyAvailable) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+
     let existingEmployee = await getFirstMatch(employeeModel, { email: value?.email, isDeleted: false }, {}, {});
     if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
 
@@ -23,9 +26,11 @@ export const addEmployee = async (req, res) => {
     existingEmployee = await getFirstMatch(employeeModel, { username: value?.username, isDeleted: false }, {}, {});
     if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Username"), {}, {}));
 
-    existingEmployee = await getFirstMatch(employeeModel, { panNumber: value?.panNumber, isDeleted: false }, {}, {});
-    if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("PAN Number"), {}, {}));
-
+    if (value?.panNumber) {
+      existingEmployee = await getFirstMatch(employeeModel, { panNumber: value?.panNumber, isDeleted: false }, {}, {});
+      if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("PAN Number"), {}, {}));
+    }
+    
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
@@ -43,12 +48,22 @@ export const addEmployee = async (req, res) => {
 export const getAllEmployee = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req.headers
     let { page, limit, search, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
+
     let criteria: any = { isDeleted: false };
+
+    if (!user || !user.companyId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Company information missing in user data.", {}, {}));
+    }
+
+    const isCompanyAvailable = await getFirstMatch(companyModel, { _id: user?.companyId }, {}, {});
+    if (isCompanyAvailable) criteria.companyId = user.companyId;
+
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "i" } }, { username: { $regex: search, $options: "i" } }, { mobileNo: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }];

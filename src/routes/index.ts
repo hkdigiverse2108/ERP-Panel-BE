@@ -12,6 +12,8 @@ import { roleRoute } from "./role";
 import { uploadRoute } from "./upload";
 import { userRoute } from "./user";
 import { recipeRouter } from "./recipe";
+import { brandRouter } from "./brand";
+import { categoryRouter } from "./category";
 
 const router = Router();
 
@@ -28,6 +30,8 @@ router.use("/employee", employeeRouter);
 router.use("/contacts", contactRouter);
 router.use("/call-request", callRequestRouter);
 router.use("/recipe", recipeRouter);
+router.use("/brand", brandRouter);
+router.use("/category", categoryRouter);
 
 router.use("/upload", userJwt, uploadRoute);
 
