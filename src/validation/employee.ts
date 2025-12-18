@@ -36,7 +36,8 @@ export const addEmployeeSchema = Joi.object({
   mobileNo: Joi.string().trim().required(),
 
   username: Joi.string().trim().required(),
-  role: objectId().optional(),
+  role: Joi.string().required(),
+  // role: objectId().optional(),
 
   address: addressSchema.required(),
 
@@ -60,7 +61,8 @@ export const editEmployeeSchema = Joi.object({
 
   email: Joi.string().email().optional(),
   mobileNo: Joi.string().trim().optional(),
-  role: objectId().optional(),
+  // role: objectId().optional(),
+  role: Joi.string().optional(),
 
   address: addressSchemaOptional.optional(),
 

@@ -15,7 +15,8 @@ const employeeSchema = new Schema<IEmployee>({
     companyId: { type: Schema.Types.ObjectId, ref: 'company', default: null },
     // branch: { type: Schema.Types.ObjectId, ref: 'branch', default: null },
 
-    role: { type: Schema.Types.ObjectId, ref: 'role', default: null },
+    // role: { type: Schema.Types.ObjectId, ref: 'role', default: null },
+    role: { type: String },
     username: { type: String },
     password: { type: String },
 
