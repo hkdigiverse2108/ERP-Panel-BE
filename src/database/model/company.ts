@@ -10,7 +10,7 @@ const companySchema: any = new mongoose.Schema(
     ownerNo: { type: String },
     email: { type: String },
     supportEmail: { type: String },
-    phoneNumber: { type: String },
+    phoneNo: { type: String },
     customerCareNumber: { type: String },
 
     // ******************* Communication Details *******************

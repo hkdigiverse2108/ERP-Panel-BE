@@ -17,14 +17,21 @@ export const addEmployee = async (req, res) => {
     const isCompanyAvailable = await getFirstMatch(companyModel, { _id: value?.companyId }, {}, {});
     if (!isCompanyAvailable) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
 
-    let existingEmployee = await getFirstMatch(employeeModel, { email: value?.email, isDeleted: false }, {}, {});
-    if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
+    let existingEmployee = undefined;
+    if (value?.email) {
+      existingEmployee = await getFirstMatch(employeeModel, { email: value?.email, isDeleted: false }, {}, {});
+      if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
+    }
 
-    existingEmployee = await getFirstMatch(employeeModel, { mobileNo: value?.mobileNo, isDeleted: false }, {}, {});
-    if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {}));
+    if (value?.phoneNo) {
+      existingEmployee = await getFirstMatch(employeeModel, { phoneNo: value?.phoneNo, isDeleted: false }, {}, {});
+      if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {}));
+    }
 
-    existingEmployee = await getFirstMatch(employeeModel, { username: value?.username, isDeleted: false }, {}, {});
-    if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Username"), {}, {}));
+    if (value?.username) {
+      existingEmployee = await getFirstMatch(employeeModel, { username: value?.username, isDeleted: false }, {}, {});
+      if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Username"), {}, {}));
+    }
 
     if (value?.panNumber) {
       existingEmployee = await getFirstMatch(employeeModel, { panNumber: value?.panNumber, isDeleted: false }, {}, {});
@@ -66,7 +73,7 @@ export const getAllEmployee = async (req, res) => {
 
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { username: { $regex: search, $options: "i" } }, { mobileNo: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { username: { $regex: search, $options: "i" } }, { phoneNo: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }];
     }
 
     if (startDate && endDate) {
@@ -142,7 +149,7 @@ export const editEmployeeById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0].message, {}, {}));
 
-    let existingEmployee;
+    let existingEmployee = undefined;
     if (value?.branch) {
       existingEmployee = await getFirstMatch(employeeModel, { branch: value?.branch, isDeleted: false, _id: { $ne: value?.employeeId } }, {}, {});
       if (!existingEmployee) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.getDataNotFound("Branch"), {}, {}));
@@ -153,9 +160,9 @@ export const editEmployeeById = async (req, res) => {
       if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
     }
 
-    if (value?.mobileNo) {
-      existingEmployee = await getFirstMatch(employeeModel, { mobileNo: value?.mobileNo, isDeleted: false, _id: { $ne: value?.employeeId } }, {}, {});
-      if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Mobile Number"), {}, {}));
+    if (value?.phoneNo) {
+      existingEmployee = await getFirstMatch(employeeModel, { phoneNo: value?.phoneNo, isDeleted: false, _id: { $ne: value?.employeeId } }, {}, {});
+      if (existingEmployee) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone Number"), {}, {}));
     }
 
     if (value?.username) {
@@ -225,7 +232,6 @@ export const updateEmployeePermissions = async (req, res) => {
     if (employee.role === USER_TYPES.SUPER_ADMIN) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Cannot modify Super Admin.", {}, {}));
     }
-
 
     employee.permissions = newPermissions;
     await updateData(employeeModel, { _id: employeeId }, employee, {})

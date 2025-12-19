@@ -48,7 +48,7 @@ export const addContactSchema = Joi.object({
     otherwise: Joi.optional(),
   }),
 
-  mobileNo: Joi.string()
+  phoneNo: Joi.string()
     .pattern(/^[0-9]{10}$/)
     .required(),
 
@@ -120,7 +120,7 @@ export const editContactSchema = Joi.object({
   lastName: Joi.string().optional(),
   companyName: Joi.string().optional(),
 
-  mobileNo: Joi.string()
+  phoneNo: Joi.string()
     .pattern(/^[0-9]{10}$/)
     .optional(),
 

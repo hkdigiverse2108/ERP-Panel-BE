@@ -12,7 +12,7 @@ export interface IContact extends IBase {
     transporterId?: string;
     TANNo?: string;
     companyName: string
-    mobileNo?: string;
+    phoneNo?: string;
     panNo?: string;
     telephoneNo?: string;
     remarks?: string;
