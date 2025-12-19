@@ -21,12 +21,17 @@ export const addAnnouncement = async (req, res) => {
     if (!existingCompany || (Array.isArray(existingCompany) && existingCompany.length <= 0)) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Company"), {}, {}));
     }
+    
+    let existAnnouncement = undefined;
+    if(value?.version){
+      existAnnouncement = await getFirstMatch(announcementModel, { version: value?.version, isDeleted: false }, {}, {});
+      if (existAnnouncement) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Version"), {}, {}));
+    }
 
-    let existAnnouncement = await getFirstMatch(announcementModel, { version: value?.version, isDeleted: false }, {}, {});
-    if (existAnnouncement) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Version"), {}, {}));
-
-    existAnnouncement = await getFirstMatch(announcementModel, { link: value?.phoneNumber, isDeleted: false }, {}, {});
-    if (existAnnouncement) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Link"), {}, {}));
+    if(value?.link){
+      existAnnouncement = await getFirstMatch(announcementModel, { link: value?.link, isDeleted: false }, {}, {});
+      if (existAnnouncement) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Link"), {}, {}));
+    }
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
@@ -50,20 +55,26 @@ export const editAnnouncementById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0].message, {}, {}));
 
-    if (!isValidObjectId(value?.companyId)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Company Id"), {}, {}));
+    // if (!isValidObjectId(value?.companyId)) {
+    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Company Id"), {}, {}));
+    // }
+
+    // if (!isValidObjectId(value?.id)) {
+    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Announcement Id"), {}, {}));
+    // }
+
+    let existingAnnouncement = undefined;
+
+    if(value?.version){
+      existingAnnouncement = await getFirstMatch(announcementModel, { version: value?.version, isDeleted: false, _id: { $ne: value?.id } }, {}, {});
+      if (existingAnnouncement) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Version"), {}, {}));
     }
 
-    if (!isValidObjectId(value?._id)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Announcement Id"), {}, {}));
+    if(value?.link){
+      existingAnnouncement = await getFirstMatch(announcementModel, { link: value?.link, isDeleted: false, _id: { $ne: value?.id } }, {}, {});
+      if (existingAnnouncement) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Link"), {}, {}));
     }
-
-    let existingAnnouncement = await getFirstMatch(announcementModel, { version: value?.version, isDeleted: false }, {}, {});
-    if (existingAnnouncement) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Version"), {}, {}));
-
-    existingAnnouncement = await getFirstMatch(announcementModel, { link: value?.link, isDeleted: false }, {}, {});
-    if (existingAnnouncement) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Link"), {}, {}));
-
+      
     value.updatedBy = user?._id || null;
 
     const response = await updateData(announcementModel, { _id: new ObjectId(value?._id), isDeleted: false }, value, {});

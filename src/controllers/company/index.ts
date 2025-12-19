@@ -1,3 +1,5 @@
+import { supplierBillModel } from './../../database/model/supplierBill';
+import { contactModel } from './../../database/model/contact';
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { companyModel } from "../../database/model";
@@ -14,20 +16,30 @@ export const addCompany = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
-    let existingCompany = await getFirstMatch(companyModel, { email: value?.email, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
+    let existingCompany = undefined;
+    if (value?.email) {
+      existingCompany = await getFirstMatch(companyModel, { email: value?.email, isDeleted: false }, {}, {});
+      if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
+    }
+    if (value?.phoneNo) {
+      existingCompany = await getFirstMatch(companyModel, { phoneNo: value?.phoneNo, isDeleted: false }, {}, {});
+      if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {}));
+    }
 
-    existingCompany = await getFirstMatch(companyModel, { phoneNumber: value?.phoneNumber, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {}));
+    if (value?.displayName) {
+      existingCompany = await getFirstMatch(companyModel, { displayName: value?.displayName, isDeleted: false }, {}, {});
+      if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Display name"), {}, {}));
+    }
 
-    existingCompany = await getFirstMatch(companyModel, { displayName: value?.displayName, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Display name"), {}, {}));
+    if (value?.contactName) {
+      existingCompany = await getFirstMatch(companyModel, { contactName: value?.contactName, isDeleted: false }, {}, {});
+      if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Contact name"), {}, {}));
+    }
 
-    existingCompany = await getFirstMatch(companyModel, { contactName: value?.contactName, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Contact name"), {}, {}));
-
-    existingCompany = await getFirstMatch(companyModel, { supportEmail: value?.supportEmail, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Support email"), {}, {}));
+    if (value?.supportEmail) {
+      existingCompany = await getFirstMatch(companyModel, { supportEmail: value?.supportEmail, isDeleted: false }, {}, {});
+      if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Support email"), {}, {}));
+    }
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
@@ -77,24 +89,32 @@ export const editCompanyById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0].message, {}, {}));
 
-    // if (!isValidObjectId(value?.companyId)) {
-    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Company Id"), {}, {}));
-    // }
+    let existingCompany = undefined;
 
-    let existingCompany = await getFirstMatch(companyModel, { email: value?.email, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
+    if(value?.email){
+      existingCompany = await getFirstMatch(companyModel, { email: value?.email, isDeleted: false, _id: { $ne: value?.companyId } }, {}, {});
+      if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
+    }
 
-    existingCompany = await getFirstMatch(companyModel, { phoneNumber: value?.phoneNumber, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {}));
+    if(value?.phoneNo){
+      existingCompany = await getFirstMatch(companyModel, { phoneNo: value?.phoneNo, isDeleted: false, _id: { $ne: value?.companyId } }, {}, {});
+      if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {})); 
+    }
 
-    existingCompany = await getFirstMatch(companyModel, { displayName: value?.displayName, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Display name"), {}, {}));
+    if(value?.displayName){
+      existingCompany = await getFirstMatch(companyModel, { displayName: value?.displayName, isDeleted: false, _id: { $ne: value?.companyId } }, {}, {});
+      if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Display name"), {}, {}));
+    }
+      
+    if(value?.contactName){
+      existingCompany = await getFirstMatch(companyModel, { contactName: value?.contactName, isDeleted: false, _id: { $ne: value?.companyId } }, {}, {});
+      if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Contact name"), {}, {}));
+    }
 
-    existingCompany = await getFirstMatch(companyModel, { contactName: value?.contactName, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Contact name"), {}, {}));
-
-    existingCompany = await getFirstMatch(companyModel, { supportEmail: value?.supportEmail, isDeleted: false }, {}, {});
-    if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Support email"), {}, {}));
+    if(value?.supportEmail){
+      existingCompany = await getFirstMatch(companyModel, { supportEmail: value?.supportEmail, isDeleted: false, _id: { $ne: value?.companyId } }, {}, {});
+      if (existingCompany) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Support email"), {}, {}));
+    }
 
     value.updatedBy = user?._id || null;
 
@@ -120,7 +140,7 @@ export const getAllCompany = async (req, res) => {
     let criteria: any = { isDeleted: false };
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { displayName: { $regex: search, $options: "i" } }, { contactName: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }, { phoneNumber: { $regex: search, $options: "i" } }, { ownerNo: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { displayName: { $regex: search, $options: "i" } }, { contactName: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }, { phoneNo: { $regex: search, $options: "i" } }, { ownerNo: { $regex: search, $options: "i" } }];
     }
 
     if (startDate && endDate) {

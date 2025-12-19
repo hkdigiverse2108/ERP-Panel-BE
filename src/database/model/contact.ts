@@ -9,7 +9,7 @@ const contactSchema = new Schema<IContact>({
     lastName: { type: String, index: true },
     companyName: { type: String },
     contactPerson: { type: String },
-    mobileNo: { type: String, required: true, index: true },
+    phoneNo: { type: String, required: true, index: true },
     whatsappNo: { type: String },
     email: { type: String },
     gstin: { type: String },

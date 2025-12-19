@@ -4,7 +4,7 @@ import { IPermissions } from "./permission";
 
 export interface IEmployee extends IBase {
     name: string;
-    mobileNo: string;
+    phoneNo: string;
     email?: string;
     designation?: string;
     role: Schema.Types.ObjectId;

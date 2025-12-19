@@ -16,7 +16,7 @@ export const addUser = async (req, res) => {
     let existingUser = await getFirstMatch(userModel, { email: value?.email, isDeleted: false }, {}, {});
     if (existingUser) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Email"), {}, {}));
 
-    existingUser = await getFirstMatch(userModel, { phoneNumber: value?.phoneNumber, isDeleted: false }, {}, {});
+    existingUser = await getFirstMatch(userModel, { phoneNo: value?.phoneNo, isDeleted: false }, {}, {});
     if (existingUser) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Phone Number"), {}, {}));
     value.createdBy = user?._id;
     value.updatedBy = user?._id;
@@ -54,8 +54,8 @@ export const editUserById = async (req, res) => {
     if (existingUser) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Email"), {}, {}));
 
     // check phone number exist
-    if (value?.phoneNumber) {
-      existingUser = await getFirstMatch(userModel, { phoneNumber: value?.phoneNumber, _id: { $ne: new ObjectId(value?.userId) }, isDeleted: false }, {}, {});
+    if (value?.phoneNo) {
+      existingUser = await getFirstMatch(userModel, { phoneNo: value?.phoneNo, _id: { $ne: new ObjectId(value?.userId) }, isDeleted: false }, {}, {});
       if (existingUser) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Phone Number"), {}, {}));
     }
 

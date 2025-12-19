@@ -9,7 +9,7 @@ export const addUserSchema = Joi.object().keys({
   password: Joi.string().required(),
   role: Joi.string().required(),
   profileImage: Joi.string().optional().allow(""),
-  phoneNumber: Joi.string().optional(),
+  phoneNo: Joi.string().optional(),
   isActive: Joi.boolean().optional().default(true),
   permissions: permissionsSchema
 });
@@ -22,7 +22,7 @@ export const editUserSchema = Joi.object().keys({
   password: Joi.string().optional(),
   profileImage: Joi.string().optional().allow(""),
   role: Joi.string().optional(),
-  phoneNumber: Joi.string().optional(),
+  phoneNo: Joi.string().optional(),
   isActive: Joi.boolean().optional().default(true),
 });
 

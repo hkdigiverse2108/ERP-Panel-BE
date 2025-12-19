@@ -12,7 +12,7 @@ import { IUser } from "../../types/user";
 //   {
 //     fullName: { type: String },
 //     email: { type: String },
-//     phoneNumber: { type: String },
+//     phoneNo: { type: String },
 //     password: { type: String },
 //     companyId: { type: mongoose.Types.ObjectId, ref: 'company', required: false, default: null },
 //     profileImage: { type: String },
@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema<IUser>(
   {
     fullName: { type: String },
     email: { type: String },
-    phoneNumber: { type: String },
+    phoneNo: { type: String },
     password: { type: String },
     companyId: { type: mongoose.Types.ObjectId, ref: "company", default: null },
     profileImage: { type: String },

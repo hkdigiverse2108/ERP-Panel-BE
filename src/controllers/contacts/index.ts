@@ -23,8 +23,8 @@ export const addContact = async (req, res) => {
     let existingContactDetails = await getFirstMatch(contactModel, { email: value?.email, isDeleted: false }, {}, {});
     if (existingContactDetails) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
 
-    existingContactDetails = await getFirstMatch(contactModel, { mobileNo: value?.mobileNo, isDeleted: false }, {}, {});
-    if (existingContactDetails) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Mobile number"), {}, {}));
+    existingContactDetails = await getFirstMatch(contactModel, { phoneNo: value?.phoneNo, isDeleted: false }, {}, {});
+    if (existingContactDetails) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone Number"), {}, {}));
 
     existingContactDetails = await getFirstMatch(contactModel, { panNo: value?.panNo, isDeleted: false }, {}, {});
     if (existingContactDetails) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("PAN Number"), {}, {}));
@@ -82,7 +82,7 @@ export const getAllContact = async (req, res) => {
     let criteria: any = { isDeleted: false };
 
     if (search) {
-      criteria.$or = [{ email: { $regex: search, $options: "i" } }, { panNo: { $regex: search, $options: "i" } }, { mobileNo: { $regex: search, $options: "i" } }, { companyName: { $regex: search, $options: "i" } }, { whatsappNo: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ email: { $regex: search, $options: "i" } }, { panNo: { $regex: search, $options: "i" } }, { phoneNo: { $regex: search, $options: "i" } }, { companyName: { $regex: search, $options: "i" } }, { whatsappNo: { $regex: search, $options: "i" } }];
     }
 
     if (startDate && endDate) {
@@ -148,9 +148,9 @@ export const editContactById = async (req, res) => {
       if (existingContact) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
     }
 
-    if (value.mobileNo) {
-      existingContact = await getFirstMatch(contactModel, { mobileNo: value?.mobileNo, isDeleted: false }, {}, {});
-      if (existingContact) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Mobile number"), {}, {}));
+    if (value.phoneNo) {
+      existingContact = await getFirstMatch(contactModel, { phoneNo: value?.phoneNo, isDeleted: false }, {}, {});
+      if (existingContact) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone Number"), {}, {}));
     }
 
     if (value.panNo) {

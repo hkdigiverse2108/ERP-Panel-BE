@@ -12,7 +12,7 @@ export const addCompanySchema = Joi.object().keys({
   ownerNo: Joi.string().optional(),
   email: Joi.string().optional(),
   supportEmail: Joi.string().optional(),
-  phoneNumber: Joi.string().optional(),
+  phoneNo: Joi.string().optional(),
   customerCareNumber: Joi.string().optional(),
 
   // ******************* Communication Details *******************
@@ -74,7 +74,7 @@ export const editCompanySchema = Joi.object().keys({
   ownerNo: Joi.string().optional(),
   email: Joi.string().optional(),
   supportEmail: Joi.string().optional(),
-  phoneNumber: Joi.string().optional(),
+  phoneNo: Joi.string().optional(),
   customerCareNumber: Joi.string().optional(),
 
   // ******************* Communication Details *******************
