@@ -45,8 +45,8 @@ export const editBranchById = async (req, res) => {
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Name"), {}, {}));
 
     value.updatedBy = user?._id || null;
-    const response = await updateData(branchModel, { _id: new ObjectId(value?.id), isDeleted: false }, value, {});
-
+    const response = await updateData(branchModel, { _id: new ObjectId(value?.branchId), isDeleted: false }, value, {});
+    console.log("response", response);
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Branch details"), {}, {}));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Branch details"), response, {}));

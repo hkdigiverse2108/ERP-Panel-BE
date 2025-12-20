@@ -42,7 +42,6 @@ export const userJwt = async (req, res, next) => {
   let { authorization } = req.headers;
   try {
     if (!authorization) return next();
-    console.log("User userJwt");
 
     const token = authorization?.split(" ")[1];
 

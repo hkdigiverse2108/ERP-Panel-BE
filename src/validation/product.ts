@@ -3,6 +3,7 @@ import { PRODUCT_EXPIRY_TYPE, PRODUCT_STATUS, PRODUCT_TYPE } from "../common";
 import { objectId } from "./common";
 
 export const addProductSchema = Joi.object().keys({
+  companyId: objectId().required(),
   itemCode: Joi.string().required(),
   name: Joi.string().required(),
   printName: Joi.string().optional(),
@@ -13,11 +14,11 @@ export const addProductSchema = Joi.object().keys({
   brandId: objectId().optional(),
   subBrandId: objectId().optional(),
   departmentId: objectId().optional(),
-
+  
   productType: Joi.string()
-    .valid(...PRODUCT_TYPE)
-    .default(PRODUCT_TYPE[0]),
-
+  .valid(...PRODUCT_TYPE)
+  .default(PRODUCT_TYPE[0]),
+  
   uomId: objectId().required(),
 
   mrp: Joi.number().min(0).default(0),
@@ -54,6 +55,7 @@ export const addProductSchema = Joi.object().keys({
 
 export const editProductSchema = Joi.object().keys({
   productId: objectId().required(),
+  companyId: objectId().optional(),
 
   itemCode: Joi.string().optional(),
   name: Joi.string().optional(),

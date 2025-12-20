@@ -7,8 +7,8 @@ import permissionsSchema from "./permissions";
 const employeeSchema = new Schema<IEmployee>({
     ...baseSchemaFields,
 
-    name: { type: String, required: true },
-    mobileNo: { type: String, required: true },
+    name: { type: String },
+    mobileNo: { type: String },
     email: { type: String, default: null },  // removed unique
     designation: { type: String },
 
@@ -26,10 +26,10 @@ const employeeSchema = new Schema<IEmployee>({
 
     address: {
         address: { type: String },
-        country: { type: String, required: true },
-        state: { type: String, required: true },
-        city: { type: String, required: true },
-        postalCode: { type: String },
+        country: { type: String },
+        state: { type: String },
+        city: { type: String },
+        postalCode: { type: Number },
     },
 
     bankDetails: {
