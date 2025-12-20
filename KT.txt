@@ -1,0 +1,184 @@
+KT — Knowledge Transfer for ERP Modules
+
+Author: samir shaikh
+
+
+## Announcement
+- Purpose: Manage system-wide announcements for users (create, update, publish/expire).
+- Key fields: id, title, message, startDate, endDate, isPublished, createdBy
+- Endpoints (typical):
+  - POST /announcement — create
+  - GET /announcement — list (filter by published / date)
+  - GET /announcement/:id — single
+  - PUT /announcement/:id — update
+  - DELETE /announcement/:id — delete
+- Validation: title (required), message (required), startDate <= endDate
+- Relations: createdBy -> User; can be scoped to branch/company
+- Permissions: admin or role with announcement:create/update/delete
+- Testing tip: verify publish scheduling and list filters by date
+
+---
+
+## Employee
+- Purpose: Employee master data and credentials for internal users/staff.
+- Key fields: id, firstName, lastName, email, phone, roleId, departmentId, status
+- Endpoints: CRUD endpoints + search and bulk import
+- Validation: unique email, phone format, required role and department
+- Relations: role -> Role; department -> Department; user -> User (if linked)
+- Permissions: HR/Admin for edit; limited view for others
+- Common issues: duplicate import rows — add dedupe checks
+
+---
+
+## Brand
+- Purpose: Product brand cataloging
+- Key fields: id, name, description, status
+- Endpoints: CRUD (POST/GET/PUT/DELETE)
+- Validation: name unique per company
+- Relations: products reference brandId
+- Permissions: product manager or admin
+
+---
+
+## Category
+- Purpose: Product categories and hierarchical taxonomy
+- Key fields: id, name, parentId, path, status
+- Endpoints: CRUD, tree/list
+- Validation: prevent cycles in parent relationship; unique sibling names
+- Relations: products reference categoryId
+- UI tip: build category tree for selection
+
+---
+
+## User
+- Purpose: Authentication & authorization for system users
+- Key fields: id, username, email, passwordHash, roles, status, lastLogin
+- Endpoints: /auth/login, /auth/logout, /user (CRUD), /user/me
+- Validation: password policy, unique email/username
+- Relations: roles -> Role; permissions derived from role(s)
+- Security: store hashed passwords (bcrypt), audit log on login attempts
+- Testing tip: test token expiry & refresh behavior
+
+---
+
+## Permissions
+- Purpose: Fine-grained permission definitions used by roles
+- Key fields: id, name (e.g., announcement:create), description, scope
+- Usage: map permissions into roles; middleware checks request permissions
+- Implementation note: keep permission names consistent and documented
+
+---
+
+## Account & Account Group
+- Purpose: Financial ledger accounts and grouping for reporting
+- Account fields: id, name, code, type (asset/liability/expense/revenue), balance
+- Account Group fields: id, name, parentGroup, type
+- Endpoints: CRUD for accounts and groups
+- Validation: unique account codes; group-type consistency
+- Relations: transaction entries reference accountId
+- Reporting: support trial balance & ledger queries
+
+---
+
+## Coupon
+- Purpose: Marketing discounts/vouchers
+- Key fields: id, code, discountType (percent/fixed), value, startDate, endDate, usageLimit, usageCount, status
+- Endpoints: create, validate/apply, list, expire
+- Validation: code uniqueness, date window, usage limits
+- Edge cases: stacking rules, minimum order amount, per-user limits
+
+---
+
+## Credit Note / Debit Note
+- Purpose: Financial adjustments to invoices (credit or debit)
+- Key fields: id, referenceInvoiceId, type (credit/debit), amount, reason, status
+- Endpoints: create, approve, list, get
+- Validation: amount <= invoiceBalance (for credit notes)
+- Workflow: drafting -> approval -> apply to ledger
+- Relations: invoice, account entries
+
+---
+
+## Delivery Challan
+- Purpose: Document shipments/delivery details separate from invoice
+- Key fields: id, challanNumber, date, deliveryTo, items (sku, qty), status
+- Endpoints: create, print/export, list
+- Validation: item availability vs stock (if used for reservation)
+- Tip: separate from invoice flow; ensure mapping from challans to invoices if required
+
+---
+
+## Department
+- Purpose: Organize employees & reporting
+- Key fields: id, name, managerId, parentId
+- Endpoints: CRUD, tree listing
+- Validation: prevent cycles; unique names per company
+
+---
+
+## Feedback
+- Purpose: Capture user/customer feedback
+- Key fields: id, userId, type, message, rating, status, response
+- Endpoints: create, list, respond
+- Workflow: new -> review -> resolved
+- Reporting: sentiment/rating aggregates
+
+---
+
+## Discounts
+- Purpose: Pricing discounts (line-level, order-level)
+- Key fields: id, name, type, value, appliesTo (product/category), validity
+- Endpoints: CRUD, apply/validate
+- Tip: unify logic with coupon engine where possible
+
+---
+
+## Company
+- Purpose: Tenant/Organization data for multi-company setups
+- Key fields: id, name, address, gstin/taxId, defaultCurrency
+- Endpoints: CRUD, settings
+- Permissions: company-admin for config
+- Tip: include company-specific master data scoping (accounts, preferences)
+
+---
+
+## Prefix
+- Purpose: Centralized numbering prefix config (invoices, challans, vouchers)
+- Key fields: entity (invoice/challan), prefix, nextNumber, padding
+- Endpoints: get/set prefix, increment on create
+- Tip: perform atomic increment to avoid collisions (DB sequence or transaction)
+
+---
+
+## Products
+- Purpose: Product master and inventory items
+- Key fields: id, sku, name, description, brandId, categoryId, price, uom, stock
+- Endpoints: CRUD, search, bulk import, stock-level endpoints
+- Validation: unique SKU, required UOM, price >= 0
+- Relations: stock entries, supplier bills, sales, recipes
+- Edge cases: variant handling, composite products (recipes)
+
+---
+
+## Role
+- Purpose: Group permissions into assignable roles
+- Key fields: id, name, description, permissions[]
+- Endpoints: CRUD, assign permissions, assign role to user
+- Best practice: keep a few well-scoped roles; audit role changes
+
+---
+
+## Supplier Bill
+- Purpose: Record supplier invoices & payables
+- Key fields: id, supplierId, billNumber, date, dueDate, items, totalAmount, tax, status
+- Endpoints: create, approve, list, payment action
+- Validation: validate supplier terms; taxes calculation; link to GRN/delivery
+- Reporting: accounts payable aging
+
+---
+
+## General Testing & Dev Tips
+- Use consistent error response format (status, code, message, details)
+- Add integration tests for major workflows (invoicing, supplier bills, stock movements)
+- Use environment-specific seed data for local testing
+- Document common SQL queries for reports

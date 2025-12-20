@@ -11,3 +11,4 @@ export * from "./contact";
 export * from "./recipe";
 export * from "./brand";
 export * from "./category";
+export * from "./stockVerification";

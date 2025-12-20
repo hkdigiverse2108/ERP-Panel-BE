@@ -32,6 +32,7 @@ router.use("/call-request", callRequestRouter);
 router.use("/recipe", recipeRouter);
 router.use("/brand", brandRouter);
 router.use("/category", categoryRouter);
+// router.use("/stockVerification", stockVerificationRouter);
 
 router.use("/upload", userJwt, uploadRoute);
 

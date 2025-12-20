@@ -35,3 +35,4 @@ export * from "./operation";
 export * from "./callRequest";
 export * from "./contact";
 export * from "./recipe";
+export * from "./stockItem";
