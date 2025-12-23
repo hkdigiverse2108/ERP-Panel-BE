@@ -156,7 +156,7 @@ export const getAllAnnouncement = async (req, res) => {
 
     const totalPages = Math.ceil(totalData / limit) || 1;
 
-    const stateObj = { page, limit, totalPages, totalData, hasNextPage: page < totalPages, hasPrevPage: page > 1 };
+    const stateObj = { page, limit, totalPages};
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Announcement"), { announcement_data: response, totalData, state: stateObj }, {}));
   } catch (error) {

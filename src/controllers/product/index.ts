@@ -143,9 +143,6 @@ export const getAllProduct = async (req, res) => {
       page,
       limit,
       totalPages,
-      totalData,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Productdd"), { product_data: response, totalData, state: stateObj }, {}));

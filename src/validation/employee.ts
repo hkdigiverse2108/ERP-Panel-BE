@@ -1,16 +1,16 @@
 import Joi from "joi";
 import { objectId } from "./common";
 
-const addressSchema = Joi.object({
-  address: Joi.string().allow("").optional(),
-  country: Joi.string().optional(),
-  state: Joi.string().optional(),
-  city: Joi.string().optional(),
-  postalCode: Joi.number().optional(),
+const addAddressSchema = Joi.object({
+  address: Joi.string().required(),
+  country: Joi.string().required(),
+  state: Joi.string().required(),
+  city: Joi.string().required(),
+  postalCode: Joi.number().required(),
 });
 
-const addressSchemaOptional = Joi.object({
-  address: Joi.string().allow("").optional(),
+const editAddressSchemaOptional = Joi.object({
+  address: Joi.string().optional(),
   country: Joi.string().optional(),
   state: Joi.string().optional(),
   city: Joi.string().optional(),
@@ -18,43 +18,48 @@ const addressSchemaOptional = Joi.object({
 });
 
 const bankDetailsSchema = Joi.object({
-  bankHolderName: Joi.string().allow("").optional(),
-  bankName: Joi.string().allow("").optional(),
-  branch: Joi.string().allow("").optional(),
+  bankHolderName: Joi.string().allow("", null).optional(),
+  bankName: Joi.string().allow("", null).optional(),
+  branchName: Joi.string().allow("", null).optional(),
   accountNumber: Joi.number().optional(),
-  IFSCCode: Joi.string().allow("").optional(),
-  swiftCode: Joi.string().allow("").optional(),
+  IFSCCode: Joi.string().allow("", null).optional(),
+  swiftCode: Joi.string().allow("", null).optional(),
 });
 
 export const addEmployeeSchema = Joi.object({
-  name: Joi.string().trim().required(),
   companyId: objectId().required(),
-  branch: objectId().required(),
+  branchId: objectId().optional().allow("", null),
+  name: Joi.string().trim().required(),
+  username: Joi.string().trim().required(),
   email: Joi.string().email().optional(),
   phoneNo: Joi.string().trim().required(),
-  username: Joi.string().trim().required(),
+  password: Joi.string().required(),
+  designation: Joi.string().optional().allow("", null),
   role: objectId().optional(),
-  address: addressSchema.required(),
+  address: addAddressSchema.required(),
   bankDetails: bankDetailsSchema.optional(),
-  panNumber: Joi.string().uppercase().optional(),
-  wages: Joi.number().min(0).optional(),
-  commission: Joi.number().min(0).optional(),
-  extraWages: Joi.number().min(0).optional(),
-  target: Joi.number().min(0).optional(),
+  panNumber: Joi.string().uppercase().optional().allow("", null),
+  wages: Joi.number().min(0).optional().allow(null),
+  commission: Joi.number().min(0).optional().allow(null),
+  extraWages: Joi.number().min(0).optional().allow(null),
+  target: Joi.number().min(0).optional().allow(null),
   isActive: Joi.boolean().optional(),
 });
 
 export const editEmployeeSchema = Joi.object({
   employeeId: objectId().required(),
-  name: Joi.string().trim().optional(),
-  companyId: objectId().optional(),
-  branch: objectId().optional(),
+  companyId: objectId().required(),
+  branchId: objectId().optional().allow("", null),
+  name: Joi.string().trim().optional().allow("", null),
+  username: Joi.string().trim().optional(),
   email: Joi.string().email().optional(),
   phoneNo: Joi.string().trim().optional(),
+  password: Joi.string().optional(),
+  designation: Joi.string().optional().allow("", null),
   role: objectId().optional(),
-  address: addressSchemaOptional.optional(),
+  address: editAddressSchemaOptional.optional(),
   bankDetails: bankDetailsSchema.optional(),
-  panNumber: Joi.string().uppercase().optional(),
+  panNumber: Joi.string().uppercase().optional().allow("", null),
   wages: Joi.number().min(0).optional(),
   commission: Joi.number().min(0).optional(),
   extraWages: Joi.number().min(0).optional(),

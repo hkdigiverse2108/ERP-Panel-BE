@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { userJwt } from "../helper";
+import { adminJwt, userJwt } from "../helper";
 import { announcementRouter } from "./announcement";
 import { authRoute } from "./auth";
 import { branchRouter } from "./branch";
@@ -18,11 +18,8 @@ import { categoryRouter } from "./category";
 const router = Router();
 
 router.use("/auth", authRoute);
-router.use(userJwt);
-router.use("/user", userRoute);
-router.use("/company", companyRouter);
-router.use("/announcement", announcementRouter);
 
+router.use(userJwt);
 router.use("/branch", branchRouter);
 router.use("/role", roleRoute);
 router.use("/product", productRouter);
@@ -36,5 +33,9 @@ router.use("/category", categoryRouter);
 
 router.use("/upload", userJwt, uploadRoute);
 
-export { router };
+router.use(adminJwt);
+router.use("/user", userRoute);
+router.use("/company", companyRouter);
+router.use("/announcement", announcementRouter);
 
+export { router };

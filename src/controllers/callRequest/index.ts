@@ -128,9 +128,7 @@ export const getAllCallRequest = async (req, res) => {
       page,
       limit,
       totalPages,
-      totalData,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
+      
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Call Request"), { call_Request_data: response, totalData, state: stateObj }, {}));

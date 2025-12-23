@@ -1,7 +1,3 @@
-// import mongoose from "mongoose";
-// import { USER_TYPES } from "../../common";
-// import { baseSchemaFields, baseSchemaOptions } from "./base";
-
 import mongoose from "mongoose";
 import { USER_TYPES } from "../../common";
 import permissionsSchema from "./permissions";
@@ -32,8 +28,6 @@ import { IUser } from "../../types/user";
 
 
 // export const userModel = mongoose.model("user", userSchema);
-
-
 
 const userSchema = new mongoose.Schema<IUser>(
   {

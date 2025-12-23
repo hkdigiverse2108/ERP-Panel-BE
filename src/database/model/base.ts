@@ -1,4 +1,5 @@
 import { Schema } from "mongoose";
+import { SchemaOptions } from "mongoose";
 
 export const baseCommonFields = {
   isDeleted: { type: Boolean, default: false },
@@ -14,8 +15,14 @@ export const baseSchemaFields = {
   locationId: { type: Schema.Types.ObjectId, ref: "location", index: true },
 };
 
-export const baseSchemaOptions = {
+// export const baseSchemaOptions = {
+//   timestamps: true,
+//   versionKey: false,
+//   // toJSON: { virtuals: false, versionKey: false },
+//   // toObject: { virtuals: false, versionKey: false },
+// };
+
+export const baseSchemaOptions: SchemaOptions = {
   timestamps: true,
-  toJSON: { virtuals: false, versionKey: false },
-  toObject: { virtuals: false, versionKey: false },
+  versionKey: false,
 };
