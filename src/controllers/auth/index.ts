@@ -54,7 +54,7 @@ export const login = async (req, res) => {
     }
 
     let response = await getFirstMatch(userModel, { email: value?.email, isDeleted: false }, {}, {});
-    console.log("response ---> ", response);
+   
     if (!response) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
     if (response.isActive === false) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
 

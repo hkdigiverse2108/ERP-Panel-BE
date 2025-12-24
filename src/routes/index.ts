@@ -33,7 +33,6 @@ router.use("/category", categoryRouter);
 
 router.use("/upload", userJwt, uploadRoute);
 
-router.use(adminJwt);
 router.use("/user", userRoute);
 router.use("/company", companyRouter);
 router.use("/announcement", announcementRouter);

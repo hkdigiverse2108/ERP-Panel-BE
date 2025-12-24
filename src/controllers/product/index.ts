@@ -39,7 +39,6 @@ export const editProduct = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    console.log("req.body", req.body);  
     const { error, value } = editProductSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));

@@ -7,16 +7,25 @@ export const addRole = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
     let { error, value } = addRoleSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
-    const existingRole = await getFirstMatch(roleModel, { role: value?.role, isDeleted: false }, {}, {});
+    let existingRole = null;
 
-    if (existingRole) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Name"), {}, {}));
+    if (companyId) {
+      existingRole = await getFirstMatch(roleModel, { companyId, name: value?.name, isDeleted: false }, {}, {});
+    } else {
+      existingRole = await getFirstMatch(roleModel, { name: value?.name, isDeleted: false }, {}, {});
+    }
+
+    if (existingRole) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Role"), {}, {}));
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
+
+    if (companyId) value.companyId = companyId;
 
     const response = await createOne(roleModel, value);
 
