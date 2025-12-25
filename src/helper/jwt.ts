@@ -29,7 +29,7 @@ export const adminJwt = async (req, res, next) => {
 
     if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage.invalidToken, {}, {}));
 
-    if (user?.isActive === false) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
+    if (user?.isActive === false) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.accountBlock, {}, {}));
 
     req.headers.user = user;
     next();
@@ -63,9 +63,14 @@ export const userJwt = async (req, res, next) => {
       user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
     }
 
+    if (user?.role) {
+      const populateModel = [{ path: "role", select: "name" }];
+      user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
+    }
+
     if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage.invalidToken, {}, {}));
 
-    if (user?.isActive === false) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
+    if (user?.isActive === false) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.accountBlock, {}, {}));
 
     req.headers.user = user;
     next();

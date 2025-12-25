@@ -13,4 +13,4 @@ const UOMSchema = new Schema<IUOM>({
     code: { type: String, required: true }
 }, baseSchemaOptions);
 
-export const UOMModel = mongoose.model<IUOM>('UOM', UOMSchema);
+export const UOMModel = mongoose.model<IUOM>('uom', UOMSchema);

@@ -55,7 +55,9 @@ export const addUser = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
-    return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("User"), response, {}));
+    const { password, ...rest } = response?._doc;
+
+    return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("User"), rest, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -69,12 +71,13 @@ export const editUserById = async (req, res) => {
     const { error, value } = editUserSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
-    console.log("Userid", value?.userId);
     const isUserExist = await getFirstMatch(userModel, { _id: value?.userId, isDeleted: false }, {}, {});
     if (!isUserExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("User"), {}, {}));
 
-    const isCompanyExist = await getFirstMatch(companyModel, { _id: value?.companyId, isDeleted: false }, {}, {});
-    if (!isCompanyExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+    if (value?.companyId) {
+      const isCompanyExist = await getFirstMatch(companyModel, { _id: value?.companyId, isDeleted: false }, {}, {});
+      if (!isCompanyExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+    }
 
     if (value?.branchId) {
       const isBranchExist = await getFirstMatch(branchModel, { _id: value?.branchId, isDeleted: false }, {}, {});
@@ -138,8 +141,9 @@ export const deleteUserById = async (req, res) => {
 
     const response = await updateData(userModel, { _id: new ObjectId(value?.id) }, payload, {});
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("User"), {}, {}));
+    const { password, ...rest } = response;
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("User"), response, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("User"), rest, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

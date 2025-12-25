@@ -8,11 +8,12 @@ export const addRole = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userRole = user?.role?.name;
     let { error, value } = addRoleSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
-    if (user?.role !== USER_ROLES.ADMIN && user?.role !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+    if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
     let companyId = null;
     if (user?.role === USER_ROLES.SUPER_ADMIN) {
@@ -27,7 +28,7 @@ export const addRole = async (req, res) => {
     }
 
     let existingRole = null;
-    value.name = value.name.trim().toLowerCase();
+
     if (companyId) {
       existingRole = await getFirstMatch(roleModel, { companyId, name: value?.name, isDeleted: false }, {}, {});
     } else {
@@ -55,15 +56,16 @@ export const editRole = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userRole = user?.role?.name;
 
     let { error, value } = editRoleSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (user?.role !== USER_ROLES.ADMIN && user?.role !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+    if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
     let companyId = null;
-    if (user?.role === USER_ROLES.SUPER_ADMIN) {
+    if (userRole === USER_ROLES.SUPER_ADMIN) {
       companyId = value?.companyId;
     } else {
       companyId = user?.companyId?._id;
@@ -75,17 +77,19 @@ export const editRole = async (req, res) => {
     }
 
     let existingRole;
-    value.name = value.name.trim().toLowerCase();
+    if (value?.name) value.name = value.name.trim().toLowerCase();
 
     existingRole = await getFirstMatch(roleModel, { _id: value?.roleId, isDeleted: false }, {}, {});
     if (!existingRole) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Role"), {}, {}));
 
-    if (companyId) {
-      existingRole = await getFirstMatch(roleModel, { companyId, name: value?.name, isDeleted: false, _id: { $ne: value?.roleId } }, {}, {});
-    } else {
-      existingRole = await getFirstMatch(roleModel, { name: value?.name, isDeleted: false, companyId: null, _id: { $ne: value?.roleId } }, {}, {});
+    if (value?.name) {
+      if (companyId) {
+        existingRole = await getFirstMatch(roleModel, { companyId, name: value?.name, isDeleted: false, _id: { $ne: value?.roleId } }, {}, {});
+      } else {
+        existingRole = await getFirstMatch(roleModel, { name: value?.name, isDeleted: false, companyId: null, _id: { $ne: value?.roleId } }, {}, {});
+      }
+      if (existingRole) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Role"), {}, {}));
     }
-    if (existingRole) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Role"), {}, {}));
 
     value.updatedBy = user?._id;
     value.companyId = companyId ?? null;
@@ -102,12 +106,13 @@ export const deleteRole = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userRole = user?.role?.name;
 
     let { error, value } = deleteRoleSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (user?.role !== USER_ROLES.ADMIN && user?.role !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+    if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
     const existingRole = await getFirstMatch(roleModel, { _id: value?.id, isDeleted: false }, {}, {});
 

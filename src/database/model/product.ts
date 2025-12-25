@@ -6,23 +6,19 @@ import { baseSchemaFields, baseSchemaOptions } from "./base";
 const productSchema = new Schema<IProduct>(
   {
     ...baseSchemaFields,
-    itemCode: { type: String, required: true, index: true },
-    name: { type: String, required: true, index: true },
+    itemCode: { type: String, index: true },
+    name: { type: String, index: true },
     printName: { type: String },
     slug: { type: String, index: true },
-    categoryId: {
-      type: Schema.Types.ObjectId,
-      ref: "category",
-      required: true,
-    },
+    categoryId: { type: Schema.Types.ObjectId, ref: "category" },
     subCategoryId: { type: Schema.Types.ObjectId, ref: "category" },
     brandId: { type: Schema.Types.ObjectId, ref: "brand" },
     subBrandId: { type: Schema.Types.ObjectId, ref: "brand" },
     departmentId: { type: Schema.Types.ObjectId, ref: "department" },
 
-    productType: { type: String, enum: PRODUCT_TYPE, default: "finished" },
+    productType: { type: String, enum: PRODUCT_TYPE, default: PRODUCT_TYPE[0] },
 
-    uomId: { type: Schema.Types.ObjectId, ref: "UOM", required: true },
+    uomId: { type: Schema.Types.ObjectId, ref: "uom", required: true },
     mrp: { type: Number, default: 0 },
     sellingPrice: { type: Number, default: 0 },
     purchasePrice: { type: Number, default: 0 },
@@ -45,9 +41,9 @@ const productSchema = new Schema<IProduct>(
     netWeight: { type: Number },
     nutritionInfo: { type: String },
     ingredients: { type: String },
-    image: { type: String },
+    image: { type: String, default: null },
 
-    status: { type: String, enum: PRODUCT_STATUS, default: "active" },
+    status: { type: String, enum: PRODUCT_STATUS, default: PRODUCT_STATUS[0] },
   },
   baseSchemaOptions
 );
