@@ -1,7 +1,7 @@
-import { HTTP_STATUS } from "../../common";
+import { HTTP_STATUS, USER_ROLES } from "../../common";
 import { apiResponse, isValidObjectId } from "../../common/utils";
-import { branchModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { branchModel, companyModel } from "../../database";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBranchSchema, deleteBranchSchema, editBranchSchema, getBranchSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -10,11 +10,28 @@ export const addBranch = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userRole = user?.role?.name;
+
     let { error, value } = addBranchSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, error?.details[0].message, {}, {}));
 
-    const existingBranch = await getFirstMatch(branchModel, { name: { $regex: `^${value?.name.trim()}$`, $options: "i" }, isDeleted: false }, {}, {});
+    if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+
+    let companyId = null;
+    if (userRole === USER_ROLES.SUPER_ADMIN) {
+      companyId = value?.companyId;
+    } else {
+      companyId = user?.companyId?._id;
+    }
+
+    if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.getDataNotFound("Company"), {}, {}));
+
+    if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
+
+    value.name = value?.name.trim();
+
+    const existingBranch = await getFirstMatch(branchModel, { companyId, name: value?.name, isDeleted: false }, {}, {});
 
     if (existingBranch) {
       return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Branch"), {}, {}));
@@ -22,6 +39,7 @@ export const addBranch = async (req, res) => {
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
+    value.companyId = companyId ?? null;
 
     const response = await createOne(branchModel, value);
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -37,15 +55,31 @@ export const editBranchById = async (req, res) => {
 
   try {
     const { user } = req?.headers;
+    const userRole = user?.role?.name;
+
     let { error, value } = editBranchSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_GATEWAY).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0].message, {}, {}));
 
-    let isExist = await getFirstMatch(branchModel, { name: value?.name, isDeleted: false }, {}, {});
+    if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+
+    let companyId = null;
+    if (userRole === USER_ROLES.SUPER_ADMIN) {
+      companyId = value?.companyId;
+    } else {
+      companyId = user?.companyId?._id;
+    }
+
+    if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
+    if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
+
+    let isExist = await getFirstMatch(branchModel, { companyId, name: value?.name, isDeleted: false, _id: { $ne: value?.branchId } }, {}, {});
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Name"), {}, {}));
 
     value.updatedBy = user?._id || null;
-    const response = await updateData(branchModel, { _id: new ObjectId(value?.branchId), isDeleted: false }, value, {});
+
+    const response = await updateData(branchModel, { _id: value?.branchId, isDeleted: false }, value, {});
+
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Branch details"), {}, {}));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Branch details"), response, {}));
@@ -90,7 +124,7 @@ export const getAllBranch = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, startDate, endDate } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -104,6 +138,8 @@ export const getAllBranch = async (req, res) => {
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "i" } }, { address: { $regex: search, $options: "i" } }];
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (startDate && endDate) {
       const start = new Date(startDate);

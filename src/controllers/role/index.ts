@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, isValidObjectId, USER_ROLES } from "../../common";
 import { companyModel, userModel } from "../../database";
 import { roleModel } from "../../database/model/role";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addRoleSchema, deleteRoleSchema, editRoleSchema, getRoleSchema } from "../../validation";
 
 export const addRole = async (req, res) => {
@@ -16,15 +16,14 @@ export const addRole = async (req, res) => {
     if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
     let companyId = null;
-    if (user?.role === USER_ROLES.SUPER_ADMIN) {
+    if (userRole === USER_ROLES.SUPER_ADMIN) {
       companyId = value?.companyId;
     } else {
       companyId = user?.companyId?._id;
     }
 
     if (companyId) {
-      const isCompanyExist = await getFirstMatch(companyModel, { _id: companyId, isDeleted: false }, {}, {});
-      if (!isCompanyExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+      if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
     }
 
     let existingRole = null;

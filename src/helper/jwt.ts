@@ -25,7 +25,17 @@ export const adminJwt = async (req, res, next) => {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
     }
 
-    const user = await getFirstMatch(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {});
+    let user = await getFirstMatch(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {});
+
+    if (user?.companyId) {
+      const populateModel = [{ path: "companyId", select: "name" }];
+      user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
+    }
+
+    if (user?.role) {
+      const populateModel = [{ path: "role", select: "name" }];
+      user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
+    }
 
     if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage.invalidToken, {}, {}));
 
