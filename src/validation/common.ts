@@ -15,3 +15,10 @@ export const baseApiSchema = {
   locationId: objectId().optional().allow("", null),
   isActive: Joi.boolean().optional(),
 };
+
+export const commonContactSchema = Joi.object().keys({
+  countryCode: Joi.string().optional(),
+  phoneNo: Joi.string()
+    .pattern(/^\d{6,15}$/)
+    .optional(),
+});

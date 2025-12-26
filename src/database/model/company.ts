@@ -1,16 +1,25 @@
-import mongoose from 'mongoose'
-import { baseCommonFields } from './base';
+import mongoose from "mongoose";
+import { baseCommonFields, baseSchemaOptions } from "./base";
 
 const companySchema: any = new mongoose.Schema(
   {
     // ******************* Basic Details *******************
+    accountingType: { type: String },
     name: { type: String },
     displayName: { type: String },
     contactName: { type: String },
-    ownerNo: { type: String },
-    email: { type: String },
+    // ownerNo: { type: String },
+    ownerNo: {
+      countryCode: { type: String },
+      phoneNo: { type: Number },
+    },
     supportEmail: { type: String },
-    phoneNo: { type: String },
+    email: { type: String },
+    // phoneNo: { type: String },
+    phoneNo: {
+      countryCode: { type: String },
+      phoneNo: { type: Number },
+    },
     customerCareNumber: { type: String },
 
     // ******************* Communication Details *******************
@@ -23,24 +32,24 @@ const companySchema: any = new mongoose.Schema(
     webSite: { type: String },
 
     // ******************* Bank Details *******************
-    bankName: { type: String },
-    bankIFSC: { type: String },
-    upiId: { type: String },
-    branch: { type: mongoose.Schema.Types.ObjectId, ref: "branch", default: null },
-    accountHolderName: { type: String },
-    bankAccountNumber: { type: String },
+    bankId: { type: mongoose.Schema.Types.ObjectId, ref: "bank" },
+    // bankName: { type: String },
+    // bankIFSC: { type: String },
+    // upiId: { type: String },
+    // branchName: { type: String },
+    // accountHolderName: { type: String },
+    // bankAccountNumber: { type: String },
 
-    // ******************* Additional Details *******************
+    // ******************* Other Details *******************
     userName: { type: String },
-    PanNo: { type: String },
-    GSTRegistrationType: { type: String },
-    GSTIdentificationNumber: { type: String },
+    panNo: { type: String },
+    gstRegistrationType: { type: String },
+    gstIdentificationNumber: { type: String },
     financialMonthInterval: { type: String },
     defaultFinancialYear: { type: String },
 
-    // *******************  Other Details *******************
     corporateIdentificationNumber: { type: String },
-    letterOfUndertaking: { type: String },
+    letterOfUndertaking: { type: String }, 
     taxDeductionAndCollectionAccountNumber: { type: String },
     importerExporterCode: { type: String },
     outletSize: { type: String },
@@ -53,30 +62,20 @@ const companySchema: any = new mongoose.Schema(
 
     decimalPoint: { type: String },
 
+    fssaiNo: { type: String, length: 14 },
+
     // ******************* Logo *******************
     logo: { type: String },
     waterMark: { type: String },
     reportFormatLogo: { type: String },
     authorizedSignature: { type: String },
-    userIds: [{ type: mongoose.Types.ObjectId, ref: 'user', required: true }],
-    roles: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "role",
-        default: []
-      }
-    ],
-    employees: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "employee",
-        default: []
-      }
-    ],
+    userIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "user", required: true }],
+    roles: [{ type: mongoose.Schema.Types.ObjectId, ref: "role", default: [] }],
+    employees: [{ type: mongoose.Schema.Types.ObjectId, ref: "employee", default: [] }],
 
     ...baseCommonFields,
   },
-  { timestamps: true, versionKey: false }
+  baseSchemaOptions
 );
 
 export const companyModel = mongoose.model("company", companySchema);

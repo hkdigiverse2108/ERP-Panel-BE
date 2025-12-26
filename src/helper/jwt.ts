@@ -21,7 +21,7 @@ export const adminJwt = async (req, res, next) => {
     try {
       decoded = jwt.verify(token, jwtSecretKey);
     } catch (error) {
-      if (error?.name == "TokenExpiredError") return res.status(HTTP_STATUS.TOKEN_EXPIRED).json(new apiResponse(HTTP_STATUS.TOKEN_EXPIRED, responseMessage?.tokenExpire, {}, {}));
+      if (error?.name == "TokenExpiredError") return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.tokenExpire, {}, {}));
       return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
     }
 
@@ -62,7 +62,7 @@ export const userJwt = async (req, res, next) => {
     try {
       decoded = jwt.verify(token, jwtSecretKey);
     } catch (error) {
-      if (error?.name == "TokenExpiredError") return res.status(HTTP_STATUS.TOKEN_EXPIRED).json(new apiResponse(HTTP_STATUS.TOKEN_EXPIRED, responseMessage?.tokenExpire, {}, {}));
+      if (error?.name == "TokenExpiredError") return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.tokenExpire, {}, {}));
       return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
     }
 

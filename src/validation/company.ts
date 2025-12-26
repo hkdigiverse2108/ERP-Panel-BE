@@ -1,42 +1,45 @@
 import Joi from "joi";
-import { objectId } from "./common";
+import { commonContactSchema, objectId } from "./common";
 
 export const addCompanySchema = Joi.object().keys({
   // ******************* Basic Details *******************
-  name: Joi.string().optional(),
-  displayName: Joi.string().optional(),
-  contactName: Joi.string().optional(),
-  userIds: Joi.array().items(Joi.string()).optional(),
-  employees: Joi.array().items(Joi.string()).optional(),
-  roles: Joi.array().items(Joi.string()).optional(),
-  ownerNo: Joi.string().optional(),
-  email: Joi.string().optional(),
-  supportEmail: Joi.string().optional(),
-  phoneNo: Joi.string().optional(),
+  accountingType: Joi.string().optional(),
+  name: Joi.string().required(),
+  displayName: Joi.string().required(),
+  contactName: Joi.string().required(),
+  ownerNo: commonContactSchema.required(),
+  supportEmail: Joi.string().required(),
+  email: Joi.string().required(),
+  phoneNo: commonContactSchema.required(),
   customerCareNumber: Joi.string().optional(),
 
+  roles: Joi.array().items(Joi.string()).optional(),
+  userIds: Joi.array().items(Joi.string()).optional(),
+  employees: Joi.array().items(Joi.string()).optional(),
+
   // ******************* Communication Details *******************
-  address: Joi.string().optional(),
-  city: Joi.string().optional(),
-  state: Joi.string().optional(),
-  country: Joi.string().optional(),
-  pinCode: Joi.number().optional(),
+  address: Joi.string().required(),
+  city: Joi.string().required(),
+  state: Joi.string().required(),
+  country: Joi.string().required(),
+  pinCode: Joi.number().required(),
   timeZone: Joi.string().optional(),
   webSite: Joi.string().optional(),
 
   // ******************* Bank Details *******************
-  bankName: Joi.string().optional(),
-  bankIFSC: Joi.string().optional(),
-  upiId: Joi.string().optional(),
-  branch: Joi.array().items(Joi.string().optional()).optional(),
-  accountHolderName: Joi.string().optional(),
-  bankAccountNumber: Joi.string().optional(),
+  bankId: objectId().optional(),
+  // accountHolderName: Joi.string().required(),
+  // bankAccountNumber: Joi.string().required(),
+  // bankName: Joi.string().required(),
+  // bankIFSC: Joi.string().required(),
+  // upiId: Joi.string().optional(),
+  // branchName: Joi.string().optional().allow("", null),
 
   // ******************* Additional Details *******************
   userName: Joi.string().optional(),
-  PanNo: Joi.string().optional(),
-  GSTRegistrationType: Joi.string().optional(),
-  GSTIdentificationNumber: Joi.string().optional(),
+  panNo: Joi.string().optional(),
+  gstRegistrationType: Joi.string().optional(),
+  gstIdentificationNumber: Joi.string().optional(),
   financialMonthInterval: Joi.string().optional(),
   defaultFinancialYear: Joi.string().optional(),
 
@@ -55,27 +58,34 @@ export const addCompanySchema = Joi.object().keys({
 
   decimalPoint: Joi.string().optional(),
 
+  fssaiNo: Joi.string()
+    .pattern(/^\d{14}$/)
+    .optional()
+    .allow("", null),
+
   // ******************* Logo *******************
-  logo: Joi.string().optional().allow(""),
-  waterMark: Joi.string().optional().allow(""),
-  reportFormatLogo: Joi.string().optional().allow(""),
-  authorizedSignature: Joi.string().optional().allow(""),
+  logo: Joi.string().optional().allow("", null),
+  waterMark: Joi.string().optional().allow("", null),
+  reportFormatLogo: Joi.string().optional().allow("", null),
+  authorizedSignature: Joi.string().optional().allow("", null),
 });
 
 export const editCompanySchema = Joi.object().keys({
   companyId: objectId().required(),
-  // ******************* Basic Details *******************
+
+  accountingType: Joi.string().optional(),
   name: Joi.string().optional(),
   displayName: Joi.string().optional(),
   contactName: Joi.string().optional(),
-  userIds: Joi.array().items(Joi.string()).optional(),
-  roles: Joi.array().items(Joi.string()).optional(),
-  employees: Joi.array().items(Joi.string()).optional(),
-  ownerNo: Joi.string().optional(),
-  email: Joi.string().optional(),
+  ownerNo: commonContactSchema.optional(),
   supportEmail: Joi.string().optional(),
-  phoneNo: Joi.string().optional(),
-  customerCareNumber: Joi.string().optional(),
+  email: Joi.string().optional(),
+  phoneNo: commonContactSchema.optional(),
+  customerCareNumber: Joi.string().optional().allow("", null),
+
+  roles: Joi.array().items(Joi.string()).optional(),
+  userIds: Joi.array().items(Joi.string()).optional(),
+  employees: Joi.array().items(Joi.string()).optional(),
 
   // ******************* Communication Details *******************
   address: Joi.string().optional(),
@@ -83,31 +93,32 @@ export const editCompanySchema = Joi.object().keys({
   state: Joi.string().optional(),
   country: Joi.string().optional(),
   pinCode: Joi.number().optional(),
-  timeZone: Joi.string().optional(),
-  webSite: Joi.string().optional(),
+  timeZone: Joi.string().optional().allow("", null),
+  webSite: Joi.string().optional().allow("", null),
 
   // ******************* Bank Details *******************
-  bankName: Joi.string().optional(),
-  bankIFSC: Joi.string().optional(),
-  upiId: Joi.string().optional(),
-  branch: Joi.array().items(Joi.string().optional()).optional(),
-  accountHolderName: Joi.string().optional(),
-  bankAccountNumber: Joi.string().optional(),
+  bankId: objectId().optional(),
+  // accountHolderName: Joi.string().optional(),
+  // bankAccountNumber: Joi.string().optional(),
+  // bankName: Joi.string().optional(),
+  // bankIFSC: Joi.string().optional(),
+  // upiId: Joi.string().optional(),
+  // branchName: Joi.string().optional().allow("", null),
 
   // ******************* Additional Details *******************
-  userName: Joi.string().optional(),
-  PanNo: Joi.string().optional(),
-  GSTRegistrationType: Joi.string().optional(),
-  GSTIdentificationNumber: Joi.string().optional(),
-  financialMonthInterval: Joi.string().optional(),
+  userName: Joi.string().optional().allow("", null),
+  panNo: Joi.string().optional().allow("", null),
+  gstRegistrationType: Joi.string().optional().allow("", null),
+  gstIdentificationNumber: Joi.string().optional().allow("", null),
+  financialMonthInterval: Joi.string().optional().allow("", null),
   defaultFinancialYear: Joi.string().optional(),
 
-  // ******************* Other Details *******************
-  corporateIdentificationNumber: Joi.string().optional(),
-  letterOfUndertaking: Joi.string().optional(),
-  taxDeductionAndCollectionAccountNumber: Joi.string().optional(),
-  importerExporterCode: Joi.string().optional(),
-  outletSize: Joi.string().optional(),
+  // *******************  Other Details *******************
+  corporateIdentificationNumber: Joi.string().optional().allow("", null),
+  letterOfUndertaking: Joi.string().optional().allow("", null),
+  taxDeductionAndCollectionAccountNumber: Joi.string().optional().allow("", null),
+  importerExporterCode: Joi.string().optional().allow("", null),
+  outletSize: Joi.string().optional().allow("", null),
 
   enableFeedbackModule: Joi.boolean().optional(),
   allowRoundOff: Joi.boolean().optional(),
@@ -117,11 +128,16 @@ export const editCompanySchema = Joi.object().keys({
 
   decimalPoint: Joi.string().optional(),
 
+  fssaiNo: Joi.string()
+    .pattern(/^\d{14}$/)
+    .optional()
+    .allow("", null),
+
   // ******************* Logo *******************
-  logo: Joi.string().optional().allow(""),
-  waterMark: Joi.string().optional().allow(""),
-  reportFormatLogo: Joi.string().optional().allow(""),
-  authorizedSignature: Joi.string().optional().allow(""),
+  logo: Joi.string().optional().allow("", null),
+  waterMark: Joi.string().optional().allow("", null),
+  reportFormatLogo: Joi.string().optional().allow("", null),
+  authorizedSignature: Joi.string().optional().allow("", null),
 });
 
 export const deleteCompanySchema = Joi.object().keys({
