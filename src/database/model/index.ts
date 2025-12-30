@@ -26,7 +26,7 @@ export * from "./salesOrder";
 export * from "./supplierBill";
 export * from "./uom";
 export * from "./tax";
-export * from "./stocks";
+export * from "./stock";
 export * from "./stockVerification";
 export * from "./voucher";
 export * from "./announcement";
