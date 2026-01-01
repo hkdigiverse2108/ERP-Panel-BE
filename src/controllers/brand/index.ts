@@ -175,7 +175,7 @@ export const getBrandTree = async (req, res) => {
       },
     ]);
 
-    console.log("Brands", brands);
+    
 
     const buildTree = (root) => {
       const map = {};
@@ -199,10 +199,9 @@ export const getBrandTree = async (req, res) => {
         }
       });
 
-      console.log("buildTree", buildTree);
+
 
       const children = Object.values(map).filter((brand: any) => brand.parentBrandId?.toString() === root._id.toString());
-      console.log("children", children);
 
       return {
         _id: root._id,
@@ -213,7 +212,7 @@ export const getBrandTree = async (req, res) => {
     };
 
     const response = brands.map(buildTree);
-    console.log("response", response);
+
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Brand tree"), response, {}));
   } catch (error) {

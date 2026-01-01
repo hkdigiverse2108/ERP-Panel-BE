@@ -1,4 +1,4 @@
-import Joi, { object } from "joi";
+import Joi from "joi";
 import { PRODUCT_EXPIRY_TYPE, PRODUCT_STATUS, PRODUCT_TYPE } from "../common";
 import { baseApiSchema, objectId } from "./common";
 
@@ -22,9 +22,26 @@ export const addProductSchema = Joi.object().keys({
   uomId: objectId().required(),
 
   mrp: Joi.number().min(0).default(0).optional(),
-  sellingPrice: Joi.number().min(0).default(0).optional(),
+  sellingPrice: Joi.number().min(0).default(0).optional().default(0),
   purchasePrice: Joi.number().min(0).default(0).optional(),
   landingCost: Joi.number().min(0).default(0).optional(),
+
+  netWeightUnit: Joi.string().optional(),
+  masterQty: Joi.number().optional(),
+  minimumQty: Joi.number().optional(),
+  sellingDiscount: Joi.number().optional(),
+  sellingMargin: Joi.number().optional(),
+  retailerDiscount: Joi.number().optional(),
+  retailerPrice: Joi.number().optional(),
+  retailerMargin: Joi.number().optional(),
+  wholesalerDiscount: Joi.number().optional(),
+  wholesalerPrice: Joi.number().optional(),
+  wholesalerMargin: Joi.number().optional(),
+  onlinePrice: Joi.number().optional(),
+  openingQty: Joi.number().optional(),
+  mfgDate: Joi.string().optional().allow("", null),
+  isExpiryProductSaleable: Joi.boolean().optional().allow("", null),
+  additionalInfo: Joi.string().optional().allow("", null),
 
   hsnCode: Joi.string().optional(),
   purchaseTaxId: objectId().optional(),
@@ -46,7 +63,7 @@ export const addProductSchema = Joi.object().keys({
   netWeight: Joi.number().optional(),
   nutritionInfo: Joi.string().optional(),
   ingredients: Joi.string().optional(),
-  image: Joi.string().optional(),
+  images: Joi.array().items(Joi.string()).optional(),
 
   status: Joi.string()
     .valid(...Object.values(PRODUCT_STATUS))
@@ -80,6 +97,23 @@ export const editProductSchema = Joi.object().keys({
   purchasePrice: Joi.number().min(0).optional(),
   landingCost: Joi.number().min(0).optional(),
 
+  netWeightUnit: Joi.string().optional().allow("", null),
+  masterQty: Joi.number().optional().allow("", null),
+  minimumQty: Joi.number().optional().allow("", null),
+  sellingDiscount: Joi.number().optional().allow("", null),
+  sellingMargin: Joi.number().optional().allow("", null),
+  retailerDiscount: Joi.number().optional().allow("", null),
+  retailerPrice: Joi.number().optional().allow("", null),
+  retailerMargin: Joi.number().optional().allow("", null),
+  wholesalerDiscount: Joi.number().optional().allow("", null),
+  wholesalerPrice: Joi.number().optional().allow("", null),
+  wholesalerMargin: Joi.number().optional().allow("", null),
+  onlinePrice: Joi.number().optional().allow("", null),
+  openingQty: Joi.number().optional().allow("", null),
+  mfgDate: Joi.string().optional().allow("", null),
+  isExpiryProductSaleable: Joi.boolean().optional().allow("", null),
+  additionalInfo: Joi.string().optional().allow("", null),
+
   hsnCode: Joi.string().optional(),
   purchaseTaxId: objectId().optional(),
   salesTaxId: objectId().optional(),
@@ -100,7 +134,7 @@ export const editProductSchema = Joi.object().keys({
   netWeight: Joi.number().optional(),
   nutritionInfo: Joi.string().optional(),
   ingredients: Joi.string().optional(),
-  image: Joi.string().optional(),
+  images: Joi.array().items(Joi.string()).optional(),
 
   status: Joi.string()
     .valid(...Object.values(PRODUCT_STATUS))

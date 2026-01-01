@@ -1,182 +1,170 @@
 import Joi from "joi";
-import { CONTACT_TYPE, CUSTOMER_TYPE, SUPPLIER_TYPE } from "../common";
-import { objectId } from "./common";
+import { baseApiSchema, commonContactSchema, objectId } from "./common";
+import { CONTACT_STATUS, CONTACT_TYPE, CUSTOMER_TYPE, SUPPLIER_TYPE } from "../common";
 
 const addressSchema = Joi.object({
-  GSTType: Joi.string().optional(),
-  GSTIn: Joi.string().required(),
+  gstType: Joi.string().optional().allow("", null),
+  gstIn: Joi.string().optional().allow("", null),
 
-  object: Joi.array(),
+  contactFirstName: Joi.string().optional().allow("", null),
+  contactLastName: Joi.string().optional().allow("", null),
+  contactCompanyName: Joi.string().optional().allow("", null),
 
-  contactFirstName: Joi.string().optional(),
-  contactLastName: Joi.string().optional(),
-  contactCompanyName: Joi.string().optional(),
+  contactNo: commonContactSchema.optional().allow("", null),
 
-  contactNo: Joi.string().pattern(/^[0-9]{10}$/).optional(),
-  contactEmail: Joi.string().email().optional(),
+  contactEmail: Joi.string().email().optional().allow("", null),
 
-  addressLine1: Joi.string().optional(),
-  addressLine2: Joi.string().optional(),
+  addressLine1: Joi.string().optional().allow("", null),
+  addressLine2: Joi.string().optional().allow("", null),
 
-  state: Joi.string().required(),
-  city: Joi.string().required(),
+  state: Joi.string().optional().allow("", null),
+  city: Joi.string().optional().allow("", null),
 
-  country: Joi.object({
-    id: Joi.string().optional(),
-    name: Joi.string().optional(),
-  }).required(),
-
-  pinCode: Joi.string().pattern(/^[0-9]{6}$/).optional(),
+  country: Joi.string().optional().allow("", null),
+  pinCode: Joi.string()
+    .pattern(/^[0-9]{6}$/)
+    .optional()
+    .allow("", null),
+  tanNo: Joi.string().optional().allow("", null),
 });
 
 export const addContactSchema = Joi.object({
-  type: Joi.string()
+  contactType: Joi.string()
     .valid(...Object.values(CONTACT_TYPE))
     .required(),
 
-  firstName: Joi.string().when("type", {
-    is: "customer",
-    then: Joi.required(),
-    otherwise: Joi.optional(),
-  }),
-
+  firstName: Joi.string().required(),
   lastName: Joi.string().optional(),
+  companyName: Joi.string().optional(),
+  // contactPerson: Joi.string().optional(),
 
-  companyName: Joi.string().when("type", {
-    is: Joi.valid("supplier", "transporter"),
-    then: Joi.required(),
-    otherwise: Joi.optional(),
-  }),
-
-  phoneNo: Joi.string()
-    .pattern(/^[0-9]{10}$/)
-    .required(),
-
-  whatsappNo: Joi.string()
-    .pattern(/^[0-9]{10}$/)
-    .optional(),
+  phoneNo: commonContactSchema.required(),
+  whatsappNo: commonContactSchema.optional(),
 
   email: Joi.string().email().optional(),
+  telephoneNo: Joi.string().optional(),
 
-  panNo: Joi.string().required(),
+  panNo: Joi.string().optional(),
 
-  // ---------------- Customer Only ----------------
+  dob: Joi.date().optional(),
+  anniversaryDate: Joi.date().optional(),
+
+  paymentMode: Joi.string().optional(),
+  paymentTerms: Joi.string().optional(),
+
+  openingBalance: Joi.object({
+    debitBalance: Joi.string().optional(),
+    creditBalance: Joi.string().optional(),
+  }).optional(),
+
+  customerCategory: Joi.string().optional(),
   customerType: Joi.string()
     .valid(...Object.values(CUSTOMER_TYPE))
-    .when("type", {
-      is: "customer",
+    .when("contactType", {
+      is: CONTACT_TYPE.CUSTOMER,
       then: Joi.required(),
       otherwise: Joi.forbidden(),
     }),
 
-  productDetails: Joi.array()
-    .items(objectId().optional())
-    .when("type", {
-      is: "customer",
-      then: Joi.optional(),
-      otherwise: Joi.forbidden(),
-    }),
-
-  // ---------------- Supplier Only ----------------
   supplierType: Joi.string()
     .valid(...Object.values(SUPPLIER_TYPE))
-    .when("type", {
-      is: "supplier",
+    .when("contactType", {
+      is: CONTACT_TYPE.SUPPLIER,
       then: Joi.required(),
       otherwise: Joi.forbidden(),
     }),
 
+  transporterId: Joi.string().when("contactType", {
+    is: CONTACT_TYPE.TRANSPORTER,
+    then: Joi.required(),
+    otherwise: Joi.forbidden(),
+  }),
+
+  productDetails: Joi.array().items(Joi.string()).optional(),
+
   bankDetails: Joi.object({
-    IFSCCode: Joi.string().optional(),
+    ifscCode: Joi.string().optional(),
     name: Joi.string().optional(),
     branch: Joi.string().optional(),
     accountNumber: Joi.string().optional(),
-  }).when("type", {
-    is: "supplier",
-    then: Joi.optional(),
-    otherwise: Joi.forbidden(),
-  }),
+  }).optional(),
 
-  // ---------------- Transporter Only ----------------
-  transporterId: Joi.string().when("type", {
-    is: "transporter",
-    then: Joi.required(),
-    otherwise: Joi.forbidden(),
-  }),
+  addressDetails: Joi.array().items(addressSchema).optional(),
 
-  // ---------------- Address ----------------
-  addressDetails: Joi.array()
-    .items(addressSchema)
+  remarks: Joi.string().optional(),
+  loyaltyPoints: Joi.number().optional(),
+  membershipId: objectId().optional(),
+
+  status: Joi.string()
+    .valid(...Object.values(CONTACT_STATUS))
+    .default(CONTACT_STATUS.ACTIVE),
+
+  ...baseApiSchema,
 });
 
-
 export const editContactSchema = Joi.object({
-  id: objectId().required(),
-  type: Joi.string()
+  contactId: objectId().required(),
+
+  contactType: Joi.string()
     .valid(...Object.values(CONTACT_TYPE))
     .optional(),
 
   firstName: Joi.string().optional(),
   lastName: Joi.string().optional(),
   companyName: Joi.string().optional(),
+  // contactPerson: Joi.string().optional(),
 
-  phoneNo: Joi.string()
-    .pattern(/^[0-9]{10}$/)
-    .optional(),
-
-  whatsappNo: Joi.string()
-    .pattern(/^[0-9]{10}$/)
-    .optional(),
+  phoneNo: commonContactSchema.optional(),
+  whatsappNo: commonContactSchema.optional(),
 
   email: Joi.string().email().optional(),
+  telephoneNo: Joi.string().optional(),
+
+  dob: Joi.date().optional(),
+  anniversaryDate: Joi.date().optional(),
+
+  paymentMode: Joi.string().optional(),
+  paymentTerms: Joi.string().optional(),
+
+  openingBalance: Joi.object({
+    debitBalance: Joi.string().optional(),
+    creditBalance: Joi.string().optional(),
+  }).optional(),
+
   panNo: Joi.string().optional(),
 
+  customerCategory: Joi.string().optional(),
   customerType: Joi.string()
     .valid(...Object.values(CUSTOMER_TYPE))
-    .when("type", {
-      is: "customer",
-      then: Joi.optional(),
-      otherwise: Joi.forbidden(),
-    }),
-
-  productDetails: Joi.array()
-    .items(Joi.string())
-    .when("type", {
-      is: "customer",
-      then: Joi.optional(),
-      otherwise: Joi.forbidden(),
-    }),
+    .optional(),
 
   supplierType: Joi.string()
     .valid(...Object.values(SUPPLIER_TYPE))
-    .when("type", {
-      is: "supplier",
-      then: Joi.optional(),
-      otherwise: Joi.forbidden(),
-    }),
+    .optional(),
+
+  transporterId: Joi.string().optional(),
+
+  productDetails: Joi.array().items(Joi.string()).optional(),
 
   bankDetails: Joi.object({
-    IFSCCode: Joi.string().optional(),
+    ifscCode: Joi.string().optional(),
     name: Joi.string().optional(),
     branch: Joi.string().optional(),
     accountNumber: Joi.string().optional(),
-  }).when("type", {
-    is: "supplier",
-    then: Joi.optional(),
-    otherwise: Joi.forbidden(),
-  }),
+  }).optional(),
 
-  transporterId: Joi.string().when("type", {
-    is: "transporter",
-    then: Joi.optional(),
-    otherwise: Joi.forbidden(),
-  }),
+  addressDetails: Joi.array().items(addressSchema).optional(),
 
-  addressDetails: Joi.array()
-    .items(addressSchema)
-    .optional(),
+  remarks: Joi.string().optional(),
+  loyaltyPoints: Joi.number().optional(),
+  membershipId: objectId().optional(),
+
+  status: Joi.string()
+    .valid(...Object.values(CONTACT_STATUS))
+    .default(CONTACT_STATUS.ACTIVE),
+
+  ...baseApiSchema,
 });
-
 
 export const deleteContactSchema = Joi.object().keys({
   id: objectId().required(),
@@ -185,4 +173,3 @@ export const deleteContactSchema = Joi.object().keys({
 export const getContactSchema = Joi.object().keys({
   id: objectId().required(),
 });
-

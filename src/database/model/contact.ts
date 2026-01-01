@@ -1,54 +1,82 @@
-import mongoose, { Schema } from 'mongoose';
-import { CONTACT_STATUS, CONTACT_TYPE, CUSTOMER_TYPE, SUPPLIER_TYPE } from '../../common';
-import { IContact } from '../../types';
-import { baseSchemaFields, baseSchemaOptions } from './base';
+import mongoose, { Schema } from "mongoose";
+import { CONTACT_STATUS, CONTACT_TYPE, CUSTOMER_TYPE, SUPPLIER_TYPE } from "../../common";
+import { IContact } from "../../types";
+import { baseSchemaFields, baseSchemaOptions } from "./base";
 
-const contactSchema = new Schema<IContact>({
+const contactSchema = new Schema<IContact>(
+  {
     ...baseSchemaFields,
     firstName: { type: String, required: true, index: true },
     lastName: { type: String, index: true },
     companyName: { type: String },
-    contactPerson: { type: String },
-    phoneNo: { type: String, required: true, index: true },
-    whatsappNo: { type: String },
     email: { type: String },
-    gstin: { type: String },
-    transporterId: { type: String },
-    productDetails: [{ type: String }],
+    // contactPerson: { type: String },
+    panNo: { type: String },
+    telephoneNo: { type: String },
+    remarks: { type: String },
+    phoneNo: {
+      countryCode: { type: String },
+      phoneNo: { type: Number },
+    },
+    whatsappNo: {
+      countryCode: { type: String },
+      phoneNo: { type: Number },
+    },
+    dob: { type: Date },
+    anniversaryDate: { type: Date },
+
+    paymentMode: { type: String },
+    paymentTerms: { type: String },
+    openingBalance: {
+      debitBalance: { type: String },
+      creditBalance: { type: String },
+    },
+
     addressDetails: [
-        {
-            GSTType: { type: String },
-            GSTIn: { type: String, required: true, unique: true },
-            contactFirstName: { type: String },
-            contactLastName: { type: String },
-            contactCompanyName: { type: String },
-            contactNo: { type: String },
-            contactEmail: { type: String },
-            addressLine1: { type: String },
-            addressLine2: { type: String },
-            state: { type: String, required: true },
-            city: { type: String, required: true },
-            TANNo: { type: String },
-            country: {
-                id: { type: String },
-                name: { type: String },
-            },
-            pinCode: { type: String },
-        }
+      {
+        gstType: { type: String },
+        gstIn: { type: String },
+        contactFirstName: { type: String },
+        contactLastName: { type: String },
+        contactCompanyName: { type: String },
+        contactNo: {
+          countryCode: { type: String },
+          phoneNo: { type: Number },
+        },
+        contactEmail: { type: String },
+        addressLine1: { type: String },
+        addressLine2: { type: String },
+        state: { type: String },
+        city: { type: String },
+        tanNo: { type: String },
+        country: { type: String },
+        pinCode: { type: String },
+      },
     ],
     bankDetails: {
-        IFSCCode: { type: String },
-        name: { type: String },
-        branch: { type: String },
-        accountNumber: { type: String },
+      ifscCode: { type: String },
+      name: { type: String },
+      branch: { type: String },
+      accountNumber: { type: String },
     },
-    panNo: { type: String },
-    type: { type: String, enum: Object.values(CONTACT_TYPE), default: CONTACT_TYPE.CUSTOMER },
-    customerType: { type: String, enum: Object.values(CUSTOMER_TYPE) },
-    supplierType: { type: String, enum: Object.values(SUPPLIER_TYPE) },
+
+    productDetails: [{ type: String }],
+    contactType: { type: String, enum: Object.values(CONTACT_TYPE), default: CONTACT_TYPE.CUSTOMER },
     status: { type: String, enum: Object.values(CONTACT_STATUS), default: CONTACT_STATUS.ACTIVE },
     loyaltyPoints: { type: Number, default: 0 },
-    membershipId: { type: Schema.Types.ObjectId, ref: 'membership' }
-}, baseSchemaOptions);
+    membershipId: { type: Schema.Types.ObjectId, ref: "membership" },
+    // ************************* customer *************************
 
-export const contactModel = mongoose.model<IContact>('contact', contactSchema);
+    customerCategory: { type: String },
+    customerType: { type: String, enum: Object.values(CUSTOMER_TYPE) },
+
+    // ************************* Supplier *************************
+    supplierType: { type: String, enum: Object.values(SUPPLIER_TYPE) },
+
+    // ************************* Transport *************************
+    transporterId: { type: String },
+  },
+  baseSchemaOptions
+);
+
+export const contactModel = mongoose.model<IContact>("contact", contactSchema);

@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
 import { branchModel, brandModel, categoryModel, companyModel, productModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation/product";
@@ -7,10 +7,16 @@ export const addProduct = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    const companyId = user?.companyId?._id;
+    const userRole = user?.role?.name;
+
+    let companyId = user?.companyId?._id;
     let { error, value } = addProductSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    if (userRole === USER_ROLES.SUPER_ADMIN) {
+      companyId = value?.companyId;
+    }
 
     if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
 

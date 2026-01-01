@@ -2,10 +2,10 @@ import Joi from "joi";
 import { objectId } from "./common";
 
 export const addStockSchema = Joi.object().keys({
+  productId: objectId().required(),
   companyId: objectId().optional(),
   branchId: objectId().optional(),
   locationId: objectId().optional(),
-  productId: objectId().required(),
   variantId: objectId().optional(),
   batchNo: Joi.string().optional(),
   qty: Joi.number().min(0).default(0),
