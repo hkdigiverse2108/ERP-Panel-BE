@@ -3,7 +3,7 @@ import { baseApiSchema, objectId } from "./common";
 
 export const addBankSchema = Joi.object().keys({
   ...baseApiSchema,
-  bankName: Joi.string().required(),
+  name: Joi.string().required(),
   ifscCode: Joi.string().required(),
   branchName: Joi.string().required(),
   accountHolderName: Joi.string().required(),
@@ -28,7 +28,7 @@ export const addBankSchema = Joi.object().keys({
 export const editBankSchema = Joi.object().keys({
   bankId: objectId().required(),
   ...baseApiSchema,
-  bankName: Joi.string().optional(),
+  name: Joi.string().optional(),
   ifscCode: Joi.string().optional(),
   branchName: Joi.string().optional(),
   accountHolderName: Joi.string().optional(),

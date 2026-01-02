@@ -22,7 +22,7 @@ export interface IEmployee extends IBase {
     permissions: IPermissions
     bankDetails: {
         bankHolderName: string;
-        bankName: string;
+        name: string;
         branch: string;
         accountNumber: string;
         IFSCCode: string;

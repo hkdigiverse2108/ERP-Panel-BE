@@ -159,10 +159,9 @@ export const getAllCompany = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "bankId", select: "bankName" },
+        { path: "bankId", select: "name" },
         { path: "userIds", select: "fullName" },
         { path: "roles", select: "name" },
-        { path: "employees", select: "name" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -200,10 +199,9 @@ export const getCompanyById = async (req, res) => {
       {},
       {
         populate: [
-          { path: "bankId", select: "bankName" },
+          { path: "bankId", select: "name" },
           { path: "userIds", select: "fullName" },
           { path: "roles", select: "name" },
-          { path: "employees", select: "name" },
         ],
       }
     );

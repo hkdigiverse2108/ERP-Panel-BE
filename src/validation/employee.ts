@@ -19,7 +19,7 @@ const editAddressSchemaOptional = Joi.object({
 
 const bankDetailsSchema = Joi.object({
   bankHolderName: Joi.string().allow("", null).optional(),
-  bankName: Joi.string().allow("", null).optional(),
+  name: Joi.string().allow("", null).optional(),
   branchName: Joi.string().allow("", null).optional(),
   accountNumber: Joi.number().optional(),
   IFSCCode: Joi.string().allow("", null).optional(),

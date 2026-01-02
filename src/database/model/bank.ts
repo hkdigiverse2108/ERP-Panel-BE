@@ -3,7 +3,7 @@ import { baseSchemaFields, baseSchemaOptions } from "./base";
 
 const bankSchema = new mongoose.Schema(
   {
-    bankName: { type: String },
+    name: { type: String },
     ifscCode: { type: String },
     branchName: { type: String },
     accountHolderName: { type: String },

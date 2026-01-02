@@ -34,7 +34,7 @@ const companySchema: any = new mongoose.Schema(
     // ******************* Bank Details *******************
     bankId: { type: mongoose.Schema.Types.ObjectId, ref: "bank" },
     upiId: { type: String },
-    // bankName: { type: String },
+    // name: { type: String },
     // bankIFSC: { type: String },
     // branchName: { type: String },
     // accountHolderName: { type: String },

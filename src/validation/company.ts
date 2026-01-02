@@ -15,7 +15,6 @@ export const addCompanySchema = Joi.object().keys({
 
   roles: Joi.array().items(Joi.string()).optional(),
   userIds: Joi.array().items(Joi.string()).optional(),
-  employees: Joi.array().items(Joi.string()).optional(),
 
   // ******************* Communication Details *******************
   address: Joi.string().required(),
@@ -28,10 +27,10 @@ export const addCompanySchema = Joi.object().keys({
 
   // ******************* Bank Details *******************
   bankId: objectId().optional(),
-  upiId: Joi.string().optional(), 
+  upiId: Joi.string().optional(),
   // accountHolderName: Joi.string().required(),
   // bankAccountNumber: Joi.string().required(),
-  // bankName: Joi.string().required(),
+  // name: Joi.string().required(),
   // bankIFSC: Joi.string().required(),
   // branchName: Joi.string().optional().allow("", null),
 
@@ -85,7 +84,6 @@ export const editCompanySchema = Joi.object().keys({
 
   roles: Joi.array().items(Joi.string()).optional(),
   userIds: Joi.array().items(Joi.string()).optional(),
-  employees: Joi.array().items(Joi.string()).optional(),
 
   // ******************* Communication Details *******************
   address: Joi.string().optional(),
@@ -101,7 +99,7 @@ export const editCompanySchema = Joi.object().keys({
   upiId: Joi.string().optional(),
   // accountHolderName: Joi.string().optional(),
   // bankAccountNumber: Joi.string().optional(),
-  // bankName: Joi.string().optional(),
+  // name: Joi.string().optional(),
   // bankIFSC: Joi.string().optional(),
   // branchName: Joi.string().optional().allow("", null),
 

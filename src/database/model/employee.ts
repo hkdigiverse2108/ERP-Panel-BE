@@ -7,7 +7,7 @@ const employeeSchema = new Schema<IEmployee>(
   {
     name: { type: String, required: true },
     phoneNo: { type: String, required: true },
-    email: { type: String, default: null }, // removed unique
+    email: { type: String, default: null }, 
     // designation: { type: String },
     role: { type: Schema.Types.ObjectId, ref: "role", default: null },
     username: { type: String },
@@ -22,7 +22,7 @@ const employeeSchema = new Schema<IEmployee>(
     },
     bankDetails: {
       bankHolderName: { type: String },
-      bankName: { type: String },
+      name: { type: String },
       branchName: { type: String },
       accountNumber: { type: String },
       IFSCCode: { type: String },

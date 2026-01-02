@@ -25,7 +25,7 @@ export interface IUser extends IBase {
   };
   bankDetails: {
     bankHolderName: string;
-    bankName: string;
+    name: string;
     branch: string;
     accountNumber: string;
     IFSCCode: string;
