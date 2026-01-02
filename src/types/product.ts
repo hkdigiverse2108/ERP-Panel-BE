@@ -2,70 +2,81 @@ import { Schema } from "mongoose";
 import { IBase } from "./base";
 
 export interface IProduct extends IBase {
-    itemCode: string;
-    barcode?: string;
-    name: string;
-    printName?: string;
-    slug: string;
-    autoGenerateItemCode?: boolean;
+  // Basic Info
+  itemCode?: string;
+  name: string;
+  printName?: string;
 
-    // Classification
-    categoryId: Schema.Types.ObjectId;
-    subCategoryId?: Schema.Types.ObjectId;
-    brandId?: Schema.Types.ObjectId;
-    subBrandId?: Schema.Types.ObjectId;
-    departmentId?: Schema.Types.ObjectId;
+  // Classification
+  categoryId?: Schema.Types.ObjectId;
+  subCategoryId?: Schema.Types.ObjectId;
+  brandId?: Schema.Types.ObjectId;
+  subBrandId?: Schema.Types.ObjectId;
 
-    // Type
-    productType: 'finished' | 'raw_material' | 'semi_finished' | 'service' | 'non_inventory';
+  // Product Type
+  productType: "finished" | "raw_material" | "semi_finished" | "service" | "non_inventory";
 
-    // Units & Pricing
-    uomId: Schema.Types.ObjectId;
-    netWeightUnit?: string;
-    masterQty?: number; // For B2B
-    minimumQty?: number;
-    
-    // Pricing Details
-    mrp: number;
-    sellingPrice: number;
-    sellingDiscount?: number;
-    sellingMargin?: number;
-    purchasePrice?: number;
-    landingCost?: number;
-    retailerDiscount?: number;
-    retailerPrice?: number;
-    retailerMargin?: number;
-    wholesalerDiscount?: number;
-    wholesalerPrice?: number;
-    wholesalerMargin?: number;
-    onlinePrice?: number;
-    openingQty?: number;
+  // Units & Quantity
+  uomId: Schema.Types.ObjectId;
+  netWeight?: number;
+  masterQty?: number;
+  minimumQty?: number;
+  openingQty?: number;
 
-    // Tax
-    hsnCode?: string;
-    purchaseTaxId?: Schema.Types.ObjectId;
-    salesTaxId?: Schema.Types.ObjectId;
-    isPurchaseTaxInclusive: boolean;
-    isSalesTaxInclusive: boolean;
-    cessPercentage?: number;
+  // Pricing Details
+  purchasePrice?: number;
+  landingCost?: number;
+  mrp?: number;
+  sellingPrice?: number;
+  sellingDiscount?: number;
+  sellingMargin?: number;
+  retailerDiscount?: number;
+  retailerPrice?: number;
+  retailerMargin?: number;
+  wholesalerDiscount?: number;
+  wholesalerPrice?: number;
+  wholesalerMargin?: number;
+  onlinePrice?: number;
 
-    // Inventory Control
-    manageBatch: boolean;
-    hasExpiry: boolean;
-    expiryDays?: number;
-    expiryType?: 'MFG' | 'EXP';
-    mfgDate?: Date;
-    isExpiryProductSaleable?: boolean;
+  // Tax
+  hsnCode?: string;
+  purchaseTaxId?: Schema.Types.ObjectId;
+  salesTaxId?: Schema.Types.ObjectId;
+  isPurchaseTaxIncluding: boolean;
+  isSalesTaxIncluding: boolean;
+  cessPercentage?: number;
 
-    // Details
-    description?: string;
-    shortDescription?: string;
-    netWeight?: number;
-    nutritionInfo?: string;
-    ingredients?: string;
-    image?: string;
-    images?: string[]; // Multiple images
-    additionalInfo?: string;
+  // Inventory & Batch Control
+  manageMultipleBatch: boolean;
+  hasExpiry: boolean;
+  isExpiryProductSaleable?: boolean;
 
-    status: 'active' | 'inactive';
+  //  Expiry (NEW – Meaningful & Final)
+  expiryDays?: number; // shelf life in days
+  calculateExpiryOn?: "MFG" | "EXP";
+  expiryReferenceDate?: Date; // MFG date or EXP date
+  calculatedExpiryDate?: Date; // backend calculated final expiry
+
+  // Product Details
+  description?: string;
+  shortDescription?: string;
+  ingredients?: string;
+  nutrition?: { name: string; value: string }[];
+
+  // Media
+  images?: string[];
+
+  // Misc
+  additionalInfo?: string;
+  
+  // departmentId?: Schema.Types.ObjectId; //  Commented in schema
+  // image?: string; //  single image not used
+  // netWeightUnit?: string; //  Commented in schema
+  //  Old expiry fields (deprecated)
+  // expiryType?: "MFG" | "EXP";
+  // mfgDate?: Date;
+  // slug?: string; //  Not in schema
+  // autoGenerateItemCode?: boolean; //  Not in schema
+  // Status
+  // status?: "active" | "inactive"; //  Commented in schema
 }

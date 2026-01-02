@@ -185,7 +185,7 @@ export const getAllStock = async (req, res) => {
 
     if (subBrandFilter) criteria.subBrandId = subBrandFilter;
 
-    if (departmentFilter) criteria.departmentId = departmentFilter;
+    // if (departmentFilter) criteria.departmentId = departmentFilter;
 
     if (hsnCodeFilter) criteria.hsnCode = hsnCodeFilter;
 

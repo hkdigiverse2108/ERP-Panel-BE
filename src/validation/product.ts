@@ -1,18 +1,16 @@
 import Joi from "joi";
-import { PRODUCT_EXPIRY_TYPE, PRODUCT_STATUS, PRODUCT_TYPE } from "../common";
+import { PRODUCT_EXPIRY_TYPE, PRODUCT_TYPE } from "../common";
 import { baseApiSchema, objectId } from "./common";
 
 export const addProductSchema = Joi.object().keys({
   itemCode: Joi.string().required(),
   name: Joi.string().required(),
   printName: Joi.string().optional(),
-  slug: Joi.string().optional(),
 
-  categoryId: objectId().required(),
+  categoryId: objectId().optional(),
   subCategoryId: objectId().optional(),
   brandId: objectId().optional(),
   subBrandId: objectId().optional(),
-  departmentId: objectId().optional(),
 
   productType: Joi.string()
     .valid(...Object.values(PRODUCT_TYPE))
@@ -21,70 +19,86 @@ export const addProductSchema = Joi.object().keys({
 
   uomId: objectId().required(),
 
-  mrp: Joi.number().min(0).default(0).optional(),
-  sellingPrice: Joi.number().min(0).default(0).optional().default(0),
   purchasePrice: Joi.number().min(0).default(0).optional(),
   landingCost: Joi.number().min(0).default(0).optional(),
-
-  netWeightUnit: Joi.string().optional(),
-  masterQty: Joi.number().optional(),
-  minimumQty: Joi.number().optional(),
-  sellingDiscount: Joi.number().optional(),
-  sellingMargin: Joi.number().optional(),
-  retailerDiscount: Joi.number().optional(),
-  retailerPrice: Joi.number().optional(),
-  retailerMargin: Joi.number().optional(),
-  wholesalerDiscount: Joi.number().optional(),
-  wholesalerPrice: Joi.number().optional(),
-  wholesalerMargin: Joi.number().optional(),
-  onlinePrice: Joi.number().optional(),
-  openingQty: Joi.number().optional(),
-  mfgDate: Joi.string().optional().allow("", null),
-  isExpiryProductSaleable: Joi.boolean().optional().allow("", null),
-  additionalInfo: Joi.string().optional().allow("", null),
+  mrp: Joi.number().min(0).default(0).optional(),
+  sellingPrice: Joi.number().min(0).default(0).optional(),
+  sellingDiscount: Joi.number().min(0).default(0).optional(),
+  sellingMargin: Joi.number().min(0).default(0).optional(),
+  retailerDiscount: Joi.number().min(0).default(0).optional(),
+  retailerPrice: Joi.number().min(0).default(0).optional(),
+  retailerMargin: Joi.number().min(0).default(0).optional(),
+  wholesalerDiscount: Joi.number().min(0).default(0).optional(),
+  wholesalerPrice: Joi.number().min(0).default(0).optional(),
+  wholesalerMargin: Joi.number().min(0).default(0).optional(),
+  onlinePrice: Joi.number().min(0).default(0).optional(),
+  minimumQty: Joi.number().min(0).default(0).optional(),
+  openingQty: Joi.number().min(0).default(0).optional(),
+  masterQty: Joi.number().min(0).default(0).optional(),
 
   hsnCode: Joi.string().optional(),
   purchaseTaxId: objectId().optional(),
   salesTaxId: objectId().optional(),
-
-  isPurchaseTaxInclusive: Joi.boolean().default(false).optional(),
-  isSalesTaxInclusive: Joi.boolean().default(false).optional(),
+  isPurchaseTaxIncluding: Joi.boolean().default(false).optional(),
+  isSalesTaxIncluding: Joi.boolean().default(false).optional(),
   cessPercentage: Joi.number().min(0).default(0).optional(),
 
-  manageBatch: Joi.boolean().default(false).optional(),
+  manageMultipleBatch: Joi.boolean().default(false).optional(),
+  isExpiryProductSaleable: Joi.boolean().default(true).optional(),
   hasExpiry: Joi.boolean().default(false).optional(),
-  expiryDays: Joi.number().optional(),
-  expiryType: Joi.string()
-    .valid(...Object.values(PRODUCT_EXPIRY_TYPE))
-    .optional(),
 
+  expiryDays: Joi.number().min(0).when("hasExpiry", {
+    is: true,
+    then: Joi.required(),
+    otherwise: Joi.optional(),
+  }),
+
+  calculateExpiryOn: Joi.string()
+    .valid(...Object.values(PRODUCT_EXPIRY_TYPE))
+    .when("hasExpiry", {
+      is: true,
+      then: Joi.required(),
+      otherwise: Joi.optional(),
+    }),
+
+  expiryReferenceDate: Joi.date().when("hasExpiry", {
+    is: true,
+    then: Joi.required(),
+    otherwise: Joi.optional(),
+  }),
+
+  ingredients: Joi.string().optional(),
   description: Joi.string().optional(),
   shortDescription: Joi.string().optional(),
-  netWeight: Joi.number().optional(),
-  nutritionInfo: Joi.string().optional(),
-  ingredients: Joi.string().optional(),
+  netWeight: Joi.number().min(0).optional(),
+
+  nutrition: Joi.array()
+    .items(
+      Joi.object({
+        name: Joi.string().required(),
+        value: Joi.string().required(),
+      })
+    )
+    .optional(),
+
   images: Joi.array().items(Joi.string()).optional(),
 
-  status: Joi.string()
-    .valid(...Object.values(PRODUCT_STATUS))
-    .default(PRODUCT_STATUS.ACTIVE)
-    .optional(),
+  additionalInfo: Joi.string().optional().allow("", null),
 
   ...baseApiSchema,
 });
 
 export const editProductSchema = Joi.object().keys({
   productId: objectId().required(),
+
   itemCode: Joi.string().optional(),
   name: Joi.string().optional(),
   printName: Joi.string().optional(),
-  slug: Joi.string().optional(),
 
   categoryId: objectId().optional(),
   subCategoryId: objectId().optional(),
   brandId: objectId().optional(),
   subBrandId: objectId().optional(),
-  departmentId: objectId().optional(),
 
   productType: Joi.string()
     .valid(...Object.values(PRODUCT_TYPE))
@@ -92,53 +106,63 @@ export const editProductSchema = Joi.object().keys({
 
   uomId: objectId().optional(),
 
-  mrp: Joi.number().min(0),
-  sellingPrice: Joi.number().min(0).optional(),
   purchasePrice: Joi.number().min(0).optional(),
   landingCost: Joi.number().min(0).optional(),
+  mrp: Joi.number().min(0).optional(),
+  sellingPrice: Joi.number().min(0).optional(),
+  sellingDiscount: Joi.number().min(0).optional(),
+  sellingMargin: Joi.number().min(0).optional(),
 
-  netWeightUnit: Joi.string().optional().allow("", null),
-  masterQty: Joi.number().optional().allow("", null),
-  minimumQty: Joi.number().optional().allow("", null),
-  sellingDiscount: Joi.number().optional().allow("", null),
-  sellingMargin: Joi.number().optional().allow("", null),
-  retailerDiscount: Joi.number().optional().allow("", null),
-  retailerPrice: Joi.number().optional().allow("", null),
-  retailerMargin: Joi.number().optional().allow("", null),
-  wholesalerDiscount: Joi.number().optional().allow("", null),
-  wholesalerPrice: Joi.number().optional().allow("", null),
-  wholesalerMargin: Joi.number().optional().allow("", null),
-  onlinePrice: Joi.number().optional().allow("", null),
-  openingQty: Joi.number().optional().allow("", null),
-  mfgDate: Joi.string().optional().allow("", null),
-  isExpiryProductSaleable: Joi.boolean().optional().allow("", null),
-  additionalInfo: Joi.string().optional().allow("", null),
+  retailerDiscount: Joi.number().min(0).optional(),
+  retailerPrice: Joi.number().min(0).optional(),
+  retailerMargin: Joi.number().min(0).optional(),
+
+  wholesalerDiscount: Joi.number().min(0).optional(),
+  wholesalerPrice: Joi.number().min(0).optional(),
+  wholesalerMargin: Joi.number().min(0).optional(),
+
+  onlinePrice: Joi.number().min(0).optional(),
+
+  minimumQty: Joi.number().min(0).optional(),
+  openingQty: Joi.number().min(0).optional(),
+  masterQty: Joi.number().min(0).optional(),
 
   hsnCode: Joi.string().optional(),
   purchaseTaxId: objectId().optional(),
   salesTaxId: objectId().optional(),
-
-  isPurchaseTaxInclusive: Joi.boolean().optional(),
-  isSalesTaxInclusive: Joi.boolean().optional(),
+  isPurchaseTaxIncluding: Joi.boolean().optional(),
+  isSalesTaxIncluding: Joi.boolean().optional(),
   cessPercentage: Joi.number().min(0).optional(),
 
-  manageBatch: Joi.boolean().optional(),
+  manageMultipleBatch: Joi.boolean().optional(),
+  isExpiryProductSaleable: Joi.boolean().optional(),
   hasExpiry: Joi.boolean().optional(),
-  expiryDays: Joi.number().optional(),
-  expiryType: Joi.string()
+
+  expiryDays: Joi.number().min(0).optional(),
+
+  calculateExpiryOn: Joi.string()
     .valid(...Object.values(PRODUCT_EXPIRY_TYPE))
     .optional(),
 
+  expiryReferenceDate: Joi.date().optional(),
+
+  ingredients: Joi.string().optional(),
   description: Joi.string().optional(),
   shortDescription: Joi.string().optional(),
-  netWeight: Joi.number().optional(),
-  nutritionInfo: Joi.string().optional(),
-  ingredients: Joi.string().optional(),
+  netWeight: Joi.number().min(0).optional(),
+
+  nutrition: Joi.array()
+    .items(
+      Joi.object({
+        name: Joi.string().required(),
+        value: Joi.string().required(),
+      })
+    )
+    .optional(),
+
   images: Joi.array().items(Joi.string()).optional(),
 
-  status: Joi.string()
-    .valid(...Object.values(PRODUCT_STATUS))
-    .optional(),
+  additionalInfo: Joi.string().optional().allow("", null),
 
   ...baseApiSchema,
 });

@@ -25,11 +25,10 @@ export const addProduct = async (req, res) => {
     if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     // if (!(await checkIdExist(branchModel, value.locationId, "Location", res))) return;
 
-    if (!(await checkIdExist(categoryModel, value?.categoryId, "Category", res))) return;
-    if (!(await checkIdExist(categoryModel, value?.subCategoryId, "Sub Category", res))) return;
-    if (!(await checkIdExist(brandModel, value?.brandId, "Brand", res))) return;
-    if (!(await checkIdExist(brandModel, value?.subBrandId, "Sub Brand", res))) return;
-    // if (!(await checkIdExist(departmentModel, value.departmentId, "Department", res))) return;
+    // if (!(await checkIdExist(categoryModel, value?.categoryId, "Category", res))) return;
+    // if (!(await checkIdExist(categoryModel, value?.subCategoryId, "Sub Category", res))) return;
+    // if (!(await checkIdExist(brandModel, value?.brandId, "Brand", res))) return;
+    // if (!(await checkIdExist(brandModel, value?.subBrandId, "Sub Brand", res))) return;
     // if (!(await checkIdExist(UOMModel, value.uomId, "UOM", res))) return;
     // if (!(await checkIdExist(taxModel, value.purchaseTaxId, "Purchase Tax", res))) return;
     // if (!(await checkIdExist(taxModel, value.salesTaxId, "Sales Tax", res))) return;
@@ -74,11 +73,10 @@ export const editProduct = async (req, res) => {
     if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     // if (!(await checkIdExist(branchModel, value.locationId, "Location", res))) return;
 
-    if (!(await checkIdExist(categoryModel, value?.categoryId, "Category", res))) return;
-    if (!(await checkIdExist(categoryModel, value?.subCategoryId, "Sub Category", res))) return;
-    if (!(await checkIdExist(brandModel, value?.brandId, "Brand", res))) return;
-    if (!(await checkIdExist(brandModel, value?.subBrandId, "Sub Brand", res))) return;
-    // if (!(await checkIdExist(departmentModel, value.departmentId, "Department", res))) return;
+    // if (!(await checkIdExist(categoryModel, value?.categoryId, "Category", res))) return;
+    // if (!(await checkIdExist(categoryModel, value?.subCategoryId, "Sub Category", res))) return;
+    // if (!(await checkIdExist(brandModel, value?.brandId, "Brand", res))) return;
+    // if (!(await checkIdExist(brandModel, value?.subBrandId, "Sub Brand", res))) return;
     // if (!(await checkIdExist(UOMModel, value.uomId, "UOM", res))) return;
     // if (!(await checkIdExist(taxModel, value.purchaseTaxId, "Purchase Tax", res))) return;
     // if (!(await checkIdExist(taxModel, value.salesTaxId, "Sales Tax", res))) return;
@@ -177,7 +175,7 @@ export const getAllProduct = async (req, res) => {
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
         { path: "subBrandId", select: "name" },
-        { path: "departmentId", select: "name" },
+        // { path: "departmentId", select: "name" },
         { path: "uomId", select: "name" },
         { path: "purchaseTaxId", select: "name" },
         { path: "salesTaxId", select: "name" },
@@ -229,7 +227,7 @@ export const getOneProduct = async (req, res) => {
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
-          { path: "departmentId", select: "name" },
+          // { path: "departmentId", select: "name" },
           { path: "uomId", select: "name" },
           { path: "purchaseTaxId", select: "name" },
           { path: "salesTaxId", select: "name" },
