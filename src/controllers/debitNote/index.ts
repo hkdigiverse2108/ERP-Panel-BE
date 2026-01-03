@@ -7,7 +7,7 @@ import { addDebitNoteSchema, deleteDebitNoteSchema, editDebitNoteSchema, getDebi
 const ObjectId = require("mongoose").Types.ObjectId;
 
 // Generate unique debit note number
-const generateDebitNoteNo = async (companyId: string): Promise<string> => {
+const generateDebitNoteNo = async (companyId): Promise<string> => {
   const count = await debitNoteModel.countDocuments({ companyId, isDeleted: false });
   const prefix = "DN";
   const number = String(count + 1).padStart(6, "0");

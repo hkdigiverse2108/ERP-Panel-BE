@@ -7,7 +7,7 @@ import { addSalesOrderSchema, deleteSalesOrderSchema, editSalesOrderSchema, getS
 const ObjectId = require("mongoose").Types.ObjectId;
 
 // Generate unique sales order number
-const generateSalesOrderNo = async (companyId: string): Promise<string> => {
+const generateSalesOrderNo = async (companyId): Promise<string> => {
   const count = await SalesOrderModel.countDocuments({ companyId, isDeleted: false });
   const prefix = "SO";
   const number = String(count + 1).padStart(6, "0");

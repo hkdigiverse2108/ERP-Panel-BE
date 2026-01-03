@@ -7,7 +7,7 @@ import { addSupplierBillSchema, deleteSupplierBillSchema, editSupplierBillSchema
 const ObjectId = require("mongoose").Types.ObjectId;
 
 // Generate unique supplier bill number
-const generateSupplierBillNo = async (companyId: string): Promise<string> => {
+const generateSupplierBillNo = async (companyId): Promise<string> => {
   const count = await supplierBillModel.countDocuments({ companyId, isDeleted: false });
   const prefix = "SB";
   const number = String(count + 1).padStart(6, "0");

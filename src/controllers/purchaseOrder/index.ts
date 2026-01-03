@@ -7,7 +7,7 @@ import { addPurchaseOrderSchema, deletePurchaseOrderSchema, editPurchaseOrderSch
 const ObjectId = require("mongoose").Types.ObjectId;
 
 // Generate unique purchase order number
-const generatePurchaseOrderNo = async (companyId: string): Promise<string> => {
+const generatePurchaseOrderNo = async (companyId): Promise<string> => {
   const count = await purchaseOrderModel.countDocuments({ companyId, isDeleted: false });
   const prefix = "PO";
   const number = String(count + 1).padStart(6, "0");

@@ -7,7 +7,7 @@ import { addEstimateSchema, deleteEstimateSchema, editEstimateSchema, getEstimat
 const ObjectId = require("mongoose").Types.ObjectId;
 
 // Generate unique estimate number
-const generateEstimateNo = async (companyId: string): Promise<string> => {
+const generateEstimateNo = async (companyId): Promise<string> => {
   const count = await EstimateModel.countDocuments({ companyId, isDeleted: false });
   const prefix = "EST";
   const number = String(count + 1).padStart(6, "0");

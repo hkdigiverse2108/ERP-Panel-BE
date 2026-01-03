@@ -7,7 +7,7 @@ import { addCreditNoteSchema, deleteCreditNoteSchema, editCreditNoteSchema, getC
 const ObjectId = require("mongoose").Types.ObjectId;
 
 // Generate unique credit note number
-const generateCreditNoteNo = async (companyId: string): Promise<string> => {
+const generateCreditNoteNo = async (companyId): Promise<string> => {
   const count = await creditNoteModel.countDocuments({ companyId, isDeleted: false });
   const prefix = "CN";
   const number = String(count + 1).padStart(6, "0");

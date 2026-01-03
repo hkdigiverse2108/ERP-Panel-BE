@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { objectId } from "./common";
-import { VOUCHAR_TYPE } from "../../common";
+import { VOUCHAR_TYPE } from "../common";
 
 const voucherEntrySchema = Joi.object().keys({
   accountId: objectId().required(),

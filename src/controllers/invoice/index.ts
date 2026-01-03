@@ -7,7 +7,7 @@ import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSch
 const ObjectId = require("mongoose").Types.ObjectId;
 
 // Generate unique invoice number
-const generateInvoiceNo = async (companyId: string): Promise<string> => {
+const generateInvoiceNo = async (companyId): Promise<string> => {
   const count = await InvoiceModel.countDocuments({ companyId, isDeleted: false });
   const prefix = "INV";
   const number = String(count + 1).padStart(6, "0");
