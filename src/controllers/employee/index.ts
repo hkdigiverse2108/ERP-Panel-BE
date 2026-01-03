@@ -221,7 +221,7 @@ export const getEmployeeById = async (req, res) => {
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Employee"), response, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).status(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -255,6 +255,54 @@ export const updateEmployeePermissions = async (req, res) => {
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Permissions updated.", employee, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).status(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+// Employee Dropdown API
+export const getEmployeeDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+    const { search } = req.query;
+
+    let criteria: any = { isDeleted: false, isActive: true };
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    // Search filter
+    if (search) {
+      criteria.$or = [
+        { firstName: { $regex: search, $options: "i" } },
+        { lastName: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { username: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const response = await getDataWithSorting(
+      userModel,
+      criteria,
+      { firstName: 1, lastName: 1, email: 1 },
+      {
+        sort: { firstName: 1 },
+        limit: search ? 50 : 1000,
+      }
+    );
+
+    const dropdownData = response.map((item) => ({
+      _id: item._id,
+      name: `${item.firstName || ""} ${item.lastName || ""}`.trim() || item.email || item.username,
+      firstName: item.firstName,
+      lastName: item.lastName,
+      email: item.email,
+    }));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Employee Dropdown"), dropdownData, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };

@@ -179,7 +179,6 @@ export const getAllProduct = async (req, res) => {
         { path: "uomId", select: "name" },
         { path: "purchaseTaxId", select: "name" },
         { path: "salesTaxId", select: "name" },
-        { path: "purchaseTaxId", select: "name" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -205,6 +204,55 @@ export const getAllProduct = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+// Dropdown API - returns only active products in { _id, name, itemCode } format
+export const getProductDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+    const { productType, search } = req.query; // Optional filter by productType
+
+    let criteria: any = { isDeleted: false, isActive: true };
+
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (productType) {
+      criteria.productType = productType;
+    }
+
+    if (search) {
+      criteria.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { itemCode: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const response = await getDataWithSorting(
+      productModel,
+      criteria,
+      { _id: 1, name: 1, itemCode: 1, productType: 1 },
+      {
+        sort: { name: 1 },
+        limit: search ? 50 : 1000, // Limit results for search, more for dropdown
+      }
+    );
+
+    const dropdownData = response.map((item) => ({
+      _id: item._id,
+      name: item.name,
+      itemCode: item.itemCode,
+      productType: item.productType,
+    }));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Product"), dropdownData, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
   }
 };
 

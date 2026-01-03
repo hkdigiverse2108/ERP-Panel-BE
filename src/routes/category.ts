@@ -4,6 +4,7 @@ import { categoryController } from "../controllers";
 const router = express.Router();
 
 router.get("/all", categoryController.getAllCategory);
+router.get("/dropdown", categoryController.getCategoryDropdown);
 router.post("/add", categoryController.addCategory);
 router.put("/edit", categoryController.editCategoryById);
 router.delete("/:id", categoryController.deleteCategoryById);

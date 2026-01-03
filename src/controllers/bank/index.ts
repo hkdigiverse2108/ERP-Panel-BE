@@ -194,3 +194,48 @@ export const getBankById = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
   }
 };
+
+// Bank Dropdown API
+export const getBankDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+    const { search } = req.query;
+
+    let criteria: any = { isDeleted: false, isActive: true };
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (search) {
+      criteria.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { accountHolderName: { $regex: search, $options: "i" } },
+        { bankAccountNumber: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const response = await getDataWithSorting(
+      bankModel,
+      criteria,
+      { name: 1, accountHolderName: 1, bankAccountNumber: 1 },
+      {
+        sort: { name: 1 },
+        limit: search ? 50 : 1000,
+      }
+    );
+
+    const dropdownData = response.map((item) => ({
+      _id: item._id,
+      name: item.name || `${item.accountHolderName} - ${item.bankAccountNumber}`,
+      accountHolderName: item.accountHolderName,
+      bankAccountNumber: item.bankAccountNumber,
+    }));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bank Dropdown"), dropdownData, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};

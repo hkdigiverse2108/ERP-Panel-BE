@@ -1,0 +1,4512 @@
+{
+	"info": {
+		"_postman_id": "f5778463-8f5f-4571-a877-81fc6d53efdc",
+		"name": "ERP-API-Collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "47376418",
+		"_collection_link": "https://shakilhkdigiverse-7685412.postman.co/workspace/ERP-BE~aa0ce62e-22f8-4276-b0be-8e6eca9aafdc/collection/50248941-f5778463-8f5f-4571-a877-81fc6d53efdc?action=share&source=collection_link&creator=47376418"
+	},
+	"item": [
+		{
+			"name": "Upload",
+			"item": [
+				{
+					"name": "upload",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "images",
+									"type": "file",
+									"src": "/C:/Users/hkitd/Downloads/image.png"
+								},
+								{
+									"key": "pdf",
+									"type": "file",
+									"src": "/C:/Users/hkitd/Downloads/dummy-pdf_2.pdf",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/upload",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"upload"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete File",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"fileUrl\" : \"http://localhost:4444/public/images/HK_DigiVerse_LLP/1765428268575_image.png\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/upload",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"upload"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Images",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "images",
+									"type": "file",
+									"src": "/C:/Users/hkitd/Downloads/image.png",
+									"disabled": true
+								},
+								{
+									"key": "pdf",
+									"type": "file",
+									"src": "/C:/Users/hkitd/Downloads/dummy-pdf_2.pdf",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/upload/images",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"upload",
+								"images"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All PDF",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/upload/pdf",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"upload",
+								"pdf"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"fullName\": \"Shakil Gaha\",\r\n    \"email\": \"shakilQQwQ@gmail.com\",\r\n    \"password\": \"Admin@123\",\r\n    \"phoneNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"12345666311\"\r\n    },\r\n    \"profileImage\": \"\",\r\n    \"role\": \"694cfd51a5ab7f8c49e8f377\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/auth/register",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "// {\r\n//     \"email\": \"shakil786@gmail.com\",\r\n//     \"password\": \"Admin@123\"\r\n// } /// super-Admin\r\n\r\n{\r\n    \"email\": \"shakil@gmail.com\",\r\n    \"password\": \"Admin@123\"\r\n} // Hk-Digiverse Company\r\n\r\n// {\r\n//     \"email\": \"yash@gmail.com\",\r\n//     \"password\": \"Admin@123\"\r\n// } // Duo Fusiom Company\r\n// ",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/auth/login",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "User Get All",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/user/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "deleteFilter",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"companyId\": \"6940d7d3f5973ae81cfaa664\",\r\n    // \"branchId\": \"694cbadae9912870942630c4\",\r\n    \"fullName\": \"harshit\",\r\n    \"username\": \"harshit \",\r\n    \"email\": \"harshit1@gmail.com\",\r\n    \"phoneNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"12345678961\"\r\n    },\r\n    \"password\": \"Admin@123\",\r\n    \"designation\": \"Intern\",\r\n    \"role\": \"694cfd51a5ab7f8c49e8f377\",\r\n    \"bankDetails\": {\r\n        \"bankHolderName\": \"Harshit\",\r\n        \"bankName\": \"HDFC Bank\",\r\n        \"branchName\": \"Andheri East\",\r\n        \"accountNumber\": \"123456789012\",\r\n        \"IFSCCode\": \"HDFC0001234\",\r\n        \"swiftCode\": \"HDFCINBBXXX\"\r\n    },\r\n    \"address\": {\r\n        \"address\": \"221B Baker Street\",\r\n        \"country\": \"India\",\r\n        \"state\": \"Bihar\",\r\n        \"city\": \"Bihar\",\r\n        \"postalCode\": \"400001\"\r\n    },\r\n    \"panNumber\": \"3423423jd\",\r\n    \"wages\": 25000,\r\n    \"commission\": 5000,\r\n    \"extraWages\": 2000,\r\n    \"target\": 20,\r\n    \"isActive\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit user by id",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"userId\": \"694e77065ae59346a38cdb6f\",\r\n    \"companyId\": \"694a6ccf473cedf2701a6386\",\r\n    // \"branchId\": \"694cbadae9912870942630c4\",\r\n    \"fullName\": \"yash\",\r\n    \"username\": \"235h54\",\r\n    \"email\": \"wertdg@gmail.com\",\r\n    \"phoneNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"34234233442\"\r\n    },\r\n    \"password\": \"Admin@123\",\r\n    \"designation\": \"gfg3544@123\",\r\n    \"role\": \"694cfd51a5ab7f8c49e8f377\",\r\n    \"bankDetails\": {\r\n        \"bankHolderName\": \"John Doe\",\r\n        \"bankName\": \"HDFC Bank\",\r\n        \"branchName\": \"Andheri East\",\r\n        \"accountNumber\": \"123456789012\",\r\n        \"IFSCCode\": \"HDFC0001234\",\r\n        \"swiftCode\": \"HDFCINBBXXX\"\r\n    },\r\n    \"address\": {\r\n        \"address\": \"221B Baker Street\",\r\n        \"country\": \"India\",\r\n        \"state\": \"Maharashtra\",\r\n        \"city\": \"Mumbai\",\r\n        \"postalCode\": \"400001\"\r\n    },\r\n    \"panNumber\": \"derte55dfgh5\",\r\n    \"wages\": 25000,\r\n    \"commission\": 5000,\r\n    \"extraWages\": 2000,\r\n    \"target\": 20,\r\n    \"isActive\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete user by id",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/user/694d0c93247344d583841f9a",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"694d0c93247344d583841f9a"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get User By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/user/694d0b323fa2a22dd2e80348",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"694d0b323fa2a22dd2e80348"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update permissions for the admin",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"permissions\": {\r\n    \"dashboard\": {\r\n      \"add\": true,\r\n      \"update\": false,\r\n      \"deleted\": false,\r\n      \"view\": true,\r\n      \"all\": false\r\n    },\r\n    \"sales\": {\r\n      \"add\": true,\r\n      \"update\": true,\r\n      \"deleted\": false,\r\n      \"view\": true,\r\n      \"all\": false\r\n    }\r\n  }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/693ba2e3c6e9cf6248ea6a73/permission",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"693ba2e3c6e9cf6248ea6a73",
+								"permission"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Role",
+			"item": [
+				{
+					"name": "Role Get All",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/role/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"role",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "hr",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "deleteFilter",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    // \"companyId\": \"694a6ccf473cedf2701a6386\",\r\n    \"name\": \"Okay\",\r\n    \"isActive\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/role/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"role",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit role by id",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"roleId\": \"694d14e52cfa0ba1d21ac019\"\r\n    // \"name\": \"hr1\",\r\n    // \"isActive\": true\r\n    // \"companyId\": \"694a6ccf473cedf2701a6386\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/role/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"role",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete role by id",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/role/694d0dee247344d583841fef",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"role",
+								"694d0dee247344d583841fef"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get Role By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/role/694d109166b4c4258f5b9b4e",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"role",
+								"694d109166b4c4258f5b9b4e"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Stock",
+			"item": [
+				{
+					"name": "Stock Get All",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/stock/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"stock",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "hr",
+									"disabled": true
+								},
+								{
+									"key": "categoryFilter",
+									"value": "694f6350676217a91133a74c",
+									"disabled": true
+								},
+								{
+									"key": "subCategoryFilter",
+									"value": "694f6350676217a91133a74c",
+									"disabled": true
+								},
+								{
+									"key": "brandFilter",
+									"value": "694f6350676217a91133a74c",
+									"disabled": true
+								},
+								{
+									"key": "subBrandFilter",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "departmentFilter",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "hsnCodeFilter",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "purchaseTaxFilter",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "salesTaxIdFilter",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "productTypeFilter",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "expiryFilter",
+									"value": "false",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add stock",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"companyId\": \"694f6b9a676217a91133a775\",\r\n    \"branchId\": \"694e88ac7c101593469c7c7c\",\r\n    \"locationId\": \"665f1b2c9f1a4a0012a33333\",\r\n    \"productId\": \"694ce8e1fe1e8268510ce686\",\r\n    \"variantId\": \"665f1b2c9f1a4a0012a55555\",\r\n    \"batchNo\": \"BATCH-OPEN-011\",\r\n    \"qty\": 200,\r\n    \"mfgDate\": \"2025-01-01\",\r\n    \"expiryDate\": \"2026-01-01\",\r\n    \"sellingPrice\": 120,\r\n    \"mrp\": 150\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/stock/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"stock",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit stock by id",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"stockId\": \"69537543ef0d56564020e272\",\r\n    \"companyId\": \"694f6b9a676217a91133a775\",\r\n    \"branchId\": \"694e88ac7c101593469c7c7c\",\r\n    \"locationId\": \"665f1b2c9f1a4a0012a33333\",\r\n    \"productId\": \"694ce8e1fe1e8268510ce686\",\r\n    \"variantId\": \"665f1b2c9f1a4a0012a55555\",\r\n    \"batchNo\": \"BATCH-OPEN-004\",\r\n    \"qty\": 200,\r\n    \"mfgDate\": \"2025-01-21\",\r\n    \"expiryDate\": \"2026-01-01\",\r\n    \"sellingPrice\": 120,\r\n    \"mrp\": 150\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/stock/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"stock",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete stock by id",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/stock/694ce4e9fe1e8268510ce66a",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"stock",
+								"694ce4e9fe1e8268510ce66a"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get stock By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/stock/69560ff166155f873317d6a6",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"stock",
+								"69560ff166155f873317d6a6"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Stock Verification",
+			"item": [
+				{
+					"name": "Stock verification Get All",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/stock-verification/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"stock-verification",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "hr",
+									"disabled": true
+								},
+								{
+									"key": "categoryFilter",
+									"value": "694f6350676217a91133a74c",
+									"disabled": true
+								},
+								{
+									"key": "subCategoryFilter",
+									"value": "694f6350676217a91133a74c",
+									"disabled": true
+								},
+								{
+									"key": "brandFilter",
+									"value": "694f6350676217a91133a74c",
+									"disabled": true
+								},
+								{
+									"key": "subBrandFilter",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "departmentFilter",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "hsnCodeFilter",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "purchaseTaxFilter",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "salesTaxIdFilter",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "productTypeFilter",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "expiryFilter",
+									"value": "false",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add stock verification",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"verificationDate\": \"2025-01-05T10:30:00.000Z\",\r\n    \"departmentId\": \"694d02467cb4009f97a30882\",\r\n    \"categoryId\": \"6940d7d3f5973ae81cfaa664\",\r\n    \"brandId\": \"694e88ac7c101593469c7c7c\",\r\n    \"locationId\": \"694f11ac7c101593469c7d11\",\r\n    \"remark\": \"Monthly stock Qaa verification for electronics section\",\r\n    \"status\": \"pending\",\r\n    \"items\": [\r\n        {\r\n            \"productId\": \"695a11bc7c101593469c8a21\",\r\n            \"batchNo\": \"BATCH-2025-001\",\r\n            \"landingCost\": 122,\r\n            \"price\": 650,\r\n            \"mrp\": 700,\r\n            \"sellingPrice\": 680,\r\n            \"unit\": \"pcs\",\r\n            \"systemQty\": 100,\r\n            \"physicalQty\": 95,\r\n            \"differenceQty\": -5,\r\n            \"differenceAmount\": -2500\r\n        },\r\n        {\r\n            \"productId\": \"695a22bc7c101593469c8a35\",\r\n            \"batchNo\": \"BATCH-2025-002\",\r\n            \"landingCost\": 300,\r\n            \"price\": 420,\r\n            \"mrp\": 450,\r\n            \"sellingPrice\": 430,\r\n            \"unit\": \"pcs\",\r\n            \"systemQty\": 50,\r\n            \"physicalQty\": 55,\r\n            \"differenceQty\": 5,\r\n            \"differenceAmount\": 1500\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/stock-verification/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"stock-verification",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit stock verification by id",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"stockVerificationId\": \"69566b6a51eddff0439d77ed\",\r\n    \"verificationDate\": \"2025-01-05T10:30:00.000Z\",\r\n    \"departmentId\": \"694d02467cb4009f97a30882\",\r\n    \"categoryId\": \"6940d7d3f5973ae81cfaa664\",\r\n    \"brandId\": \"694e88ac7c101593469c7c7c\",\r\n    \"locationId\": \"694f11ac7c101593469c7d11\",\r\n    \"remark\": \"Monthly stock Qaa verification for electronics section\",\r\n    \"status\": \"pending\",\r\n    \"items\": [\r\n        {\r\n            \"productId\": \"695a11bc7c101593469c8a21\",\r\n            \"batchNo\": \"BATCH-2025-001\",\r\n            \"landingCost\": 122,\r\n            \"price\": 650,\r\n            \"mrp\": 700,\r\n            \"sellingPrice\": 680,\r\n            \"unit\": \"pcs\",\r\n            \"systemQty\": 100,\r\n            \"physicalQty\": 95,\r\n            \"differenceQty\": -5,\r\n            \"differenceAmount\": -2500\r\n        },\r\n        {\r\n            \"productId\": \"695a22bc7c101593469c8a35\",\r\n            \"batchNo\": \"BATCH-2025-002\",\r\n            \"landingCost\": 300,\r\n            \"price\": 420,\r\n            \"mrp\": 450,\r\n            \"sellingPrice\": 430,\r\n            \"unit\": \"pcs\",\r\n            \"systemQty\": 50,\r\n            \"physicalQty\": 55,\r\n            \"differenceQty\": 5,\r\n            \"differenceAmount\": 1500\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/stock-verification/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"stock-verification",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete stock verification by id",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/stock-verification/694ce4e9fe1e8268510ce66a",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"stock-verification",
+								"694ce4e9fe1e8268510ce66a"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get stock verification By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/stock-verification/69566d6a06e04f035bb4eaa7",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"stock-verification",
+								"69566d6a06e04f035bb4eaa7"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Bank",
+			"item": [
+				{
+					"name": "Bank Get All",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/bank/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"bank",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "hr",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "false",
+									"disabled": true
+								},
+								{
+									"key": "deleteFilter",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Bank",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    // \"companyId\": \"6940d7d3f5973ae81cfaa664\",\r\n    \"companyId\": \"694f6b9a676217a91133a775\",\r\n    \"name\": \"State Bank of India\",\r\n    \"ifscCode\": \"SBIN0001234\",\r\n    \"branchName\": \"Surat Main Branch\",\r\n    \"accountHolderName\": \"Dhruvi Bakery Pvt Ltd\",\r\n    \"bankAccountNumber\": \"12345678901624\",\r\n    \"swiftCode\": \"SBININBB\",\r\n    \"openingBalance\": {\r\n        \"creditBalance\": 50000,\r\n        \"debitBalance\": 0\r\n    },\r\n    \"isUpiAvailable\": true,\r\n    \"addressLine1\": \"Shop No 12, Ring Road\",\r\n    \"addressLine2\": \"Near Textile Market\",\r\n    \"country\": \"India\",\r\n    \"state\": \"Gujarat\",\r\n    \"city\": \"Surat\",\r\n    \"zipCode\": 395002,\r\n    \"branchIds\": [\r\n        \"694e88ac7c101593469c7c7c\",\r\n        \"694e88ac7c101593469c7c7c\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/bank/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"bank",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit bank by id",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"bankId\": \"6952452fe98abea8579cace5\",\r\n    \"name\": \"State Bank of India\",\r\n    \"ifscCode\": \"SBIN0001234\",\r\n    \"branchName\": \"Surat Main Branch\",\r\n    \"accountHolderName\": \"Dhruvi Bakery Pvt Ltd\",\r\n    \"bankAccountNumber\": \"12345678901623\",\r\n    \"swiftCode\": \"SBININBB\",\r\n    \"openingBalance\": {\r\n        \"creditBalance\": 50000,\r\n        \"debitBalance\": 0\r\n    },\r\n    \"isUpiAvailable\": true,\r\n    \"addressLine1\": \"Shop No 12, Ring Road\",\r\n    \"addressLine2\": \"Near Textile Market\",\r\n    \"country\": \"India\",\r\n    \"state\": \"Gujarat\",\r\n    \"city\": \"Surat\",\r\n    \"zipCode\": 395002,\r\n    \"branchIds\": [\r\n        \"694e88ac7c101593469c7c7c\",\r\n        \"694e88ac7c101593469c7c7c\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/bank/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"bank",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete bank by id",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/bank/6952452fe98abea8579cace5",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"bank",
+								"6952452fe98abea8579cace5"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get Bank By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/bank/69524514c205cbdb960e2e13",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"bank",
+								"69524514c205cbdb960e2e13"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Call Request",
+			"item": [
+				{
+					"name": "Call Request Get All",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/call-request/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"call-request",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "hr",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "deleteFilter",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Call Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"businessName\": \"ABC Traders\",\r\n    \"contactName\": \"Rahul Sharma\",\r\n    \"contactNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"354343534\"\r\n    },\r\n    \"note\": \"I want to know more about your product pricing.\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/call-request/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"call-request",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Call Request by id",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"callRequestId\": \"694e802d729a27cd28c3698a\",\r\n    \"businessName\": \"ABC Traders\",\r\n    \"contactName\": \"Rahul Sharma\",\r\n    \"contactNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"354343534\"\r\n    },\r\n    \"note\": \"I want to know more about your product pricing.\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/call-request/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"call-request",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete Call Request by id",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/call-request/693ab93ed96c5cfe580f76e4",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"call-request",
+								"693ab93ed96c5cfe580f76e4"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get Call Request By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/call-request/694e802d729a27cd28c3698a",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"call-request",
+								"694e802d729a27cd28c3698a"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Product",
+			"item": [
+				{
+					"name": "Product Get All",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/product/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"product",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "3",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "0012312",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "true",
+									"disabled": true
+								},
+								{
+									"key": "",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Product",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"itemCode\": \"PROD-1233f\",\r\n    \"name\": \"Complete Test Product 1\",\r\n    \"printName\": \"Test Product Full\",\r\n    \"categoryId\": \"66a0c9b5e1b1c8a1a1111111\",\r\n    \"subCategoryId\": \"66a0c9b5e1b1c8a1a1111112\",\r\n    \"brandId\": \"66a0c9b5e1b1c8a1a2222222\",\r\n    \"subBrandId\": \"66a0c9b5e1b1c8a1a2222223\",\r\n    \"productType\": \"finished\",\r\n    \"uomId\": \"66a0c9b5e1b1c8a1a3333333\",\r\n    \r\n    \"purchasePrice\": 100,\r\n    \"landingCost\": 105,\r\n    \"mrp\": 150,\r\n    \"sellingPrice\": 140,\r\n    \"sellingDiscount\": 5,\r\n    \"sellingMargin\": 12,\r\n    \"retailerDiscount\": 8,\r\n    \"retailerPrice\": 135,\r\n    \"retailerMargin\": 10,\r\n    \"wholesalerDiscount\": 10,\r\n    \"wholesalerPrice\": 130,\r\n    \"wholesalerMargin\": 8,\r\n    \"onlinePrice\": 145,\r\n    \"minimumQty\": 1,\r\n    \"openingQty\": 50,\r\n    \"masterQty\": 10,\r\n\r\n    \"hsnCode\": \"1234\",\r\n    \"purchaseTaxId\": \"66a0c9b5e1b1c8a1a4444444\",\r\n    \"salesTaxId\": \"66a0c9b5e1b1c8a1a5555555\",\r\n    \"isPurchaseTaxIncluding\": false,\r\n    \"isSalesTaxIncluding\": true,\r\n    \"cessPercentage\": 0,\r\n    \"manageMultipleBatch\": true,\r\n    \"isExpiryProductSaleable\": true,\r\n\r\n    \"hasExpiry\": true,\r\n    \"expiryDays\": 365,\r\n    \"calculateExpiryOn\": \"MFG\",\r\n    \"expiryReferenceDate\": \"2026-01-01\",\r\n\r\n    \"ingredients\": \"Ingredient A, Ingredient B\",\r\n    \"description\": \"This is a fully populated product for testing.\",\r\n    \"shortDescription\": \"Full payload product\",\r\n \r\n    \"netWeight\": 1000,\r\n    \"nutrition\": [\r\n        {\r\n            \"name\": \"Energy\",\r\n            \"value\": \"350 kcal\"\r\n        },\r\n        {\r\n            \"name\": \"Protein\",\r\n            \"value\": \"12 g\"\r\n        }\r\n    ],\r\n    \r\n    \"images\": [\r\n        \"https://example.com/images/product-front.jpg\",\r\n        \"https://example.com/images/product-back.jpg\"\r\n    ],\r\n    \"additionalInfo\": \"This payload includes every possible field.\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/product/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"product",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Product by id",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"productId\": \"6957913317482e04786c2670\",\r\n    \"itemCode\": \"PROD-1233\",\r\n    \"name\": \"Complete Test Product 1\",\r\n    \"printName\": \"Test Product Full\",\r\n    \"categoryId\": \"66a0c9b5e1b1c8a1a1111111\",\r\n    \"subCategoryId\": \"66a0c9b5e1b1c8a1a1111112\",\r\n    \"brandId\": \"66a0c9b5e1b1c8a1a2222222\",\r\n    \"subBrandId\": \"66a0c9b5e1b1c8a1a2222223\",\r\n    \"productType\": \"finished\",\r\n    \"uomId\": \"66a0c9b5e1b1c8a1a3333333\",\r\n    \"purchasePrice\": 100,\r\n    \"landingCost\": 105,\r\n    \"mrp\": 150,\r\n    \"sellingPrice\": 140,\r\n    \"sellingDiscount\": 5,\r\n    \"sellingMargin\": 12,\r\n    \"retailerDiscount\": 8,\r\n    \"retailerPrice\": 135,\r\n    \"retailerMargin\": 10,\r\n    \"wholesalerDiscount\": 10,\r\n    \"wholesalerPrice\": 130,\r\n    \"wholesalerMargin\": 8,\r\n    \"onlinePrice\": 145,\r\n    \"minimumQty\": 1,\r\n    \"openingQty\": 50,\r\n    \"masterQty\": 10,\r\n    \"hsnCode\": \"1234\",\r\n    \"purchaseTaxId\": \"66a0c9b5e1b1c8a1a4444444\",\r\n    \"salesTaxId\": \"66a0c9b5e1b1c8a1a5555555\",\r\n    \"isPurchaseTaxIncluding\": false,\r\n    \"isSalesTaxIncluding\": true,\r\n    \"cessPercentage\": 0,\r\n    \"manageMultipleBatch\": true,\r\n    \"isExpiryProductSaleable\": true,\r\n    \"hasExpiry\": true,\r\n    \"expiryDays\": 365,\r\n    \"calculateExpiryOn\": \"MFG\",\r\n    \"expiryReferenceDate\": \"2026-01-01\",\r\n    \"ingredients\": \"Ingredient A, Ingredient B\",\r\n    \"description\": \"This is a fully populated product for testing.\",\r\n    \"shortDescription\": \"Full payload product\",\r\n    \"netWeight\": 1000,\r\n    \"nutrition\": [\r\n        {\r\n            \"name\": \"Energy\",\r\n            \"value\": \"350 kcal\"\r\n        },\r\n        {\r\n            \"name\": \"Protein\",\r\n            \"value\": \"12 g\"\r\n        }\r\n    ],\r\n    \"images\": [\r\n        \"https://example.com/images/product-front.jpg\",\r\n        \"https://example.com/images/product-back.jpg\"\r\n    ],\r\n    \"additionalInfo\": \"This payload includes every possible field.\"\r\n    // \"branchId\": \"6940d7d3f5973ae81cfaa664\",\r\n    // \"companyId\": \"6940d7d3f5973ae81cfaa664\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/product/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"product",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete product by id",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/product/693ab3739d2c88d6fa895c6a",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"product",
+								"693ab3739d2c88d6fa895c6a"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get Product By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/product/69576c6300f604b565c18263",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"product",
+								"69576c6300f604b565c18263"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Announcement",
+			"item": [
+				{
+					"name": "Add announcement",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n            \"companyId\": \"694a6ccf473cedf2701a6386\",\r\n            \"version\": \"1.0.7\",\r\n            \"link\": \"https://www.youtube.com/watch?v=1K0moiDQNok&list=RD1K0moiDQNok&start_radio=1&pp=oAcB\",\r\n            \"desc\": [\r\n                \"Fixed bugs for better user experience.\"\r\n            ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/announcement/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"announcement",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get all announcements",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n            \"companyId\": \"6933d7f54b2879bb7c0fe77b\",\r\n            \"title\": \"Innovation Pvt Ltd\",\r\n            \"link\": \"TechVision\",\r\n            \"desc\": \"John Doe\"\r\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/announcement/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"announcement",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "2",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "Garments",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "deleteFilter",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit announcement by id",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"companyId\": \"6937baa85ce51d7f24b9d68b\",\r\n    \"_id\": \"6937bbd85ce51d7f24b9d6ed\",\r\n    \"version\": \"1.4.2\",\r\n    \"link\": \"TechVision\",\r\n    \"desc\": [\r\n        \"Fixed bugs for better user experience.\",\r\n        \"The Garments %2a Footwear GST rule has been updated across ERP. For products priced up to ₹2500, GST will be 5% and for products priced above ₹2500, GST will be 18%.\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/announcement/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"announcement",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete announcement by id",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n            \"companyId\": \"6933d7f54b2879bb7c0fe77b\",\r\n            \"_id\":\"693659bad3f62a9835c02f0c\",\r\n            \"version\": \"1.0.2\",\r\n            \"link\": \"TechVision\",\r\n            \"desc\": \"John Doe\"\r\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/announcement/6937bbd85ce51d7f24b9d6ed",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"announcement",
+								"6937bbd85ce51d7f24b9d6ed"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get announcement by id",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n            \"companyId\": \"69342626ff081474221415e4\",\r\n            \"version\": \"1.0.1\",\r\n            \"link\": \"https://www.youtube.com/watch?v=1K0moiDQNok&list=RD1K0moiDQNok&start_radio=1&pp=oAcB\",\r\n            \"desc\": [\r\n                \"Fixed bugs for better user experience.\"\r\n            ]\r\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/announcement/694f6fadfc105dda9391d6ab",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"announcement",
+								"694f6fadfc105dda9391d6ab"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Company",
+			"item": [
+				{
+					"name": "Add company",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"accountingType\": \"Centralized\",\r\n    \"name\": \"Taqdeer1\",\r\n    \"displayName\": \"Taqdeer1\",\r\n    \"contactName\": \"Shakil S Gaha\",\r\n    \"ownerNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"1234567892\"\r\n    },\r\n    \"email\": \"shakil1@gmail.com\",\r\n    \"supportEmail\": \"shakil1@gmail.com\",\r\n    \"phoneNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"1234567891\"\r\n    },\r\n    \"customerCareNumber\": \"1800-200-1234\",\r\n    \"address\": \"123 Business Park, Sector 21\",\r\n    \"city\": \"Surat\",\r\n    \"state\": \"Gujrat\",\r\n    \"country\": \"India\",\r\n    \"pinCode\": 400001,\r\n    \"timeZone\": \"Asia/Kolkata\",\r\n    \"webSite\": \"https://www.abctech.com\",\r\n    \"bankId\": \"693ba2e3c6e9cf6248ea6a73\",\r\n    \"userName\": \"pramit@abctech\",\r\n    \"panNo\": \"ABCDE1234F\",\r\n    \"gstRegistrationType\": \"Regular\",\r\n    \"gstIdentificationNumber\": \"27ABCDE1234F1Z5\",\r\n    \"financialMonthInterval\": \"April-March\",\r\n    \"corporateIdentificationNumber\": \"U12345MH2024PTC567890\",\r\n    \"letterOfUndertaking\": \"Available\",\r\n    \"taxDeductionAndCollectionAccountNumber\": \"MUMT12345A\",\r\n    \"importerExporterCode\": \"0987654321\",\r\n    \"outletSize\": \"Medium\",\r\n    \"enableFeedbackModule\": true,\r\n    \"allowRoundOff\": true,\r\n    \"financialYear\": \"2024-2025\",\r\n    \"printDateFormat\": \"DD-MM-YYYY\",\r\n    \"decimalPoint\": \"2\",\r\n    \"logo\": \"https://cdn.abctech.com/logo.png\",\r\n    \"waterMark\": \"CONFIDENTIAL\",\r\n    \"reportFormatLogo\": \"https://cdn.abctech.com/report-logo.png\",\r\n    \"authorizedSignature\": \"https://cdn.abctech.com/signature.png\"\r\n    // \"userIds\": [],\r\n    // \"roles\": [],\r\n    // \"employees\": []\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/company/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"company",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit company by id",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "// {\r\n//     \"companyId\": \"6940d7d3f5973ae81cfaa664\",\r\n//     \"name\": \"Taqdeer1\",\r\n//     \"displayName\": \"Taqdeer1\",\r\n//     \"contactName\": \"Shakil S Gaha\",\r\n//     \"ownerNo\": {\r\n//         \"countryCode\": \"+91\",\r\n//         \"phoneNo\": \"1234567894\"\r\n//     },\r\n//     \"email\": \"shakil1@gmail.com\",\r\n//     \"supportEmail\": \"shakil1@gmail.com\",\r\n//     \"phoneNo\": {\r\n//         \"countryCode\": \"+91\",\r\n//         \"phoneNo\": \"1234567891\"\r\n//     },\r\n//     \"customerCareNumber\": \"1800-200-1234\",\r\n//     \"address\": \"123 Business Park, Sector 21\",\r\n//     \"city\": \"Surat\",\r\n//     \"state\": \"Gujrat\",\r\n//     \"country\": \"India\",\r\n//     \"pinCode\": 400001,\r\n//     \"timeZone\": \"Asia/Kolkata\",\r\n//     \"webSite\": \"https://www.abctech.com\",\r\n//     \"bankId\": \"693ba2e3c6e9cf6248ea6a73\",\r\n//     \"userName\": \"pramit@abctech\",\r\n//     \"panNo\": \"ABCDE1234F\",\r\n//     \"gstRegistrationType\": \"Regular\",\r\n//     \"gstIdentificationNumber\": \"27ABCDE1234F1Z5\",\r\n//     \"financialMonthInterval\": \"April-March\",\r\n//     \"defaultFinancialYear\": \"2024-2025\",\r\n//     \"corporateIdentificationNumber\": \"U12345MH2024PTC567890\",\r\n//     \"letterOfUndertaking\": \"Available\",\r\n//     \"taxDeductionAndCollectionAccountNumber\": \"MUMT12345A\",\r\n//     \"importerExporterCode\": \"0987654321\",\r\n//     \"outletSize\": \"Medium\",\r\n//     \"enableFeedbackModule\": true,\r\n//     \"allowRoundOff\": true,\r\n//     \"financialYear\": \"2024-2025\",\r\n//     \"printDateFormat\": \"DD-MM-YYYY\",\r\n//     \"decimalPoint\": \"2\",\r\n//     \"logo\": \"https://cdn.abctech.com/logo.png\",\r\n//     \"waterMark\": \"CONFIDENTIAL\",\r\n//     \"reportFormatLogo\": \"https://cdn.abctech.com/report-logo.png\",\r\n//     \"authorizedSignature\": \"https://cdn.abctech.com/signature.png\"\r\n//     // \"userIds\": [],\r\n//     // \"roles\": [],\r\n//     // \"employees\": []\r\n// }\r\n{\r\n    \"companyId\": \"6940d7d3f5973ae81cfaa664\",\r\n    \"accountingType\": \"Centralized\",\r\n    \"name\": \"HK LLP\",\r\n    \"displayName\": \"HK LLP\",\r\n    \"contactName\": \"HET R\",\r\n    \"ownerNo\": {\r\n        \"countryCode\": \"91\",\r\n        \"phoneNo\": \"1122334455\"\r\n    },\r\n    \"email\": \"hk@gmail.com\",\r\n    \"supportEmail\": \"hk@gmail.com\",\r\n    \"phoneNo\": {\r\n        \"countryCode\": \"91\",\r\n        \"phoneNo\": \"1234567890\"\r\n    },\r\n    \"customerCareNumber\": \"1800-200-1234\",\r\n    \"address\": \"123 Business Park, Sector 21\",\r\n    \"city\": \"Surat\",\r\n    \"state\": \"Gujrat\",\r\n    \"country\": \"India\",\r\n    \"pinCode\": \"400001\",\r\n    \"timeZone\": \"Asia/Kolkata\",\r\n    \"webSite\": \"https://www.abctech.com\",\r\n    \"bankId\": \"6940d7d3f5973ae81cfaa664\",\r\n    // \"bankName\": \"HDFC Bank\",\r\n    // \"bankIFSC\": \"HDFC0001234\",\r\n    // \"upiId\": \"abctech@hdfc\",\r\n    // \"branch\": \"6937f148c72d3625eb8adc3e\",\r\n    // \"accountHolderName\": \"ABC Technologies Pvt Ltd\",\r\n    // \"bankAccountNumber\": \"12345678901234\",\r\n    \"userName\": \"admin@abctech\",\r\n    \"panNo\": \"ABCDE1234F\",\r\n    \"gstRegistrationType\": \"Regular\",\r\n    \"gstIdentificationNumber\": \"27ABCDE1234F1Z5\",\r\n    \"financialMonthInterval\": \"April-March\",\r\n    // \"defaultFinancialYear\": \"2024-2025\",\r\n    \"corporateIdentificationNumber\": \"U12345MH2024PTC567890\",\r\n    \"letterOfUndertaking\": \"Available\",\r\n    \"taxDeductionAndCollectionAccountNumber\": \"MUMT12345A\",\r\n    \"importerExporterCode\": \"0987654321\",\r\n    \"outletSize\": \"Medium\",\r\n    \"enableFeedbackModule\": \"true\",\r\n    \"allowRoundOff\": \"false\",\r\n    \"financialYear\": \"2024-2025\",\r\n    \"printDateFormat\": \"DD-MM-YYYY\",\r\n    \"decimalPoint\": \"2\",\r\n    \"logo\": \"http://localhost:4001/public/images/6940d7d3f5973ae81cfaa664/1766379069446_thermal_80mm-offline.jpg\",\r\n    \"waterMark\": \"http://localhost:4444/public/images/6940d7d3f5973ae81cfaa664/1765884662686_wallpaper6.jpg\",\r\n    \"reportFormatLogo\": null,\r\n    \"authorizedSignature\": \"http://localhost:4444/public/images/6940d7d3f5973ae81cfaa664/1765884662686_wallpape2.jpg\",\r\n    \"fssaiNo\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/company/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"company",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Company get all",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"ABC Technologies Pvt Ltd\",\r\n  \"displayName\": \"ABC Tech\",\r\n  \"contactName\": \"John Doe\",\r\n  \"ownerNo\": \"9876543210\",\r\n  \"email\": \"info@abctech.com\",\r\n  \"supportEmail\": \"support@abctech.com\",\r\n  \"phoneNumber\": \"+91-9876543210\",\r\n  \"customerCareNumber\": \"1800-200-1234\",\r\n\r\n  \"address\": \"123 Business Park, Sector 21\",\r\n  \"city\": \"Mumbai\",\r\n  \"state\": \"Maharashtra\",\r\n  \"country\": \"India\",\r\n  \"pinCode\": 400001,\r\n  \"timeZone\": \"Asia/Kolkata\",\r\n  \"webSite\": \"https://www.abctech.com\",\r\n\r\n  \"bankName\": \"HDFC Bank\",\r\n  \"bankIFSC\": \"HDFC0001234\",\r\n  \"upiId\": \"abctech@hdfc\",\r\n  \"branchName\": \"Andheri East\",\r\n  \"accountHolderName\": \"ABC Technologies Pvt Ltd\",\r\n  \"bankAccountNumber\": \"12345678901234\",\r\n\r\n  \"userName\": \"admin@abctech\",\r\n  \"PanNo\": \"ABCDE1234F\",\r\n  \"GSTRegistrationType\": \"Regular\",\r\n  \"GSTIdentificationNumber\": \"27ABCDE1234F1Z5\",\r\n  \"financialMonthInterval\": \"April-March\",\r\n  \"defaultFinancialYear\": \"2024-2025\",\r\n\r\n  \"corporateIdentificationNumber\": \"U12345MH2024PTC567890\",\r\n  \"letterOfUndertaking\": \"Available\",\r\n  \"taxDeductionAndCollectionAccountNumber\": \"MUMT12345A\",\r\n  \"importerExporterCode\": \"0987654321\",\r\n  \"outletSize\": \"Medium\",\r\n\r\n  \"enableFeedbackModule\": true,\r\n  \"allowRoundOff\": true,\r\n\r\n  \"financialYear\": \"2024-2025\",\r\n  \"printDateFormat\": \"DD-MM-YYYY\",\r\n\r\n  \"decimalPoint\": \"2\",\r\n\r\n  \"logo\": \"https://cdn.abctech.com/logo.png\",\r\n  \"waterMark\": \"CONFIDENTIAL\",\r\n  \"reportFormatLogo\": \"https://cdn.abctech.com/report-logo.png\",\r\n  \"authorizedSignature\": \"https://cdn.abctech.com/signature.png\"\r\n}\r\n"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/company/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"company",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "2",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "DigiVerse",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "deleteFilter",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete company by id",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"ABC Technologies Pvt Ltd\",\r\n  \"displayName\": \"ABC Tech\",\r\n  \"contactName\": \"John Doe\",\r\n  \"ownerNo\": \"9876543210\",\r\n  \"email\": \"info@abctech.com\",\r\n  \"supportEmail\": \"support@abctech.com\",\r\n  \"phoneNumber\": \"+91-9876543210\",\r\n  \"customerCareNumber\": \"1800-200-1234\",\r\n\r\n  \"address\": \"123 Business Park, Sector 21\",\r\n  \"city\": \"Mumbai\",\r\n  \"state\": \"Maharashtra\",\r\n  \"country\": \"India\",\r\n  \"pinCode\": 400001,\r\n  \"timeZone\": \"Asia/Kolkata\",\r\n  \"webSite\": \"https://www.abctech.com\",\r\n\r\n  \"bankName\": \"HDFC Bank\",\r\n  \"bankIFSC\": \"HDFC0001234\",\r\n  \"upiId\": \"abctech@hdfc\",\r\n  \"branchName\": \"Andheri East\",\r\n  \"accountHolderName\": \"ABC Technologies Pvt Ltd\",\r\n  \"bankAccountNumber\": \"12345678901234\",\r\n\r\n  \"userName\": \"admin@abctech\",\r\n  \"PanNo\": \"ABCDE1234F\",\r\n  \"GSTRegistrationType\": \"Regular\",\r\n  \"GSTIdentificationNumber\": \"27ABCDE1234F1Z5\",\r\n  \"financialMonthInterval\": \"April-March\",\r\n  \"defaultFinancialYear\": \"2024-2025\",\r\n\r\n  \"corporateIdentificationNumber\": \"U12345MH2024PTC567890\",\r\n  \"letterOfUndertaking\": \"Available\",\r\n  \"taxDeductionAndCollectionAccountNumber\": \"MUMT12345A\",\r\n  \"importerExporterCode\": \"0987654321\",\r\n  \"outletSize\": \"Medium\",\r\n\r\n  \"enableFeedbackModule\": true,\r\n  \"allowRoundOff\": true,\r\n\r\n  \"financialYear\": \"2024-2025\",\r\n  \"printDateFormat\": \"DD-MM-YYYY\",\r\n\r\n  \"decimalPoint\": \"2\",\r\n\r\n  \"logo\": \"https://cdn.abctech.com/logo.png\",\r\n  \"waterMark\": \"CONFIDENTIAL\",\r\n  \"reportFormatLogo\": \"https://cdn.abctech.com/report-logo.png\",\r\n  \"authorizedSignature\": \"https://cdn.abctech.com/signature.png\"\r\n}\r\n"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/company/694e694120be2a3fbb62e3ea",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"company",
+								"694e694120be2a3fbb62e3ea"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get company by id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/company/694a6ccf473cedf2701a6386",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"company",
+								"694a6ccf473cedf2701a6386"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Branch",
+			"item": [
+				{
+					"name": "Branch get all",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n            \"companyId\": \"6933d7f54b2879bb7c0fe77b\",\r\n            \"title\": \"Innovation Pvt Ltd\",\r\n            \"link\": \"TechVision\",\r\n            \"desc\": \"John Doe\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/branch/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"branch",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "Garments",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "deleteFilter",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add branch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Main \",\r\n    \"displayName\": \"Main \",\r\n    \"contactName\": \"John Doe\",\r\n    \"phoneNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"9876543210\"\r\n    },\r\n    \"telephoneNumber\": \"022-23456789\",\r\n    \"email\": \"branch@example.com\",\r\n    \"userName\": \"mainbranch\",\r\n    \"password\": \"StrongPassword@123\",\r\n    \"yearInterval\": \"2024-2025\",\r\n    \"gstRegistrationType\": \"Regular\",\r\n    \"gstIdentificationNumber\": \"27ABCDE1234F1Z5\",\r\n    \"panNo\": \"ABCDE1234F\",\r\n    \"webSite\": \"https://www.mainbranch.com\",\r\n    \"fssaiNo\": \"12345678901234\",\r\n    \"address\": \"123, MG Road\",\r\n    \"city\": \"Mumbai\",\r\n    \"state\": \"Maharashtra\",\r\n    \"country\": \"India\",\r\n    \"pinCode\": \"400001\",\r\n    \"timeZone\": \"Asia/Kolkata\",\r\n    \"bankId\": \"64f1c9e8a1b2c3d4e5f67891\",\r\n    \"upiId\": \"mainbranch@upi\",\r\n    \"outletSize\": \"Large\",\r\n    \"userIds\": [\r\n        \"64f1c9e8a1b2c3d4e5f67892\",\r\n        \"64f1c9e8a1b2c3d4e5f67893\"\r\n    ],\r\n    \"isActive\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/branch/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"branch",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete branch by id",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"companyId\" : \"2yugfwyfwer\",\r\n    \"name\":\"Udhana\",\r\n    \"address\":\"Parvat Patiya\"\r\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/branch/694d375976694c2200484db6",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"branch",
+								"694d375976694c2200484db6"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit branch by id",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"branchId\": \"6957b5483128819584d38cbb\",\r\n    \"name\": \"Main \",\r\n    \"displayName\": \"Main \",\r\n    \"contactName\": \"John Doe\",\r\n    \"phoneNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"9876543210\"\r\n    },\r\n    \"telephoneNumber\": \"022-23456789\",\r\n    \"email\": \"branch@example.com\",\r\n    \"userName\": \"mainbranch\",\r\n    \"password\": \"StrongPassword@123\",\r\n    \"yearInterval\": \"2024-2025\",\r\n    \"gstRegistrationType\": \"Regular\",\r\n    \"gstIdentificationNumber\": \"27ABCDE1234F1Z5\",\r\n    \"panNo\": \"ABCDE1234F\",\r\n    \"webSite\": \"https://www.mainbranch.com\",\r\n    \"fssaiNo\": \"12345678901234\",\r\n    \"address\": \"123, MG Road\",\r\n    \"city\": \"Mumbai\",\r\n    \"state\": \"Maharashtra\",\r\n    \"country\": \"India\",\r\n    \"pinCode\": \"400001\",\r\n    \"timeZone\": \"Asia/Kolkata\",\r\n    \"bankId\": \"64f1c9e8a1b2c3d4e5f67891\",\r\n    \"upiId\": \"mainbranch@upi\",\r\n    \"outletSize\": \"Large\",\r\n    \"userIds\": [\r\n        \"64f1c9e8a1b2c3d4e5f67892\",\r\n        \"64f1c9e8a1b2c3d4e5f67893\"\r\n    ],\r\n    \"isActive\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/branch/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"branch",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get branch by id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/branch/6957b5483128819584d38cbb",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"branch",
+								"6957b5483128819584d38cbb"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Contacts",
+			"item": [
+				{
+					"name": "Add contacts",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"contactType\": \"customer\",\r\n    \"firstName\": \"Rahul\",\r\n    \"lastName\": \"Sharma\",\r\n    \"companyName\": \"new Retailers\",\r\n    \"phoneNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"12331465473\"\r\n    },\r\n    \"whatsappNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"2346235147\"\r\n    },\r\n    \"email\": \"krish1.sharma@example.com\",\r\n    \"telephoneNo\": \"01123456789\",\r\n    \"panNo\": \"AB2314QFq\",\r\n    \"dob\": \"1992-05-15\",\r\n    \"anniversaryDate\": \"2018-11-20\",\r\n    \"paymentMode\": \"Credit\",\r\n    \"paymentTerms\": \"30 Days\",\r\n    \"openingBalance\": {\r\n        \"debitBalance\": \"10000\",\r\n        \"creditBalance\": \"0\"\r\n    },\r\n    \"customerCategory\": \"Retail\",\r\n    \"customerType\": \"retailer\",\r\n    \"productDetails\": [\r\n        \"Rice\",\r\n        \"Wheat\",\r\n        \"Pulses\"\r\n    ],\r\n    \"bankDetails\": {\r\n        \"ifscCode\": \"HDFC0001234\",\r\n        \"name\": \"HDFC Bank\",\r\n        \"branch\": \"Andheri East\",\r\n        \"accountNumber\": \"123456789012\"\r\n    },\r\n    \"addressDetails\": [\r\n        {\r\n            \"gstType\": \"Regular\",\r\n            \"gstIn\": \"27ABCDE1234F1Z5\",\r\n            \"contactFirstName\": \"Rahul\",\r\n            \"contactLastName\": \"Sharma\",\r\n            \"contactCompanyName\": \"Sharma Retailers\",\r\n            \"contactNo\": {\r\n                \"countryCode\": \"+91\",\r\n                \"phoneNo\": \"9876543210\"\r\n            },\r\n            \"contactEmail\": \"billing@sharmaretailers.com\",\r\n            \"addressLine1\": \"Shop No 12, Market Road\",\r\n            \"addressLine2\": \"Near Main Square\",\r\n            \"state\": \"Maharashtra\",\r\n            \"city\": \"Mumbai\",\r\n            \"country\": \"India\",\r\n            \"pinCode\": \"400001\",\r\n            \"tanNo\": \"MUMA12345B\"\r\n        }\r\n    ],\r\n    \"remarks\": \"Regular customer, prefers bulk orders\",\r\n    \"loyaltyPoints\": 150,\r\n    \"membershipId\": \"64f1c2a1a2b3c4d5e6f78999\",\r\n    \"status\": \"active\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/contacts/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"contacts",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get all contacts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/contacts/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"contacts",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "DigiVerse",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "deleteFilter",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit contact by id",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"contactId\": \"695606d4246a334bda6857d5\",\r\n    \"contactType\": \"customer\",\r\n    \"firstName\": \"Rahul\",\r\n    \"lastName\": \"Sharma\",\r\n    \"companyName\": \"Sharma Retailers\",\r\n    \"phoneNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"9876543112\"\r\n    },\r\n    \"whatsappNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"98765413212\"\r\n    },\r\n    \"email\": \"rahul7.sharma@example.com\",\r\n    \"telephoneNo\": \"01123456789\",\r\n    \"panNo\": \"ABCDE1234QFq\",\r\n    \"dob\": \"1992-05-15\",\r\n    \"anniversaryDate\": \"2018-11-20\",\r\n    \"paymentMode\": \"Credit\",\r\n    \"paymentTerms\": \"30 Days\",\r\n    \"openingBalance\": {\r\n        \"debitBalance\": \"10000\",\r\n        \"creditBalance\": \"0\"\r\n    },\r\n    \"customerCategory\": \"Retail\",\r\n    \"customerType\": \"retailer\",\r\n    \"productDetails\": [\r\n        \"Rice\",\r\n        \"Wheat\",\r\n        \"Pulses\"\r\n    ],\r\n    \"bankDetails\": {\r\n        \"ifscCode\": \"HDFC0001234\",\r\n        \"name\": \"HDFC Bank\",\r\n        \"branch\": \"Andheri East\",\r\n        \"accountNumber\": \"123456789012\"\r\n    },\r\n    \"addressDetails\": [\r\n        {\r\n            \"gstType\": \"Regular\",\r\n            \"gstIn\": \"27ABCDE1234F1Z5\",\r\n            \"contactFirstName\": \"Rahul\",\r\n            \"contactLastName\": \"Sharma\",\r\n            \"contactCompanyName\": \"Sharma Retailers\",\r\n            \"contactNo\": {\r\n                \"countryCode\": \"+91\",\r\n                \"phoneNo\": \"9876543210\"\r\n            },\r\n            \"contactEmail\": \"billing@sharmaretailers.com\",\r\n            \"addressLine1\": \"Shop No 12, Market Road\",\r\n            \"addressLine2\": \"Near Main Square\",\r\n            \"state\": \"Maharashtra\",\r\n            \"city\": \"Mumbai\",\r\n            \"country\": \"India\",\r\n            \"pinCode\": \"400001\",\r\n            \"tanNo\": \"MUMA12345B\"\r\n        }\r\n    ],\r\n    \"remarks\": \"Regular customer, prefers bulk orders\",\r\n    \"loyaltyPoints\": 150,\r\n    \"membershipId\": \"64f1c2a1a2b3c4d5e6f78999\",\r\n    \"status\": \"active\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/contacts/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"contacts",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get single record by id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/contacts/6954b8457f13f4fa10bd6417",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"contacts",
+								"6954b8457f13f4fa10bd6417"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete contact by id",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/contacts/6954bd283d6642f43d2480d9",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"contacts",
+								"6954bd283d6642f43d2480d9"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Recipe",
+			"item": [
+				{
+					"name": "Add recipe",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"recipeName\": \"Veg\",\r\n  \"recipeDate\": \"2025-12-14\",\r\n  \"recipeNo\": \"RCP-004\",\r\n  \"recipeType\": \"assemble\",\r\n\r\n  \"rawProducts\": [\r\n    {\r\n      \"itemCode\": \"BUN-01\",\r\n      \"productId\": \"693919cce784c7908a1472a7\",\r\n      \"mrp\": 5,\r\n      \"useQty\": 2\r\n    },\r\n    {\r\n      \"itemCode\": \"PATTY-01\",\r\n      \"productId\": \"69391bbd6971c5e3389c7809\",\r\n      \"mrp\": 15,\r\n      \"useQty\": 1\r\n    }\r\n  ],\r\n\r\n  \"finalProducts\": [\r\n    {\r\n      \"itemCode\": \"BURGER-01\",\r\n      \"productId\": \"65f0c9a9b1e0c12a4f9d1236\",\r\n      \"mrp\": 50,\r\n      \"qtyGenerate\": 1\r\n    }\r\n  ]\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/recipe/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"recipe",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get single recipe by id",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"recipeName\": \"Veg Burger Assemble\",\r\n  \"recipeDate\": \"2025-12-16\",\r\n  \"recipeNo\": \"RCP-001\",\r\n  \"recipeType\": \"assemble\",\r\n\r\n  \"rawProducts\": [\r\n    {\r\n      \"itemCode\": \"BUN-01\",\r\n      \"productId\": \"693919cce784c7908a1472a7\",\r\n      \"mrp\": 5,\r\n      \"useQty\": 2\r\n    },\r\n    {\r\n      \"itemCode\": \"PATTY-01\",\r\n      \"productId\": \"69391bbd6971c5e3389c7809\",\r\n      \"mrp\": 15,\r\n      \"useQty\": 1\r\n    }\r\n  ],\r\n\r\n  \"finalProducts\": [\r\n    {\r\n      \"itemCode\": \"BURGER-01\",\r\n      \"productId\": \"65f0c9a9b1e0c12a4f9d1236\",\r\n      \"mrp\": 50,\r\n      \"qtyGenerate\": 1\r\n    }\r\n  ]\r\n}\r\n"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/recipe/6956224b59133f40d83f1f31",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"recipe",
+								"6956224b59133f40d83f1f31"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete recipe by id",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/recipe/69561fd966015a68662c3d18",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"recipe",
+								"69561fd966015a68662c3d18"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get all recipe",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"recipeName\": \"Veg Burger Assemble\",\r\n  \"recipeDate\": \"2025-12-16\",\r\n  \"recipeNo\": \"RCP-001\",\r\n  \"recipeType\": \"assemble\",\r\n\r\n  \"rawProducts\": [\r\n    {\r\n      \"itemCode\": \"BUN-01\",\r\n      \"productId\": \"693919cce784c7908a1472a7\",\r\n      \"mrp\": 5,\r\n      \"useQty\": 2\r\n    },\r\n    {\r\n      \"itemCode\": \"PATTY-01\",\r\n      \"productId\": \"69391bbd6971c5e3389c7809\",\r\n      \"mrp\": 15,\r\n      \"useQty\": 1\r\n    }\r\n  ],\r\n\r\n  \"finalProducts\": [\r\n    {\r\n      \"itemCode\": \"BURGER-01\",\r\n      \"productId\": \"65f0c9a9b1e0c12a4f9d1236\",\r\n      \"mrp\": 50,\r\n      \"qtyGenerate\": 1\r\n    }\r\n  ]\r\n}\r\n"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/recipe/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"recipe",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "3",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "0012312",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit recipe by id",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"recipeId\": \"69561fd966015a68662c3d18\",\r\n    \"recipeName\": \"Veg\",\r\n    \"recipeDate\": \"2025-12-14\",\r\n    \"recipeNo\": \"RCP-004\",\r\n    \"recipeType\": \"assemble\",\r\n    \"rawProducts\": [\r\n        {\r\n            \"itemCode\": \"BUN-01\",\r\n            \"productId\": \"693919cce784c7908a1472a7\",\r\n            \"mrp\": 5,\r\n            \"useQty\": 2\r\n        },\r\n        {\r\n            \"itemCode\": \"PATTY-01\",\r\n            \"productId\": \"69391bbd6971c5e3389c7809\",\r\n            \"mrp\": 15,\r\n            \"useQty\": 1\r\n        }\r\n    ],\r\n    \"finalProducts\": [\r\n        {\r\n            \"itemCode\": \"BURGER-01\",\r\n            \"productId\": \"65f0c9a9b1e0c12a4f9d1236\",\r\n            \"mrp\": 50,\r\n            \"qtyGenerate\": 1\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/recipe/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"recipe",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Material of products",
+			"item": [
+				{
+					"name": "Material of products",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"recipeName\": \"Veg Burger Assemble\",\r\n  \"recipeDate\": \"2025-12-16\",\r\n  \"recipeNo\": \"RCP-001\",\r\n  \"recipeType\": \"assemble\",\r\n\r\n  \"rawProducts\": [\r\n    {\r\n      \"itemCode\": \"BUN-01\",\r\n      \"productId\": \"693919cce784c7908a1472a7\",\r\n      \"mrp\": 5,\r\n      \"useQty\": 2\r\n    },\r\n    {\r\n      \"itemCode\": \"PATTY-01\",\r\n      \"productId\": \"69391bbd6971c5e3389c7809\",\r\n      \"mrp\": 15,\r\n      \"useQty\": 1\r\n    }\r\n  ],\r\n\r\n  \"finalProducts\": [\r\n    {\r\n      \"itemCode\": \"BURGER-01\",\r\n      \"productId\": \"65f0c9a9b1e0c12a4f9d1236\",\r\n      \"mrp\": 50,\r\n      \"qtyGenerate\": 1\r\n    }\r\n  ]\r\n}\r\n"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/recipe/6941217703088f375ba25da5/product_of_material",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"recipe",
+								"6941217703088f375ba25da5",
+								"product_of_material"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Brand",
+			"item": [
+				{
+					"name": "Add Brand",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "\r\n// Step-1\r\n// {\r\n//   \"name\": \"Apple\",\r\n//   \"code\": \"APPLE23\",\r\n//   \"description\": \"Apple Inc main brand\",\r\n//   \"image\": \"https://cdn.example.com/brands/apple.png\"\r\n// }\r\n\r\n// Step-2\r\n// {\r\n//   \"name\": \"iPhone\",\r\n//   \"code\": \"IPHONE13\",\r\n//   \"description\": \"Apple iPhone brand\",\r\n//   \"parentBrandId\": \"694f5af01395be9791e8f14e\",\r\n//   \"image\": \"https://cdn.example.com/brands/iphone.png\"\r\n// }\r\n\r\n// Step-3\r\n{\r\n  \"name\": \"iPhone 15\",\r\n  \"code\": \"IPHONE-116\",\r\n  \"parentBrandId\": \"694f633b676217a91133a73c\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/brand/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"brand",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get all brand",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/brand/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"brand",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "DigiVerse",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "deleteFilter",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "edit brand by id",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"id\": \"6943ca842830ff6d3b8c54c2\",\r\n  \"name\": \"Samsung Galaxy\",\r\n  \"description\": \"Samsung mobile series\",\r\n  \"image\": \"https://cdn.example.com/brands/galaxy.png\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/brand/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"brand",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete brand by id",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"id\": \"6943ca842830ff6d3b8c54c2\",\r\n  \"name\": \"Samsung Galaxy\",\r\n  \"description\": \"Samsung mobile series\",\r\n  \"image\": \"https://cdn.example.com/brands/galaxy.png\"\r\n}\r\n"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/brand/6943ca842830ff6d3b8c54c2",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"brand",
+								"6943ca842830ff6d3b8c54c2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get single brand by id",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"id\": \"6943ca842830ff6d3b8c54c2\",\r\n  \"name\": \"Samsung Galaxy\",\r\n  \"description\": \"Samsung mobile series\",\r\n  \"image\": \"https://cdn.example.com/brands/galaxy.png\"\r\n}\r\n"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/brand/694f5ea15f909cd06c6edfb3",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"brand",
+								"694f5ea15f909cd06c6edfb3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get all brand tree",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/brand/tree/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"brand",
+								"tree",
+								"all"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Category",
+			"item": [
+				{
+					"name": "Add category",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "\r\n// step-1\r\n// {\r\n//   \"name\": \"Home Appliances\",\r\n//   \"code\": \"HOME_APPLIANCES1\",\r\n//   \"description\": \"All home appliances\"\r\n// }\r\n\r\n// step-2\r\n// {\r\n//   \"name\": \"Washing Machines\",\r\n//   \"code\": \"MACHINES2\",\r\n//   \"parentCategoryId\": \"69564de544c7e9c3fc88b6ca\"\r\n// }\r\n// step-3\r\n// {\r\n//   \"name\": \"Smartphones\",\r\n//   \"code\": \"SMARTPHONES1\",\r\n//   \"parentCategoryId\": \"69564e1e3609f898c4fdc86d\"\r\n// }\r\n\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/category/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"category",
+								"add"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "DigiVerse",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "deleteFilter",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit categoy by id",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"id\": \"6943ce942830ff6d3b8c54d5\",\r\n  \"name\": \"Fully Automatic Washing Machines\",\r\n  \"description\": \"Top & front load machines\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/category/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"category",
+								"edit"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "DigiVerse",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "deleteFilter",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get all category",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/category/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"category",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "DigiVerse",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "activeFilter",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "deleteFilter",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete category by id",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "\r\n// step-1\r\n// {\r\n//   \"name\": \"Home Appliances\",\r\n//   \"code\": \"HOME_APPLIANCES\",\r\n//   \"description\": \"All home appliances\"\r\n// }\r\n\r\n// step-2\r\n// {\r\n//   \"name\": \"Washing Machines\",\r\n//   \"code\": \"WASHING_MACHINES\",\r\n//   \"parentCategoryId\": \"6943ce792830ff6d3b8c54d2\"\r\n// }\r\n\r\n"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/category/6943ce792830ff6d3b8c54d2",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"category",
+								"6943ce792830ff6d3b8c54d2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get all tree category",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/category/tree/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"category",
+								"tree",
+								"all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get single category by id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/category/69564e573609f898c4fdc875",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"category",
+								"69564e573609f898c4fdc875"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "POS Order",
+			"item": [
+				{
+					"name": "POS Order Get All",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/posorder/all",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"posorder",
+								"all"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "paymentStatus",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "locationId",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "tableNo",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Hold Orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/posorder/hold",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"posorder",
+								"hold"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add POS Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"orderNo\": \"POS000001\",\r\n    \"date\": \"2025-01-15\",\r\n    \"locationId\": \"694e88ac7c101593469c7c7c\",\r\n    \"tableNo\": \"Table 1\",\r\n    \"customerId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"items\": [\r\n        {\r\n            \"productId\": \"69576c6300f604b565c18263\",\r\n            \"productName\": \"Hello this is demo product\",\r\n            \"qty\": 2,\r\n            \"price\": 500,\r\n            \"discountPercent\": 0,\r\n            \"discountAmount\": 0,\r\n            \"taxId\": \"66a0c9b5e1b1c8a1a5555555\",\r\n            \"taxPercent\": 18,\r\n            \"taxAmount\": 180,\r\n            \"taxableAmount\": 1000,\r\n            \"totalAmount\": 1180\r\n        }\r\n    ],\r\n    \"grossAmount\": 1000,\r\n    \"discountAmount\": 0,\r\n    \"taxAmount\": 180,\r\n    \"roundOff\": 0,\r\n    \"netAmount\": 1180,\r\n    \"paidAmount\": 1180,\r\n    \"balanceAmount\": 0,\r\n    \"paymentMethod\": \"cash\",\r\n    \"paymentStatus\": \"paid\",\r\n    \"status\": \"completed\",\r\n    \"notes\": \"POS order notes\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/posorder/add",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"posorder",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Quick Add Product",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"productName\": \"Hello this is demo product\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/posorder/quick-add-product",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"posorder",
+								"quick-add-product"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit POS Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"posOrderId\": \"695a11bc7c101593469c8a21\",\r\n    \"orderNo\": \"POS000001\",\r\n    \"date\": \"2025-01-15\",\r\n    \"locationId\": \"694e88ac7c101593469c7c7c\",\r\n    \"tableNo\": \"Table 1\",\r\n    \"customerId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"items\": [\r\n        {\r\n            \"productId\": \"69576c6300f604b565c18263\",\r\n            \"productName\": \"Hello this is demo product\",\r\n            \"qty\": 3,\r\n            \"price\": 500,\r\n            \"discountPercent\": 5,\r\n            \"discountAmount\": 75,\r\n            \"taxId\": \"66a0c9b5e1b1c8a1a5555555\",\r\n            \"taxPercent\": 18,\r\n            \"taxAmount\": 256.5,\r\n            \"taxableAmount\": 1425,\r\n            \"totalAmount\": 1681.5\r\n        }\r\n    ],\r\n    \"grossAmount\": 1500,\r\n    \"discountAmount\": 75,\r\n    \"taxAmount\": 256.5,\r\n    \"roundOff\": 0,\r\n    \"netAmount\": 1681.5,\r\n    \"paidAmount\": 1681.5,\r\n    \"balanceAmount\": 0,\r\n    \"paymentMethod\": \"card\",\r\n    \"paymentStatus\": \"paid\",\r\n    \"status\": \"completed\",\r\n    \"notes\": \"Updated POS order notes\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/posorder/edit",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"posorder",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Hold POS Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"posOrderId\": \"695a11bc7c101593469c8a21\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/posorder/hold",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"posorder",
+								"hold"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Release POS Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"posOrderId\": \"695a11bc7c101593469c8a21\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/posorder/release",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"posorder",
+								"release"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Convert to Invoice",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"posOrderId\": \"695a11bc7c101593469c8a21\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/posorder/convert-to-invoice",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"posorder",
+								"convert-to-invoice"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete POS Order",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/posorder/695a11bc7c101593469c8a21",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"posorder",
+								"695a11bc7c101593469c8a21"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get POS Order By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/posorder/695a11bc7c101593469c8a21",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"posorder",
+								"695a11bc7c101593469c8a21"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Employee",
+			"item": [
+				{
+					"name": "Employee Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/employee/all", "host": ["{{BASE_URL}}"], "path": ["employee", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}, {"key": "search", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Employee Dropdown",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/employee/dropdown", "host": ["{{BASE_URL}}"], "path": ["employee", "dropdown"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Employee",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"firstName\": \"John\",\r\n    \"lastName\": \"Doe\",\r\n    \"email\": \"john.doe@example.com\",\r\n    \"phoneNo\": {\"countryCode\": \"+91\", \"phoneNo\": \"1234567890\"},\r\n    \"designation\": \"Manager\",\r\n    \"departmentId\": \"694d02467cb4009f97a30882\",\r\n    \"isActive\": true\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/employee/add", "host": ["{{BASE_URL}}"], "path": ["employee", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Employee",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"employeeId\": \"695a11bc7c101593469c8a21\",\r\n    \"firstName\": \"John\",\r\n    \"lastName\": \"Doe Updated\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/employee/edit", "host": ["{{BASE_URL}}"], "path": ["employee", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Employee",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/employee/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["employee", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Employee By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/employee/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["employee", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Employee Permissions",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"permissions\": {\r\n        \"dashboard\": {\"add\": true, \"update\": false, \"deleted\": false, \"view\": true, \"all\": false},\r\n        \"sales\": {\"add\": true, \"update\": true, \"deleted\": false, \"view\": true, \"all\": false}\r\n    }\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/employee/695a11bc7c101593469c8a21/permission", "host": ["{{BASE_URL}}"], "path": ["employee", "695a11bc7c101593469c8a21", "permission"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Purchase Order",
+			"item": [
+				{
+					"name": "Purchase Order Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/purchaseorder/all", "host": ["{{BASE_URL}}"], "path": ["purchaseorder", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}, {"key": "search", "value": "", "disabled": true}, {"key": "supplierId", "value": "", "disabled": true}, {"key": "status", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Purchase Order Dropdown",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/purchaseorder/dropdown", "host": ["{{BASE_URL}}"], "path": ["purchaseorder", "dropdown"], "query": [{"key": "supplierId", "value": "", "disabled": true}, {"key": "status", "value": "", "disabled": true}, {"key": "search", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Purchase Order",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"date\": \"2025-01-15\",\r\n    \"supplierId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"items\": [{\"productId\": \"69576c6300f604b565c18263\", \"productName\": \"Product Name\", \"qty\": 10, \"price\": 100, \"totalAmount\": 1000}],\r\n    \"grossAmount\": 1000,\r\n    \"netAmount\": 1000,\r\n    \"status\": \"pending\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/purchaseorder/add", "host": ["{{BASE_URL}}"], "path": ["purchaseorder", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Purchase Order",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"purchaseOrderId\": \"695a11bc7c101593469c8a21\",\r\n    \"status\": \"received\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/purchaseorder/edit", "host": ["{{BASE_URL}}"], "path": ["purchaseorder", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Purchase Order",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/purchaseorder/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["purchaseorder", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Purchase Order By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/purchaseorder/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["purchaseorder", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Supplier Bill",
+			"item": [
+				{
+					"name": "Supplier Bill Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/supplierbill/all", "host": ["{{BASE_URL}}"], "path": ["supplierbill", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}, {"key": "search", "value": "", "disabled": true}, {"key": "supplierId", "value": "", "disabled": true}, {"key": "status", "value": "", "disabled": true}, {"key": "paymentStatus", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Supplier Bill Dropdown",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/supplierbill/dropdown", "host": ["{{BASE_URL}}"], "path": ["supplierbill", "dropdown"], "query": [{"key": "supplierId", "value": "", "disabled": true}, {"key": "status", "value": "", "disabled": true}, {"key": "paymentStatus", "value": "", "disabled": true}, {"key": "search", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Supplier Bill",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"date\": \"2025-01-15\",\r\n    \"supplierId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"items\": [{\"productId\": \"69576c6300f604b565c18263\", \"productName\": \"Product Name\", \"qty\": 10, \"price\": 100, \"totalAmount\": 1000}],\r\n    \"grossAmount\": 1000,\r\n    \"netAmount\": 1000,\r\n    \"paymentStatus\": \"unpaid\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/supplierbill/add", "host": ["{{BASE_URL}}"], "path": ["supplierbill", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Supplier Bill",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"supplierBillId\": \"695a11bc7c101593469c8a21\",\r\n    \"paymentStatus\": \"paid\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/supplierbill/edit", "host": ["{{BASE_URL}}"], "path": ["supplierbill", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Supplier Bill",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/supplierbill/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["supplierbill", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Supplier Bill By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/supplierbill/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["supplierbill", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Debit Note",
+			"item": [
+				{
+					"name": "Debit Note Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/debitnote/all", "host": ["{{BASE_URL}}"], "path": ["debitnote", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}, {"key": "search", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Debit Note",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"date\": \"2025-01-15\",\r\n    \"supplierId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"supplierBillId\": \"695a11bc7c101593469c8a21\",\r\n    \"items\": [{\"productId\": \"69576c6300f604b565c18263\", \"productName\": \"Product Name\", \"qty\": 1, \"price\": 100, \"totalAmount\": 100}],\r\n    \"netAmount\": 100,\r\n    \"reason\": \"Defective goods\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/debitnote/add", "host": ["{{BASE_URL}}"], "path": ["debitnote", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Debit Note",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"debitNoteId\": \"695a11bc7c101593469c8a21\",\r\n    \"reason\": \"Updated reason\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/debitnote/edit", "host": ["{{BASE_URL}}"], "path": ["debitnote", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Debit Note",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/debitnote/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["debitnote", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Debit Note By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/debitnote/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["debitnote", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Estimate",
+			"item": [
+				{
+					"name": "Estimate Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/estimate/all", "host": ["{{BASE_URL}}"], "path": ["estimate", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}, {"key": "search", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Estimate",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"date\": \"2025-01-15\",\r\n    \"customerId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"items\": [{\"productId\": \"69576c6300f604b565c18263\", \"productName\": \"Product Name\", \"qty\": 5, \"price\": 200, \"totalAmount\": 1000}],\r\n    \"grossAmount\": 1000,\r\n    \"netAmount\": 1000\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/estimate/add", "host": ["{{BASE_URL}}"], "path": ["estimate", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Estimate",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"estimateId\": \"695a11bc7c101593469c8a21\",\r\n    \"status\": \"completed\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/estimate/edit", "host": ["{{BASE_URL}}"], "path": ["estimate", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Estimate",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/estimate/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["estimate", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Estimate By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/estimate/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["estimate", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Sales Order",
+			"item": [
+				{
+					"name": "Sales Order Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/salesorder/all", "host": ["{{BASE_URL}}"], "path": ["salesorder", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}, {"key": "search", "value": "", "disabled": true}, {"key": "customerId", "value": "", "disabled": true}, {"key": "status", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Sales Order Dropdown",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/salesorder/dropdown", "host": ["{{BASE_URL}}"], "path": ["salesorder", "dropdown"], "query": [{"key": "customerId", "value": "", "disabled": true}, {"key": "status", "value": "", "disabled": true}, {"key": "search", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Sales Order",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"date\": \"2025-01-15\",\r\n    \"customerId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"items\": [{\"productId\": \"69576c6300f604b565c18263\", \"productName\": \"Product Name\", \"qty\": 5, \"price\": 200, \"totalAmount\": 1000}],\r\n    \"grossAmount\": 1000,\r\n    \"netAmount\": 1000,\r\n    \"status\": \"pending\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/salesorder/add", "host": ["{{BASE_URL}}"], "path": ["salesorder", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Sales Order",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"salesOrderId\": \"695a11bc7c101593469c8a21\",\r\n    \"status\": \"completed\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/salesorder/edit", "host": ["{{BASE_URL}}"], "path": ["salesorder", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Sales Order",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/salesorder/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["salesorder", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Sales Order By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/salesorder/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["salesorder", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Invoice",
+			"item": [
+				{
+					"name": "Invoice Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/invoice/all", "host": ["{{BASE_URL}}"], "path": ["invoice", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}, {"key": "search", "value": "", "disabled": true}, {"key": "customerId", "value": "", "disabled": true}, {"key": "status", "value": "", "disabled": true}, {"key": "paymentStatus", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Invoice Dropdown",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/invoice/dropdown", "host": ["{{BASE_URL}}"], "path": ["invoice", "dropdown"], "query": [{"key": "customerId", "value": "", "disabled": true}, {"key": "status", "value": "", "disabled": true}, {"key": "paymentStatus", "value": "", "disabled": true}, {"key": "search", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Invoice",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"date\": \"2025-01-15\",\r\n    \"customerId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"items\": [{\"productId\": \"69576c6300f604b565c18263\", \"productName\": \"Product Name\", \"qty\": 5, \"price\": 200, \"totalAmount\": 1000}],\r\n    \"grossAmount\": 1000,\r\n    \"netAmount\": 1000,\r\n    \"paymentStatus\": \"unpaid\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/invoice/add", "host": ["{{BASE_URL}}"], "path": ["invoice", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Invoice",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"invoiceId\": \"695a11bc7c101593469c8a21\",\r\n    \"paymentStatus\": \"paid\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/invoice/edit", "host": ["{{BASE_URL}}"], "path": ["invoice", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Invoice",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/invoice/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["invoice", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Invoice By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/invoice/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["invoice", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Delivery Challan",
+			"item": [
+				{
+					"name": "Delivery Challan Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/deliverychallan/all", "host": ["{{BASE_URL}}"], "path": ["deliverychallan", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}, {"key": "search", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Delivery Challan",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"date\": \"2025-01-15\",\r\n    \"customerId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"items\": [{\"productId\": \"69576c6300f604b565c18263\", \"productName\": \"Product Name\", \"qty\": 5, \"price\": 200, \"totalAmount\": 1000}],\r\n    \"netAmount\": 1000\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/deliverychallan/add", "host": ["{{BASE_URL}}"], "path": ["deliverychallan", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Delivery Challan",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"deliveryChallanId\": \"695a11bc7c101593469c8a21\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/deliverychallan/edit", "host": ["{{BASE_URL}}"], "path": ["deliverychallan", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Delivery Challan",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/deliverychallan/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["deliverychallan", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Delivery Challan By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/deliverychallan/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["deliverychallan", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Credit Note",
+			"item": [
+				{
+					"name": "Credit Note Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/creditnote/all", "host": ["{{BASE_URL}}"], "path": ["creditnote", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}, {"key": "search", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Credit Note",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"date\": \"2025-01-15\",\r\n    \"customerId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"invoiceId\": \"695a11bc7c101593469c8a21\",\r\n    \"items\": [{\"productId\": \"69576c6300f604b565c18263\", \"productName\": \"Product Name\", \"qty\": 1, \"price\": 100, \"totalAmount\": 100}],\r\n    \"netAmount\": 100,\r\n    \"reason\": \"Returned goods\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/creditnote/add", "host": ["{{BASE_URL}}"], "path": ["creditnote", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Credit Note",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"creditNoteId\": \"695a11bc7c101593469c8a21\",\r\n    \"reason\": \"Updated reason\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/creditnote/edit", "host": ["{{BASE_URL}}"], "path": ["creditnote", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Credit Note",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/creditnote/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["creditnote", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Credit Note By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/creditnote/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["creditnote", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Voucher",
+			"item": [
+				{
+					"name": "Voucher Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/voucher/all", "host": ["{{BASE_URL}}"], "path": ["voucher", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}, {"key": "search", "value": "", "disabled": true}, {"key": "voucherType", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Voucher",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"date\": \"2025-01-15\",\r\n    \"type\": \"payment\",\r\n    \"partyId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"bankAccountId\": \"69524514c205cbdb960e2e13\",\r\n    \"amount\": 5000\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/voucher/add", "host": ["{{BASE_URL}}"], "path": ["voucher", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Voucher",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"voucherId\": \"695a11bc7c101593469c8a21\",\r\n    \"amount\": 6000\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/voucher/edit", "host": ["{{BASE_URL}}"], "path": ["voucher", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Voucher",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/voucher/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["voucher", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Voucher By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/voucher/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["voucher", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Payment Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/payment/all", "host": ["{{BASE_URL}}"], "path": ["payment", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Payment",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"date\": \"2025-01-15\",\r\n    \"partyId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"bankAccountId\": \"69524514c205cbdb960e2e13\",\r\n    \"amount\": 5000\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/payment/add", "host": ["{{BASE_URL}}"], "path": ["payment", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Receipt Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/receipt/all", "host": ["{{BASE_URL}}"], "path": ["receipt", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Receipt",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"date\": \"2025-01-15\",\r\n    \"partyId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"bankAccountId\": \"69524514c205cbdb960e2e13\",\r\n    \"amount\": 5000\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/receipt/add", "host": ["{{BASE_URL}}"], "path": ["receipt", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Expense Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/expense/all", "host": ["{{BASE_URL}}"], "path": ["expense", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Expense",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"date\": \"2025-01-15\",\r\n    \"bankAccountId\": \"69524514c205cbdb960e2e13\",\r\n    \"amount\": 2000,\r\n    \"notes\": \"Office expenses\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/expense/add", "host": ["{{BASE_URL}}"], "path": ["expense", "add"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Account",
+			"item": [
+				{
+					"name": "Account Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/account/all", "host": ["{{BASE_URL}}"], "path": ["account", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}, {"key": "search", "value": "", "disabled": true}, {"key": "accountType", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Account Dropdown",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/account/dropdown", "host": ["{{BASE_URL}}"], "path": ["account", "dropdown"], "query": [{"key": "accountType", "value": "", "disabled": true}, {"key": "accountGroupId", "value": "", "disabled": true}, {"key": "search", "value": "", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Account",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"name\": \"Cash Account\",\r\n    \"accountType\": \"asset\",\r\n    \"accountGroupId\": \"695a11bc7c101593469c8a21\",\r\n    \"openingBalance\": 10000\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/account/add", "host": ["{{BASE_URL}}"], "path": ["account", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Account",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"accountId\": \"695a11bc7c101593469c8a21\",\r\n    \"name\": \"Updated Account Name\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/account/edit", "host": ["{{BASE_URL}}"], "path": ["account", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Account",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/account/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["account", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Account By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/account/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["account", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Account Group",
+			"item": [
+				{
+					"name": "Account Group Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/accountgroup/all", "host": ["{{BASE_URL}}"], "path": ["accountgroup", "all"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Account Group Dropdown",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/accountgroup/dropdown", "host": ["{{BASE_URL}}"], "path": ["accountgroup", "dropdown"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Account Group List (JSON)",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/accountgroup/list/json", "host": ["{{BASE_URL}}"], "path": ["accountgroup", "list", "json"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Payment Term",
+			"item": [
+				{
+					"name": "Payment Term Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/paymentterm/all", "host": ["{{BASE_URL}}"], "path": ["paymentterm", "all"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Payment Term Dropdown",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/paymentterm/dropdown", "host": ["{{BASE_URL}}"], "path": ["paymentterm", "dropdown"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Location",
+			"item": [
+				{
+					"name": "Get All Countries",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/location/country", "host": ["{{BASE_URL}}"], "path": ["location", "country"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get States By Country",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/location/state/IN", "host": ["{{BASE_URL}}"], "path": ["location", "state", "IN"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Cities By State",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/location/city/MH", "host": ["{{BASE_URL}}"], "path": ["location", "city", "MH"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "UOM",
+			"item": [
+				{
+					"name": "UOM Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/uom/all", "host": ["{{BASE_URL}}"], "path": ["uom", "all"]}
+					},
+					"response": []
+				},
+				{
+					"name": "UOM Dropdown",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/uom/dropdown", "host": ["{{BASE_URL}}"], "path": ["uom", "dropdown"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tax",
+			"item": [
+				{
+					"name": "Tax Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/tax/all", "host": ["{{BASE_URL}}"], "path": ["tax", "all"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Tax Dropdown",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/tax/dropdown", "host": ["{{BASE_URL}}"], "path": ["tax", "dropdown"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Coupon",
+			"item": [
+				{
+					"name": "Coupon Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/coupon/all", "host": ["{{BASE_URL}}"], "path": ["coupon", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Coupon",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"code\": \"SAVE10\",\r\n    \"discountType\": \"percentage\",\r\n    \"discountValue\": 10,\r\n    \"validFrom\": \"2025-01-01\",\r\n    \"validTo\": \"2025-12-31\",\r\n    \"maxUses\": 100\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/coupon/add", "host": ["{{BASE_URL}}"], "path": ["coupon", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Coupon",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"couponId\": \"695a11bc7c101593469c8a21\",\r\n    \"discountValue\": 15\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/coupon/edit", "host": ["{{BASE_URL}}"], "path": ["coupon", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Coupon",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/coupon/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["coupon", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Coupon By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/coupon/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["coupon", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Discount",
+			"item": [
+				{
+					"name": "Discount Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/discount/all", "host": ["{{BASE_URL}}"], "path": ["discount", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Discount",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"name\": \"Bulk Discount\",\r\n    \"discountType\": \"percentage\",\r\n    \"discountValue\": 5,\r\n    \"minQty\": 10\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/discount/add", "host": ["{{BASE_URL}}"], "path": ["discount", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Discount",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"discountId\": \"695a11bc7c101593469c8a21\",\r\n    \"discountValue\": 7\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/discount/edit", "host": ["{{BASE_URL}}"], "path": ["discount", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Discount",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/discount/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["discount", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Discount By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/discount/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["discount", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Feedback",
+			"item": [
+				{
+					"name": "Feedback Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/feedback/all", "host": ["{{BASE_URL}}"], "path": ["feedback", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Feedback",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"customerId\": \"6954b8457f13f4fa10bd6417\",\r\n    \"rating\": 5,\r\n    \"comment\": \"Great service!\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/feedback/add", "host": ["{{BASE_URL}}"], "path": ["feedback", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Feedback",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"feedbackId\": \"695a11bc7c101593469c8a21\",\r\n    \"comment\": \"Updated comment\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/feedback/edit", "host": ["{{BASE_URL}}"], "path": ["feedback", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Feedback",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/feedback/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["feedback", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Feedback By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/feedback/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["feedback", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Loyalty",
+			"item": [
+				{
+					"name": "Loyalty Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/loyalty/all", "host": ["{{BASE_URL}}"], "path": ["loyalty", "all"], "query": [{"key": "page", "value": "1", "disabled": true}, {"key": "limit", "value": "10", "disabled": true}]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Loyalty",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"name\": \"Customer Loyalty Program\",\r\n    \"pointsPerPurchase\": 10,\r\n    \"validFrom\": \"2025-01-01\",\r\n    \"validTo\": \"2025-12-31\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/loyalty/add", "host": ["{{BASE_URL}}"], "path": ["loyalty", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Loyalty",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"loyaltyId\": \"695a11bc7c101593469c8a21\",\r\n    \"pointsPerPurchase\": 15\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/loyalty/edit", "host": ["{{BASE_URL}}"], "path": ["loyalty", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Loyalty",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/loyalty/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["loyalty", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Loyalty By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/loyalty/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["loyalty", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Prefix",
+			"item": [
+				{
+					"name": "Prefix Get All",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/prefix/all", "host": ["{{BASE_URL}}"], "path": ["prefix", "all"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Prefix By Module",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/prefix/module/invoice", "host": ["{{BASE_URL}}"], "path": ["prefix", "module", "invoice"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Prefix",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"module\": \"invoice\",\r\n    \"prefix\": \"INV\",\r\n    \"startingNumber\": 1\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/prefix/add", "host": ["{{BASE_URL}}"], "path": ["prefix", "add"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Prefix",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\r\n    \"prefixId\": \"695a11bc7c101593469c8a21\",\r\n    \"prefix\": \"INV-\"\r\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/prefix/edit", "host": ["{{BASE_URL}}"], "path": ["prefix", "edit"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Prefix",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/prefix/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["prefix", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Prefix By ID",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "{{Token}}", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/prefix/695a11bc7c101593469c8a21", "host": ["{{BASE_URL}}"], "path": ["prefix", "695a11bc7c101593469c8a21"]}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "BASE_URL",
+			"value": ""
+		},
+		{
+			"key": "Token",
+			"value": "",
+			"type": "default"
+		}
+	]
+}

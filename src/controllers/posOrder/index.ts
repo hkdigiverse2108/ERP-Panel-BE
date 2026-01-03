@@ -1,0 +1,551 @@
+import { HTTP_STATUS } from "../../common";
+import { apiResponse } from "../../common/utils";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel } from "../../database";
+import { PosOrderModel } from "../../database/model/posOrder";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema } from "../../validation/posOrder";
+
+const ObjectId = require("mongoose").Types.ObjectId;
+
+// Generate unique POS order number
+const generatePosOrderNo = async (companyId: any): Promise<string> => {
+  const count = await PosOrderModel.countDocuments({ companyId, isDeleted: false });
+  const prefix = "POS";
+  const number = String(count + 1).padStart(6, "0");
+  return `${prefix}${number}`;
+};
+
+export const addPosOrder = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+
+    const { error, value } = addPosOrderSchema.validate(req.body);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    if (!companyId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+    }
+
+    // Validate location if provided
+    if (value.locationId && !(await checkIdExist(branchModel, value.locationId, "Location", res))) return;
+
+    // Validate customer if provided
+    if (value.customerId && !(await checkIdExist(contactModel, value.customerId, "Customer", res))) return;
+
+    // Validate products exist
+    for (const item of value.items) {
+      if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+      if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+    }
+
+    // Generate order number if not provided
+    if (!value.orderNo) {
+      value.orderNo = await generatePosOrderNo(companyId);
+    }
+
+    // Get customer name if customer provided
+    if (value.customerId) {
+      const customer = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
+      if (customer) {
+        value.customerName = customer.companyName || `${customer.firstName} ${customer.lastName || ""}`.trim();
+      }
+    }
+
+    // Calculate totals if not provided
+    if (!value.grossAmount) {
+      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
+    }
+    if (value.netAmount === undefined || value.netAmount === null) {
+      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
+    }
+
+    // Calculate balance amount
+    value.balanceAmount = (value.netAmount || 0) - (value.paidAmount || 0);
+
+    // Set payment status based on paid amount
+    if (!value.paymentStatus) {
+      if (value.paidAmount === 0) {
+        value.paymentStatus = "unpaid";
+      } else if (value.paidAmount >= value.netAmount) {
+        value.paymentStatus = "paid";
+      } else {
+        value.paymentStatus = "partial";
+      }
+    }
+
+    // Set hold date if status is hold
+    if (value.status === "hold") {
+      value.holdDate = new Date();
+    }
+
+    const posOrderData = {
+      ...value,
+      companyId,
+      createdBy: user?._id || null,
+      updatedBy: user?._id || null,
+    };
+
+    const response = await createOne(PosOrderModel, posOrderData);
+
+    if (!response) {
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("POS Order"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const editPosOrder = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+
+    const { error, value } = editPosOrderSchema.validate(req.body);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const isExist = await getFirstMatch(PosOrderModel, { _id: value?.posOrderId, isDeleted: false }, {}, {});
+
+    if (!isExist) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+    }
+
+    // Validate location if being changed
+    if (value.locationId && value.locationId !== isExist.locationId?.toString()) {
+      if (!(await checkIdExist(branchModel, value.locationId, "Location", res))) return;
+    }
+
+    // Validate customer if being changed
+    if (value.customerId && value.customerId !== isExist.customerId?.toString()) {
+      if (!(await checkIdExist(contactModel, value.customerId, "Customer", res))) return;
+      const customer = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
+      if (customer) {
+        value.customerName = customer.companyName || `${customer.firstName} ${customer.lastName || ""}`.trim();
+      }
+    }
+
+    // Validate products if items are being updated
+    if (value.items && value.items.length > 0) {
+      for (const item of value.items) {
+        if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+        if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+      }
+
+      // Recalculate totals
+      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
+      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
+    }
+
+    // Recalculate balance and payment status
+    value.balanceAmount = (value.netAmount || isExist.netAmount) - (value.paidAmount !== undefined ? value.paidAmount : isExist.paidAmount);
+    if (value.paidAmount !== undefined) {
+      const paidAmt = value.paidAmount;
+      const netAmt = value.netAmount || isExist.netAmount;
+      if (paidAmt === 0) {
+        value.paymentStatus = "unpaid";
+      } else if (paidAmt >= netAmt) {
+        value.paymentStatus = "paid";
+      } else {
+        value.paymentStatus = "partial";
+      }
+    }
+
+    // Update hold date if status is being changed to hold
+    if (value.status === "hold" && isExist.status !== "hold") {
+      value.holdDate = new Date();
+    }
+
+    value.updatedBy = user?._id || null;
+
+    const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, value, {});
+
+    if (!response) {
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("POS Order"), {}, {}));
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("POS Order"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const holdPosOrder = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = holdPosOrderSchema.validate(req.body);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const isExist = await getFirstMatch(PosOrderModel, { _id: value?.posOrderId, isDeleted: false }, {}, {});
+
+    if (!isExist) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+    }
+
+    const payload = {
+      status: "hold",
+      holdDate: new Date(),
+      updatedBy: user?._id || null,
+    };
+
+    const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, payload, {});
+
+    if (!response) {
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("POS Order"), {}, {}));
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order put on hold successfully", response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const releasePosOrder = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = releasePosOrderSchema.validate(req.body);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const isExist = await getFirstMatch(PosOrderModel, { _id: value?.posOrderId, isDeleted: false }, {}, {});
+
+    if (!isExist) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+    }
+
+    if (isExist.status !== "hold") {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Order is not on hold", {}, {}));
+    }
+
+    const payload = {
+      status: "pending",
+      updatedBy: user?._id || null,
+    };
+
+    const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, payload, {});
+
+    if (!response) {
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("POS Order"), {}, {}));
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order released from hold successfully", response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const convertToInvoice = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = convertToInvoiceSchema.validate(req.body);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const posOrder = await getFirstMatch(PosOrderModel, { _id: value?.posOrderId, isDeleted: false }, {}, {});
+
+    if (!posOrder) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+    }
+
+    // Create invoice from POS order
+    // Note: Invoice requires customerId, so we need to handle walk-in customers
+    // Option 1: Create a default "Walk-in Customer" contact
+    // Option 2: Make customerId optional in invoice (but model requires it)
+    // For now, we'll require customerId or use a default walk-in customer ID
+    
+    if (!posOrder.customerId) {
+      // Try to find or create a default walk-in customer
+      const walkInCustomer = await getFirstMatch(contactModel, { companyName: "Walk-in Customer", companyId: posOrder.companyId, isDeleted: false }, {}, {});
+      if (!walkInCustomer) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Please create a default 'Walk-in Customer' contact for POS orders", {}, {}));
+      }
+      posOrder.customerId = walkInCustomer._id;
+      posOrder.customerName = walkInCustomer.companyName || "Walk-in Customer";
+    }
+
+    const invoiceData = {
+      documentNo: posOrder.orderNo.replace("POS", "INV"), // Convert order number to invoice number
+      date: posOrder.date,
+      customerId: posOrder.customerId,
+      customerName: posOrder.customerName || "Walk-in Customer",
+      items: posOrder.items,
+      grossAmount: posOrder.grossAmount,
+      discountAmount: posOrder.discountAmount,
+      taxAmount: posOrder.taxAmount,
+      roundOff: posOrder.roundOff,
+      netAmount: posOrder.netAmount,
+      paidAmount: posOrder.paidAmount,
+      balanceAmount: posOrder.balanceAmount,
+      paymentStatus: posOrder.paymentStatus,
+      status: "active",
+      notes: posOrder.notes,
+      companyId: posOrder.companyId,
+      createdBy: user?._id || null,
+      updatedBy: user?._id || null,
+    };
+
+    const invoice = await createOne(InvoiceModel, invoiceData);
+
+    if (!invoice) {
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, "Failed to create invoice", {}, {}));
+    }
+
+    // Update POS order with invoice ID and mark as completed
+    await updateData(
+      PosOrderModel,
+      { _id: value?.posOrderId },
+      {
+        invoiceId: invoice._id,
+        status: "completed",
+        updatedBy: user?._id || null,
+      },
+      {}
+    );
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order converted to invoice successfully", { posOrder, invoice }, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const deletePosOrder = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = deletePosOrderSchema.validate(req.params);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    if (!(await checkIdExist(PosOrderModel, value?.id, "POS Order", res))) return;
+
+    const payload = {
+      isDeleted: true,
+      updatedBy: user?._id || null,
+    };
+
+    const response = await updateData(PosOrderModel, { _id: new ObjectId(value?.id) }, payload, {});
+
+    if (!response) {
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("POS Order"), {}, {}));
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Order"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const getAllPosOrder = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+    let { page = 1, limit = 10, search, status, paymentStatus, locationId, tableNo, startDate, endDate } = req.query;
+
+    page = Number(page);
+    limit = Number(limit);
+
+    let criteria: any = { isDeleted: false };
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (search) {
+      criteria.$or = [{ orderNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }, { tableNo: { $regex: search, $options: "i" } }];
+    }
+
+    if (status) {
+      criteria.status = status;
+    }
+
+    if (paymentStatus) {
+      criteria.paymentStatus = paymentStatus;
+    }
+
+    if (locationId) {
+      criteria.locationId = locationId;
+    }
+
+    if (tableNo) {
+      criteria.tableNo = tableNo;
+    }
+
+    if (startDate && endDate) {
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        criteria.date = { $gte: start, $lte: end };
+      }
+    }
+
+    const options = {
+      sort: { createdAt: -1 },
+      populate: [
+        { path: "locationId", select: "name" },
+        { path: "customerId", select: "firstName lastName companyName email phoneNo" },
+        { path: "items.productId", select: "name itemCode" },
+        { path: "items.taxId", select: "name percentage" },
+        { path: "invoiceId", select: "documentNo" },
+      ],
+      skip: (page - 1) * limit,
+      limit,
+    };
+
+    const response = await getDataWithSorting(PosOrderModel, criteria, {}, options);
+    const totalData = await countData(PosOrderModel, criteria);
+
+    const totalPages = Math.ceil(totalData / limit) || 1;
+
+    const state = {
+      page,
+      limit,
+      totalPages,
+    };
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Order"), { posOrder_data: response, state }, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const getOnePosOrder = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { error, value } = getPosOrderSchema.validate(req.params);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const response = await getFirstMatch(
+      PosOrderModel,
+      { _id: value?.id, isDeleted: false },
+      {},
+      {
+        populate: [
+          { path: "locationId", select: "name address" },
+          { path: "customerId", select: "firstName lastName companyName email phoneNo addressDetails" },
+          { path: "items.productId", select: "name itemCode sellingPrice mrp" },
+          { path: "items.taxId", select: "name percentage type" },
+          { path: "invoiceId", select: "documentNo date netAmount" },
+        ],
+      }
+    );
+
+    if (!response) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Order"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+// Get all hold orders
+export const getAllHoldOrders = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+    const { search } = req.query;
+
+    let criteria: any = { isDeleted: false, status: "hold" };
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (search) {
+      criteria.$or = [{ orderNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }, { tableNo: { $regex: search, $options: "i" } }];
+    }
+
+    const options = {
+      sort: { holdDate: -1 },
+      populate: [
+        { path: "locationId", select: "name" },
+        { path: "customerId", select: "firstName lastName companyName" },
+      ],
+      limit: 100,
+    };
+
+    const response = await getDataWithSorting(PosOrderModel, criteria, {}, options);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Hold Orders"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+// Quick add product by name (for POS)
+export const quickAddProduct = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { productName } = req.body;
+
+    if (!productName) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Product name is required", {}, {}));
+    }
+
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+
+    let criteria: any = { isDeleted: false, isActive: true, name: { $regex: productName, $options: "i" } };
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    const product = await getFirstMatch(productModel, criteria, {}, { populate: [{ path: "categoryId", select: "name" }, { path: "taxId", select: "name percentage" }] });
+
+    if (!product) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "Product not found", {}, {}));
+    }
+
+    // Return product in POS-friendly format
+    const posProduct = {
+      _id: product._id,
+      name: product.name,
+      itemCode: product.itemCode,
+      sellingPrice: product.sellingPrice || 0,
+      mrp: product.mrp || 0,
+      uom: product.uom,
+      taxId: product.taxId?._id || null,
+      taxPercent: product.taxId?.percentage || 0,
+      stock: product.stock || 0,
+    };
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Product found", posProduct, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+

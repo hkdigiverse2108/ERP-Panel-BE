@@ -168,6 +168,41 @@ export const getBrandById = async (req, res) => {
   }
 };
 
+// Dropdown API - returns only active brands in { _id, name } format
+export const getBrandDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+
+    let criteria: any = { isDeleted: false, isActive: true };
+
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    const response = await getDataWithSorting(
+      brandModel,
+      criteria,
+      { _id: 1, name: 1, parentBrandId: 1 },
+      {
+        sort: { name: 1 },
+      }
+    );
+
+    const dropdownData = response.map((item) => ({
+      _id: item._id,
+      name: item.name,
+      parentBrandId: item.parentBrandId,
+    }));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Brand"), dropdownData, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
+};
+
 export const getBrandTree = async (req, res) => {
   reqInfo(req);
   try {

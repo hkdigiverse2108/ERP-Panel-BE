@@ -1,7 +1,7 @@
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { companyModel, contactModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addContactSchema, deleteContactSchema, editContactSchema, getContactSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -107,7 +107,7 @@ export const deleteContactById = async (req, res) => {
     const { user } = req?.headers;
     let { error, value } = deleteContactSchema.validate(req.params);
 
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).status(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     if (!(await checkIdExist(contactModel, value?.id, "Contact", res))) return;
 
@@ -211,6 +211,60 @@ export const getContactById = async (req, res) => {
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Contact"), response, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).status(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+// Contact Dropdown API - supports filtering by contactType (supplier, customer, both)
+export const getContactDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+    const { contactType, search } = req.query; // contactType: 'supplier', 'customer', 'both'
+
+    let criteria: any = { isDeleted: false, isActive: true };
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    // Filter by contact type
+    if (contactType) {
+      if (contactType === "supplier") {
+        criteria.$or = [{ contactType: "supplier" }, { contactType: "both" }];
+      } else if (contactType === "customer") {
+        criteria.$or = [{ contactType: "customer" }, { contactType: "both" }];
+      } else {
+        criteria.contactType = contactType;
+      }
+    }
+
+    // Search filter
+    if (search) {
+      const searchCriteria = {
+        $or: [
+          { firstName: { $regex: search, $options: "i" } },
+          { lastName: { $regex: search, $options: "i" } },
+          { companyName: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+        ],
+      };
+      criteria = { ...criteria, ...searchCriteria };
+    }
+
+    const response = await getData(contactModel, criteria, { firstName: 1, lastName: 1, companyName: 1 }, { sort: { companyName: 1, firstName: 1 }, limit: search ? 50 : 1000 });
+
+    const dropdownData = response.map((item) => ({
+      _id: item._id,
+      name: item.companyName || `${item.firstName} ${item.lastName || ""}`.trim(),
+      companyName: item.companyName,
+      firstName: item.firstName,
+      lastName: item.lastName,
+    }));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Contact Dropdown"), dropdownData, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };

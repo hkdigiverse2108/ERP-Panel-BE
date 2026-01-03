@@ -3,6 +3,7 @@ import { branchController } from "../controllers";
 
 const router = express.Router();
 router.get("/all", branchController.getAllBranch);
+router.get("/dropdown", branchController.getBranchDropdown);
 router.post("/add", branchController.addBranch);
 router.put("/edit", branchController.editBranchById);
 router.delete("/:id", branchController.deleteBranchById);

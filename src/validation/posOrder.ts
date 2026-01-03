@@ -1,0 +1,83 @@
+import Joi from "joi";
+import { objectId } from "./common";
+
+const posOrderItemSchema = Joi.object().keys({
+  productId: objectId().required(),
+  productName: Joi.string().required(),
+  batchNo: Joi.string().optional().allow("", null),
+  qty: Joi.number().min(0.01).required(),
+  freeQty: Joi.number().min(0).default(0).optional(),
+  uom: Joi.string().optional().allow("", null),
+  price: Joi.number().min(0).required(),
+  discountPercent: Joi.number().min(0).max(100).default(0).optional(),
+  discountAmount: Joi.number().min(0).default(0).optional(),
+  taxId: objectId().optional().allow("", null),
+  taxPercent: Joi.number().min(0).default(0).optional(),
+  taxAmount: Joi.number().min(0).default(0).optional(),
+  taxableAmount: Joi.number().min(0).required(),
+  totalAmount: Joi.number().min(0).required(),
+});
+
+export const addPosOrderSchema = Joi.object().keys({
+  orderNo: Joi.string().optional(), // Auto-generated if not provided
+  date: Joi.date().default(() => new Date()).optional(),
+  locationId: objectId().optional().allow("", null), // Branch/Location
+  tableNo: Joi.string().optional().allow("", null),
+  customerId: objectId().optional().allow("", null), // Optional customer
+  customerName: Joi.string().optional().allow("", null),
+  items: Joi.array().items(posOrderItemSchema).min(1).required(),
+  grossAmount: Joi.number().min(0).default(0).optional(),
+  discountAmount: Joi.number().min(0).default(0).optional(),
+  taxAmount: Joi.number().min(0).default(0).optional(),
+  roundOff: Joi.number().default(0).optional(),
+  netAmount: Joi.number().min(0).default(0).optional(),
+  paidAmount: Joi.number().min(0).default(0).optional(),
+  balanceAmount: Joi.number().min(0).default(0).optional(),
+  paymentMethod: Joi.string().valid("cash", "card", "upi", "wallet", "credit").default("cash").optional(),
+  paymentStatus: Joi.string().valid("paid", "unpaid", "partial").default("paid").optional(),
+  status: Joi.string().valid("pending", "completed", "hold", "cancelled").default("pending").optional(),
+  notes: Joi.string().optional().allow("", null),
+});
+
+export const editPosOrderSchema = Joi.object().keys({
+  posOrderId: objectId().required(),
+  orderNo: Joi.string().optional(),
+  date: Joi.date().optional(),
+  locationId: objectId().optional().allow("", null),
+  tableNo: Joi.string().optional().allow("", null),
+  customerId: objectId().optional().allow("", null),
+  customerName: Joi.string().optional().allow("", null),
+  items: Joi.array().items(posOrderItemSchema).optional(),
+  grossAmount: Joi.number().min(0).optional(),
+  discountAmount: Joi.number().min(0).optional(),
+  taxAmount: Joi.number().min(0).optional(),
+  roundOff: Joi.number().optional(),
+  netAmount: Joi.number().min(0).optional(),
+  paidAmount: Joi.number().min(0).optional(),
+  balanceAmount: Joi.number().min(0).optional(),
+  paymentMethod: Joi.string().valid("cash", "card", "upi", "wallet", "credit").optional(),
+  paymentStatus: Joi.string().valid("paid", "unpaid", "partial").optional(),
+  status: Joi.string().valid("pending", "completed", "hold", "cancelled").optional(),
+  notes: Joi.string().optional().allow("", null),
+});
+
+export const holdPosOrderSchema = Joi.object().keys({
+  posOrderId: objectId().required(),
+});
+
+export const releasePosOrderSchema = Joi.object().keys({
+  posOrderId: objectId().required(),
+});
+
+export const convertToInvoiceSchema = Joi.object().keys({
+  posOrderId: objectId().required(),
+});
+
+export const deletePosOrderSchema = Joi.object().keys({
+  id: objectId().required(),
+});
+
+export const getPosOrderSchema = Joi.object().keys({
+  id: objectId().required(),
+});
+

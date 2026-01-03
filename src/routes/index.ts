@@ -19,6 +19,27 @@ import { brandRouter } from "./brand";
 import { categoryRouter } from "./category";
 import { bankRouter } from "./bank";
 import { materialRouter } from "./material";
+import { accountGroupRouter } from "./accountGroup";
+import { accountRouter } from "./account";
+import { paymentTermRouter } from "./paymentTerm";
+import { locationRouter } from "./location";
+import { uomRouter } from "./uom";
+import { taxRouter } from "./tax";
+import { purchaseOrderRouter } from "./purchaseOrder";
+import { supplierBillRouter } from "./supplierBill";
+import { debitNoteRouter } from "./debitNote";
+import { estimateRouter } from "./estimate";
+import { salesOrderRouter } from "./salesOrder";
+import { invoiceRouter } from "./invoice";
+import { deliveryChallanRouter } from "./deliveryChallan";
+import { creditNoteRouter } from "./creditNote";
+import { voucherRouter } from "./voucher";
+import { couponRouter } from "./coupon";
+import { discountRouter } from "./discount";
+import { feedbackRouter } from "./feedback";
+import { loyaltyRouter } from "./loyalty";
+import { prefixRouter } from "./prefix";
+import { posOrderRouter } from "./posOrder";
 
 const router = Router();
 
@@ -45,6 +66,30 @@ router.use("/category", categoryRouter);
 
 router.use("/contacts", contactRouter);
 router.use("/bank", bankRouter);
+router.use("/accountgroup", accountGroupRouter);
+router.use("/account", accountRouter);
+router.use("/paymentterm", paymentTermRouter);
+router.use("/location", locationRouter);
+router.use("/uom", uomRouter);
+router.use("/tax", taxRouter);
+router.use("/purchaseorder", purchaseOrderRouter);
+router.use("/supplierbill", supplierBillRouter);
+router.use("/debitnote", debitNoteRouter);
+router.use("/estimate", estimateRouter);
+router.use("/salesorder", salesOrderRouter);
+router.use("/invoice", invoiceRouter);
+router.use("/deliverychallan", deliveryChallanRouter);
+router.use("/creditnote", creditNoteRouter);
+router.use("/voucher", voucherRouter);
+router.use("/payment", voucherRouter); // Alias for payment vouchers
+router.use("/receipt", voucherRouter); // Alias for receipt vouchers
+router.use("/expense", voucherRouter); // Alias for expense vouchers
+router.use("/coupon", couponRouter);
+router.use("/discount", discountRouter);
+router.use("/feedback", feedbackRouter);
+router.use("/loyalty", loyaltyRouter);
+router.use("/prefix", prefixRouter);
+router.use("/posorder", posOrderRouter);
 
 router.use("/recipe", recipeRouter);
 router.use("/material", materialRouter);
