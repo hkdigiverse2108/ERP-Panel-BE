@@ -36,7 +36,7 @@ export const addPurchaseOrder = async (req, res) => {
     // Validate products exist
     for (const item of value.items) {
       if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
-      if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+      if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
     }
 
     // Generate document number if not provided
@@ -177,10 +177,7 @@ export const getAllPurchaseOrder = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [
-        { documentNo: { $regex: search, $options: "i" } },
-        { supplierName: { $regex: search, $options: "i" } },
-      ];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { supplierName: { $regex: search, $options: "i" } }];
     }
 
     if (status) {
@@ -201,6 +198,8 @@ export const getAllPurchaseOrder = async (req, res) => {
         { path: "supplierId", select: "firstName lastName companyName email phoneNo" },
         { path: "items.productId", select: "name itemCode" },
         { path: "items.taxId", select: "name percentage" },
+        { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -217,7 +216,7 @@ export const getAllPurchaseOrder = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Order"), { purchaseOrder_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Order"), { purchaseOrder_data: response, state, totalData }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -242,6 +241,8 @@ export const getOnePurchaseOrder = async (req, res) => {
           { path: "supplierId", select: "firstName lastName companyName email phoneNo addressDetails" },
           { path: "items.productId", select: "name itemCode purchasePrice landingCost" },
           { path: "items.taxId", select: "name percentage type" },
+          { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
         ],
       }
     );
@@ -282,10 +283,7 @@ export const getPurchaseOrderDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [
-        { documentNo: { $regex: search, $options: "i" } },
-        { supplierName: { $regex: search, $options: "i" } },
-      ];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { supplierName: { $regex: search, $options: "i" } }];
     }
 
     const options: any = {
@@ -294,12 +292,7 @@ export const getPurchaseOrderDropdown = async (req, res) => {
       populate: [{ path: "supplierId", select: "firstName lastName companyName" }],
     };
 
-    const response = await getDataWithSorting(
-      purchaseOrderModel,
-      criteria,
-      { documentNo: 1, supplierName: 1, date: 1, netAmount: 1 },
-      options
-    );
+    const response = await getDataWithSorting(purchaseOrderModel, criteria, { documentNo: 1, supplierName: 1, date: 1, netAmount: 1 }, options);
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
@@ -316,4 +309,3 @@ export const getPurchaseOrderDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-

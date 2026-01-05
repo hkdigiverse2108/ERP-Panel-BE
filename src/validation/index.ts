@@ -24,6 +24,7 @@ export * from "./deliveryChallan";
 export * from "./creditNote";
 export * from "./voucher";
 export * from "./account";
+export * from "./accountGroup";
 export * from "./coupon";
 export * from "./discount";
 export * from "./feedback";

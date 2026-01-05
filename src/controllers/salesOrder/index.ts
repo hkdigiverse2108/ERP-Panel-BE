@@ -177,10 +177,7 @@ export const getAllSalesOrder = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [
-        { documentNo: { $regex: search, $options: "i" } },
-        { customerName: { $regex: search, $options: "i" } },
-      ];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }];
     }
 
     if (status) {
@@ -201,6 +198,8 @@ export const getAllSalesOrder = async (req, res) => {
         { path: "customerId", select: "firstName lastName companyName email phoneNo" },
         { path: "items.productId", select: "name itemCode" },
         { path: "items.taxId", select: "name percentage" },
+        { path: "companyId", select: "name " },
+        { path: "branchId", select: "name " },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -217,7 +216,7 @@ export const getAllSalesOrder = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order"), { salesOrder_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order"), { salesOrder_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -242,6 +241,8 @@ export const getOneSalesOrder = async (req, res) => {
           { path: "customerId", select: "firstName lastName companyName email phoneNo addressDetails" },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },
           { path: "items.taxId", select: "name percentage type" },
+          { path: "companyId", select: "name " },
+          { path: "branchId", select: "name " },
         ],
       }
     );
@@ -282,10 +283,7 @@ export const getSalesOrderDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [
-        { documentNo: { $regex: search, $options: "i" } },
-        { customerName: { $regex: search, $options: "i" } },
-      ];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }];
     }
 
     const options: any = {
@@ -294,12 +292,7 @@ export const getSalesOrderDropdown = async (req, res) => {
       populate: [{ path: "customerId", select: "firstName lastName companyName" }],
     };
 
-    const response = await getDataWithSorting(
-      SalesOrderModel,
-      criteria,
-      { documentNo: 1, customerName: 1, date: 1, netAmount: 1 },
-      options
-    );
+    const response = await getDataWithSorting(SalesOrderModel, criteria, { documentNo: 1, customerName: 1, date: 1, netAmount: 1 }, options);
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
@@ -316,4 +309,3 @@ export const getSalesOrderDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-

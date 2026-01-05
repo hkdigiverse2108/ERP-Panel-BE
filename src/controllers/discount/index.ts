@@ -27,6 +27,10 @@ export const addDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Valid From date must be before Valid To date", {}, {}));
     }
 
+    const isExist = await getFirstMatch(discountModel, { companyId, title: value?.title, isDeleted: false }, {}, {});
+
+    if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Title"), {}, {}));
+
     const discountData = {
       ...value,
       companyId,
@@ -58,11 +62,15 @@ export const editDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const isExist = await getFirstMatch(discountModel, { _id: value?.discountId, isDeleted: false }, {}, {});
+    let isExist = await getFirstMatch(discountModel, { _id: value?.discountId, isDeleted: false }, {}, {});
 
     if (!isExist) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Discount"), {}, {}));
     }
+
+    isExist = await getFirstMatch(discountModel, { companyId: isExist?.companyId, title: value?.title, isDeleted: false, _id: { $ne: value?.discountId } }, {}, {});
+
+    if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Title"), {}, {}));
 
     // Validate date range if dates are being updated
     if (value.validFrom && value.validTo && new Date(value.validFrom) >= new Date(value.validTo)) {
@@ -163,7 +171,7 @@ export const getAllDiscount = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), { discount_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), { discount_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -191,4 +199,3 @@ export const getOneDiscount = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-

@@ -158,6 +158,9 @@ export const getAllFeedback = async (req, res) => {
     const options = {
       sort: { createdAt: -1 },
       populate: [
+        { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
+
         { path: "invoiceId", select: "documentNo date netAmount" },
         { path: "customerId", select: "firstName lastName companyName" },
       ],
@@ -176,7 +179,7 @@ export const getAllFeedback = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Feedback"), { feedback_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Feedback"), { feedback_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -200,6 +203,8 @@ export const getOneFeedback = async (req, res) => {
         populate: [
           { path: "invoiceId", select: "documentNo date netAmount customerName" },
           { path: "customerId", select: "firstName lastName companyName email phoneNo" },
+          { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
         ],
       }
     );
@@ -214,4 +219,3 @@ export const getOneFeedback = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-

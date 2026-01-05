@@ -185,11 +185,7 @@ export const getAllCreditNote = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [
-        { documentNo: { $regex: search, $options: "i" } },
-        { customerName: { $regex: search, $options: "i" } },
-        { reason: { $regex: search, $options: "i" } },
-      ];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }, { reason: { $regex: search, $options: "i" } }];
     }
 
     if (status) {
@@ -227,7 +223,7 @@ export const getAllCreditNote = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Credit Note"), { creditNote_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Credit Note"), { creditNote_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -267,4 +263,3 @@ export const getOneCreditNote = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-

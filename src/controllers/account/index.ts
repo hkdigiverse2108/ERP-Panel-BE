@@ -164,7 +164,11 @@ export const getAllAccount = async (req, res) => {
 
     const options = {
       sort: { name: 1 },
-      populate: [{ path: "groupId", select: "name nature" }],
+      populate: [
+        { path: "groupId", select: "name nature" },
+        { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
+      ],
       skip: (page - 1) * limit,
       limit,
     };
@@ -180,7 +184,7 @@ export const getAllAccount = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Account"), { account_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Account"), { account_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -201,7 +205,11 @@ export const getOneAccount = async (req, res) => {
       { _id: value?.id, isDeleted: false },
       {},
       {
-        populate: [{ path: "groupId", select: "name nature parentGroupId" }],
+        populate: [
+          { path: "groupId", select: "name nature parentGroupId" },
+          { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
+        ],
       }
     );
 
@@ -266,4 +274,3 @@ export const getAccountDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-
