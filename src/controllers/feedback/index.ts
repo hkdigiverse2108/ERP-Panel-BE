@@ -125,7 +125,7 @@ export const getAllFeedback = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, customerId, rating, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, customerId, rating, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -134,6 +134,8 @@ export const getAllFeedback = async (req, res) => {
     if (companyId) {
       criteria.companyId = companyId;
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
       criteria.$or = [{ comment: { $regex: search, $options: "i" } }];

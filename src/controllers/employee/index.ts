@@ -155,7 +155,7 @@ export const getAllEmployee = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    let { page, limit, search, startDate, endDate } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -172,6 +172,7 @@ export const getAllEmployee = async (req, res) => {
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { username: { $regex: search, $options: "si" } }, { phoneNo: { $regex: search, $options: "si" } }, { email: { $regex: search, $options: "si" } }];
     }
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (startDate && endDate) {
       const start = new Date(startDate);
@@ -274,12 +275,7 @@ export const getEmployeeDropdown = async (req, res) => {
 
     // Search filter
     if (search) {
-      criteria.$or = [
-        { firstName: { $regex: search, $options: "i" } },
-        { lastName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { username: { $regex: search, $options: "i" } },
-      ];
+      criteria.$or = [{ firstName: { $regex: search, $options: "i" } }, { lastName: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }, { username: { $regex: search, $options: "i" } }];
     }
 
     const response = await getDataWithSorting(

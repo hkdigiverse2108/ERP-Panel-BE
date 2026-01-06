@@ -9,7 +9,7 @@ export const getAllTax = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page = 1, limit = 100, search, isActive, type } = req.query;
+    let { page = 1, limit = 100, search, activeFilter, type } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -20,9 +20,7 @@ export const getAllTax = async (req, res) => {
       criteria.companyId = companyId;
     }
 
-    if (isActive !== undefined) {
-      criteria.isActive = isActive === "true";
-    }
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (type) {
       criteria.type = type;

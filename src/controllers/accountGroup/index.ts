@@ -122,7 +122,7 @@ export const getAllAccountGroup = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page = 1, limit = 100, search, isActive } = req.query;
+    let { page = 1, limit = 100, search, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -133,9 +133,7 @@ export const getAllAccountGroup = async (req, res) => {
       criteria.companyId = companyId;
     }
 
-    if (isActive !== undefined) {
-      criteria.isActive = isActive === "true";
-    }
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "i" } }];

@@ -166,7 +166,7 @@ export const getAllVoucher = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, type, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, type, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -179,6 +179,8 @@ export const getAllVoucher = async (req, res) => {
     if (type) {
       criteria.type = type;
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
       criteria.$or = [{ voucherNo: { $regex: search, $options: "i" } }];

@@ -124,7 +124,7 @@ export const getAllPrefix = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, module } = req.query;
+    let { page = 1, limit = 10, search, module, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -137,6 +137,8 @@ export const getAllPrefix = async (req, res) => {
     if (search) {
       criteria.$or = [{ module: { $regex: search, $options: "i" } }, { prefix: { $regex: search, $options: "i" } }];
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (module) {
       criteria.module = module;

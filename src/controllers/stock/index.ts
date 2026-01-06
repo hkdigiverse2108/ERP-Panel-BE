@@ -169,13 +169,15 @@ export const deleteStock = async (req, res) => {
 export const getAllStock = async (req, res) => {
   reqInfo(req);
   try {
-    const { page = 1, limit = 10, search, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, departmentFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, branchFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
+    const { page = 1, limit = 10, search, activeFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, departmentFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, branchFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { itemCode: { $regex: search, $options: "si" } }];
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (categoryFilter) criteria.categoryId = categoryFilter;
 

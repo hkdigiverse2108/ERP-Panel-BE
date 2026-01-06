@@ -368,16 +368,18 @@ export const getAllPosOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, status, paymentStatus, branchId, tableNo, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, activeFilter, status, paymentStatus, branchId, tableNo, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
-   
+
     if (companyId) {
       criteria.companyId = companyId;
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
       criteria.$or = [{ orderNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }, { tableNo: { $regex: search, $options: "i" } }];

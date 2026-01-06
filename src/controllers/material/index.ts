@@ -117,7 +117,7 @@ export const getAllMaterial = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, startDate, endDate } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page) || 1;
     limit = Number(limit) || 10;
@@ -127,6 +127,8 @@ export const getAllMaterial = async (req, res) => {
     if (companyId) {
       criteria.companyId = companyId;
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
       criteria.$or = [{ materialNo: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }];

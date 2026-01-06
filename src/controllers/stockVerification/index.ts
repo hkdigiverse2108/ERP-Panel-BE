@@ -143,9 +143,11 @@ export const getAllStockVerification = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { page = 1, limit = 10, search, startDate, endDate, status, branchId } = req.query;
+    const { page = 1, limit = 10, search, startDate, endDate, status, branchId, activeFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
       criteria.$or = [{ stockVerificationNo: { $regex: search, $options: "si" } }, { remark: { $regex: search, $options: "si" } }];

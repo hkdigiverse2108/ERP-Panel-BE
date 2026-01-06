@@ -92,7 +92,7 @@ export const getAllRecipe = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, startDate, endDate } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -101,6 +101,8 @@ export const getAllRecipe = async (req, res) => {
     if (companyId) {
       criteria.companyId = companyId;
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
       criteria.$or = [{ recipeName: { $regex: search, $options: "i" } }, { recipeNo: { $regex: search, $options: "i" } }, { recipeType: { $regex: search, $options: "i" } }];

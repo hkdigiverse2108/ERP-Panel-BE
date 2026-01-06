@@ -93,7 +93,7 @@ export const getAllBrand = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search } = req.query;
+    let { page = 1, limit = 10, search, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -106,6 +106,20 @@ export const getAllBrand = async (req, res) => {
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "i" } }, { code: { $regex: search, $options: "i" } }];
+    }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (!isNaN(start.getTime()) && isNaN(end.getTime())) {
+        criteria.createdAt = {
+          $gte: start,
+          $lte: end,
+        };
+      }
     }
 
     const options = {

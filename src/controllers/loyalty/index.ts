@@ -124,7 +124,7 @@ export const getAllLoyalty = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, type, status } = req.query;
+    let { page = 1, limit = 10, search, type, status, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -137,6 +137,8 @@ export const getAllLoyalty = async (req, res) => {
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "i" } }];
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (type) {
       criteria.type = type;

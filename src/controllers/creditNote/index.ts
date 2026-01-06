@@ -174,7 +174,7 @@ export const getAllCreditNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, status, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -187,6 +187,8 @@ export const getAllCreditNote = async (req, res) => {
     if (search) {
       criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }, { reason: { $regex: search, $options: "i" } }];
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (status) {
       criteria.status = status;
