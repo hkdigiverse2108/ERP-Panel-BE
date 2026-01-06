@@ -66,20 +66,20 @@ router.use("/category", categoryRouter);
 
 router.use("/contacts", contactRouter);
 router.use("/bank", bankRouter);
-router.use("/accountgroup", accountGroupRouter);
+router.use("/account-group", accountGroupRouter);
 router.use("/account", accountRouter);
-router.use("/paymentterm", paymentTermRouter);
+router.use("/payment-term", paymentTermRouter);
 router.use("/location", locationRouter);
 router.use("/uom", uomRouter);
 router.use("/tax", taxRouter);
-router.use("/purchaseorder", purchaseOrderRouter);
-router.use("/supplierbill", supplierBillRouter);
-router.use("/debitnote", debitNoteRouter);
+router.use("/purchase-order", purchaseOrderRouter);
+router.use("/supplier-bill", supplierBillRouter);
+router.use("/debit-note", debitNoteRouter);
 router.use("/estimate", estimateRouter);
-router.use("/salesorder", salesOrderRouter);
+router.use("/sales-order", salesOrderRouter);
 router.use("/invoice", invoiceRouter);
-router.use("/deliverychallan", deliveryChallanRouter);
-router.use("/creditnote", creditNoteRouter);
+router.use("/delivery-challan", deliveryChallanRouter);
+router.use("/credit-note", creditNoteRouter);
 router.use("/voucher", voucherRouter);
 router.use("/payment", voucherRouter); // Alias for payment vouchers
 router.use("/receipt", voucherRouter); // Alias for receipt vouchers
@@ -89,7 +89,7 @@ router.use("/discount", discountRouter);
 router.use("/feedback", feedbackRouter);
 router.use("/loyalty", loyaltyRouter);
 router.use("/prefix", prefixRouter);
-router.use("/posorder", posOrderRouter);
+router.use("/pos-order", posOrderRouter);
 
 router.use("/recipe", recipeRouter);
 router.use("/material", materialRouter);

@@ -206,7 +206,7 @@ export const getAllStock = async (req, res) => {
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
         { path: "subBrandId", select: "name" },
-        { path: "departmentId", select: "name" },
+        // { path: "departmentId", select: "name" },
         { path: "uomId", select: "name code" },
         { path: "branchId", select: "name" },
       ],
@@ -299,11 +299,13 @@ export const getOneStock = async (req, res) => {
       {},
       {
         populate: [
+          { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
           { path: "categoryId", select: "name" },
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
-          { path: "departmentId", select: "name" },
+          // { path: "departmentId", select: "name" },
           { path: "uomId", select: "name code" },
         ],
       }
