@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { PRODUCT_TYPE } from "../common";
+import { PRODUCT_REQUEST_STATUS, PRODUCT_TYPE } from "../common";
 import { objectId } from "./common";
 
 export const addProductRequestSchema = Joi.object().keys({
@@ -14,6 +14,11 @@ export const addProductRequestSchema = Joi.object().keys({
   productType: Joi.string()
     .valid(...Object.values(PRODUCT_TYPE))
     .default(PRODUCT_TYPE.FINISHED)
+    .optional(),
+
+  status: Joi.string()
+    .valid(...Object.values(PRODUCT_REQUEST_STATUS))
+    .default(PRODUCT_REQUEST_STATUS.PENDING)
     .optional(),
 
   hasExpiry: Joi.boolean().default(false).optional(),
@@ -36,6 +41,10 @@ export const editProductRequestSchema = Joi.object().keys({
   productType: Joi.string()
     .valid(...Object.values(PRODUCT_TYPE))
     .default(PRODUCT_TYPE.FINISHED)
+    .optional(),
+
+  status: Joi.string()
+    .valid(...Object.values(PRODUCT_REQUEST_STATUS))
     .optional(),
 
   hasExpiry: Joi.boolean().default(false).optional(),

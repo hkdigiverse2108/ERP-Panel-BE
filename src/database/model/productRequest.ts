@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { PRODUCT_TYPE } from "../../common";
+import { PRODUCT_REQUEST_STATUS, PRODUCT_TYPE } from "../../common";
 import { baseCommonFields, baseSchemaOptions } from "./base";
 
 const productRequestSchema = new Schema(
@@ -20,6 +20,7 @@ const productRequestSchema = new Schema(
 
     description: { type: String },
     Price: { type: Number },
+    status: { type: String, enum: Object.values(PRODUCT_REQUEST_STATUS), default: PRODUCT_REQUEST_STATUS.PENDING },
     ...baseCommonFields,
   },
   baseSchemaOptions

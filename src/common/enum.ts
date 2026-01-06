@@ -6,7 +6,7 @@ export const USER_ROLES = {
 
 export const USER_TYPES = {
   SUPER_ADMIN: "super-admin",
-  ADMIN: "admin"
+  ADMIN: "admin",
 } as const;
 
 export const PRODUCT_TYPE = {
@@ -14,127 +14,133 @@ export const PRODUCT_TYPE = {
   RAW_MATERIAL: "raw_material",
   SEMI_FINISHED: "semi_finished",
   SERVICE: "service",
-  NON_INVENTORY: "non_inventory"
+  NON_INVENTORY: "non_inventory",
 } as const;
 
 export const RECIPE_TYPE = {
   ASSEMBLE: "assemble",
-  UNASSEMBLE: "unassemble"
+  UNASSEMBLE: "unassemble",
 } as const;
 
 export const PRODUCT_STATUS = {
   ACTIVE: "active",
   INACTIVE: "inactive",
-  DISCONTINUED: "discontinued"
+  DISCONTINUED: "discontinued",
+} as const;
+
+export const PRODUCT_REQUEST_STATUS = {
+  ACTIVE: "accepted",
+  REJECTED: "rejected",
+  PENDING: "pending",
 } as const;
 
 export const ACCOUNT_TYPE = {
   BANK: "bank",
   CASH: "cash",
-  OTHER: "other"
+  OTHER: "other",
 } as const;
 
 export const ACCOUNT_NATURE = {
   ASSETS: "assets",
   LIABILITIES: "liabilities",
   INCOME: "income",
-  EXPENSES: "expenses"
+  EXPENSES: "expenses",
 } as const;
 
 export const CONTACT_TYPE = {
   CUSTOMER: "customer",
   SUPPLIER: "supplier",
   TRANSPORTER: "transporter",
-  BOTH: "both"
+  BOTH: "both",
 } as const;
 
 export const CUSTOMER_TYPE = {
   RETAILER: "retailer",
   WHOLESALER: "wholesaler",
   MERCHANT: "merchant",
-  OTHER: "other"
+  OTHER: "other",
 } as const;
 
 export const SUPPLIER_TYPE = {
   MANUFACTURER: "manufacturer",
   STOCKIEST: "stockiest",
   TRADER: "trader",
-  OTHER: "other"
+  OTHER: "other",
 } as const;
 
 export const CONTACT_STATUS = {
   ACTIVE: "active",
-  INACTIVE: "inactive"
+  INACTIVE: "inactive",
 } as const;
 
 export const COUPON_DISCOUNT_TYPE = {
   PERCENTAGE: "percentage",
-  FLAT: "flat"
+  FLAT: "flat",
 } as const;
 
 export const COUPON_STATUS = {
   ACTIVE: "active",
-  INACTIVE: "inactive"
+  INACTIVE: "inactive",
 } as const;
 
 export const DISCOUNT_TYPE = {
   PERCENTAGE: "percentage",
-  FLAT: "flat"
+  FLAT: "flat",
 } as const;
 
 export const DISCOUNT_STATUS = {
   ACTIVE: "active",
-  INACTIVE: "inactive"
+  INACTIVE: "inactive",
 } as const;
 
 export const EMPLOYEE_STATUS = {
   ACTIVE: "ACTIVE",
-  INACTIVE: "INACTIVE"
+  INACTIVE: "INACTIVE",
 } as const;
 
 export const INVOICE_PAYMENT_STATUS = {
   PAID: "paid",
   UNPAID: "unpaid",
-  PARTIAL: "partial"
+  PARTIAL: "partial",
 } as const;
 
 export const LOYALTY_STATUS = {
   ACTIVE: "active",
-  INACTIVE: "inactive"
+  INACTIVE: "inactive",
 } as const;
 
 export const LOYALTY_TYPE = {
   POINTS: "points",
-  CASHBACK: "cashback"
+  CASHBACK: "cashback",
 } as const;
 
 export const PRODUCT_EXPIRY_TYPE = {
   MFG: "MFG",
-  EXPIRY: "expiry"
+  EXPIRY: "expiry",
 } as const;
 
 export const SUPPLIER_PAYMENT_STATUS = {
   PAID: "paid",
   UNPAID: "unpaid",
-  PARTIAL: "partial"
+  PARTIAL: "partial",
 } as const;
 
 export const VOUCHAR_TYPE = {
   JOURNAL: "journal",
   PAYMENT: "payment",
-  RECEIPT: "receipt", 
-  EXPENSE: "expense", 
-  CONTRA: "contra"
+  RECEIPT: "receipt",
+  EXPENSE: "expense",
+  CONTRA: "contra",
 } as const;
 
 export const INVOICE_STATUS = {
   ACTIVE: "active",
   DRAFT: "draft",
-  CANCELLED: "cancelled"
+  CANCELLED: "cancelled",
 } as const;
 
 export const SUPPLIER_BILL_STATUS = {
   ACTIVE: "active",
   DRAFT: "draft",
-  CANCELLED: "cancelled"
+  CANCELLED: "cancelled",
 } as const;
