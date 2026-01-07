@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, isValidObjectId } from "../../common";
+import { apiResponse, HTTP_STATUS } from "../../common";
 import { branchModel, companyModel, productModel, stockModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addStockSchema, deleteStockSchema, editStockSchema } from "../../validation/stock";
@@ -20,13 +20,7 @@ export const addStock = async (req, res) => {
     if (!(await checkIdExist(productModel, value?.productId, "Product", res))) return;
     // if (!(await checkIdExist(productModel, value?.variantId, "Variant", res))) return;
 
-    // const product = await getFirstMatch(productModel, { _id: value?.productId, isDeleted: false }, {}, {});
-
-    // if (!product) {
-    //   return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
-    // }
-
-    // Check if stock record already exists for this product, batch, and location combination
+    // Check if stock record already exists for this product, batch, and combination
     const existingStockCriteria: any = {
       productId: value?.productId,
       isDeleted: false,
@@ -43,7 +37,7 @@ export const addStock = async (req, res) => {
     const existingStock = await getFirstMatch(stockModel, existingStockCriteria, {}, {});
 
     if (existingStock) {
-      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Stock record for this product, batch, and location"), {}, {}));
+      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Stock record for this product, batch "), {}, {}));
     }
 
     value.createdBy = user?._id || null;
@@ -169,7 +163,7 @@ export const deleteStock = async (req, res) => {
 export const getAllStock = async (req, res) => {
   reqInfo(req);
   try {
-    const { page = 1, limit = 10, search, activeFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, departmentFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, branchFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
+    const { page = 1, limit = 10, search, activeFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, branchFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { stockVerificationModel, productModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { stockVerificationModel, productModel, categoryModel } from "../../database";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addStockVerificationSchema, deleteStockVerificationSchema, editStockVerificationSchema, getStockVerificationSchema } from "../../validation/stockVerification";
 
 // Generate unique stock verification number
@@ -19,11 +19,16 @@ export const addStockVerification = async (req, res) => {
 
     const { error, value } = addStockVerificationSchema.validate(req.body);
 
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    if (!(await checkIdExist(categoryModel, value?.categoryId, "Category", res))) return;
+
+    if (value.items) {
+      for (const item of value.items) {
+        if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+      }
     }
 
-    // Generate stock verification number
     const stockVerificationNo = await generateStockVerificationNo();
 
     // Calculate totals
@@ -79,6 +84,12 @@ export const editStockVerification = async (req, res) => {
 
     if (!isExist) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Verification"), {}, {}));
+    }
+
+    if (value.items) {
+      for (const item of value.items) {
+        if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+      }
     }
 
     // Recalculate totals if items are updated

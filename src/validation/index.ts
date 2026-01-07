@@ -33,3 +33,4 @@ export * from "./feedback";
 export * from "./loyalty";
 export * from "./prefix";
 export * from "./posOrder";
+export * from "./paymentTerm";

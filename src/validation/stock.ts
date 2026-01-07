@@ -3,7 +3,7 @@ import { baseApiSchema, objectId } from "./common";
 
 export const addStockSchema = Joi.object().keys({
   productId: objectId().required(),
-  companyId: objectId().optional(),
+  companyId: objectId().required(),
   branchId: objectId().optional(),
   variantId: objectId().optional(),
   batchNo: Joi.string().optional(),
