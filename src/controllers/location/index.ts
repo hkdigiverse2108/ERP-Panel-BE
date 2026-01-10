@@ -10,7 +10,6 @@ const countries = [
   // Add more countries as needed
 ];
 
-// Static state data for India - can be moved to database if needed
 const indianStates = [
   { _id: "GJ", name: "Gujarat", countryCode: "IN" },
   { _id: "MH", name: "Maharashtra", countryCode: "IN" },
@@ -58,7 +57,6 @@ const cities = [
   { _id: "NDL", name: "New Delhi", stateCode: "DL" },
   { _id: "BLR", name: "Bangalore", stateCode: "KA" },
   { _id: "CHN", name: "Chennai", stateCode: "TN" },
-  // Add more cities as needed
 ];
 
 export const getAllCountries = async (req, res) => {

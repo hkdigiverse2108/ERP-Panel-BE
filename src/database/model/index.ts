@@ -31,6 +31,7 @@ export * from "./stockVerification";
 export * from "./voucher";
 export * from "./announcement";
 export * from "./posOrder";
+export * from "./posCashControl";
 export * from "./branch";
 export * from "./employee";
 export * from "./permissions";

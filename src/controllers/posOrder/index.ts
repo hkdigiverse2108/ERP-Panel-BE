@@ -1,9 +1,24 @@
-import { HTTP_STATUS } from "../../common";
+import { HTTP_STATUS, VOUCHAR_TYPE } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { contactModel, productModel, taxModel, branchModel, InvoiceModel } from "../../database";
 import { PosOrderModel } from "../../database/model/posOrder";
+import { PosCashControlModel } from "../../database/model/posCashControl";
+import { voucherModel } from "../../database/model/voucher";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema } from "../../validation/posOrder";
+import {
+  addPosOrderSchema,
+  deletePosOrderSchema,
+  editPosOrderSchema,
+  getPosOrderSchema,
+  holdPosOrderSchema,
+  releasePosOrderSchema,
+  convertToInvoiceSchema,
+  getPosCashControlSchema,
+  updatePosCashControlSchema,
+  getCustomerLoyaltyPointsSchema,
+  redeemLoyaltyPointsSchema,
+  getCombinedPaymentsSchema,
+} from "../../validation/posOrder";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -543,6 +558,345 @@ export const quickAddProduct = async (req, res) => {
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Product found", posProduct, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+// POS Cash Control - Get/Update opening cash balance
+export const getPosCashControl = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+
+    const { error, value } = getPosCashControlSchema.validate(req.query);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const { locationId, date } = value;
+
+    if (!companyId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+    }
+
+    if (!locationId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Location ID is required", {}, {}));
+    }
+
+    // Validate location
+    if (!(await checkIdExist(branchModel, locationId, "Location", res))) return;
+
+    // Use today's date if not provided
+    const targetDate = date ? new Date(date as string) : new Date();
+    targetDate.setHours(0, 0, 0, 0);
+
+    // Find or create cash control for the day
+    let cashControl = await getFirstMatch(
+      PosCashControlModel,
+      { companyId, locationId, date: targetDate, isDeleted: false },
+      {},
+      { populate: [{ path: "locationId", select: "name" }, { path: "closedBy", select: "firstName lastName" }] }
+    );
+
+    // If not found, create a new one with default values
+    if (!cashControl) {
+      // Get yesterday's closing cash as today's opening cash
+      const yesterday = new Date(targetDate);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayCash = await getFirstMatch(PosCashControlModel, { companyId, locationId, date: yesterday, isDeleted: false }, {}, {});
+
+      const cashControlData = {
+        companyId,
+        locationId,
+        date: targetDate,
+        openingCash: yesterdayCash?.closingCash || 0,
+        closingCash: 0,
+        expectedCash: yesterdayCash?.closingCash || 0,
+        actualCash: 0,
+        difference: 0,
+        isClosed: false,
+        createdBy: user?._id || null,
+        updatedBy: user?._id || null,
+      };
+
+      cashControl = await createOne(PosCashControlModel, cashControlData);
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Cash Control"), cashControl, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const updatePosCashControl = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+
+    const { error, value } = updatePosCashControlSchema.validate(req.body);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const { locationId, date, openingCash, actualCash, notes, isClosed } = value;
+
+    if (!companyId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+    }
+
+    if (!locationId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Location ID is required", {}, {}));
+    }
+
+    // Validate location
+    if (!(await checkIdExist(branchModel, locationId, "Location", res))) return;
+
+    // Use today's date if not provided
+    const targetDate = date ? new Date(date) : new Date();
+    targetDate.setHours(0, 0, 0, 0);
+
+    // Find existing cash control
+    let cashControl = await getFirstMatch(PosCashControlModel, { companyId, locationId, date: targetDate, isDeleted: false }, {}, {});
+
+    if (!cashControl) {
+      // Create new if doesn't exist
+      const cashControlData = {
+        companyId,
+        locationId,
+        date: targetDate,
+        openingCash: openingCash || 0,
+        actualCash: actualCash || 0,
+        notes: notes || "",
+        isClosed: isClosed || false,
+        createdBy: user?._id || null,
+        updatedBy: user?._id || null,
+      };
+
+      cashControl = await createOne(PosCashControlModel, cashControlData);
+    } else {
+      // Update existing
+      const updateData: any = {
+        updatedBy: user?._id || null,
+      };
+
+      if (openingCash !== undefined) updateData.openingCash = openingCash;
+      if (actualCash !== undefined) updateData.actualCash = actualCash;
+      if (notes !== undefined) updateData.notes = notes;
+      if (isClosed !== undefined) {
+        updateData.isClosed = isClosed;
+        if (isClosed) {
+          updateData.closedBy = user?._id || null;
+          updateData.closedAt = new Date();
+        }
+      }
+
+      // Calculate expected cash (opening + sales - expenses)
+      // Get total sales for the day
+      const startOfDay = new Date(targetDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const salesResult = await PosOrderModel.aggregate([
+        {
+          $match: {
+            companyId: new ObjectId(companyId),
+            locationId: new ObjectId(locationId),
+            date: { $gte: startOfDay, $lte: endOfDay },
+            paymentMethod: "cash",
+            paymentStatus: "paid",
+            isDeleted: false,
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$paidAmount" } } },
+      ]);
+
+      const totalSales = salesResult.length > 0 ? salesResult[0].total : 0;
+
+      // Get total expenses for the day
+      const expensesResult = await voucherModel.aggregate([
+        {
+          $match: {
+            companyId: new ObjectId(companyId),
+            type: VOUCHAR_TYPE.EXPENSE,
+            date: { $gte: startOfDay, $lte: endOfDay },
+            bankAccountId: { $exists: true }, // Cash account
+            isDeleted: false,
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]);
+
+      const totalExpenses = expensesResult.length > 0 ? expensesResult[0].total : 0;
+
+      const opening = updateData.openingCash !== undefined ? updateData.openingCash : cashControl.openingCash;
+      updateData.expectedCash = opening + totalSales - totalExpenses;
+      updateData.closingCash = updateData.actualCash !== undefined ? updateData.actualCash : cashControl.actualCash;
+      updateData.difference = updateData.expectedCash - updateData.closingCash;
+
+      cashControl = await updateData(PosCashControlModel, { _id: cashControl._id }, updateData, {});
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("POS Cash Control"), cashControl, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+// Get Customer Loyalty Points
+export const getCustomerLoyaltyPoints = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { error, value } = getCustomerLoyaltyPointsSchema.validate(req.query);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const { customerId } = value;
+
+    if (!customerId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Customer ID is required", {}, {}));
+    }
+
+    // Validate customer
+    if (!(await checkIdExist(contactModel, customerId, "Customer", res))) return;
+
+    const customer = await getFirstMatch(contactModel, { _id: customerId, isDeleted: false }, {}, {});
+
+    if (!customer) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Customer"), {}, {}));
+    }
+
+    return res.status(HTTP_STATUS.OK).json(
+      new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Customer Loyalty Points"), { customerId: customer._id, loyaltyPoints: customer.loyaltyPoints || 0 }, {})
+    );
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+// Redeem Loyalty Points
+export const redeemLoyaltyPoints = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+
+    const { error, value } = redeemLoyaltyPointsSchema.validate(req.body);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const { customerId, pointsToRedeem, discountAmount } = value;
+
+    if (!customerId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Customer ID is required", {}, {}));
+    }
+
+    if (!pointsToRedeem || pointsToRedeem <= 0) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Points to redeem must be greater than 0", {}, {}));
+    }
+
+    // Validate customer
+    if (!(await checkIdExist(contactModel, customerId, "Customer", res))) return;
+
+    const customer = await getFirstMatch(contactModel, { _id: customerId, isDeleted: false }, {}, {});
+
+    if (!customer) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Customer"), {}, {}));
+    }
+
+    const currentPoints = customer.loyaltyPoints || 0;
+
+    if (currentPoints < pointsToRedeem) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Insufficient loyalty points", {}, {}));
+    }
+
+    // Deduct loyalty points
+    const newPoints = currentPoints - pointsToRedeem;
+    const updatedCustomer = await updateData(contactModel, { _id: customerId }, { loyaltyPoints: newPoints, updatedBy: user?._id || null }, {});
+
+    return res.status(HTTP_STATUS.OK).json(
+      new apiResponse(HTTP_STATUS.OK, "Loyalty points redeemed successfully", { customerId: customer._id, redeemedPoints: pointsToRedeem, remainingPoints: newPoints, discountAmount: discountAmount || 0 }, {})
+    );
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+// Get Combined Payments (Receipt, Payment, Expense) for POS Payments modal
+export const getCombinedPayments = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+
+    const { error, value } = getCombinedPaymentsSchema.validate(req.query);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    let { page = 1, limit = 10, search, startDate, endDate, locationId } = value;
+
+    page = Number(page);
+    limit = Number(limit);
+
+    if (!companyId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+    }
+
+    let criteria: any = {
+      isDeleted: false,
+      companyId,
+      type: { $in: [VOUCHAR_TYPE.RECEIPT, VOUCHAR_TYPE.PAYMENT, VOUCHAR_TYPE.EXPENSE] },
+    };
+
+    if (search) {
+      criteria.$or = [{ voucherNo: { $regex: search, $options: "i" } }, { notes: { $regex: search, $options: "i" } }];
+    }
+
+    if (startDate && endDate) {
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        criteria.date = { $gte: start, $lte: end };
+      }
+    }
+
+    const options = {
+      sort: { createdAt: -1 },
+      populate: [
+        { path: "partyId", select: "firstName lastName companyName" },
+        { path: "bankAccountId", select: "name" },
+      ],
+      skip: (page - 1) * limit,
+      limit,
+    };
+
+    const response = await getDataWithSorting(voucherModel, criteria, {}, options);
+    const totalData = await countData(voucherModel, criteria);
+
+    const totalPages = Math.ceil(totalData / limit) || 1;
+
+    const state = {
+      page,
+      limit,
+      totalPages,
+    };
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payments"), { payments_data: response, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
