@@ -16,7 +16,6 @@ export const addProductSchema = Joi.object().keys({
     .default(PRODUCT_TYPE.FINISHED)
     .optional(),
 
-  uomId: objectId().required(),
 
   purchasePrice: Joi.number().min(0).default(0).optional(),
   landingCost: Joi.number().min(0).default(0).optional(),
@@ -104,7 +103,6 @@ export const editProductSchema = Joi.object().keys({
     .valid(...Object.values(PRODUCT_TYPE))
     .optional(),
 
-  uomId: objectId().optional(),
 
   purchasePrice: Joi.number().min(0).optional(),
   landingCost: Joi.number().min(0).optional(),
