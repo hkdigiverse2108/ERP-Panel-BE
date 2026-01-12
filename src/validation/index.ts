@@ -34,3 +34,5 @@ export * from "./loyalty";
 export * from "./prefix";
 export * from "./posOrder";
 export * from "./paymentTerm";
+export * from "./uom";
+export * from "./tax";

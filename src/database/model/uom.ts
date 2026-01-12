@@ -7,10 +7,12 @@ export interface IUOM extends IBase {
     code: string;
 }
 
-const UOMSchema = new Schema<IUOM>({
+const uomSchema = new Schema<IUOM>({
     ...baseSchemaFields,
     name: { type: String, required: true },
-    code: { type: String, required: true }
-}, baseSchemaOptions);
+    code: { type: String, default: null }
+  },
+  baseSchemaOptions
+);
 
-export const UOMModel = mongoose.model<IUOM>('uom', UOMSchema);
+export const uomModel = mongoose.model<IUOM>("uom", uomSchema);
