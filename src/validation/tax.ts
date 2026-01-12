@@ -4,14 +4,12 @@ import { baseApiSchema, objectId } from "./common";
 export const addTaxSchema = Joi.object({
   name: Joi.string().trim().required(),
   percentage: Joi.number(),
-  ...baseApiSchema,
 });
 
 export const editTaxSchema = Joi.object({
   taxId: objectId().required(),
   name: Joi.string().trim().optional(),
   percentage: Joi.number(),
-  ...baseApiSchema,
 });
 
 export const deleteTaxSchema = Joi.object({
