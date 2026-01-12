@@ -13,7 +13,7 @@ export const adminJwt = async (req, res, next) => {
     if (!authorization) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage.tokenNotFound, {}, {}));
 
     const token = authorization.split(" ")[1];
-    console.log(token);
+    
     if (!token) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage.invalidToken, {}, {}));
 
     let decoded;
