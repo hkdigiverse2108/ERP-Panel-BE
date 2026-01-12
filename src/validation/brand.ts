@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { objectId } from "./common";
+import { baseApiSchema, objectId } from "./common";
 
 export const addBrandSchema = Joi.object({
   name: Joi.string().trim().required(),
@@ -7,6 +7,7 @@ export const addBrandSchema = Joi.object({
   description: Joi.string().allow("").optional(),
   parentBrandId: objectId().optional(),
   image: Joi.string().allow("").optional(),
+  ...baseApiSchema,
 });
 
 export const editBrandSchema = Joi.object({
@@ -16,6 +17,7 @@ export const editBrandSchema = Joi.object({
   description: Joi.string().allow("").optional(),
   parentBrandId: objectId().optional(),
   image: Joi.string().allow("").optional(),
+  ...baseApiSchema,
 });
 
 export const deleteBrandSchema = Joi.object({

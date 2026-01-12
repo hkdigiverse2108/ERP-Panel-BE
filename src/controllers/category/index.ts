@@ -42,7 +42,7 @@ export const getAllCategory = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page = 1, limit = 10, search } = req.query;
+    let { page = 1, limit = 10, search, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -55,6 +55,20 @@ export const getAllCategory = async (req, res) => {
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "i" } }, { code: { $regex: search, $options: "i" } }];
+    }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (!isNaN(start.getTime()) && isNaN(end.getTime())) {
+        criteria.createdAt = {
+          $gte: start,
+          $lte: end,
+        };
+      }
     }
 
     const options = {
@@ -79,7 +93,7 @@ export const getAllCategory = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Category"), { category_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Category"), { category_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
@@ -125,7 +139,7 @@ export const editCategoryById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
-    const existingCategory = await getFirstMatch(categoryModel, { code: value.code, _id: { $ne: value.id }, isDeleted: false }, {}, {});
+    const existingCategory = await getFirstMatch(categoryModel, { code: value.code, _id: { $ne: value.categoryId }, isDeleted: false }, {}, {});
 
     if (existingCategory) {
       return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Category code"), {}, {}));
@@ -133,7 +147,7 @@ export const editCategoryById = async (req, res) => {
 
     value.updatedBy = user?._id || null;
 
-    const response = await updateData(categoryModel, { _id: new ObjectId(value.id), isDeleted: false }, value, {});
+    const response = await updateData(categoryModel, { _id: new ObjectId(value.categoryId), isDeleted: false }, value, {});
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage.updateDataError("Category"), {}, {}));

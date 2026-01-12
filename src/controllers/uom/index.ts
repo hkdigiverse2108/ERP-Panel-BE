@@ -9,7 +9,7 @@ export const getAllUOM = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page = 1, limit = 100, search, isActive } = req.query;
+    let { page = 1, limit = 100, search, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -20,9 +20,7 @@ export const getAllUOM = async (req, res) => {
       criteria.companyId = companyId;
     }
 
-    if (isActive !== undefined) {
-      criteria.isActive = isActive === "true";
-    }
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "i" } }, { code: { $regex: search, $options: "i" } }];
@@ -45,7 +43,7 @@ export const getAllUOM = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("UOM"), { uom_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("UOM"), { uom_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
@@ -86,4 +84,3 @@ export const getUOMDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
   }
 };
-

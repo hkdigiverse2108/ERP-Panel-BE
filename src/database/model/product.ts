@@ -1,11 +1,11 @@
 import mongoose, { Schema } from "mongoose";
-import { PRODUCT_EXPIRY_TYPE, PRODUCT_STATUS, PRODUCT_TYPE } from "../../common";
+import { PRODUCT_EXPIRY_TYPE, PRODUCT_TYPE } from "../../common";
 import { IProduct } from "../../types/product";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { baseCommonFields, baseSchemaOptions } from "./base";
 
 const productSchema = new Schema<IProduct>(
   {
-    ...baseSchemaFields,
+    ...baseCommonFields,
     images: [{ type: String }],
     itemCode: { type: String, index: true },
     productType: { type: String, enum: Object.values(PRODUCT_TYPE), default: PRODUCT_TYPE.FINISHED },
@@ -65,14 +65,6 @@ const productSchema = new Schema<IProduct>(
     
     onlinePrice: { type: Number, default: 0 },
     additionalInfo: { type: String },
-  
-  
-    // netWeightUnit: { type: String },
-    // nutritionInfo: { type: String },
-    // departmentId: { type: Schema.Types.ObjectId, ref: "department" },
-    // slug: { type: String, index: true },
-    
-    // status: { type: String, enum: Object.values(PRODUCT_STATUS), default: PRODUCT_STATUS.ACTIVE },
   },
   baseSchemaOptions
 );

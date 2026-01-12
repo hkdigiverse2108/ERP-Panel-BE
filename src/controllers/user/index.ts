@@ -152,7 +152,7 @@ export const getAllUser = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, branchFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -162,6 +162,13 @@ export const getAllUser = async (req, res) => {
 
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
+    }
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (search) {

@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { objectId } from "./common";
+import { baseApiSchema, objectId } from "./common";
 
 export const addCategorySchema = Joi.object({
   name: Joi.string().trim().required(),
@@ -7,15 +7,17 @@ export const addCategorySchema = Joi.object({
   description: Joi.string().allow("").optional(),
   parentCategoryId: objectId().optional(),
   image: Joi.string().allow("").optional(),
+  ...baseApiSchema,
 });
 
 export const editCategorySchema = Joi.object({
-  id: objectId().required(),
+  categoryId: objectId().required(),
   name: Joi.string().trim().optional(),
   code: Joi.string().trim().uppercase().optional(),
   description: Joi.string().allow("").optional(),
   parentCategoryId: objectId().optional(),
   image: Joi.string().allow("").optional(),
+  ...baseApiSchema,
 });
 
 export const deleteCategorySchema = Joi.object({

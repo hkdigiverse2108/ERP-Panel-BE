@@ -162,7 +162,7 @@ export const getAllDeliveryChallan = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, status, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -173,11 +173,10 @@ export const getAllDeliveryChallan = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [
-        { documentNo: { $regex: search, $options: "i" } },
-        { customerName: { $regex: search, $options: "i" } },
-      ];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }];
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (status) {
       criteria.status = status;
@@ -198,6 +197,8 @@ export const getAllDeliveryChallan = async (req, res) => {
         { path: "invoiceId", select: "documentNo" },
         { path: "items.productId", select: "name itemCode" },
         { path: "items.taxId", select: "name percentage" },
+        { path: "companyId", select: "name " },
+        { path: "branchId", select: "name " },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -214,7 +215,7 @@ export const getAllDeliveryChallan = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan"), { deliveryChallan_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan"), { deliveryChallan_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -240,6 +241,8 @@ export const getOneDeliveryChallan = async (req, res) => {
           { path: "invoiceId", select: "documentNo date netAmount" },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },
           { path: "items.taxId", select: "name percentage type" },
+          { path: "companyId", select: "name " },
+          { path: "branchId", select: "name " },
         ],
       }
     );
@@ -254,4 +257,3 @@ export const getOneDeliveryChallan = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-

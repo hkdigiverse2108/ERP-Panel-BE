@@ -8,7 +8,6 @@ const posOrderSchema = new Schema(
     ...baseSchemaFields,
     orderNo: { type: String, required: true, index: true },
     date: { type: Date, required: true },
-    locationId: { type: Schema.Types.ObjectId, ref: "branch" }, // Table/Location
     tableNo: { type: String }, // Table number if applicable
     customerId: { type: Schema.Types.ObjectId, ref: "contact" }, // Optional - for walk-in customers
     customerName: { type: String },
@@ -31,4 +30,3 @@ const posOrderSchema = new Schema(
 );
 
 export const PosOrderModel = mongoose.model("posOrder", posOrderSchema);
-

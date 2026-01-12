@@ -50,6 +50,7 @@ export const responseMessage = {
   invalidPdfUrl: "invalid Pdf URL",
   unsupportedFileType: "Unsupported file type in URL",
   roleInUse: "Role is assigned to users and cannot be deleted",
+  posAlreadyOnHold: "the POS you requested is already on hold",
 
   customMessage: (message: string): any => {
     return `${message[0].toUpperCase() + message.slice(1).toLowerCase()}`;

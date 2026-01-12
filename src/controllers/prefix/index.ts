@@ -1,3 +1,4 @@
+import { populate } from "dotenv";
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { PrefixModel } from "../../database/model/prefix";
@@ -123,7 +124,7 @@ export const getAllPrefix = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, module } = req.query;
+    let { page = 1, limit = 10, search, module, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -137,12 +138,18 @@ export const getAllPrefix = async (req, res) => {
       criteria.$or = [{ module: { $regex: search, $options: "i" } }, { prefix: { $regex: search, $options: "i" } }];
     }
 
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+
     if (module) {
       criteria.module = module;
     }
 
     const options = {
       sort: { module: 1 },
+      populate: [
+        { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
+      ],
       skip: (page - 1) * limit,
       limit,
     };
@@ -158,7 +165,7 @@ export const getAllPrefix = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Prefix"), { prefix_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Prefix"), { prefix_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -174,7 +181,17 @@ export const getOnePrefix = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const response = await getFirstMatch(PrefixModel, { _id: value?.id, isDeleted: false }, {}, {});
+    const response = await getFirstMatch(
+      PrefixModel,
+      { _id: value?.id, isDeleted: false },
+      {},
+      {
+        populate: [
+          { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
+        ],
+      }
+    );
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Prefix"), {}, {}));
@@ -216,4 +233,3 @@ export const getPrefixByModule = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-

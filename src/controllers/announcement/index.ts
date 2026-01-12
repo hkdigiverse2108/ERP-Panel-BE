@@ -118,7 +118,7 @@ export const deleteAnnouncementById = async (req, res) => {
 export const getAllAnnouncement = async (req, res) => {
   reqInfo(req);
   try {
-    let { page, limit, search, startDate, endDate } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -128,6 +128,8 @@ export const getAllAnnouncement = async (req, res) => {
     if (search) {
       criteria.$or = [{ version: { $regex: search, $options: "i" } }, { link: { $regex: search, $options: "i" } }, { desc: { $regex: search, $options: "i" } }];
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (startDate && endDate) {
       const start = new Date(startDate);

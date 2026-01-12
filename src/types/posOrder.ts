@@ -5,7 +5,6 @@ import { ISalesDocument } from "./sales";
 export interface IPosOrder extends IBase {
   orderNo: string;
   date: Date;
-  locationId?: Schema.Types.ObjectId; // Branch/Location
   tableNo?: string;
   customerId?: Schema.Types.ObjectId; // Optional customer
   customerName?: string;
@@ -24,4 +23,3 @@ export interface IPosOrder extends IBase {
   notes?: string;
   invoiceId?: Schema.Types.ObjectId; // Linked invoice
 }
-

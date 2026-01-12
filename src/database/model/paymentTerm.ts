@@ -2,10 +2,13 @@ import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
 import { IPaymentTerm } from "../../types";
 
-const paymentTermSchema = new Schema<IPaymentTerm>({
+const paymentTermSchema = new Schema<IPaymentTerm>(
+  {
     ...baseSchemaFields,
     name: { type: String, required: true },
-    days: { type: Number, required: true }
-}, baseSchemaOptions);
+    day: { type: Number, required: true },
+  },
+  baseSchemaOptions
+);
 
-export const paymentTermModel = mongoose.model<IPaymentTerm>('paymentTerm', paymentTermSchema);             
+export const paymentTermModel = mongoose.model<IPaymentTerm>("paymentTerm", paymentTermSchema);

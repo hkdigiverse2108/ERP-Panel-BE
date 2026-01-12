@@ -4,7 +4,7 @@ import { IMaterialInward } from "../../types";
 import { purchaseItemSchema } from "./purchaseOrder";
 
 const materialInwardSchema = new Schema<IMaterialInward>(
-  {
+  { 
     ...baseSchemaFields,
     documentNo: { type: String, required: true, index: true },
     date: { type: Date, required: true },

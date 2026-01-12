@@ -9,7 +9,7 @@ export const getAllTax = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page = 1, limit = 100, search, isActive, type } = req.query;
+    let { page = 1, limit = 100, search, activeFilter, type } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -20,9 +20,7 @@ export const getAllTax = async (req, res) => {
       criteria.companyId = companyId;
     }
 
-    if (isActive !== undefined) {
-      criteria.isActive = isActive === "true";
-    }
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (type) {
       criteria.type = type;
@@ -49,7 +47,7 @@ export const getAllTax = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Tax"), { tax_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Tax"), { tax_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
@@ -96,4 +94,3 @@ export const getTaxDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
   }
 };
-

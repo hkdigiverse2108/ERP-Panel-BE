@@ -3,7 +3,6 @@ import { PRODUCT_EXPIRY_TYPE, PRODUCT_TYPE } from "../common";
 import { baseApiSchema, objectId } from "./common";
 
 export const addProductSchema = Joi.object().keys({
-  itemCode: Joi.string().required(),
   name: Joi.string().required(),
   printName: Joi.string().optional(),
 
@@ -84,8 +83,9 @@ export const addProductSchema = Joi.object().keys({
   images: Joi.array().items(Joi.string()).optional(),
 
   additionalInfo: Joi.string().optional().allow("", null),
+  isActive: Joi.boolean().optional(),
 
-  ...baseApiSchema,
+  // ...baseApiSchema,
 });
 
 export const editProductSchema = Joi.object().keys({
@@ -163,8 +163,9 @@ export const editProductSchema = Joi.object().keys({
   images: Joi.array().items(Joi.string()).optional(),
 
   additionalInfo: Joi.string().optional().allow("", null),
+  isActive: Joi.boolean().optional(),
 
-  ...baseApiSchema,
+  // ...baseApiSchema,
 });
 
 export const deleteProductSchema = Joi.object().keys({

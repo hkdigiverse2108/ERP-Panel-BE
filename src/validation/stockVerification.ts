@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { objectId } from "./common";
+import { baseApiSchema, objectId } from "./common";
 
 const stockVerificationItemSchema = Joi.object().keys({
   productId: objectId().required(),
@@ -20,10 +20,10 @@ export const addStockVerificationSchema = Joi.object().keys({
   departmentId: objectId().optional(),
   categoryId: objectId().optional(),
   brandId: objectId().optional(),
-  locationId: objectId().optional(),
   remark: Joi.string().optional(),
   items: Joi.array().items(stockVerificationItemSchema).min(1).required(),
   status: Joi.string().valid("pending", "approved", "rejected").default("pending"),
+  ...baseApiSchema,
 });
 
 export const editStockVerificationSchema = Joi.object().keys({
@@ -32,11 +32,11 @@ export const editStockVerificationSchema = Joi.object().keys({
   departmentId: objectId().optional(),
   categoryId: objectId().optional(),
   brandId: objectId().optional(),
-  locationId: objectId().optional(),
   remark: Joi.string().optional(),
   items: Joi.array().items(stockVerificationItemSchema).optional(),
   approvedQty: Joi.number().optional(),
   status: Joi.string().valid("pending", "approved", "rejected").optional(),
+  ...baseApiSchema,
 });
 
 export const deleteStockVerificationSchema = Joi.object().keys({

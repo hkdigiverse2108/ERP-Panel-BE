@@ -7,7 +7,7 @@ import { addCreditNoteSchema, deleteCreditNoteSchema, editCreditNoteSchema, getC
 const ObjectId = require("mongoose").Types.ObjectId;
 
 // Generate unique credit note number
-const generateCreditNoteNo = async (companyId: string): Promise<string> => {
+const generateCreditNoteNo = async (companyId): Promise<string> => {
   const count = await creditNoteModel.countDocuments({ companyId, isDeleted: false });
   const prefix = "CN";
   const number = String(count + 1).padStart(6, "0");
@@ -174,7 +174,7 @@ export const getAllCreditNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, status, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -185,12 +185,10 @@ export const getAllCreditNote = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [
-        { documentNo: { $regex: search, $options: "i" } },
-        { customerName: { $regex: search, $options: "i" } },
-        { reason: { $regex: search, $options: "i" } },
-      ];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }, { reason: { $regex: search, $options: "i" } }];
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (status) {
       criteria.status = status;
@@ -227,7 +225,7 @@ export const getAllCreditNote = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Credit Note"), { creditNote_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Credit Note"), { creditNote_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -267,4 +265,3 @@ export const getOneCreditNote = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-

@@ -136,7 +136,7 @@ export const deleteCompanyById = async (req, res) => {
 export const getAllCompany = async (req, res) => {
   reqInfo(req);
   try {
-    let { page, limit, search, startDate, endDate } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -146,6 +146,8 @@ export const getAllCompany = async (req, res) => {
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "i" } }, { displayName: { $regex: search, $options: "i" } }, { contactName: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }, { phoneNo: { $regex: search, $options: "i" } }, { ownerNo: { $regex: search, $options: "i" } }];
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (startDate && endDate) {
       const start = new Date(startDate);

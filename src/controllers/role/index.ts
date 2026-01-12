@@ -89,6 +89,10 @@ export const editRole = async (req, res) => {
     existingRole = await getFirstMatch(roleModel, { _id: value?.roleId, isDeleted: false }, {}, {});
     if (!existingRole) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Role"), {}, {}));
 
+    const isAdminRole = value?.name === USER_ROLES.ADMIN || value?.name === USER_ROLES.SUPER_ADMIN;
+
+    if (isAdminRole && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.accessDenied, {}, {}));
+
     if (value?.name) {
       if (companyId) {
         existingRole = await getFirstMatch(roleModel, { companyId, name: value?.name, isDeleted: false, _id: { $ne: value?.roleId } }, {}, {});

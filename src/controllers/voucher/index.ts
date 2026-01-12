@@ -40,7 +40,7 @@ export const addVoucher = async (req, res) => {
 
     // Validate party (customer/supplier) for Payment/Receipt
     if ((value.type === VOUCHAR_TYPE.PAYMENT || value.type === VOUCHAR_TYPE.RECEIPT) && value.partyId) {
-      if (!(await checkIdExist(contactModel, value.partyId, "Contact", res))) return;
+      if (!(await checkIdExist(contactModel, value.partyId, "party", res))) return;
     }
 
     // Validate bank account for Payment/Receipt/Expense
@@ -101,14 +101,11 @@ export const editVoucher = async (req, res) => {
 
     // Validate party if being changed
     if (value.partyId && (voucherType === VOUCHAR_TYPE.PAYMENT || voucherType === VOUCHAR_TYPE.RECEIPT)) {
-      if (!(await checkIdExist(contactModel, value.partyId, "Contact", res))) return;
+      if (!(await checkIdExist(contactModel, value.partyId, "party", res))) return;
     }
 
     // Validate bank account if being changed
-    if (
-      value.bankAccountId &&
-      (voucherType === VOUCHAR_TYPE.PAYMENT || voucherType === VOUCHAR_TYPE.RECEIPT || voucherType === VOUCHAR_TYPE.EXPENSE)
-    ) {
+    if (value.bankAccountId && (voucherType === VOUCHAR_TYPE.PAYMENT || voucherType === VOUCHAR_TYPE.RECEIPT || voucherType === VOUCHAR_TYPE.EXPENSE)) {
       if (!(await checkIdExist(accountModel, value.bankAccountId, "Account", res))) return;
     }
 
@@ -169,7 +166,7 @@ export const getAllVoucher = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, type, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, type, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -182,6 +179,8 @@ export const getAllVoucher = async (req, res) => {
     if (type) {
       criteria.type = type;
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
       criteria.$or = [{ voucherNo: { $regex: search, $options: "i" } }];
@@ -217,7 +216,7 @@ export const getAllVoucher = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Voucher"), { voucher_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Voucher"), { voucher_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -260,6 +259,7 @@ export const getOneVoucher = async (req, res) => {
 // Convenience methods for specific voucher types
 export const addPayment = async (req, res) => {
   req.body.type = VOUCHAR_TYPE.PAYMENT;
+
   return addVoucher(req, res);
 };
 
@@ -287,4 +287,3 @@ export const getAllExpense = async (req, res) => {
   req.query.type = VOUCHAR_TYPE.EXPENSE;
   return getAllVoucher(req, res);
 };
-

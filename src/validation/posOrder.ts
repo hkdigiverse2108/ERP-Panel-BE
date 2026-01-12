@@ -1,10 +1,9 @@
 import Joi from "joi";
-import { objectId } from "./common";
+import { baseApiSchema, objectId } from "./common";
 
 const posOrderItemSchema = Joi.object().keys({
   productId: objectId().required(),
   productName: Joi.string().required(),
-  batchNo: Joi.string().optional().allow("", null),
   qty: Joi.number().min(0.01).required(),
   freeQty: Joi.number().min(0).default(0).optional(),
   uom: Joi.string().optional().allow("", null),
@@ -16,12 +15,14 @@ const posOrderItemSchema = Joi.object().keys({
   taxAmount: Joi.number().min(0).default(0).optional(),
   taxableAmount: Joi.number().min(0).required(),
   totalAmount: Joi.number().min(0).required(),
+  ...baseApiSchema,
 });
 
 export const addPosOrderSchema = Joi.object().keys({
   orderNo: Joi.string().optional(), // Auto-generated if not provided
-  date: Joi.date().default(() => new Date()).optional(),
-  locationId: objectId().optional().allow("", null), // Branch/Location
+  date: Joi.date()
+    .default(() => new Date())
+    .optional(),
   tableNo: Joi.string().optional().allow("", null),
   customerId: objectId().optional().allow("", null), // Optional customer
   customerName: Joi.string().optional().allow("", null),
@@ -37,13 +38,13 @@ export const addPosOrderSchema = Joi.object().keys({
   paymentStatus: Joi.string().valid("paid", "unpaid", "partial").default("paid").optional(),
   status: Joi.string().valid("pending", "completed", "hold", "cancelled").default("pending").optional(),
   notes: Joi.string().optional().allow("", null),
+  ...baseApiSchema,
 });
 
 export const editPosOrderSchema = Joi.object().keys({
   posOrderId: objectId().required(),
   orderNo: Joi.string().optional(),
   date: Joi.date().optional(),
-  locationId: objectId().optional().allow("", null),
   tableNo: Joi.string().optional().allow("", null),
   customerId: objectId().optional().allow("", null),
   customerName: Joi.string().optional().allow("", null),
@@ -59,6 +60,7 @@ export const editPosOrderSchema = Joi.object().keys({
   paymentStatus: Joi.string().valid("paid", "unpaid", "partial").optional(),
   status: Joi.string().valid("pending", "completed", "hold", "cancelled").optional(),
   notes: Joi.string().optional().allow("", null),
+  ...baseApiSchema,
 });
 
 export const holdPosOrderSchema = Joi.object().keys({

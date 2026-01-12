@@ -18,6 +18,7 @@ import { recipeRouter } from "./recipe";
 import { brandRouter } from "./brand";
 import { categoryRouter } from "./category";
 import { bankRouter } from "./bank";
+import { materialRouter } from "./material";
 import { accountGroupRouter } from "./accountGroup";
 import { accountRouter } from "./account";
 import { paymentTermRouter } from "./paymentTerm";
@@ -39,6 +40,7 @@ import { feedbackRouter } from "./feedback";
 import { loyaltyRouter } from "./loyalty";
 import { prefixRouter } from "./prefix";
 import { posOrderRouter } from "./posOrder";
+import { productRequestRouter } from "./productRequest";
 
 const router = Router();
 
@@ -55,6 +57,7 @@ router.use("/announcement", announcementRouter);
 router.use("/role", roleRoute);
 router.use("/branch", branchRouter);
 router.use("/product", productRouter);
+router.use("/product-request", productRequestRouter);
 router.use("/employee", employeeRouter);
 router.use("/call-request", callRequestRouter);
 router.use("/stock", stockRoute);
@@ -63,23 +66,22 @@ router.use("/stock-verification", stockVerificationRoute);
 router.use("/brand", brandRouter);
 router.use("/category", categoryRouter);
 
-router.use("/recipe", recipeRouter);
 router.use("/contacts", contactRouter);
 router.use("/bank", bankRouter);
-router.use("/accountgroup", accountGroupRouter);
+router.use("/account-group", accountGroupRouter);
 router.use("/account", accountRouter);
-router.use("/paymentterm", paymentTermRouter);
+router.use("/payment-term", paymentTermRouter);
 router.use("/location", locationRouter);
 router.use("/uom", uomRouter);
 router.use("/tax", taxRouter);
-router.use("/purchaseorder", purchaseOrderRouter);
-router.use("/supplierbill", supplierBillRouter);
-router.use("/debitnote", debitNoteRouter);
+router.use("/purchase-order", purchaseOrderRouter);
+router.use("/supplier-bill", supplierBillRouter);
+router.use("/debit-note", debitNoteRouter);
 router.use("/estimate", estimateRouter);
-router.use("/salesorder", salesOrderRouter);
+router.use("/sales-order", salesOrderRouter);
 router.use("/invoice", invoiceRouter);
-router.use("/deliverychallan", deliveryChallanRouter);
-router.use("/creditnote", creditNoteRouter);
+router.use("/delivery-challan", deliveryChallanRouter);
+router.use("/credit-note", creditNoteRouter);
 router.use("/voucher", voucherRouter);
 router.use("/payment", voucherRouter); // Alias for payment vouchers
 router.use("/receipt", voucherRouter); // Alias for receipt vouchers
@@ -89,9 +91,11 @@ router.use("/discount", discountRouter);
 router.use("/feedback", feedbackRouter);
 router.use("/loyalty", loyaltyRouter);
 router.use("/prefix", prefixRouter);
-router.use("/posorder", posOrderRouter);
+router.use("/pos-order", posOrderRouter);
 
-// router.use("/stockVerification", stockVerificationRouter);
+router.use("/recipe", recipeRouter);
+router.use("/material", materialRouter);
+
 // router.use("/employee", employeeRouter);
 
 export { router };

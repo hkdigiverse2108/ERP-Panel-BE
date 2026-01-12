@@ -7,7 +7,7 @@ import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSch
 const ObjectId = require("mongoose").Types.ObjectId;
 
 // Generate unique invoice number
-const generateInvoiceNo = async (companyId: string): Promise<string> => {
+const generateInvoiceNo = async (companyId): Promise<string> => {
   const count = await InvoiceModel.countDocuments({ companyId, isDeleted: false });
   const prefix = "INV";
   const number = String(count + 1).padStart(6, "0");
@@ -210,7 +210,7 @@ export const getAllInvoice = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, status, paymentStatus, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, activeFilter, status, paymentStatus, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -220,11 +220,10 @@ export const getAllInvoice = async (req, res) => {
       criteria.companyId = companyId;
     }
 
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+
     if (search) {
-      criteria.$or = [
-        { documentNo: { $regex: search, $options: "i" } },
-        { customerName: { $regex: search, $options: "i" } },
-      ];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }];
     }
 
     if (status) {
@@ -251,6 +250,8 @@ export const getAllInvoice = async (req, res) => {
         { path: "salesManId", select: "firstName lastName" },
         { path: "items.productId", select: "name itemCode" },
         { path: "items.taxId", select: "name percentage" },
+        { path: "companyId", select: "name " },
+        { path: "branchId", select: "name " },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -267,7 +268,7 @@ export const getAllInvoice = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice"), { invoice_data: response, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice"), { invoice_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -294,6 +295,8 @@ export const getOneInvoice = async (req, res) => {
           { path: "salesManId", select: "firstName lastName" },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },
           { path: "items.taxId", select: "name percentage type" },
+          { path: "companyId", select: "name " },
+          { path: "branchId", select: "name " },
         ],
       }
     );
@@ -338,10 +341,7 @@ export const getInvoiceDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [
-        { documentNo: { $regex: search, $options: "i" } },
-        { customerName: { $regex: search, $options: "i" } },
-      ];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }];
     }
 
     const options: any = {
@@ -350,12 +350,7 @@ export const getInvoiceDropdown = async (req, res) => {
       populate: [{ path: "customerId", select: "firstName lastName companyName" }],
     };
 
-    const response = await getDataWithSorting(
-      InvoiceModel,
-      criteria,
-      { documentNo: 1, customerName: 1, date: 1, netAmount: 1, balanceAmount: 1 },
-      options
-    );
+    const response = await getDataWithSorting(InvoiceModel, criteria, { documentNo: 1, customerName: 1, date: 1, netAmount: 1, balanceAmount: 1 }, options);
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
@@ -373,4 +368,3 @@ export const getInvoiceDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-

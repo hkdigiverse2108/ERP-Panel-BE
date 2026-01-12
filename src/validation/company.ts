@@ -67,6 +67,7 @@ export const addCompanySchema = Joi.object().keys({
   waterMark: Joi.string().optional().allow("", null),
   reportFormatLogo: Joi.string().optional().allow("", null),
   authorizedSignature: Joi.string().optional().allow("", null),
+  isActive: Joi.boolean().optional(),
 });
 
 export const editCompanySchema = Joi.object().keys({
@@ -136,6 +137,7 @@ export const editCompanySchema = Joi.object().keys({
   waterMark: Joi.string().optional().allow("", null),
   reportFormatLogo: Joi.string().optional().allow("", null),
   authorizedSignature: Joi.string().optional().allow("", null),
+  isActive: Joi.boolean().optional(),
 });
 
 export const deleteCompanySchema = Joi.object().keys({

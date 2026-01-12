@@ -5,12 +5,13 @@ import { IBase } from "../../types";
 export interface IStock extends IBase {
   productId: Schema.Types.ObjectId;
   variantId?: Schema.Types.ObjectId; // If variants exist
-  batchNo?: string;
   qty: number;
-  mfgDate?: Date;
-  expiryDate?: Date;
-  sellingPrice?: number; // Batch specific price
-  mrp?: number;
+  purchasePrice: number;
+  landingCost: number;
+  mrp: number;
+  sellingDiscount: number;
+  sellingPrice: number;
+  sellingMargin: number;
 }
 
 const stockSchema = new Schema<IStock>(
@@ -18,12 +19,13 @@ const stockSchema = new Schema<IStock>(
     ...baseSchemaFields,
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true, index: true },
     variantId: { type: Schema.Types.ObjectId },
-    batchNo: { type: String },
+    purchasePrice: { type: Number, default: 0 },
+    landingCost: { type: Number, default: 0 },
+    mrp: { type: Number, default: 0 },
+    sellingDiscount: { type: Number, default: 0 },
+    sellingPrice: { type: Number, default: 0 },
+    sellingMargin: { type: Number, default: 0 },
     qty: { type: Number, default: 0 },
-    mfgDate: { type: Date },
-    expiryDate: { type: Date },
-    sellingPrice: { type: Number },
-    mrp: { type: Number },
   },
   baseSchemaOptions
 );

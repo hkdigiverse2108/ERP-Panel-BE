@@ -1,4 +1,3 @@
-import { skip } from "node:test";
 import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
 import { branchModel, companyModel } from "../../database";
 import { bankModel } from "../../database/model/bank";

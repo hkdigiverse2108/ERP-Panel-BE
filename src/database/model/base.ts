@@ -12,7 +12,6 @@ export const baseSchemaFields = {
   ...baseCommonFields,
   companyId: { type: Schema.Types.ObjectId, ref: "company", index: true },
   branchId: { type: Schema.Types.ObjectId, ref: "branch", index: true },
-  // locationId: { type: Schema.Types.ObjectId, ref: "location", index: true },
 };
 
 // export const baseSchemaOptions = {
