@@ -18,7 +18,6 @@ const productSchema = new Schema<IProduct>(
     brandId: { type: Schema.Types.ObjectId, ref: "brand" },
     subBrandId: { type: Schema.Types.ObjectId, ref: "brand" },
 
-    uomId: { type: Schema.Types.ObjectId, ref: "uom", required: true },
     hsnCode: { type: String },
 
     purchaseTaxId: { type: Schema.Types.ObjectId, ref: "tax" },

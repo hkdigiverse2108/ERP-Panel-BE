@@ -20,7 +20,6 @@ export const adminJwt = async (req, res, next) => {
 
     try {
       decoded = jwt.verify(token, jwtSecretKey);
-      console.log(decoded);
     } catch (error) {
       if (error?.name == "TokenExpiredError") return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.tokenExpire, {}, {}));
       return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
@@ -37,7 +36,6 @@ export const adminJwt = async (req, res, next) => {
       const populateModel = [{ path: "role", select: "name" }];
       user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
     }
-    console.log(user);
     if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage.invalidToken, {}, {}));
 
     if (user?.isActive === false) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.accountBlock, {}, {}));
