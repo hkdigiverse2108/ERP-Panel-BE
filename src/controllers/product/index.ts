@@ -20,18 +20,9 @@ export const addProduct = async (req, res) => {
     }
 
 
-    if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
+    if (companyId && !(await checkIdExist(companyModel, companyId, "Company", res))) return;
 
-    if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
-    // if (!(await checkIdExist(branchModel, value.locationId, "Location", res))) return;
-
-    // if (!(await checkIdExist(categoryModel, value?.categoryId, "Category", res))) return;
-    // if (!(await checkIdExist(categoryModel, value?.subCategoryId, "Sub Category", res))) return;
-    // if (!(await checkIdExist(brandModel, value?.brandId, "Brand", res))) return;
-    // if (!(await checkIdExist(brandModel, value?.subBrandId, "Sub Brand", res))) return;
-    // if (!(await checkIdExist(UOMModel, value.uomId, "UOM", res))) return;
-    // if (!(await checkIdExist(taxModel, value.purchaseTaxId, "Purchase Tax", res))) return;
-    // if (!(await checkIdExist(taxModel, value.salesTaxId, "Sales Tax", res))) return;
+    if (value?.branchId && !(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
 
     let isExist = await getFirstMatch(productModel, { $or: [{ name: value?.name }, { itemCode: value?.itemCode }], isDeleted: false }, {}, {});
 
