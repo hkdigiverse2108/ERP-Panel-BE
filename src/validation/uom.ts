@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { objectId } from "./common";
 
 export const addUOMSchema = Joi.object({
   name: Joi.string().trim().required(),
