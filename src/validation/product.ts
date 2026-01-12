@@ -80,7 +80,7 @@ export const addProductSchema = Joi.object().keys({
     )
     .optional(),
 
-  images: Joi.array().items(Joi.string()).optional(),
+  images: Joi.array().items(Joi.string()).optional().allow("", null),
 
   additionalInfo: Joi.string().optional().allow("", null),
   isActive: Joi.boolean().optional(),
@@ -160,12 +160,11 @@ export const editProductSchema = Joi.object().keys({
     )
     .optional(),
 
-  images: Joi.array().items(Joi.string()).optional(),
+  images: Joi.array().items(Joi.string()).optional().allow("", null),
 
   additionalInfo: Joi.string().optional().allow("", null),
   isActive: Joi.boolean().optional(),
 
-  // ...baseApiSchema,
 });
 
 export const deleteProductSchema = Joi.object().keys({
