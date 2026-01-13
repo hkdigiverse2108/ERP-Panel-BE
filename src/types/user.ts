@@ -9,6 +9,7 @@ export interface IUser extends IBase {
   profileImage?: string;
   //   isActive?: boolean;
   password?: string;
+  showPassword?: string;
   role?: Schema.Types.ObjectId;
   permissions: IPermissions;
 

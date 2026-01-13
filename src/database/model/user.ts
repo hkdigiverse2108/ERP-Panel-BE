@@ -37,6 +37,7 @@ const userSchema = new mongoose.Schema<IUser>(
       phoneNo: { type: Number },
     },
     password: { type: String },
+    showPassword: { type: String },
     profileImage: { type: String },
     role: {
       type: mongoose.Schema.Types.ObjectId,

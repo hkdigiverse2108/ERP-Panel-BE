@@ -42,6 +42,7 @@ export const addUser = async (req, res) => {
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
+    value.showPassword = value?.password;
     value.password = await generateHash(value?.password);
 
     const response = await createOne(userModel, value);
@@ -50,9 +51,7 @@ export const addUser = async (req, res) => {
 
     if (value?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $push: { userIds: response?._id } }, {});
 
-    const { password, ...rest } = response?._doc;
-
-    return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("User"), rest, {}));
+    return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("User"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -107,6 +106,7 @@ export const editUserById = async (req, res) => {
     value.updatedBy = user?._id || null;
 
     if (value?.password) {
+      value.showPassword = value?.password;
       value.password = await generateHash(value?.password);
     }
 
