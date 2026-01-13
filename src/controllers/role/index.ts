@@ -18,9 +18,9 @@ export const addRole = async (req, res) => {
 
     let companyId = null;
     if (userRole === USER_ROLES.SUPER_ADMIN) {
-      companyId = user?.companyId?._id;
-    } else {
       companyId = value?.companyId;
+    } else {
+      companyId = user?.companyId?._id;
     }
 
     if (companyId) {
