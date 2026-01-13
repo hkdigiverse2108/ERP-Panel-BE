@@ -152,7 +152,6 @@ export const getAllProduct = async (req, res) => {
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
         { path: "subBrandId", select: "name" },
-        { path: "uomId", select: "name" },
         { path: "purchaseTaxId", select: "name" },
         { path: "salesTaxId", select: "name" },
       ],
