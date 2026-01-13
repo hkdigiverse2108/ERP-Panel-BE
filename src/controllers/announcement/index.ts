@@ -120,9 +120,6 @@ export const getAllAnnouncement = async (req, res) => {
   try {
     let { page, limit, search, startDate, endDate, activeFilter } = req.query;
 
-    page = Number(page);
-    limit = Number(limit);
-
     let criteria: any = { isDeleted: false };
 
     if (search) {
@@ -151,7 +148,7 @@ export const getAllAnnouncement = async (req, res) => {
     };
 
     if (page && limit) {
-      options.page = (parseInt(page) + 1) * parseInt(limit);
+      options.skip = (parseInt(page) - 1) * parseInt(limit);
       options.limit = parseInt(limit);
     }
 

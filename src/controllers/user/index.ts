@@ -1,8 +1,8 @@
 import { populate } from "dotenv";
-import { apiResponse, generateHash, HTTP_STATUS, USER_TYPES } from "../../common";
+import { apiResponse, generateHash, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
 import { branchModel, companyModel, userModel } from "../../database/model";
 import { roleModel } from "../../database/model/role";
-import { checkIdExist, countData, createOne, findOneAndPopulate, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkIdExist, countData, createOne, findOneAndPopulate, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addUserSchema, deleteUserSchema, editUserSchema, getUserSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -154,15 +154,16 @@ export const getAllUser = async (req, res) => {
     const companyId = user?.companyId?._id;
     let { page, limit, search, startDate, endDate, activeFilter, branchFilter, companyFilter } = req.query;
 
-    page = Number(page);
-    limit = Number(limit);
-
     // let criteria: any = { isDeleted: false, role: USER_ROLES.USER };
     let criteria: any = { isDeleted: false };
 
     if (companyId) {
       criteria.companyId = companyId;
     }
+
+    let roles = await getData(roleModel, { name: USER_ROLES.SUPER_ADMIN, isDeleted: false }, { _id: 1 }, {})
+    let roleIds = roles.map((role) => new ObjectId(role._id));
+    criteria.role = { $nin: roleIds };
 
     if (branchFilter) {
       criteria.branchId = branchFilter;

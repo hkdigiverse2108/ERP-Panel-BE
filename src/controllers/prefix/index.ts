@@ -126,9 +126,6 @@ export const getAllPrefix = async (req, res) => {
     const companyId = user?.companyId?._id;
     let { page, limit, search, module, activeFilter } = req.query;
 
-    page = Number(page);
-    limit = Number(limit);
-
     let criteria: any = { isDeleted: false };
     if (companyId) {
       criteria.companyId = companyId;
@@ -153,7 +150,7 @@ export const getAllPrefix = async (req, res) => {
     };
 
     if (page && limit) {
-      options.page = (parseInt(page) + 1) * parseInt(limit);
+      options.skip = (parseInt(page) - 1) * parseInt(limit);
       options.limit = parseInt(limit);
     }
 

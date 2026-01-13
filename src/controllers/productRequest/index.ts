@@ -137,7 +137,7 @@ export const getAllProductRequest = async (req, res) => {
     };
 
     if (page && limit) {
-      options.page = (parseInt(page) + 1) * parseInt(limit);
+      options.skip = (parseInt(page) - 1) * parseInt(limit);
       options.limit = parseInt(limit);
     }
 
