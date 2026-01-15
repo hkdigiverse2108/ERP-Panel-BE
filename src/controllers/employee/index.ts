@@ -182,8 +182,6 @@ export const getAllEmployee = async (req, res) => {
 
     const options: any = {
       sort: { createdAt: -1 },
-      skip: (page - 1) * limit,
-      limit,
     };
 
     if (page && limit) {

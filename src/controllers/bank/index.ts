@@ -135,8 +135,6 @@ export const getAllBank = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchIds", select: "name" },
       ],
-      skip: (page - 1) * limit,
-      limit,
     };
 
     if (page && limit) {

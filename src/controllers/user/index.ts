@@ -197,12 +197,10 @@ export const getAllUser = async (req, res) => {
         { path: "branchId", select: "name" },
         { path: "role", select: "name" },
       ],
-      skip: (page - 1) * limit,
-      limit,
     };
 
     if (page && limit) {
-      options.page = (parseInt(page) + 1) * parseInt(limit);
+      options.skip = (parseInt(page) - 1) * parseInt(limit);
       options.limit = parseInt(limit);
     }
 

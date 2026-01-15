@@ -155,8 +155,6 @@ export const getAllProduct = async (req, res) => {
         { path: "purchaseTaxId", select: "name" },
         { path: "salesTaxId", select: "name" },
       ],
-      skip: (page - 1) * limit,
-      limit,
     };
 
     if (page && limit) {

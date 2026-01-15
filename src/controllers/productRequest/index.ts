@@ -132,8 +132,6 @@ export const getAllProductRequest = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       populate: [{ path: "companyId", select: "name" }],
-      skip: (page - 1) * limit,
-      limit,
     };
 
     if (page && limit) {
