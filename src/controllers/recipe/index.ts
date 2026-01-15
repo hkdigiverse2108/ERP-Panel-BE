@@ -1,7 +1,7 @@
-import { HTTP_STATUS } from "../../common";
+import { HTTP_STATUS, USER_ROLES } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { productModel, recipeModel } from "../../database/model";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { companyModel, productModel, recipeModel } from "../../database/model";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addRecipeSchema, deleteRecipeSchema, editRecipeSchema, getRecipeSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -9,19 +9,27 @@ export const addRecipe = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
+    const userRole = user?.role?.name;
+
     let { error, value } = addRecipeSchema.validate(req.body);
+
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.getDataNotFound("Company"), {}, {}));
+    if (userRole === USER_ROLES.SUPER_ADMIN) {
+      value.companyId = value?.companyId;
+      if (!value?.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+    } else {
+      value.companyId = user?.companyId?._id;
+    }
 
-    const existingRecipe = await getFirstMatch(recipeModel, { companyId, recipeNo: value.recipeNo, isDeleted: false }, {}, {});
+    if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
+
+    const existingRecipe = await getFirstMatch(recipeModel, { companyId: value.companyId, recipeNo: value.recipeNo, isDeleted: false }, {}, {});
 
     if (existingRecipe) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Recipe No"), {}, {}));
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.companyId = companyId;
 
     const response = await createOne(recipeModel, value);
 

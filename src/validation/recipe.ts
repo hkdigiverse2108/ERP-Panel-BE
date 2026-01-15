@@ -4,6 +4,7 @@ import { objectId } from "./common";
 
 export const addRecipeSchema = Joi.object({
   recipeName: Joi.string().required(),
+  companyId: objectId().optional(),
   recipeDate: Joi.date().required(),
   recipeNo: Joi.string().required(),
   recipeType: Joi.string()
@@ -13,7 +14,6 @@ export const addRecipeSchema = Joi.object({
   rawProducts: Joi.array()
     .items(
       Joi.object({
-        itemCode: Joi.string().allow("", null),
         productId: objectId().required(),
         mrp: Joi.number().optional(),
         useQty: Joi.number().positive().required(),
@@ -25,7 +25,6 @@ export const addRecipeSchema = Joi.object({
   finalProducts: Joi.array()
     .items(
       Joi.object({
-        itemCode: Joi.string().allow("", null),
         productId: objectId().required(),
         mrp: Joi.number().optional(),
         qtyGenerate: Joi.number().positive().required(),
@@ -37,6 +36,7 @@ export const addRecipeSchema = Joi.object({
 
 export const editRecipeSchema = Joi.object({
   recipeId: objectId().required(),
+  companyId: objectId().optional(),
   recipeNo: Joi.string().optional(),
 
   recipeName: Joi.string().optional(),
@@ -47,7 +47,6 @@ export const editRecipeSchema = Joi.object({
 
   rawProducts: Joi.array().items(
     Joi.object({
-      itemCode: Joi.string().allow("", null),
       productId: objectId().required(),
       mrp: Joi.number().optional(),
       useQty: Joi.number().positive().required(),
@@ -56,14 +55,11 @@ export const editRecipeSchema = Joi.object({
 
   finalProducts: Joi.array().items(
     Joi.object({
-      itemCode: Joi.string().allow("", null),
       productId: objectId().required(),
       mrp: Joi.number().optional(),
       qtyGenerate: Joi.number().positive().required(),
     })
   ),
-
-  status: Joi.string().valid("active", "inactive").optional(),
 });
 
 export const deleteRecipeSchema = Joi.object().keys({

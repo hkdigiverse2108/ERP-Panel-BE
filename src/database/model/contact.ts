@@ -48,11 +48,11 @@ const contactSchema = new Schema<IContact>(
         addressLine2: { type: String },
         state: { type: String },
         city: { type: String },
-        tanNo: { type: String },
         country: { type: String },
         pinCode: { type: String },
       },
     ],
+    tanNo: { type: String },
     bankDetails: {
       ifscCode: { type: String },
       name: { type: String },
