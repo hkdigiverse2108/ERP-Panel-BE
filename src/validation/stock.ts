@@ -13,6 +13,7 @@ export const addStockSchema = Joi.object().keys({
   sellingDiscount: Joi.number().min(0).default(0),
   sellingPrice: Joi.number().min(0).default(0),
   sellingMargin: Joi.number().min(0).default(0),
+  uomId: objectId().required(),
   ...baseApiSchema,
 });
 
@@ -28,6 +29,7 @@ export const editStockSchema = Joi.object().keys({
   expiryDate: Joi.date().optional(),
   sellingPrice: Joi.number().min(0).optional(),
   mrp: Joi.number().min(0).optional(),
+  uomId: objectId().optional(),
   ...baseApiSchema,
 });
 
