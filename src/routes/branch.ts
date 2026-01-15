@@ -2,6 +2,7 @@ import express from "express";
 import { branchController } from "../controllers";
 
 const router = express.Router();
+
 router.get("/all", branchController.getAllBranch);
 router.get("/dropdown", branchController.getBranchDropdown);
 router.post("/add", branchController.addBranch);

@@ -23,7 +23,7 @@ export const addRecipe = async (req, res) => {
     }
 
     if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
-    
+
     const existingRecipe = await getFirstMatch(recipeModel, { companyId: value.companyId, recipeNo: value.recipeNo, isDeleted: false }, {}, {});
 
     if (existingRecipe) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Recipe No"), {}, {}));
