@@ -167,12 +167,7 @@ export const getAllStock = async (req, res) => {
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
         { path: "subBrandId", select: "name" },
-        // { path: "departmentId", select: "name" },
-        { path: "uomId", select: "name code" },
-        { path: "branchId", select: "name" },
       ],
-      skip: (parseInt(page as string) - 1) * parseInt(limit as string),
-      limit: parseInt(limit as string),
     };
 
     const products = await getDataWithSorting(productModel, criteria, {}, options);
