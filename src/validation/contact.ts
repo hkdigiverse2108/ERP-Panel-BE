@@ -25,7 +25,6 @@ const addressSchema = Joi.object({
     .pattern(/^[0-9]{6}$/)
     .optional()
     .allow("", null),
-  tanNo: Joi.string().optional().allow("", null),
 });
 
 export const addContactSchema = Joi.object({
@@ -56,6 +55,7 @@ export const addContactSchema = Joi.object({
     debitBalance: Joi.string().optional(),
     creditBalance: Joi.string().optional(),
   }).optional(),
+  tanNo: Joi.string().optional().allow("", null),
 
   customerCategory: Joi.string().optional(),
   customerType: Joi.string()
@@ -132,6 +132,7 @@ export const editContactSchema = Joi.object({
   }).optional(),
 
   panNo: Joi.string().optional(),
+  tanNo: Joi.string().optional().allow("", null),
 
   customerCategory: Joi.string().optional(),
   customerType: Joi.string()

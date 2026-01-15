@@ -19,7 +19,6 @@ const recipeSchema = new Schema<IRecipe>(
 
     rawProducts: [
       {
-        itemCode: { type: String },
         productId: {
           type: Schema.Types.ObjectId,
           ref: "product",
@@ -32,7 +31,6 @@ const recipeSchema = new Schema<IRecipe>(
 
     finalProducts: [
       {
-        itemCode: { type: String },
         productId: {
           type: Schema.Types.ObjectId,
           ref: "product",
@@ -42,17 +40,8 @@ const recipeSchema = new Schema<IRecipe>(
         qtyGenerate: { type: Number, required: true },
       },
     ],
-
-    status: {
-      type: String,
-      enum: ["active", "inactive"],
-      default: "active",
-    },
   },
   baseSchemaOptions
 );
 
-export const recipeModel = mongoose.model<IRecipe>(
-  "recipe",
-  recipeSchema
-);
+export const recipeModel = mongoose.model<IRecipe>("recipe", recipeSchema);
