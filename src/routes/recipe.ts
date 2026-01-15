@@ -3,6 +3,8 @@ import { recipeController } from "../controllers";
 const router = Router();
 
 router.get("/all", recipeController.getAllRecipe);
+router.get("/dropdown", recipeController.getRecipeDropdown);
+
 router.post("/add", recipeController.addRecipe);
 router.put("/edit", recipeController.editRecipeById);
 router.delete("/:id", recipeController.deleteRecipeById);

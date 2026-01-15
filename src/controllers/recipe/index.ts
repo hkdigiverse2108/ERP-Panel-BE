@@ -251,3 +251,46 @@ export const getRecipeForBOM = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
   }
 };
+
+export const getRecipeDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { search } = req.query;
+
+    const userRole = user?.role?.name;
+    let companyId = user?.companyId?._id;
+
+    const queryCompanyId = req.query?.companyFilter;
+
+    let criteria: any = { isDeleted: false, isActive: true };
+
+    if (queryCompanyId && userRole === USER_ROLES.SUPER_ADMIN) criteria.companyId = queryCompanyId;
+    else if (companyId) criteria.companyId = companyId;
+
+    if (search) {
+      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { recipeName: { $regex: search, $options: "i" } }, { recipeNo: { $regex: search, $options: "i" } }];
+    }
+
+    const response = await getDataWithSorting(
+      recipeModel,
+      criteria,
+      { recipeName: 1, recipeNo: 1 },
+      {
+        sort: { name: 1 },
+        limit: search ? 50 : 1000,
+      }
+    );
+
+    const dropdownData = response.map((item) => ({
+      _id: item._id,
+      recipeName: item.recipeName,
+      recipeNo: item.recipeNo,
+    }));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe Dropdown"), dropdownData, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
