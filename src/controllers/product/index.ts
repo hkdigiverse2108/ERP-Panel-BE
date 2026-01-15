@@ -8,19 +8,16 @@ export const addProduct = async (req, res) => {
   try {
     const { user } = req.headers;
     const userRole = user?.role?.name;
-
-    let companyId = user?.companyId?._id;
     let { error, value } = addProductSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     if (userRole !== USER_ROLES.SUPER_ADMIN) {
-      companyId = value?.companyId;
-      if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+      value.companyId = user?.companyId?._id;
+      if (!value?.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
     }
-
-
-    if (companyId && !(await checkIdExist(companyModel, companyId, "Company", res))) return;
+    
+    if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
 
     if (value?.branchId && !(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
 
@@ -34,7 +31,6 @@ export const addProduct = async (req, res) => {
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.companyId = companyId || null;
 
     let response = await createOne(productModel, value);
 
