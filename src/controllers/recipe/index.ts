@@ -46,15 +46,22 @@ export const editRecipeById = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
+    const userRole = user?.role?.name;
 
     let { error, value } = editRecipeSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
-    if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.getDataNotFound("Company"), {}, {}));
+    if (userRole === USER_ROLES.SUPER_ADMIN) {
+      value.companyId = value?.companyId;
+      if (!value?.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+    } else {
+      value.companyId = user?.companyId?._id;
+    }
 
-    const existingRecipe = await getFirstMatch(recipeModel, { companyId, recipeNo: value.recipeNo, isDeleted: false, _id: { $ne: value?.recipeId } }, {}, {});
+    if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
+
+    const existingRecipe = await getFirstMatch(recipeModel, { companyId: value.companyId, recipeNo: value.recipeNo, isDeleted: false, _id: { $ne: value?.recipeId } }, {}, {});
 
     if (existingRecipe) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Recipe No"), {}, {}));
 
@@ -242,5 +249,48 @@ export const getRecipeForBOM = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
+};
+
+export const getRecipeDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { search } = req.query;
+
+    const userRole = user?.role?.name;
+    let companyId = user?.companyId?._id;
+
+    const queryCompanyId = req.query?.companyFilter;
+
+    let criteria: any = { isDeleted: false, isActive: true };
+
+    if (queryCompanyId && userRole === USER_ROLES.SUPER_ADMIN) criteria.companyId = queryCompanyId;
+    else if (companyId) criteria.companyId = companyId;
+
+    if (search) {
+      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { recipeName: { $regex: search, $options: "i" } }, { recipeNo: { $regex: search, $options: "i" } }];
+    }
+
+    const response = await getDataWithSorting(
+      recipeModel,
+      criteria,
+      { recipeName: 1, recipeNo: 1 },
+      {
+        sort: { name: 1 },
+        limit: search ? 50 : 1000,
+      }
+    );
+
+    const dropdownData = response.map((item) => ({
+      _id: item._id,
+      recipeName: item.recipeName,
+      recipeNo: item.recipeNo,
+    }));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe Dropdown"), dropdownData, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
