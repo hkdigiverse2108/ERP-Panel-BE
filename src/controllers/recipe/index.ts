@@ -46,15 +46,22 @@ export const editRecipeById = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
+    const userRole = user?.role?.name;
 
     let { error, value } = editRecipeSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
-    if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.getDataNotFound("Company"), {}, {}));
+    if (userRole === USER_ROLES.SUPER_ADMIN) {
+      value.companyId = value?.companyId;
+      if (!value?.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+    } else {
+      value.companyId = user?.companyId?._id;
+    }
 
-    const existingRecipe = await getFirstMatch(recipeModel, { companyId, recipeNo: value.recipeNo, isDeleted: false, _id: { $ne: value?.recipeId } }, {}, {});
+    if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
+
+    const existingRecipe = await getFirstMatch(recipeModel, { companyId: value.companyId, recipeNo: value.recipeNo, isDeleted: false, _id: { $ne: value?.recipeId } }, {}, {});
 
     if (existingRecipe) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Recipe No"), {}, {}));
 

@@ -83,9 +83,9 @@ router.use("/invoice", invoiceRouter);
 router.use("/delivery-challan", deliveryChallanRouter);
 router.use("/credit-note", creditNoteRouter);
 router.use("/voucher", voucherRouter);
-router.use("/payment", voucherRouter); // Alias for payment vouchers
-router.use("/receipt", voucherRouter); // Alias for receipt vouchers
-router.use("/expense", voucherRouter); // Alias for expense vouchers
+router.use("/payment", voucherRouter); 
+router.use("/receipt", voucherRouter); 
+router.use("/expense", voucherRouter);
 router.use("/coupon", couponRouter);
 router.use("/discount", discountRouter);
 router.use("/feedback", feedbackRouter);

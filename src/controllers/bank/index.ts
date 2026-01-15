@@ -194,20 +194,20 @@ export const getBankDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
     const { search } = req.query;
-    
+
+    const userRole = user?.role?.name;
+    let companyId = user?.companyId?._id;
+
+    const queryCompanyId = req.query?.companyFilter;
+
     let criteria: any = { isDeleted: false, isActive: true };
-    if (companyId) {
-      criteria.companyId = companyId;
-    }
+
+    if (queryCompanyId && userRole === USER_ROLES.SUPER_ADMIN) criteria.companyId = queryCompanyId;
+    else if (companyId) criteria.companyId = companyId;
 
     if (search) {
-      criteria.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { accountHolderName: { $regex: search, $options: "i" } },
-        { bankAccountNumber: { $regex: search, $options: "i" } },
-      ];
+      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { accountHolderName: { $regex: search, $options: "i" } }, { bankAccountNumber: { $regex: search, $options: "i" } }];
     }
 
     const response = await getDataWithSorting(
