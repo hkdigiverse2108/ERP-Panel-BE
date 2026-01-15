@@ -12,12 +12,14 @@ export interface IStock extends IBase {
   sellingDiscount: number;
   sellingPrice: number;
   sellingMargin: number;
+  uomId: Schema.Types.ObjectId;
 }
 
 const stockSchema = new Schema<IStock>(
   {
     ...baseSchemaFields,
-    productId: { type: Schema.Types.ObjectId, ref: "product", required: true, index: true },
+    productId: { type: Schema.Types.ObjectId, ref: "product", index: true },
+    uomId: { type: Schema.Types.ObjectId, ref: "uom", index: true },
     variantId: { type: Schema.Types.ObjectId },
     purchasePrice: { type: Number, default: 0 },
     landingCost: { type: Number, default: 0 },

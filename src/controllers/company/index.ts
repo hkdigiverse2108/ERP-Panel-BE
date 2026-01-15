@@ -162,8 +162,6 @@ export const getAllCompany = async (req, res) => {
         { path: "userIds", select: "fullName" },
         { path: "roles", select: "name" },
       ],
-      skip: (page - 1) * limit,
-      limit,
     };
 
     if (page && limit) {

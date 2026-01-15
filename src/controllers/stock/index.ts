@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
 import { branchModel, companyModel, productModel, stockModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addStockSchema, deleteStockSchema, editStockSchema } from "../../validation/stock";
@@ -9,46 +9,35 @@ export const addStock = async (req, res) => {
     const { user } = req.headers;
 
     const { error, value } = addStockSchema.validate(req.body);
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    if (user?.role?.name !== USER_ROLES.SUPER_ADMIN) {
+      value.companyId = user?.companyId?._id;
     }
 
-    // Verify that the product exists
     if (!(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
     if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     if (!(await checkIdExist(productModel, value?.productId, "Product", res))) return;
-    // if (!(await checkIdExist(productModel, value?.variantId, "Variant", res))) return;
 
-    // Check if stock record already exists for this product, batch, and combination
     const existingStockCriteria: any = {
       productId: value?.productId,
       isDeleted: false,
     };
 
-    if (value?.batchNo) {
-      existingStockCriteria.batchNo = value.batchNo;
-    }
+    if (value?.companyId) existingStockCriteria.companyId = value.companyId;
 
-    if (value?.branchId) {
-      existingStockCriteria.branchId = value.branchId;
-    }
+    if (value?.branchId) existingStockCriteria.branchId = value.branchId;
 
     const existingStock = await getFirstMatch(stockModel, existingStockCriteria, {}, {});
-
-    if (existingStock) {
-      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Stock record for this product, batch "), {}, {}));
-    }
+    if (existingStock) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Stock record for this product, batch "), {}, {}));
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
     const response = await createOne(stockModel, value);
 
-    if (!response) {
-      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
-    }
-
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock"), response, {}));
   } catch (error) {
     console.error(error);
@@ -60,35 +49,23 @@ export const editStock = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
+
     const { error, value } = editStockSchema.validate(req.body);
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
-
-    // Check if stock exists
     const isExist = await getFirstMatch(stockModel, { _id: value?.stockId, isDeleted: false }, {}, {});
 
-    if (!isExist) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
-    }
+    if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
 
-    // If productId is being changed, verify the new product exists
     if (value?.productId && value.productId !== isExist.productId.toString()) {
       const product = await getFirstMatch(productModel, { _id: value?.productId, isDeleted: false }, {}, {});
-
-      if (!product) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
-      }
+      if (!product) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
     }
 
-    // Check for duplicate stock records if product, batch, or location is being changed
-    // Use the new values if provided, otherwise use existing values
     const checkProductId = value?.productId || isExist.productId;
     const checkBatchNo = value?.batchNo !== undefined ? value.batchNo : isExist.batchNo;
-    const checkbranchId = value?.branchId !== undefined ? value.branchId : isExist.branchId;
+    const checkBranchId = value?.branchId !== undefined ? value.branchId : isExist.branchId;
 
-    // Only check for duplicates if any of the key identifying fields are being changed
     if (value?.productId || value?.batchNo !== undefined || value?.branchId !== undefined) {
       const duplicateCriteria: any = {
         isDeleted: false,
@@ -96,33 +73,21 @@ export const editStock = async (req, res) => {
         productId: checkProductId,
       };
 
-      // Include batchNo in criteria if it exists (either new or existing)
-      if (checkBatchNo) {
-        duplicateCriteria.batchNo = checkBatchNo;
-      }
+      if (checkBatchNo) duplicateCriteria.batchNo = checkBatchNo;
 
-      // Include branchId in criteria if it exists (either new or existing)
-      if (checkbranchId) {
-        duplicateCriteria.branchId = checkbranchId;
-      }
+      if (checkBranchId) duplicateCriteria.branchId = checkBranchId;
 
       const duplicateStock = await getFirstMatch(stockModel, duplicateCriteria, {}, {});
 
-      if (duplicateStock) {
-        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Stock record for this product, batch, and location"), {}, {}));
-      }
+      if (duplicateStock) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Stock record for this product, batch, and location"), {}, {}));
     }
 
-    // Remove stockId from value object before updating
     const { stockId, ...updateValues } = value;
     updateValues.updatedBy = user?._id || null;
 
     const response = await updateData(stockModel, { _id: stockId }, updateValues, {});
 
-    if (!response) {
-      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Stock"), {}, {}));
-    }
-
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Stock"), {}, {}));
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), response, {}));
   } catch (error) {
     console.error(error);

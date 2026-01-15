@@ -189,9 +189,9 @@ export const getCategoryDropdown = async (req, res) => {
   let { user } = req?.headers, { parentCategoryFilter } = req.query, companyId = null, criteria: any = { isDeleted: false, isActive: true };
   try {
 
-    if (user?.role?.name !== USER_ROLES.SUPER_ADMIN) {
-      companyId = user?.companyId?._id;
-    }
+    // if (user?.role?.name !== USER_ROLES.SUPER_ADMIN) {
+    //   companyId = user?.companyId?._id;
+    // }
 
     if (companyId) criteria.companyId = new ObjectId(companyId);
 

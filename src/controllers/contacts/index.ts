@@ -161,8 +161,6 @@ export const getAllContact = async (req, res) => {
         { path: "branchId", select: "name" },
         { path: "membershipId", select: "name" },
       ],
-      skip: (page - 1) * limit,
-      limit,
     };
 
     if (page && limit) {

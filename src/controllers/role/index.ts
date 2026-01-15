@@ -191,8 +191,6 @@ export const getAllRole = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
       ],
-      skip: (page - 1) * limit,
-      limit,
     };
 
     if (page && limit) {

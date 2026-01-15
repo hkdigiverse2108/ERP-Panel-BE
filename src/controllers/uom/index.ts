@@ -180,9 +180,9 @@ export const getUOMDropdown = async (req, res) => {
 
     let criteria: any = { isDeleted: false, isActive: true };
 
-    if (companyId) {
-      criteria.companyId = companyId;
-    }
+    // if (companyId) {
+    //   criteria.companyId = companyId;
+    // }
 
     const response = await getDataWithSorting(uomModel, criteria, { _id: 1, name: 1, code: 1 },
       {

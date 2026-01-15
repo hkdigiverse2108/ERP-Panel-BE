@@ -190,9 +190,9 @@ export const getBrandDropdown = async (req, res) => {
 
     let criteria: any = { isDeleted: false, isActive: true };
 
-    if (user?.role?.name !== USER_ROLES.SUPER_ADMIN) {
-      companyId = new ObjectId(user?.companyId?._id);
-    }
+    // if (user?.role?.name !== USER_ROLES.SUPER_ADMIN) {
+    //   companyId = new ObjectId(user?.companyId?._id);
+    // }
 
     if (parentBrandFilter) criteria.parentBrandId = new ObjectId(parentBrandFilter);
 
