@@ -67,7 +67,11 @@ export const addStock = async (req, res) => {
     if (value?.branchId) existingStockCriteria.branchId = value.branchId;
 
     const existingStock = await getFirstMatch(stockModel, existingStockCriteria, {}, {});
-    if (existingStock) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Stock record for this product, batch "), {}, {}));
+    if (existingStock) {
+       let stock = await updateData(stockModel, { _id: existingStock?._id }, value, {});
+       if (!stock) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+       return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock"), stock, {}));
+    }
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
