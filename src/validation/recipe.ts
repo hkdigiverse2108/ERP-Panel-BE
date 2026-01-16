@@ -1,10 +1,10 @@
 import Joi from "joi";
 import { RECIPE_TYPE } from "../common";
-import { objectId } from "./common";
+import { baseApiSchema, objectId } from "./common";
 
 export const addRecipeSchema = Joi.object({
+  ...baseApiSchema,
   name: Joi.string().required(),
-  companyId: objectId().optional(),
   date: Joi.date().required(),
   number: Joi.string().required(),
   type: Joi.string()
@@ -31,7 +31,7 @@ export const addRecipeSchema = Joi.object({
 
 export const editRecipeSchema = Joi.object({
   recipeId: objectId().required(),
-  companyId: objectId().optional(),
+  ...baseApiSchema,
   number: Joi.string().optional(),
 
   name: Joi.string().optional(),
