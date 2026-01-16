@@ -36,3 +36,4 @@ export * from "./posOrder";
 export * from "./paymentTerm";
 export * from "./uom";
 export * from "./tax";
+export * from "./billOfLiveProduct";

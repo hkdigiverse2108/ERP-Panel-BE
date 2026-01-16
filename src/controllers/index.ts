@@ -38,4 +38,5 @@ export * as invoiceController from "./invoice";
 export * as deliveryChallanController from "./deliveryChallan";
 export * as creditNoteController from "./creditNote";
 export * as voucherController from "./voucher";
+export * as billOfLiveProductController from "./billOfLiveProduct";
 // export * as stockItemController from "./stockItem";

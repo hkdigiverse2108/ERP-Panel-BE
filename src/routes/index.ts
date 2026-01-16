@@ -41,6 +41,7 @@ import { loyaltyRouter } from "./loyalty";
 import { prefixRouter } from "./prefix";
 import { posOrderRouter } from "./posOrder";
 import { productRequestRouter } from "./productRequest";
+import { billOfLiveProductRouter } from "./billOfLiveProduct";
 
 const router = Router();
 
@@ -83,8 +84,8 @@ router.use("/invoice", invoiceRouter);
 router.use("/delivery-challan", deliveryChallanRouter);
 router.use("/credit-note", creditNoteRouter);
 router.use("/voucher", voucherRouter);
-router.use("/payment", voucherRouter); 
-router.use("/receipt", voucherRouter); 
+router.use("/payment", voucherRouter);
+router.use("/receipt", voucherRouter);
 router.use("/expense", voucherRouter);
 router.use("/coupon", couponRouter);
 router.use("/discount", discountRouter);
@@ -95,6 +96,7 @@ router.use("/pos-order", posOrderRouter);
 
 router.use("/recipe", recipeRouter);
 router.use("/material", materialRouter);
+router.use("/bill-of-live-product", billOfLiveProductRouter);
 
 // router.use("/employee", employeeRouter);
 
