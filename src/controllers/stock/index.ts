@@ -170,6 +170,8 @@ export const bulkStockAdjustment = async (req, res) => {
         isDeleted: false,
       };
 
+      if (value?.companyId) stockCriteria.companyId = value?.companyId;
+
       if (user?.role?.name !== USER_ROLES.SUPER_ADMIN && user?.companyId?._id) {
         stockCriteria.companyId = user?.companyId?._id;
       }
