@@ -1,0 +1,282 @@
+import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
+import { branchModel, companyModel, materialConsumptionModel, productModel, userModel } from "../../database";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { addMaterialConsumptionSchema, deleteMaterialConsumptionSchema, editMaterialConsumptionSchema, getMaterialConsumptionSchema } from "../../validation";
+
+const calculateTotalAmount = (items: any[]) => {
+  return items.reduce((sum, item) => {
+    const itemTotal = item?.totalAmount ?? (item?.qty || 0) * (item?.unitPrice || 0);
+    return sum + itemTotal;
+  }, 0);
+};
+
+const generateConsumptionNo = async (companyId?: string | null) => {
+  const latest = await getFirstMatch(
+    materialConsumptionModel,
+    {
+      ...(companyId ? { companyId } : {}),
+      isDeleted: false,
+    },
+    {},
+    { sort: { createdAt: -1 } }
+  );
+
+  let nextNumber = 1;
+  if (latest?.consumptionNo) {
+    const match = String(latest.consumptionNo).match(/(\d+)\s*$/);
+    if (match) nextNumber = parseInt(match[1], 10) + 1;
+  }
+
+  let candidate = `Con${nextNumber}`;
+  while (
+    await getFirstMatch(
+      materialConsumptionModel,
+      {
+        consumptionNo: candidate,
+        isDeleted: false,
+        ...(companyId ? { companyId } : {}),
+      },
+      {},
+      {}
+    )
+  ) {
+    nextNumber += 1;
+    candidate = `Con${nextNumber}`;
+  }
+
+  return candidate;
+};
+
+export const addMaterialConsumption = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+
+    const { error, value } = addMaterialConsumptionSchema.validate(req.body);
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
+
+    if (user?.role?.name !== USER_ROLES.SUPER_ADMIN) {
+      value.companyId = companyId ?? null;
+    }
+
+    if (value.companyId) {
+      if (!(await checkIdExist(companyModel, value.companyId, "Company", res))) return;
+    }
+
+    if (value.branchId) {
+      if (!(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
+    }
+
+    if (value.userId) {
+      if (!(await checkIdExist(userModel, value.userId, "User", res))) return;
+    }
+
+    for (const item of value.items || []) {
+      if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+    }
+
+    if (!value?.consumptionNo) {
+      value.consumptionNo = await generateConsumptionNo(value.companyId);
+    }
+
+    const isExist = await getFirstMatch(
+      materialConsumptionModel,
+      { companyId: value.companyId, consumptionNo: value?.consumptionNo, isDeleted: false },
+      {},
+      {}
+    );
+
+    if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Consumption No"), {}, {}));
+
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
+
+    const response = await createOne(materialConsumptionModel, value);
+
+    if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Material Consumption"), {}, {}));
+
+    return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Material Consumption"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const editMaterialConsumption = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+
+    const { error, value } = editMaterialConsumptionSchema.validate(req.body);
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
+
+    const { materialConsumptionId } = value;
+    const criteria: any = { _id: materialConsumptionId, isDeleted: false };
+
+    if (user?.role?.name !== USER_ROLES.SUPER_ADMIN && companyId) {
+      criteria.companyId = companyId;
+    }
+
+    const isExist = await getFirstMatch(materialConsumptionModel, criteria, {}, {});
+    if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Material Consumption"), {}, {}));
+
+    if (value?.consumptionNo) {
+      const duplicate = await getFirstMatch(
+        materialConsumptionModel,
+        {
+          _id: { $ne: materialConsumptionId },
+          companyId: isExist.companyId,
+          consumptionNo: value.consumptionNo,
+          isDeleted: false,
+        },
+        {},
+        {}
+      );
+
+      if (duplicate) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Consumption No"), {}, {}));
+    }
+
+    if (value.branchId) {
+      if (!(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
+    }
+
+    if (value.userId) {
+      if (!(await checkIdExist(userModel, value.userId, "User", res))) return;
+    }
+
+    if (value.items) {
+      for (const item of value.items) {
+        if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+      }
+      value.totalAmount = calculateTotalAmount(value.items);
+    }
+
+    value.updatedBy = user?._id || null;
+
+    const response = await updateData(materialConsumptionModel, { _id: materialConsumptionId }, value, { new: true });
+    if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.updateDataError("Material Consumption"), {}, {}));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Material Consumption"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const deleteMaterialConsumption = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = deleteMaterialConsumptionSchema.validate(req.params);
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
+
+    const isExist = await getFirstMatch(materialConsumptionModel, { _id: value.id, isDeleted: false }, {}, {});
+    if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Material Consumption"), {}, {}));
+
+    const response = await updateData(materialConsumptionModel, { _id: value.id }, { isDeleted: true, updatedBy: user?._id || null }, {});
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage.deleteDataError("Material Consumption"), {}, {}));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.deleteDataSuccess("Material Consumption"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
+};
+
+export const getAllMaterialConsumption = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+    let { page, limit, search, startDate, endDate, consumptionType, branchId, activeFilter } = req.query;
+
+    page = Number(page) || 1;
+    limit = Number(limit) || 10;
+
+    let criteria: any = { isDeleted: false };
+
+    if (user?.role?.name !== USER_ROLES.SUPER_ADMIN && companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+    if (consumptionType) criteria.consumptionType = consumptionType;
+    if (branchId) criteria.branchId = branchId;
+
+    if (search) {
+      criteria.$or = [{ consumptionNo: { $regex: search, $options: "i" } }, { remark: { $regex: search, $options: "i" } }];
+    }
+
+    if (startDate && endDate) {
+      criteria.consumptionDate = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
+    }
+
+    const options = {
+      sort: { createdAt: -1 },
+      populate: [
+        { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
+        { path: "userId", select: "name email" },
+      ],
+      skip: (page - 1) * limit,
+      limit,
+    };
+
+    const response = await getDataWithSorting(materialConsumptionModel, criteria, {}, options);
+    const totalData = await countData(materialConsumptionModel, criteria);
+    const totalPages = Math.ceil(totalData / limit) || 1;
+
+    const stateObj = {
+      page,
+      limit,
+      totalPages,
+    };
+
+    return res.status(HTTP_STATUS.OK).json(
+      new apiResponse(
+        HTTP_STATUS.OK,
+        responseMessage.getDataSuccess("Material Consumption"),
+        { material_consumption_data: response, totalData, state: stateObj },
+        {}
+      )
+    );
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
+};
+
+export const getMaterialConsumptionById = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { error, value } = getMaterialConsumptionSchema.validate(req.params);
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+    const response = await getFirstMatch(
+      materialConsumptionModel,
+      { _id: value.id, isDeleted: false },
+      {},
+      {
+        populate: [
+          { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
+          { path: "userId", select: "name email" },
+          { path: "items.productId", select: "name itemCode" },
+          { path: "items.uomId", select: "name code" },
+        ],
+      }
+    );
+
+    if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Material Consumption"), {}, {}));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Material Consumption"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
+};

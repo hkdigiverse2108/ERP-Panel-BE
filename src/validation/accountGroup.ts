@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { objectId } from "./common";
-import { ACCOUNT_NATURE, ACCOUNT_TYPE } from "../common";
+import { ACCOUNT_NATURE } from "../common";
 
 export const addAccountGroupSchema = Joi.object().keys({
   name: Joi.string().required(),

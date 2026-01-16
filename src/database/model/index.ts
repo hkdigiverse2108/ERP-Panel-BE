@@ -14,6 +14,7 @@ export * from "./callRequest";
 export * from "./recipe";
 export * from "./stockItem";
 export * from "./materials";
+export * from "./materialConsumption";
 
 export * from "./operation";
 export * from "./permissions";

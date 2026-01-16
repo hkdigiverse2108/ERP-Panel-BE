@@ -19,6 +19,7 @@ import { brandRouter } from "./brand";
 import { categoryRouter } from "./category";
 import { bankRouter } from "./bank";
 import { materialRouter } from "./material";
+import { materialConsumptionRouter } from "./materialConsumption";
 import { accountGroupRouter } from "./accountGroup";
 import { accountRouter } from "./account";
 import { paymentTermRouter } from "./paymentTerm";
@@ -95,6 +96,8 @@ router.use("/pos-order", posOrderRouter);
 
 router.use("/recipe", recipeRouter);
 router.use("/material", materialRouter);
+router.use("/material-consumption", materialConsumptionRouter);
+router.use("/materialconsumption", materialConsumptionRouter);
 
 // router.use("/employee", employeeRouter);
 

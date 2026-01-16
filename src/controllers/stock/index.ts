@@ -1,7 +1,44 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
-import { branchModel, companyModel, productModel, stockModel } from "../../database";
+import { branchModel, companyModel, materialConsumptionModel, productModel, stockModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addStockSchema, bulkEditStockSchema, deleteStockSchema, editStockSchema } from "../../validation/stock";
+import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation/stock";
+
+const generateConsumptionNo = async (companyId?: string | null) => {
+  const latest = await getFirstMatch(
+    materialConsumptionModel,
+    {
+      ...(companyId ? { companyId } : {}),
+      isDeleted: false,
+    },
+    {},
+    { sort: { createdAt: -1 } }
+  );
+
+  let nextNumber = 1;
+  if (latest?.consumptionNo) {
+    const match = String(latest.consumptionNo).match(/(\d+)\s*$/);
+    if (match) nextNumber = parseInt(match[1], 10) + 1;
+  }
+
+  let candidate = `Con${nextNumber}`;
+  while (
+    await getFirstMatch(
+      materialConsumptionModel,
+      {
+        consumptionNo: candidate,
+        isDeleted: false,
+        ...(companyId ? { companyId } : {}),
+      },
+      {},
+      {}
+    )
+  ) {
+    nextNumber += 1;
+    candidate = `Con${nextNumber}`;
+  }
+
+  return candidate;
+};
 
 export const addStock = async (req, res) => {
   reqInfo(req);
@@ -52,7 +89,7 @@ export const editStock = async (req, res) => {
   try {
     const { user } = req.headers;
 
-    const { error, value } = bulkEditStockSchema.validate(req.body);
+    const { error, value } = editStockSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     if (!value.length) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Stock items are required"), {}, {}));
 
@@ -106,13 +143,21 @@ export const bulkStockAdjustment = async (req, res) => {
   try {
     const { user } = req.headers;
 
-    const { error, value } = bulkEditStockSchema.validate(req.body);
+    let items = [];
+    let remark: string | null = null;
+
+
+    const { error, value } = bulkStockAdjustmentSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    if (!value.length) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Stock items are required"), {}, {}));
+    items = value?.items || [];
+    remark = value?.remark || null;
+
+    if (!items.length) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Stock items are required"), {}, {}));
 
     const updatedItems = [];
+    const processedItems = [];
 
-    for (const item of value) {
+    for (const item of items) {
       const product = await getFirstMatch(productModel, { _id: item?.productId, isDeleted: false }, {}, {});
       if (!product) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
 
@@ -137,9 +182,37 @@ export const bulkStockAdjustment = async (req, res) => {
 
       if (!updatedStock) continue;
       updatedItems.push(updatedStock);
+      processedItems.push(item);
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), { items: updatedItems }, {}));
+    let consumptionRecord = null;
+
+    if (processedItems.length) {
+      const companyId = user?.companyId?._id || null;
+      const consumptionNo = await generateConsumptionNo(companyId);
+      const totalAmount = processedItems.reduce((sum, item: any) => {
+        const itemTotal = item?.totalAmount ?? (item?.qty || 0) * (item?.unitPrice || 0);
+        return sum + itemTotal;
+      }, 0);
+
+      const consumptionPayload: any = {
+        companyId,
+        branchId: value?.branchId || user?.branchId?._id || null,
+        consumptionNo,
+        consumptionDate: value?.consumptionDate || new Date(),
+        userId: value?.userId || user?._id || null,
+        consumptionType: value?.consumptionType || null,
+        remark,
+        items: processedItems,
+        totalAmount,
+        createdBy: user?._id || null,
+        updatedBy: user?._id || null,
+      };
+
+      consumptionRecord = await createOne(materialConsumptionModel, consumptionPayload);
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), { remark, items: updatedItems, consumption: consumptionRecord }, {}));
 
   } catch (error) {
     console.error(error);

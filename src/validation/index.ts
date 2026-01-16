@@ -15,6 +15,7 @@ export * from "./brand";
 export * from "./bank";
 export * from "./category";
 export * from "./material";
+export * from "./materialConsumption";
 export * from "./stockVerification";
 export * from "./purchaseOrder";
 export * from "./supplierBill";
