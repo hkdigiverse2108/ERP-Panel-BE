@@ -196,7 +196,7 @@ export const getBrandDropdown = async (req, res) => {
 
     if (parentBrandFilter) criteria.parentBrandId = new ObjectId(parentBrandFilter);
 
-    if (companyId) criteria.companyId = companyId;
+    // if (companyId) criteria.companyId = companyId;
 
     const response = await getDataWithSorting(
       brandModel,
