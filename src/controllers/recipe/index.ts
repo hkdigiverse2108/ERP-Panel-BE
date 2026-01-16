@@ -24,7 +24,7 @@ export const addRecipe = async (req, res) => {
 
     if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
 
-    const existingRecipe = await getFirstMatch(recipeModel, { companyId: value.companyId, recipeNo: value.recipeNo, isDeleted: false }, {}, {});
+    const existingRecipe = await getFirstMatch(recipeModel, { companyId: value.companyId, number: value.number, isDeleted: false }, {}, {});
 
     if (existingRecipe) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Recipe No"), {}, {}));
 
@@ -61,7 +61,7 @@ export const editRecipeById = async (req, res) => {
 
     if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
 
-    const existingRecipe = await getFirstMatch(recipeModel, { companyId: value.companyId, recipeNo: value.recipeNo, isDeleted: false, _id: { $ne: value?.recipeId } }, {}, {});
+    const existingRecipe = await getFirstMatch(recipeModel, { companyId: value.companyId, number: value.number, isDeleted: false, _id: { $ne: value?.recipeId } }, {}, {});
 
     if (existingRecipe) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Recipe No"), {}, {}));
 
@@ -120,7 +120,7 @@ export const getAllRecipe = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ recipeName: { $regex: search, $options: "i" } }, { recipeNo: { $regex: search, $options: "i" } }, { recipeType: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { number: { $regex: search, $options: "i" } }, { type: { $regex: search, $options: "i" } }];
     }
 
     if (startDate && endDate) {
@@ -239,7 +239,7 @@ export const getRecipeForBOM = async (req, res) => {
         responseMessage.getDataSuccess("Recipe BOM Data"),
         {
           recipeId: recipe._id,
-          recipeName: recipe.recipeName,
+          name: recipe.name,
           finalProducts,
           rawProducts,
         },
@@ -269,13 +269,13 @@ export const getRecipeDropdown = async (req, res) => {
     else if (companyId) criteria.companyId = companyId;
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { recipeName: { $regex: search, $options: "i" } }, { recipeNo: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { name: { $regex: search, $options: "i" } }, { number: { $regex: search, $options: "i" } }];
     }
 
     const response = await getDataWithSorting(
       recipeModel,
       criteria,
-      { recipeName: 1, recipeNo: 1 },
+      { name: 1, number: 1 },
       {
         sort: { name: 1 },
         limit: search ? 50 : 1000,
@@ -284,8 +284,8 @@ export const getRecipeDropdown = async (req, res) => {
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
-      recipeName: item.recipeName,
-      recipeNo: item.recipeNo,
+      name: item.name,
+      number: item.number,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe Dropdown"), dropdownData, {}));

@@ -2,11 +2,11 @@ import { Schema } from "mongoose";
 import { IBase } from "./base";
 
 export interface IRecipe extends IBase {
-  recipeName: string;
-  recipeDate: Date;
-  recipeNo: string;
+  name: string;
+  date: Date;
+  number: string;
 
-  recipeType: "assemble" | "unassemble";
+  type: "assemble" | "unassemble";
 
   rawProducts: {
     itemCode?: string;
@@ -21,6 +21,6 @@ export interface IRecipe extends IBase {
     mrp?: number;
     qtyGenerate: number;
   }[];
-  
+
   status: "active" | "inactive";
 }
