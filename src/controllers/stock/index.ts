@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
 import { branchModel, companyModel, productModel, stockModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addStockSchema, deleteStockSchema, editStockSchema } from "../../validation/stock";
+import { addStockSchema, bulkEditStockSchema, deleteStockSchema, editStockSchema } from "../../validation/stock";
 
 export const addStock = async (req, res) => {
   reqInfo(req);
@@ -38,6 +38,8 @@ export const addStock = async (req, res) => {
     const response = await createOne(stockModel, value);
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+
+    await updateData(productModel, { _id: value?.productId }, { companyIds: { $in: [value?.companyId] } }, {});
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock"), response, {}));
   } catch (error) {
     console.error(error);
@@ -50,45 +52,95 @@ export const editStock = async (req, res) => {
   try {
     const { user } = req.headers;
 
-    const { error, value } = editStockSchema.validate(req.body);
+    const { error, value } = bulkEditStockSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    if (!value.length) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Stock items are required"), {}, {}));
 
-    const isExist = await getFirstMatch(stockModel, { _id: value?.stockId, isDeleted: false }, {}, {});
+    const updatedItems = [];
 
-    if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
-
-    if (value?.productId && value.productId !== isExist.productId.toString()) {
-      const product = await getFirstMatch(productModel, { _id: value?.productId, isDeleted: false }, {}, {});
+    for (const item of value) {
+      const product = await getFirstMatch(productModel, { _id: item?.productId, isDeleted: false }, {}, {});
       if (!product) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
-    }
 
-    const checkProductId = value?.productId || isExist.productId;
-    const checkBatchNo = value?.batchNo !== undefined ? value.batchNo : isExist.batchNo;
-    const checkBranchId = value?.branchId !== undefined ? value.branchId : isExist.branchId;
-
-    if (value?.productId || value?.batchNo !== undefined || value?.branchId !== undefined) {
-      const duplicateCriteria: any = {
+      const stockCriteria: any = {
+        productId: item?.productId,
         isDeleted: false,
-        _id: { $ne: value?.stockId },
-        productId: checkProductId,
       };
 
-      if (checkBatchNo) duplicateCriteria.batchNo = checkBatchNo;
+      if (user?.role?.name !== USER_ROLES.SUPER_ADMIN && user?.companyId?._id) {
+        stockCriteria.companyId = user?.companyId?._id;
+      }
 
-      if (checkBranchId) duplicateCriteria.branchId = checkBranchId;
+      if (user?.branchId?._id) {
+        stockCriteria.branchId = user?.branchId?._id;
+      }
 
-      const duplicateStock = await getFirstMatch(stockModel, duplicateCriteria, {}, {});
+      const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
+      if (!stock) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
 
-      if (duplicateStock) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Stock record for this product, batch, and location"), {}, {}));
+      const currentQty = stock?.qty || 0;
+      const nextQty = currentQty - item.qty;
+
+      const updatedStock = await updateData(
+        stockModel,
+        { _id: stock?._id },
+        { qty: nextQty < 0 ? 0 : nextQty, updatedBy: user?._id || null },
+        {}
+      );
+
+      if (!updatedStock) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Stock"), {}, {}));
+
+      updatedItems.push(updatedStock);
     }
 
-    const { stockId, ...updateValues } = value;
-    updateValues.updatedBy = user?._id || null;
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), { items: updatedItems }, {}));
 
-    const response = await updateData(stockModel, { _id: stockId }, updateValues, {});
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
 
-    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Stock"), {}, {}));
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), response, {}));
+export const bulkStockAdjustment = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req.headers;
+
+    const { error, value } = bulkEditStockSchema.validate(req.body);
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    if (!value.length) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Stock items are required"), {}, {}));
+
+    const updatedItems = [];
+
+    for (const item of value) {
+      const product = await getFirstMatch(productModel, { _id: item?.productId, isDeleted: false }, {}, {});
+      if (!product) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
+
+      const stockCriteria: any = {
+        productId: item?.productId,
+        isDeleted: false,
+      };
+
+      if (user?.role?.name !== USER_ROLES.SUPER_ADMIN && user?.companyId?._id) {
+        stockCriteria.companyId = user?.companyId?._id;
+      }
+
+      const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
+      if (!stock) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
+
+      if ((stock?.qty || 0) < item?.qty) continue;
+
+      const currentQty = stock?.qty || 0;
+      const nextQty = currentQty - item.qty;
+
+      const updatedStock = await updateData(stockModel, { _id: stock?._id }, { qty: nextQty < 0 ? 0 : nextQty, updatedBy: user?._id || null }, {});
+
+      if (!updatedStock) continue;
+      updatedItems.push(updatedStock);
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), { items: updatedItems }, {}));
+
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

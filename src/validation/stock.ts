@@ -33,6 +33,13 @@ export const editStockSchema = Joi.object().keys({
   ...baseApiSchema,
 });
 
+export const bulkEditStockSchema = Joi.array().items(
+  Joi.object().keys({
+    productId: objectId().required(),
+    qty: Joi.number().required(),
+  })
+);
+
 export const deleteStockSchema = Joi.object().keys({
   id: objectId().required(),
 });

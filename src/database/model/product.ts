@@ -45,6 +45,8 @@ const productSchema = new Schema<IProduct>(
     nutrition: [{ name: String, value: String }],
     
     masterQty: { type: Number, default: 0 },
+
+    companyId: [{ type: Schema.Types.ObjectId, ref: "company" }],
     
     // Pricing Details
     purchasePrice: { type: Number, default: 0 },
