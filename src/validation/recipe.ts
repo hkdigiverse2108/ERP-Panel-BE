@@ -3,11 +3,11 @@ import { RECIPE_TYPE } from "../common";
 import { objectId } from "./common";
 
 export const addRecipeSchema = Joi.object({
-  recipeName: Joi.string().required(),
+  name: Joi.string().required(),
   companyId: objectId().optional(),
-  recipeDate: Joi.date().required(),
-  recipeNo: Joi.string().required(),
-  recipeType: Joi.string()
+  date: Joi.date().required(),
+  number: Joi.string().required(),
+  type: Joi.string()
     .valid(...Object.values(RECIPE_TYPE))
     .required(),
 
@@ -32,11 +32,11 @@ export const addRecipeSchema = Joi.object({
 export const editRecipeSchema = Joi.object({
   recipeId: objectId().required(),
   companyId: objectId().optional(),
-  recipeNo: Joi.string().optional(),
+  number: Joi.string().optional(),
 
-  recipeName: Joi.string().optional(),
-  recipeDate: Joi.date().optional(),
-  recipeType: Joi.string()
+  name: Joi.string().optional(),
+  date: Joi.date().optional(),
+  type: Joi.string()
     .valid(...Object.values(RECIPE_TYPE))
     .optional(),
 

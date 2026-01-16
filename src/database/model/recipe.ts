@@ -7,11 +7,11 @@ const recipeSchema = new Schema<IRecipe>(
   {
     ...baseSchemaFields,
 
-    recipeName: { type: String, required: true, index: true },
-    recipeDate: { type: Date, required: true },
-    recipeNo: { type: String, required: true },
+    name: { type: String, required: true, index: true },
+    date: { type: Date, required: true },
+    number: { type: String, required: true },
 
-    recipeType: {
+    type: {
       type: String,
       enum: Object.values(RECIPE_TYPE),
       required: true,
