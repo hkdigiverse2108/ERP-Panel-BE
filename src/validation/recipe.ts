@@ -22,16 +22,11 @@ export const addRecipeSchema = Joi.object({
     .min(1)
     .required(),
 
-  finalProducts: Joi.array()
-    .items(
-      Joi.object({
-        productId: objectId().required(),
-        mrp: Joi.number().optional(),
-        qtyGenerate: Joi.number().positive().required(),
-      })
-    )
-    .min(1)
-    .required(),
+  finalProducts: Joi.object({
+    productId: objectId().required(),
+    mrp: Joi.number().optional(),
+    qtyGenerate: Joi.number().positive().required(),
+  }).required(),
 });
 
 export const editRecipeSchema = Joi.object({
@@ -53,13 +48,11 @@ export const editRecipeSchema = Joi.object({
     })
   ),
 
-  finalProducts: Joi.array().items(
-    Joi.object({
-      productId: objectId().required(),
-      mrp: Joi.number().optional(),
-      qtyGenerate: Joi.number().positive().required(),
-    })
-  ),
+  finalProducts: Joi.object({
+    productId: objectId().required(),
+    mrp: Joi.number().optional(),
+    qtyGenerate: Joi.number().positive().required(),
+  }),
 });
 
 export const deleteRecipeSchema = Joi.object().keys({

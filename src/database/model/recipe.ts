@@ -29,17 +29,15 @@ const recipeSchema = new Schema<IRecipe>(
       },
     ],
 
-    finalProducts: [
-      {
-        productId: {
-          type: Schema.Types.ObjectId,
-          ref: "product",
-          required: true,
-        },
-        mrp: { type: Number, default: 0 },
-        qtyGenerate: { type: Number, required: true },
+    finalProducts: {
+      productId: {
+        type: Schema.Types.ObjectId,
+        ref: "product",
+        required: true,
       },
-    ],
+      mrp: { type: Number, default: 0 },
+      qtyGenerate: { type: Number, required: true },
+    },
   },
   baseSchemaOptions
 );

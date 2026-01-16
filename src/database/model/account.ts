@@ -3,8 +3,6 @@ import { IAccount } from "../../types";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
 import { ACCOUNT_TYPE } from "../../common";
 
-
-
 const accountSchema = new Schema<IAccount>({
     ...baseSchemaFields,
     name: { type: String, required: true, index: true },

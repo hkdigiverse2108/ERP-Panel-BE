@@ -52,3 +52,4 @@ export * from "./contact";
 export * from "./recipe";
 export * from "./stockItem";
 export * from "./uom";
+export * from "./billOfLiveProduct";

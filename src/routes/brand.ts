@@ -11,6 +11,4 @@ router.delete("/:id", brandController.deleteBrandById);
 router.get("/:id", brandController.getBrandById);
 router.get("/tree/all", brandController.getBrandTree);
 
-
-
 export const brandRouter = router;
