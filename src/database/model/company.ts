@@ -28,7 +28,7 @@ const companySchema: any = new mongoose.Schema(
     state: { type: String },
     country: { type: String },
     pinCode: { type: String },
-    timeZone: { type: String },
+    // timeZone: { type: String },
     webSite: { type: String },
 
     // ******************* Bank Details *******************

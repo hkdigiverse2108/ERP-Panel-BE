@@ -32,7 +32,7 @@ export const addBranchSchema = Joi.object().keys({
   state: Joi.string().required(),
   country: Joi.string().required(),
   pinCode: Joi.string().optional(),
-  timeZone: Joi.string().optional(),
+  // timeZone: Joi.string().optional(),
 
   // Bank Details
   bankId: objectId().optional(),
@@ -79,7 +79,7 @@ export const editBranchSchema = Joi.object().keys({
   state: Joi.string().optional(),
   country: Joi.string().optional(),
   pinCode: Joi.string().optional().allow("", null),
-  timeZone: Joi.string().optional(),
+  // timeZone: Joi.string().optional(),
 
   // Bank Details
   bankId: objectId().optional().allow("", null),

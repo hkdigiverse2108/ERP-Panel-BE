@@ -213,18 +213,19 @@ export const getBankDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       bankModel,
       criteria,
-      { name: 1, accountHolderName: 1, bankAccountNumber: 1 },
+      { name: 1, accountHolderName: 1, bankAccountNumber: 1, branchName: 1, ifscCode: 1 },
       {
         sort: { name: 1 },
         limit: search ? 50 : 1000,
       }
     );
-
     const dropdownData = response.map((item) => ({
       _id: item._id,
       name: item.name || `${item.accountHolderName} - ${item.bankAccountNumber}`,
       accountHolderName: item.accountHolderName,
       bankAccountNumber: item.bankAccountNumber,
+      branchName: item.branchName,
+      ifscCode: item.ifscCode,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bank Dropdown"), dropdownData, {}));
