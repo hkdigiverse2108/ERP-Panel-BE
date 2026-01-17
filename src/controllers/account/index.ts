@@ -10,7 +10,6 @@ export const addAccount = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
     const { error, value } = addAccountSchema.validate(req.body);
 
@@ -18,32 +17,22 @@ export const addAccount = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
-
-    // Validate account group exists
     if (!(await checkIdExist(accountGroupModel, value?.groupId, "Account Group", res))) return;
 
-    // Check if account name already exists for this company
-    const isExist = await getFirstMatch(accountModel, { name: value?.name, companyId, isDeleted: false }, {}, {});
+    const isExist = await getFirstMatch(accountModel, { name: value?.name, isDeleted: false }, {}, {});
+
     if (isExist) {
       return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Account Name"), {}, {}));
     }
 
-    // Set current balance same as opening balance if not provided
     if (value.currentBalance === undefined || value.currentBalance === null) {
       value.currentBalance = value.openingBalance || 0;
     }
 
-    const accountData = {
-      ...value,
-      companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(accountModel, accountData);
+    const response = await createOne(accountModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -80,7 +69,7 @@ export const editAccount = async (req, res) => {
 
     // Check if account name already exists (if being changed)
     if (value.name && value.name !== isExist.name) {
-      const nameExist = await getFirstMatch(accountModel, { name: value.name, companyId: isExist.companyId, isDeleted: false, _id: { $ne: value.accountId } }, {}, {});
+      const nameExist = await getFirstMatch(accountModel, { name: value.name, isDeleted: false, _id: { $ne: value.accountId } }, {}, {});
       if (nameExist) {
         return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Account Name"), {}, {}));
       }
@@ -135,16 +124,12 @@ export const getAllAccount = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
     let { page = 1, limit = 10, search, type, groupId, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
-    if (companyId) {
-      criteria.companyId = companyId;
-    }
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "i" } }];
@@ -162,11 +147,7 @@ export const getAllAccount = async (req, res) => {
 
     const options = {
       sort: { name: 1 },
-      populate: [
-        { path: "groupId", select: "name nature" },
-        { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
-      ],
+      populate: [{ path: "groupId", select: "name nature" }],
       skip: (page - 1) * limit,
       limit,
     };
@@ -203,11 +184,7 @@ export const getOneAccount = async (req, res) => {
       { _id: value?.id, isDeleted: false },
       {},
       {
-        populate: [
-          { path: "groupId", select: "name nature parentGroupId" },
-          { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
-        ],
+        populate: [{ path: "groupId", select: "name nature parentGroupId" }],
       }
     );
 
@@ -226,14 +203,9 @@ export const getOneAccount = async (req, res) => {
 export const getAccountDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
     const { type, groupId, search } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
-    if (companyId) {
-      criteria.companyId = companyId;
-    }
 
     if (type) {
       criteria.type = type;

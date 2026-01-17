@@ -111,7 +111,6 @@ export const getAllAccountGroup = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
     let { page = 1, limit = 100, search, activeFilter } = req.query;
 
@@ -119,10 +118,6 @@ export const getAllAccountGroup = async (req, res) => {
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
-
-    if (companyId) {
-      criteria.companyId = companyId;
-    }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
@@ -132,11 +127,7 @@ export const getAllAccountGroup = async (req, res) => {
 
     const options: any = {
       sort: { name: 1 },
-      populate: [
-        { path: "parentGroupId", select: "name" },
-        { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
-      ],
+      populate: [{ path: "parentGroupId", select: "name" }],
       skip: (page - 1) * limit,
       limit,
     };
@@ -173,12 +164,7 @@ export const getOneAccountGroup = async (req, res) => {
       { _id: value?.id, isDeleted: false },
       {},
       {
-        populate: [
-          { path: "parentGroupId", select: "name" },
-
-          { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
-        ],
+        populate: [{ path: "parentGroupId", select: "name" }],
       }
     );
 
@@ -196,14 +182,7 @@ export const getOneAccountGroup = async (req, res) => {
 export const getAccountGroupDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
-
     let criteria: any = { isDeleted: false, isActive: true };
-
-    if (companyId) {
-      criteria.companyId = companyId;
-    }
 
     const response = await getDataWithSorting(
       accountGroupModel,

@@ -4,11 +4,12 @@ import { ACCOUNT_NATURE } from "../common";
 
 export const addAccountGroupSchema = Joi.object().keys({
   name: Joi.string().required(),
-  parentGroupId: objectId().required(),
+  parentGroupId: objectId().optional(),
   nature: Joi.string()
     .valid(...Object.values(ACCOUNT_NATURE))
     .default(ACCOUNT_NATURE.ASSETS)
     .optional(),
+  isActive: Joi.boolean().optional(),
 });
 
 export const editAccountGroupSchema = Joi.object().keys({
@@ -19,6 +20,7 @@ export const editAccountGroupSchema = Joi.object().keys({
     .valid(...Object.values(ACCOUNT_NATURE))
     .default(ACCOUNT_NATURE.ASSETS)
     .optional(),
+  isActive: Joi.boolean().optional(),
 });
 
 export const deleteAccountGroupSchema = Joi.object().keys({

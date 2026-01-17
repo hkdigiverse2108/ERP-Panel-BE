@@ -1,10 +1,10 @@
 import mongoose, { Schema } from "mongoose";
 import { IAccount } from "../../types";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { baseCommonFields, baseSchemaOptions } from "./base";
 import { ACCOUNT_TYPE } from "../../common";
 
 const accountSchema = new Schema<IAccount>({
-    ...baseSchemaFields,
+    ...baseCommonFields,
     name: { type: String, required: true, index: true },
     groupId: { type: Schema.Types.ObjectId, ref: 'accountGroup', required: true },
     openingBalance: { type: Number, default: 0 },

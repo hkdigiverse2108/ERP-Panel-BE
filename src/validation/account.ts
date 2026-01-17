@@ -11,6 +11,7 @@ export const addAccountSchema = Joi.object().keys({
     .valid(...Object.values(ACCOUNT_TYPE))
     .default(ACCOUNT_TYPE.OTHER)
     .optional(),
+  isActive: Joi.boolean().optional(),
 });
 
 export const editAccountSchema = Joi.object().keys({
@@ -22,6 +23,7 @@ export const editAccountSchema = Joi.object().keys({
   type: Joi.string()
     .valid(...Object.values(ACCOUNT_TYPE))
     .optional(),
+  isActive: Joi.boolean().optional(),
 });
 
 export const deleteAccountSchema = Joi.object().keys({
@@ -31,4 +33,3 @@ export const deleteAccountSchema = Joi.object().keys({
 export const getAccountSchema = Joi.object().keys({
   id: objectId().required(),
 });
-
