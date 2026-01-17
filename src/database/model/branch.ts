@@ -31,7 +31,7 @@ const branchSchema: any = new mongoose.Schema(
     state: { type: String },
     country: { type: String },
     pinCode: { type: String },
-    timeZone: { type: String },
+    // timeZone: { type: String },
 
     // ******************* Bank Details *******************
     bankId: { type: mongoose.Schema.Types.ObjectId, ref: "bank" },

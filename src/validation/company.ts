@@ -22,7 +22,7 @@ export const addCompanySchema = Joi.object().keys({
   state: Joi.string().required(),
   country: Joi.string().required(),
   pinCode: Joi.number().required(),
-  timeZone: Joi.string().optional(),
+  // timeZone: Joi.string().optional(),
   webSite: Joi.string().optional(),
 
   // ******************* Bank Details *******************
@@ -92,7 +92,7 @@ export const editCompanySchema = Joi.object().keys({
   state: Joi.string().optional(),
   country: Joi.string().optional(),
   pinCode: Joi.number().optional(),
-  timeZone: Joi.string().optional().allow("", null),
+  // timeZone: Joi.string().optional().allow("", null),
   webSite: Joi.string().optional().allow("", null),
 
   // ******************* Bank Details *******************

@@ -1,67 +1,337 @@
-import { HTTP_STATUS } from "../../common";
+import { HTTP_STATUS, LOCATION_TYPE } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { reqInfo, responseMessage } from "../../helper";
+import { locationModel } from "../../database";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { addLocationSchema, deleteLocationSchema, editLocationSchema, getCityByStateSchema, getLocationSchema, getStateByCountrySchema } from "../../validation";
 
-// Static country data - can be moved to database if needed
-const countries = [
-  { _id: "IN", name: "India", code: "IN" },
-  { _id: "US", name: "United States", code: "US" },
-  { _id: "GB", name: "United Kingdom", code: "GB" },
-  // Add more countries as needed
-];
+export const addLocation = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req.headers;
 
-const indianStates = [
-  { _id: "GJ", name: "Gujarat", countryCode: "IN" },
-  { _id: "MH", name: "Maharashtra", countryCode: "IN" },
-  { _id: "DL", name: "Delhi", countryCode: "IN" },
-  { _id: "KA", name: "Karnataka", countryCode: "IN" },
-  { _id: "TN", name: "Tamil Nadu", countryCode: "IN" },
-  { _id: "UP", name: "Uttar Pradesh", countryCode: "IN" },
-  { _id: "WB", name: "West Bengal", countryCode: "IN" },
-  { _id: "RJ", name: "Rajasthan", countryCode: "IN" },
-  { _id: "MP", name: "Madhya Pradesh", countryCode: "IN" },
-  { _id: "AP", name: "Andhra Pradesh", countryCode: "IN" },
-  { _id: "PB", name: "Punjab", countryCode: "IN" },
-  { _id: "HR", name: "Haryana", countryCode: "IN" },
-  { _id: "KL", name: "Kerala", countryCode: "IN" },
-  { _id: "OR", name: "Odisha", countryCode: "IN" },
-  { _id: "AS", name: "Assam", countryCode: "IN" },
-  { _id: "BR", name: "Bihar", countryCode: "IN" },
-  { _id: "CT", name: "Chhattisgarh", countryCode: "IN" },
-  { _id: "HP", name: "Himachal Pradesh", countryCode: "IN" },
-  { _id: "JH", name: "Jharkhand", countryCode: "IN" },
-  { _id: "UT", name: "Uttarakhand", countryCode: "IN" },
-  { _id: "GA", name: "Goa", countryCode: "IN" },
-  { _id: "MN", name: "Manipur", countryCode: "IN" },
-  { _id: "ML", name: "Meghalaya", countryCode: "IN" },
-  { _id: "MZ", name: "Mizoram", countryCode: "IN" },
-  { _id: "NL", name: "Nagaland", countryCode: "IN" },
-  { _id: "SK", name: "Sikkim", countryCode: "IN" },
-  { _id: "TR", name: "Tripura", countryCode: "IN" },
-  { _id: "AN", name: "Andaman and Nicobar Islands", countryCode: "IN" },
-  { _id: "CH", name: "Chandigarh", countryCode: "IN" },
-  { _id: "DN", name: "Dadra and Nagar Haveli", countryCode: "IN" },
-  { _id: "DD", name: "Daman and Diu", countryCode: "IN" },
-  { _id: "LD", name: "Lakshadweep", countryCode: "IN" },
-  { _id: "PY", name: "Puducherry", countryCode: "IN" },
-];
+    const { error, value } = addLocationSchema.validate(req.body);
 
-// Static city data - can be moved to database if needed
-const cities = [
-  { _id: "SUR", name: "Surat", stateCode: "GJ" },
-  { _id: "AMD", name: "Ahmedabad", stateCode: "GJ" },
-  { _id: "VAD", name: "Vadodara", stateCode: "GJ" },
-  { _id: "RAJ", name: "Rajkot", stateCode: "GJ" },
-  { _id: "BOM", name: "Mumbai", stateCode: "MH" },
-  { _id: "PUN", name: "Pune", stateCode: "MH" },
-  { _id: "NDL", name: "New Delhi", stateCode: "DL" },
-  { _id: "BLR", name: "Bangalore", stateCode: "KA" },
-  { _id: "CHN", name: "Chennai", stateCode: "TN" },
-];
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+    if (!(await checkIdExist(locationModel, value?.parentId, "Parent Location", res))) return;
+
+    let isExist;
+
+    isExist = await getFirstMatch(
+      locationModel,
+      {
+        name: value.name,
+        type: value.type,
+        parentId: value.parentId || null,
+        isDeleted: false,
+      },
+      {},
+      {}
+    );
+
+    if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Location"), {}, {}));
+
+    if (value.type === LOCATION_TYPE.COUNTRY && value.code) {
+      isExist = await getFirstMatch(
+        locationModel,
+        {
+          type: LOCATION_TYPE.COUNTRY,
+          code: value.code,
+          isDeleted: false,
+        },
+        {},
+        {}
+      );
+
+      if (isExist) {
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Country code"), {}, {}));
+      }
+    }
+
+    // STATE code uniqueness (within same country)
+    if (value.type === LOCATION_TYPE.STATE && value.code) {
+      isExist = await getFirstMatch(
+        locationModel,
+        {
+          type: LOCATION_TYPE.STATE,
+          code: value.code,
+          parentId: value.parentId,
+          isDeleted: false,
+        },
+        {},
+        {}
+      );
+
+      if (isExist) {
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("State code"), {}, {}));
+      }
+    }
+
+    if (value.type === LOCATION_TYPE.COUNTRY && value.parentId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Country cannot have parent", {}, {}));
+    }
+
+    if ((value.type === LOCATION_TYPE.STATE || value.type === LOCATION_TYPE.CITY) && !value.parentId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Parent location is required", {}, {}));
+    }
+
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
+
+    const response = await createOne(locationModel, value);
+
+    if (!response) {
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage.addDataError, {}, {}));
+    }
+
+    return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage.addDataSuccess("Location"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
+};
+
+export const editLocationById = async (req, res) => {
+  reqInfo(req);
+  try {
+    const user = req.headers;
+
+    const { error, value } = editLocationSchema.validate(req.body);
+
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+    if (!(await checkIdExist(locationModel, value?.locationId, "Location", res))) return;
+    if (!(await checkIdExist(locationModel, value?.parentId, "Parent Location", res))) return;
+
+    let isExist;
+
+    isExist = await getFirstMatch(
+      locationModel,
+      {
+        name: value.name,
+        type: value.type,
+        parentId: value.parentId || null,
+        _id: { $ne: value.locationId },
+        isDeleted: false,
+      },
+      {},
+      {}
+    );
+
+    if (isExist) {
+      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Location"), {}, {}));
+    }
+
+    if (value.type === LOCATION_TYPE.COUNTRY && value.code) {
+      isExist = await getFirstMatch(
+        locationModel,
+        {
+          type: LOCATION_TYPE.COUNTRY,
+          code: value.code,
+          isDeleted: false,
+          _id: { $ne: value.locationId },
+        },
+        {},
+        {}
+      );
+
+      if (isExist) {
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Country code"), {}, {}));
+      }
+    }
+
+    // STATE code uniqueness (within same country)
+    if (value.type === LOCATION_TYPE.STATE && value.code) {
+      isExist = await getFirstMatch(
+        locationModel,
+        {
+          type: LOCATION_TYPE.STATE,
+          code: value.code,
+          parentId: value.parentId,
+          isDeleted: false,
+          _id: { $ne: value.locationId },
+        },
+        {},
+        {}
+      );
+
+      if (isExist) {
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("State code"), {}, {}));
+      }
+    }
+
+    if (value.type === LOCATION_TYPE.COUNTRY && value.parentId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Country cannot have parent", {}, {}));
+    }
+
+    if ((value.type === LOCATION_TYPE.STATE || value.type === LOCATION_TYPE.CITY) && value.parentId === null) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Parent location is required", {}, {}));
+    }
+
+    value.updatedBy = user?._id || null;
+
+    const response = await updateData(locationModel, { _id: value.locationId, isDeleted: false }, value, {});
+
+    if (!response) {
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage.updateDataError("Location"), {}, {}));
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.updateDataSuccess("Location"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
+};
+
+export const deleteLocationById = async (req, res) => {
+  reqInfo(req);
+  try {
+    const user = req.headers;
+
+    const { error, value } = deleteLocationSchema.validate(req.params);
+
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+    const location = await getFirstMatch(locationModel, { _id: value.id, isDeleted: false }, {}, {});
+
+    if (!location) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Location"), {}, {}));
+    }
+
+    const childExists = await getFirstMatch(locationModel, { parentId: value.id, isDeleted: false }, {}, {});
+
+    if (childExists) {
+      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, "Cannot delete location with child locations", {}, {}));
+    }
+
+    const response = await updateData(
+      locationModel,
+      { _id: value.id },
+      {
+        isDeleted: true,
+        updatedBy: user?._id || null,
+      },
+      {}
+    );
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.deleteDataSuccess("Location"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
+};
+
+export const getAllLocation = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+
+    let { page, limit, search, startDate, endDate, activeFilter, type, parentId } = req.query;
+
+    let criteria: any = { isDeleted: false };
+
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (type) {
+      criteria.type = type;
+    }
+
+    if (parentId) {
+      criteria.parentId = parentId;
+    }
+
+    if (search) {
+      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { code: { $regex: search, $options: "i" } }];
+    }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        criteria.createdAt = {
+          $gte: start,
+          $lte: end,
+        };
+      }
+    }
+
+    const options: any = {
+      sort: { createdAt: -1 },
+      populate: [{ path: "parentId", select: "name type" }],
+    };
+
+    if (page && limit) {
+      options.skip = (parseInt(page) - 1) * parseInt(limit);
+      options.limit = parseInt(limit);
+    }
+
+    const response = await getDataWithSorting(locationModel, criteria, {}, options);
+
+    const totalData = await countData(locationModel, criteria);
+
+    const totalPages = Math.ceil(totalData / limit) || 1;
+
+    const state = {
+      page,
+      limit,
+      totalPages,
+    };
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Location"), { location_data: response, totalData, state }, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
+};
+
+export const getLocationById = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { error, value } = getLocationSchema.validate(req.params);
+
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+    const response = await getFirstMatch(
+      locationModel,
+      { _id: value.id, isDeleted: false },
+      {},
+      {
+        populate: [{ path: "parentId", select: "name type" }],
+      }
+    );
+
+    if (!response) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Location"), {}, {}));
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Location"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
+};
 
 export const getAllCountries = async (req, res) => {
   reqInfo(req);
+
   try {
+    const countries = await getDataWithSorting(
+      locationModel,
+      {
+        type: LOCATION_TYPE.COUNTRY,
+        isDeleted: false,
+        isActive: true,
+      },
+      { name: 1, code: 1 },
+      { sort: { name: 1 } }
+    );
+
     const dropdownData = countries.map((item) => ({
       _id: item._id,
       name: item.name,
@@ -78,25 +348,27 @@ export const getAllCountries = async (req, res) => {
 export const getStatesByCountry = async (req, res) => {
   reqInfo(req);
   try {
-    const { countryCode } = req.params;
+    const { error, value } = getStateByCountrySchema.validate(req.params);
+    const { countryId } = value;
 
-    if (!countryCode) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Country code is required", {}, {}));
-    }
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
-    let states = [];
-    if (countryCode === "IN") {
-      states = indianStates;
-    }
-    // Add more country-specific state lists as needed
+    // Ensure country exists
+    if (!(await checkIdExist(locationModel, countryId, "Country", res))) return;
 
-    const dropdownData = states.map((item) => ({
-      _id: item._id,
-      name: item.name,
-      countryCode: item.countryCode,
-    }));
+    const states = await getDataWithSorting(
+      locationModel,
+      {
+        type: LOCATION_TYPE.STATE,
+        parentId: countryId,
+        isDeleted: false,
+        isActive: true,
+      },
+      { name: 1, code: 1 },
+      { sort: { name: 1 } }
+    );
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("State"), dropdownData, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("State"), states, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
@@ -106,24 +378,29 @@ export const getStatesByCountry = async (req, res) => {
 export const getCitiesByState = async (req, res) => {
   reqInfo(req);
   try {
-    const { stateCode } = req.params;
+    const { error, value } = getCityByStateSchema.validate(req.params);
+    const { stateId } = value;
 
-    if (!stateCode) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "State code is required", {}, {}));
-    }
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
-    const filteredCities = cities.filter((city) => city.stateCode === stateCode);
+    // Ensure state exists
+    if (!(await checkIdExist(locationModel, stateId, "State", res))) return;
 
-    const dropdownData = filteredCities.map((item) => ({
-      _id: item._id,
-      name: item.name,
-      stateCode: item.stateCode,
-    }));
+    const cities = await getDataWithSorting(
+      locationModel,
+      {
+        type: LOCATION_TYPE.CITY,
+        parentId: stateId,
+        isDeleted: false,
+        isActive: true,
+      },
+      { name: 1 },
+      { sort: { name: 1 } }
+    );
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("City"), dropdownData, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("City"), cities, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
   }
 };
-

@@ -144,3 +144,9 @@ export const SUPPLIER_BILL_STATUS = {
   DRAFT: "draft",
   CANCELLED: "cancelled",
 } as const;
+
+export const LOCATION_TYPE = {
+  COUNTRY: "country",
+  STATE: "state",
+  CITY: "city",
+} as const;

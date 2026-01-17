@@ -53,3 +53,4 @@ export * from "./recipe";
 export * from "./stockItem";
 export * from "./uom";
 export * from "./billOfLiveProduct";
+export * from "./location";
