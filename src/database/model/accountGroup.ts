@@ -1,14 +1,16 @@
-import mongoose, { Schema } from 'mongoose';
-import { baseSchemaFields, baseSchemaOptions } from './base';
-import { IAccountGroup } from '../../types';
-import { ACCOUNT_NATURE } from '../../common';
+import mongoose, { Schema } from "mongoose";
+import { baseCommonFields, baseSchemaOptions } from "./base";
+import { IAccountGroup } from "../../types";
+import { ACCOUNT_NATURE } from "../../common";
 
-
-const accountGroupSchema = new Schema<IAccountGroup>({
-    ...baseSchemaFields,
+const accountGroupSchema = new Schema<IAccountGroup>(
+  {
+    ...baseCommonFields,
     name: { type: String, required: true },
-    parentGroupId: { type: Schema.Types.ObjectId, ref: 'accountGroup' },
-    nature: { type: String, enum: Object.values(ACCOUNT_NATURE), default: ACCOUNT_NATURE.ASSETS }
-}, baseSchemaOptions);
+    parentGroupId: { type: Schema.Types.ObjectId, ref: "accountGroup" },
+    nature: { type: String, enum: Object.values(ACCOUNT_NATURE), default: ACCOUNT_NATURE.ASSETS },
+  },
+  baseSchemaOptions
+);
 
-export const accountGroupModel = mongoose.model<IAccountGroup>('accountGroup', accountGroupSchema);
+export const accountGroupModel = mongoose.model<IAccountGroup>("accountGroup", accountGroupSchema);

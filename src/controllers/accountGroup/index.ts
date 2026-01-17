@@ -8,7 +8,6 @@ export const addAccountGroup = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
     const { error, value } = addAccountGroupSchema.validate(req.body);
 
@@ -16,24 +15,16 @@ export const addAccountGroup = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
+    let isExist = await getFirstMatch(accountGroupModel, { name: value?.name, isDeleted: false }, {}, {});
+    if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Account Group Name"), {}, {}));
 
-    // Check if account name already exists for this company
-    const isExist = await getFirstMatch(accountGroupModel, { name: value?.name, companyId, isDeleted: false }, {}, {});
-    if (isExist) {
-      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Account Group Name"), {}, {}));
-    }
+    isExist = await getFirstMatch(accountGroupModel, { _id: value?.parentGroupId, isDeleted: false }, {}, {});
+    if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Parent Group ID"), {}, {}));
 
-    const payload = {
-      ...value,
-      companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(accountGroupModel, payload);
+    const response = await createOne(accountGroupModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -202,7 +193,6 @@ export const getOneAccountGroup = async (req, res) => {
   }
 };
 
-// Dropdown API - returns only active account groups in { _id, name } format
 export const getAccountGroupDropdown = async (req, res) => {
   reqInfo(req);
   try {
