@@ -227,7 +227,7 @@ export const getAllLocation = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, startDate, endDate, activeFilter, type, parentId } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, typeFilter, parentId } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -235,8 +235,8 @@ export const getAllLocation = async (req, res) => {
       criteria.companyId = companyId;
     }
 
-    if (type) {
-      criteria.type = type;
+    if (typeFilter) {
+      criteria.type = typeFilter;
     }
 
     if (parentId) {
