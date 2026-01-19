@@ -161,7 +161,7 @@ export const getAllUser = async (req, res) => {
       criteria.companyId = companyId;
     }
 
-    let roles = await getData(roleModel, { name: USER_ROLES.SUPER_ADMIN, isDeleted: false }, { _id: 1 }, {})
+    let roles = await getData(roleModel, { name: USER_ROLES.SUPER_ADMIN, isDeleted: false }, { _id: 1 }, {});
     let roleIds = roles.map((role) => new ObjectId(role._id));
     criteria.role = { $nin: roleIds };
 
@@ -196,6 +196,9 @@ export const getAllUser = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "role", select: "name" },
+        { path: "address.country", select: "name code" },
+        { path: "address.state", select: "name code" },
+        { path: "address.city", select: "name code" },
       ],
     };
 
@@ -239,8 +242,11 @@ export const getUserById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "role", select: "name" },
+          { path: "address.country", select: "name code" },
+          { path: "address.state", select: "name code" },
+          { path: "address.city", select: "name code" },
         ],
-      }
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("User"), {}, {}));

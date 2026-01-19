@@ -161,6 +161,9 @@ export const getAllCompany = async (req, res) => {
         { path: "bankId", select: "name" },
         { path: "userIds", select: "fullName" },
         { path: "roles", select: "name" },
+        { path: "country", select: "name code" },
+        { path: "state", select: "name code" },
+        { path: "city", select: "name code" },
       ],
     };
 
@@ -199,6 +202,9 @@ export const getCompanyById = async (req, res) => {
           { path: "bankId", select: "name" },
           { path: "userIds", select: "fullName" },
           { path: "roles", select: "name" },
+          { path: "country", select: "name code" },
+          { path: "state", select: "name code" },
+          { path: "city", select: "name code" },
         ],
       },
     );

@@ -134,6 +134,9 @@ export const getAllBank = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "branchIds", select: "name" },
+        { path: "country", select: "name code" },
+        { path: "state", select: "name code" },
+        { path: "city", select: "name code" },
       ],
     };
 
@@ -176,6 +179,9 @@ export const getBankById = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "branchIds", select: "name" },
+          { path: "country", select: "name code" },
+          { path: "state", select: "name code" },
+          { path: "city", select: "name code" },
         ],
       },
     );
@@ -213,7 +219,7 @@ export const getBankDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       bankModel,
       criteria,
-      { name: 1, accountHolderName: 1, bankAccountNumber: 1, branchName: 1, ifscCode: 1 },
+      { name: 1, accountHolderName: 1, bankAccountNumber: 1, branchName: 1, ifscCode: 1, upiId: 1 },
       {
         sort: { name: 1 },
         limit: search ? 50 : 1000,
@@ -226,6 +232,7 @@ export const getBankDropdown = async (req, res) => {
       bankAccountNumber: item.bankAccountNumber,
       branchName: item.branchName,
       ifscCode: item.ifscCode,
+      upiId: item.upiId,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bank Dropdown"), dropdownData, {}));

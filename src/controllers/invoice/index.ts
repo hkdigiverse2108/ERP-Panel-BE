@@ -290,7 +290,7 @@ export const getOneInvoice = async (req, res) => {
       {},
       {
         populate: [
-          { path: "customerId", select: "firstName lastName companyName email phoneNo addressDetails" },
+          { path: "customerId", select: "firstName lastName companyName email phoneNo address" },
           { path: "salesOrderId", select: "documentNo date netAmount" },
           { path: "salesManId", select: "firstName lastName" },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },

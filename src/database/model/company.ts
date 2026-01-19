@@ -24,9 +24,9 @@ const companySchema: any = new mongoose.Schema(
 
     // ******************* Communication Details *******************
     address: { type: String },
-    city: { type: String },
-    state: { type: String },
-    country: { type: String },
+    city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+    state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+    country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
     pinCode: { type: String },
     // timeZone: { type: String },
     webSite: { type: String },
@@ -76,7 +76,7 @@ const companySchema: any = new mongoose.Schema(
 
     ...baseCommonFields,
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
 export const companyModel = mongoose.model("company", companySchema);

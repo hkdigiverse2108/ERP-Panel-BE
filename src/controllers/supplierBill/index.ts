@@ -281,7 +281,7 @@ export const getOneSupplierBill = async (req, res) => {
       {},
       {
         populate: [
-          { path: "supplierId", select: "firstName lastName companyName email phoneNo addressDetails" },
+          { path: "supplierId", select: "firstName lastName companyName email phoneNo address" },
           { path: "purchaseOrderId", select: "documentNo date netAmount" },
           { path: "materialInwardId", select: "documentNo" },
           { path: "items.productId", select: "name itemCode purchasePrice landingCost" },

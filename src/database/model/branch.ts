@@ -27,9 +27,9 @@ const branchSchema: any = new mongoose.Schema(
     fssaiNo: { type: String, length: 14 },
 
     address: { type: String },
-    city: { type: String },
-    state: { type: String },
-    country: { type: String },
+    city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+    state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+    country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
     pinCode: { type: String },
     // timeZone: { type: String },
 
@@ -44,7 +44,7 @@ const branchSchema: any = new mongoose.Schema(
 
     ...baseCommonFields,
   },
-  { timestamps: true, versionKey: false }
+  { timestamps: true, versionKey: false },
 );
 
 export const branchModel = mongoose.model("branch", branchSchema);

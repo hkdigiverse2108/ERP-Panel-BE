@@ -89,7 +89,7 @@ export const addContactSchema = Joi.object({
     accountNumber: Joi.string().optional(),
   }).optional(),
 
-  addressDetails: Joi.array().items(addressSchema).optional(),
+  address: Joi.array().items(addressSchema).optional(),
 
   remarks: Joi.string().optional(),
   loyaltyPoints: Joi.number().optional(),
@@ -154,7 +154,7 @@ export const editContactSchema = Joi.object({
     accountNumber: Joi.string().optional(),
   }).optional(),
 
-  addressDetails: Joi.array().items(addressSchema).optional(),
+  address: Joi.array().items(addressSchema).optional(),
 
   remarks: Joi.string().optional(),
   loyaltyPoints: Joi.number().optional(),

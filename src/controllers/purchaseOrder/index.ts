@@ -238,7 +238,7 @@ export const getOnePurchaseOrder = async (req, res) => {
       {},
       {
         populate: [
-          { path: "supplierId", select: "firstName lastName companyName email phoneNo addressDetails" },
+          { path: "supplierId", select: "firstName lastName companyName email phoneNo address" },
           { path: "items.productId", select: "name itemCode purchasePrice landingCost" },
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },

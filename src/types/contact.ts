@@ -23,7 +23,7 @@ export interface IContact extends IBase {
   anniversaryDate?: Date;
   customerType?: "retailer" | "customer" | "wholesaler" | "merchant" | "other";
   supplierType?: "manufacturer" | "stockiest" | "trader" | "other";
-  addressDetails: [
+  address: [
     {
       GSTType?: string;
       GSTIn: string;
@@ -41,7 +41,7 @@ export interface IContact extends IBase {
         name: string;
       };
       pinCode?: string;
-    }
+    },
   ];
   bankDetails?: {
     IFSCCode: string;

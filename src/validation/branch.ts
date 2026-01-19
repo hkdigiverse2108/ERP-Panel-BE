@@ -28,9 +28,9 @@ export const addBranchSchema = Joi.object().keys({
 
   // Address
   address: Joi.string().required(),
-  city: Joi.string().required(),
-  state: Joi.string().required(),
-  country: Joi.string().required(),
+  city: objectId().required(),
+  state: objectId().required(),
+  country: objectId().required(),
   pinCode: Joi.string().optional(),
   // timeZone: Joi.string().optional(),
 
@@ -75,9 +75,9 @@ export const editBranchSchema = Joi.object().keys({
 
   // Address
   address: Joi.string().optional(),
-  city: Joi.string().optional(),
-  state: Joi.string().optional(),
-  country: Joi.string().optional(),
+  city: objectId().optional(),
+  state: objectId().optional(),
+  country: objectId().optional(),
   pinCode: Joi.string().optional().allow("", null),
   // timeZone: Joi.string().optional(),
 

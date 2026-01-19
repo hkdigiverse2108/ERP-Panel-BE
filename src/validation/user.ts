@@ -4,17 +4,17 @@ import { permissionsSchema } from "./permission";
 
 const addAddressSchema = Joi.object({
   address: Joi.string().required(),
-  country: Joi.string().required(),
-  state: Joi.string().required(),
-  city: Joi.string().required(),
+  country: objectId().required(),
+  state: objectId().required(),
+  city: objectId().required(),
   postalCode: Joi.number().required(),
 });
 
 const editAddressSchemaOptional = Joi.object({
   address: Joi.string().optional(),
-  country: Joi.string().optional(),
-  state: Joi.string().optional(),
-  city: Joi.string().optional(),
+  country: objectId().optional(),
+  state: objectId().optional(),
+  city: objectId().optional(),
   postalCode: Joi.number().optional(),
 });
 

@@ -461,7 +461,7 @@ export const getOnePosOrder = async (req, res) => {
           { path: "branchId", select: "name address" },
           { path: "companyId", select: "name" },
 
-          { path: "customerId", select: "firstName lastName companyName email phoneNo addressDetails" },
+          { path: "customerId", select: "firstName lastName companyName email phoneNo address" },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },
           { path: "items.taxId", select: "name percentage type" },
           { path: "invoiceId", select: "documentNo date netAmount" },

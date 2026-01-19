@@ -32,7 +32,7 @@ const contactSchema = new Schema<IContact>(
       creditBalance: { type: String },
     },
 
-    addressDetails: [
+    address: [
       {
         gstType: { type: String },
         gstIn: { type: String },
@@ -46,9 +46,9 @@ const contactSchema = new Schema<IContact>(
         contactEmail: { type: String },
         addressLine1: { type: String },
         addressLine2: { type: String },
-        state: { type: String },
-        city: { type: String },
-        country: { type: String },
+        country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+        state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+        city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
         pinCode: { type: String },
       },
     ],
@@ -76,7 +76,7 @@ const contactSchema = new Schema<IContact>(
     // ************************* Transport *************************
     transporterId: { type: String },
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
 export const contactModel = mongoose.model<IContact>("contact", contactSchema);

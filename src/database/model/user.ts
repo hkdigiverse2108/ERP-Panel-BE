@@ -52,9 +52,9 @@ const userSchema = new mongoose.Schema<IUser>(
     panNumber: { type: String },
     address: {
       address: { type: String },
-      country: { type: String },
-      state: { type: String },
-      city: { type: String },
+      country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+      state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+      city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
       postalCode: { type: Number },
     },
     bankDetails: {

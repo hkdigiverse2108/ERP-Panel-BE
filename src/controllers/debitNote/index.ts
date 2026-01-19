@@ -249,7 +249,7 @@ export const getOneDebitNote = async (req, res) => {
       {},
       {
         populate: [
-          { path: "supplierId", select: "firstName lastName companyName email phoneNo addressDetails" },
+          { path: "supplierId", select: "firstName lastName companyName email phoneNo address" },
           { path: "supplierBillId", select: "documentNo date netAmount" },
           { path: "items.productId", select: "name itemCode purchasePrice landingCost" },
           { path: "items.taxId", select: "name percentage type" },

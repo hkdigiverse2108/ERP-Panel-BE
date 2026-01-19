@@ -238,7 +238,7 @@ export const getOneVoucher = async (req, res) => {
       {},
       {
         populate: [
-          { path: "partyId", select: "firstName lastName companyName email phoneNo addressDetails" },
+          { path: "partyId", select: "firstName lastName companyName email phoneNo address" },
           { path: "bankAccountId", select: "name code type currentBalance" },
           { path: "entries.accountId", select: "name code type currentBalance" },
         ],

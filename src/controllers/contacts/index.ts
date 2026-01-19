@@ -1,4 +1,4 @@
-import { HTTP_STATUS } from "../../common";
+import { HTTP_STATUS, USER_ROLES } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { companyModel, contactModel } from "../../database";
 import { checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
@@ -10,13 +10,21 @@ export const addContact = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
+    const userRole = user?.role?.name;
+
     let { error, value } = addContactSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
+    if (userRole !== USER_ROLES.SUPER_ADMIN) {
+      value.companyId = user?.companyId?._id;
+    }
+
+    if (!value.companyId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    }
+
+    if (!(await checkIdExist(companyModel, value.companyId, "Company", res))) return;
 
     const phoneNo = value?.phoneNo?.phoneNo;
     const whatsappNo = value?.whatsappNo?.phoneNo;
@@ -42,7 +50,6 @@ export const addContact = async (req, res) => {
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.companyId = companyId || null;
 
     const response = await createOne(contactModel, value);
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -161,6 +168,9 @@ export const getAllContact = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "membershipId", select: "name" },
+        { path: "address.country", select: "name code" },
+        { path: "address.state", select: "name code" },
+        { path: "address.city", select: "name code" },
       ],
     };
 
@@ -199,6 +209,9 @@ export const getContactById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "membershipId", select: "name" },
+          { path: "address.country", select: "name code" },
+          { path: "address.state", select: "name code" },
+          { path: "address.city", select: "name code" },
         ],
       },
     );

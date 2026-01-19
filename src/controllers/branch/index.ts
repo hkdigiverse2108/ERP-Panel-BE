@@ -18,20 +18,19 @@ export const addBranch = async (req, res) => {
 
     if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
-    let companyId = null;
-    if (userRole === USER_ROLES.SUPER_ADMIN) {
-      companyId = value?.companyId;
-    } else {
-      companyId = user?.companyId?._id;
+    if (userRole !== USER_ROLES.SUPER_ADMIN) {
+      value.companyId = user?.companyId?._id;
     }
 
-    if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.getDataNotFound("Company"), {}, {}));
+    if (!value.companyId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    }
 
-    if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
+    if (!(await checkIdExist(companyModel, value.companyId, "Company", res))) return;
 
     value.name = value?.name.trim();
 
-    const existingBranch = await getFirstMatch(branchModel, { companyId, name: value?.name, isDeleted: false }, {}, {});
+    const existingBranch = await getFirstMatch(branchModel, { companyId: value.companyId, name: value?.name, isDeleted: false }, {}, {});
 
     if (existingBranch) {
       return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Branch"), {}, {}));
@@ -39,7 +38,6 @@ export const addBranch = async (req, res) => {
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.companyId = companyId ?? null;
 
     const response = await createOne(branchModel, value);
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -153,6 +151,9 @@ export const getAllBranch = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "bankId", select: "name" },
         { path: "userIds", select: "name" },
+        { path: "country", select: "name code" },
+        { path: "state", select: "name code" },
+        { path: "city", select: "name code" },
       ],
     };
 
@@ -191,6 +192,9 @@ export const getBranchById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "bankId", select: "name" },
           { path: "userIds", select: "name" },
+          { path: "country", select: "name code" },
+          { path: "state", select: "name code" },
+          { path: "city", select: "name code" },
         ],
       },
     );

@@ -18,9 +18,9 @@ export const addCompanySchema = Joi.object().keys({
 
   // ******************* Communication Details *******************
   address: Joi.string().required(),
-  city: Joi.string().required(),
-  state: Joi.string().required(),
-  country: Joi.string().required(),
+  city: objectId().required(),
+  state: objectId().required(),
+  country: objectId().required(),
   pinCode: Joi.number().required(),
   // timeZone: Joi.string().optional(),
   webSite: Joi.string().optional(),
@@ -88,9 +88,9 @@ export const editCompanySchema = Joi.object().keys({
 
   // ******************* Communication Details *******************
   address: Joi.string().optional(),
-  city: Joi.string().optional(),
-  state: Joi.string().optional(),
-  country: Joi.string().optional(),
+  city: objectId().optional(),
+  state: objectId().optional(),
+  country: objectId().optional(),
   pinCode: Joi.number().optional(),
   // timeZone: Joi.string().optional().allow("", null),
   webSite: Joi.string().optional().allow("", null),

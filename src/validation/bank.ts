@@ -17,9 +17,9 @@ export const addBankSchema = Joi.object().keys({
 
   addressLine1: Joi.string().optional(),
   addressLine2: Joi.string().optional(),
-  country: Joi.string().required(),
-  state: Joi.string().required(),
-  city: Joi.string().required(),
+  country: objectId().required(),
+  state: objectId().required(),
+  city: objectId().required(),
   zipCode: Joi.number().optional(),
 
   branchIds: Joi.array().items(objectId()).optional(),
@@ -42,9 +42,9 @@ export const editBankSchema = Joi.object().keys({
 
   addressLine1: Joi.string().optional(),
   addressLine2: Joi.string().optional(),
-  country: Joi.string().optional(),
-  state: Joi.string().optional(),
-  city: Joi.string().optional(),
+  country: objectId().optional(),
+  state: objectId().optional(),
+  city: objectId().optional(),
   zipCode: Joi.number().optional(),
 
   branchIds: Joi.array().items(objectId()).optional(),
