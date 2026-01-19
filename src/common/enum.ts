@@ -150,3 +150,19 @@ export const LOCATION_TYPE = {
   STATE: "state",
   CITY: "city",
 } as const;
+
+export const TAX_TYPE = {
+  DEFAULT: "default",
+  TAX_INCLUSIVE: "tax_inclusive",
+  TAX_EXCLUSIVE: "tax_exclusive",
+  OUT_OF_SCOPE: "out_of_scope",
+} as const;
+
+export const ORDER_STATUS = {
+  IN_PROGRESS: "in_progress",
+  DELIVERED: "delivered",
+  PARTIALLY_DELIVERED: "partially_delivered",
+  EXCEED: "exceed",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+} as const;

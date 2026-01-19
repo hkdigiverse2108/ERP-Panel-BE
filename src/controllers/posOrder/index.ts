@@ -5,20 +5,7 @@ import { PosOrderModel } from "../../database/model/posOrder";
 import { PosCashControlModel } from "../../database/model/posCashControl";
 import { voucherModel } from "../../database/model/voucher";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import {
-  addPosOrderSchema,
-  deletePosOrderSchema,
-  editPosOrderSchema,
-  getPosOrderSchema,
-  holdPosOrderSchema,
-  releasePosOrderSchema,
-  convertToInvoiceSchema,
-  getPosCashControlSchema,
-  updatePosCashControlSchema,
-  getCustomerLoyaltyPointsSchema,
-  redeemLoyaltyPointsSchema,
-  getCombinedPaymentsSchema,
-} from "../../validation/posOrder";
+import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema } from "../../validation/posOrder";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -338,7 +325,7 @@ export const convertToInvoice = async (req, res) => {
         status: "completed",
         updatedBy: user?._id || null,
       },
-      {}
+      {},
     );
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order converted to invoice successfully", { posOrder, invoice }, {}));
@@ -397,7 +384,7 @@ export const getAllPosOrder = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ orderNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }, { tableNo: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }, { tableNo: { $regex: search, $options: "si" } }];
     }
 
     if (status) {
@@ -479,7 +466,7 @@ export const getOnePosOrder = async (req, res) => {
           { path: "items.taxId", select: "name percentage type" },
           { path: "invoiceId", select: "documentNo date netAmount" },
         ],
-      }
+      },
     );
 
     if (!response) {
@@ -507,7 +494,7 @@ export const getAllHoldOrders = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ orderNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }, { tableNo: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }, { tableNo: { $regex: search, $options: "si" } }];
     }
 
     const options = {
@@ -555,7 +542,7 @@ export const quickAddProduct = async (req, res) => {
           { path: "categoryId", select: "name" },
           { path: "salesTaxId", select: "name percentage" },
         ],
-      }
+      },
     );
 
     if (!product) {
@@ -617,7 +604,12 @@ export const getPosCashControl = async (req, res) => {
       PosCashControlModel,
       { companyId, locationId, date: targetDate, isDeleted: false },
       {},
-      { populate: [{ path: "locationId", select: "name" }, { path: "closedBy", select: "firstName lastName" }] }
+      {
+        populate: [
+          { path: "locationId", select: "name" },
+          { path: "closedBy", select: "firstName lastName" },
+        ],
+      },
     );
 
     // If not found, create a new one with default values
@@ -794,9 +786,7 @@ export const getCustomerLoyaltyPoints = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Customer"), {}, {}));
     }
 
-    return res.status(HTTP_STATUS.OK).json(
-      new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Customer Loyalty Points"), { customerId: customer._id, loyaltyPoints: customer.loyaltyPoints || 0 }, {})
-    );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Customer Loyalty Points"), { customerId: customer._id, loyaltyPoints: customer.loyaltyPoints || 0 }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -844,9 +834,7 @@ export const redeemLoyaltyPoints = async (req, res) => {
     const newPoints = currentPoints - pointsToRedeem;
     const updatedCustomer = await updateData(contactModel, { _id: customerId }, { loyaltyPoints: newPoints, updatedBy: user?._id || null }, {});
 
-    return res.status(HTTP_STATUS.OK).json(
-      new apiResponse(HTTP_STATUS.OK, "Loyalty points redeemed successfully", { customerId: customer._id, redeemedPoints: pointsToRedeem, remainingPoints: newPoints, discountAmount: discountAmount || 0 }, {})
-    );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Loyalty points redeemed successfully", { customerId: customer._id, redeemedPoints: pointsToRedeem, remainingPoints: newPoints, discountAmount: discountAmount || 0 }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -882,7 +870,7 @@ export const getCombinedPayments = async (req, res) => {
     };
 
     if (search) {
-      criteria.$or = [{ voucherNo: { $regex: search, $options: "i" } }, { notes: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ voucherNo: { $regex: search, $options: "si" } }, { notes: { $regex: search, $options: "si" } }];
     }
 
     if (startDate && endDate) {
@@ -920,4 +908,3 @@ export const getCombinedPayments = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-

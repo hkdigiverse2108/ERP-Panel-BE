@@ -61,7 +61,7 @@ export const editPaymentTerm = async (req, res) => {
         _id: { $ne: value?.paymentTermId },
       },
       {},
-      {}
+      {},
     );
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Payment Term"), {}, {}));
 
@@ -122,7 +122,7 @@ export const getAllPaymentTerm = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
     }
 
     const options: any = {
@@ -163,7 +163,7 @@ export const getPaymentTermById = async (req, res) => {
       {},
       {
         populate: [{ path: "companyId", select: "name" }],
-      }
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Payment Term"), {}, {}));
@@ -194,7 +194,7 @@ export const getPaymentTermDropdown = async (req, res) => {
       { _id: 1, name: 1, days: 1 },
       {
         sort: { name: 1 },
-      }
+      },
     );
 
     const dropdownData = response.map((item) => ({

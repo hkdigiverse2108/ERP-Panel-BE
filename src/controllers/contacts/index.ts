@@ -132,7 +132,7 @@ export const getAllContact = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, typeFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -140,9 +140,10 @@ export const getAllContact = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ email: { $regex: search, $options: "i" } }, { panNo: { $regex: search, $options: "i" } }, { phoneNo: { $regex: search, $options: "i" } }, { companyName: { $regex: search, $options: "i" } }, { whatsappNo: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ email: { $regex: search, $options: "si" } }, { panNo: { $regex: search, $options: "si" } }, { phoneNo: { $regex: search, $options: "si" } }, { companyName: { $regex: search, $options: "si" } }, { whatsappNo: { $regex: search, $options: "si" } }];
     }
 
+    if (typeFilter) criteria.contactType = typeFilter;
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (startDate && endDate) {
@@ -199,7 +200,7 @@ export const getContactById = async (req, res) => {
           { path: "branchId", select: "name" },
           { path: "membershipId", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Contact"), {}, {}));
@@ -238,12 +239,7 @@ export const getContactDropdown = async (req, res) => {
     // Search filter
     if (search) {
       const searchCriteria = {
-        $or: [
-          { firstName: { $regex: search, $options: "i" } },
-          { lastName: { $regex: search, $options: "i" } },
-          { companyName: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
-        ],
+        $or: [{ firstName: { $regex: search, $options: "si" } }, { lastName: { $regex: search, $options: "si" } }, { companyName: { $regex: search, $options: "si" } }, { email: { $regex: search, $options: "si" } }],
       };
       criteria = { ...criteria, ...searchCriteria };
     }

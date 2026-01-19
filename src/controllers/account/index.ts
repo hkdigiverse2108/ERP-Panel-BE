@@ -132,7 +132,7 @@ export const getAllAccount = async (req, res) => {
     let criteria: any = { isDeleted: false };
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
     }
 
     if (type) {
@@ -185,7 +185,7 @@ export const getOneAccount = async (req, res) => {
       {},
       {
         populate: [{ path: "groupId", select: "name nature parentGroupId" }],
-      }
+      },
     );
 
     if (!response) {
@@ -216,7 +216,7 @@ export const getAccountDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
     }
 
     const response = await getDataWithSorting(
@@ -227,7 +227,7 @@ export const getAccountDropdown = async (req, res) => {
         sort: { name: 1 },
         limit: search ? 50 : 1000,
         populate: [{ path: "groupId", select: "name" }],
-      }
+      },
     );
 
     const dropdownData = response.map((item) => ({

@@ -132,7 +132,7 @@ export const getAllPrefix = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ module: { $regex: search, $options: "i" } }, { prefix: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ module: { $regex: search, $options: "si" } }, { prefix: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -190,7 +190,7 @@ export const getOnePrefix = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) {

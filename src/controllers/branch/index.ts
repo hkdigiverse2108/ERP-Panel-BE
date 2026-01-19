@@ -133,7 +133,7 @@ export const getAllBranch = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { address: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { address: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -192,7 +192,7 @@ export const getBranchById = async (req, res) => {
           { path: "bankId", select: "name" },
           { path: "userIds", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Branch details"), {}, {}));
@@ -225,7 +225,7 @@ export const getBranchDropdown = async (req, res) => {
       { _id: 1, name: 1 },
       {
         sort: { name: 1 },
-      }
+      },
     );
 
     const dropdownData = response.map((item) => ({

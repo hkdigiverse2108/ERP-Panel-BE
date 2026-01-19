@@ -13,7 +13,7 @@ const bankSchema = new mongoose.Schema(
       creditBalance: { type: String },
       debitBalance: { type: String },
     },
-    isUpiAvailable: { type: Boolean },
+    upiId: { type: String },
 
     addressLine1: { type: String },
     addressLine2: { type: String },
@@ -26,7 +26,7 @@ const bankSchema = new mongoose.Schema(
 
     ...baseSchemaFields,
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
 export const bankModel = mongoose.model("bank", bankSchema);

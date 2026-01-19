@@ -177,7 +177,7 @@ export const getAllSalesOrder = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }];
     }
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
@@ -245,7 +245,7 @@ export const getOneSalesOrder = async (req, res) => {
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
         ],
-      }
+      },
     );
 
     if (!response) {
@@ -284,7 +284,7 @@ export const getSalesOrderDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }];
     }
 
     const options: any = {

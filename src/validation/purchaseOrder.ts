@@ -1,54 +1,72 @@
 import Joi from "joi";
-import { objectId } from "./common";
+import { baseApiSchema, objectId } from "./common";
+import { ORDER_STATUS, TAX_TYPE } from "../common";
 
-const purchaseOrderItemSchema = Joi.object().keys({
+const purchaseOrderItemSchema = Joi.object({
   productId: objectId().required(),
-  productName: Joi.string().required(),
-  batchNo: Joi.string().optional().allow("", null),
   qty: Joi.number().min(0.01).required(),
-  receivedQty: Joi.number().min(0).default(0).optional(),
   uom: Joi.string().optional().allow("", null),
-  price: Joi.number().min(0).required(),
-  discountPercent: Joi.number().min(0).max(100).default(0).optional(),
-  discountAmount: Joi.number().min(0).default(0).optional(),
-  taxId: objectId().optional().allow("", null),
-  taxPercent: Joi.number().min(0).default(0).optional(),
-  taxAmount: Joi.number().min(0).default(0).optional(),
-  taxableAmount: Joi.number().min(0).required(),
-  totalAmount: Joi.number().min(0).required(),
+  unitCost: Joi.number().min(0).optional(),
+  tax: Joi.string().optional().allow("", null),
+  landingCost: Joi.string().optional().allow("", null),
+  margin: Joi.string().optional().allow("", null),
+  total: Joi.number().min(0).optional(),
 });
 
-export const addPurchaseOrderSchema = Joi.object().keys({
-  documentNo: Joi.string().optional(),
-  date: Joi.date().required(),
-  supplyDate: Joi.date().optional().allow("", null),
+export const addPurchaseOrderSchema = Joi.object({
   supplierId: objectId().required(),
-  supplierName: Joi.string().optional(),
+  orderDate: Joi.date().required(),
+  orderNo: Joi.string().optional().allow("", null),
+  shippingDate: Joi.date().optional().allow("", null),
+  shippingNote: Joi.string().optional().allow("", null),
+  taxType: Joi.string()
+    .valid(...Object.values(TAX_TYPE))
+    .optional(),
   items: Joi.array().items(purchaseOrderItemSchema).min(1).required(),
+  finalQty: Joi.string().optional().allow("", null),
+  finalTax: Joi.string().optional().allow("", null),
+  finalTotal: Joi.string().optional().allow("", null),
+  flatDiscount: Joi.number().min(0).default(0).optional(),
   grossAmount: Joi.number().min(0).default(0).optional(),
   discountAmount: Joi.number().min(0).default(0).optional(),
-  taxAmount: Joi.number().min(0).default(0).optional(),
+  taxableAmount: Joi.number().min(0).default(0).optional(),
+  tax: Joi.number().min(0).default(0).optional(),
   roundOff: Joi.number().default(0).optional(),
   netAmount: Joi.number().min(0).default(0).optional(),
   notes: Joi.string().optional().allow("", null),
-  status: Joi.string().valid("pending", "received", "cancelled", "completed", "partially_delivered", "exceed").default("pending").optional(),
+  status: Joi.string()
+    .valid(...Object.values(ORDER_STATUS))
+    .default(ORDER_STATUS.IN_PROGRESS)
+    .optional(),
+  ...baseApiSchema,
 });
 
-export const editPurchaseOrderSchema = Joi.object().keys({
+export const editPurchaseOrderSchema = Joi.object({
   purchaseOrderId: objectId().required(),
-  documentNo: Joi.string().optional(),
-  date: Joi.date().optional(),
-  supplyDate: Joi.date().optional().allow("", null),
   supplierId: objectId().optional(),
-  supplierName: Joi.string().optional(),
-  items: Joi.array().items(purchaseOrderItemSchema).optional(),
+  orderDate: Joi.date().optional(),
+  orderNo: Joi.string().optional().allow("", null),
+  shippingDate: Joi.date().optional().allow("", null),
+  shippingNote: Joi.string().optional().allow("", null),
+  taxType: Joi.string()
+    .valid(...Object.values(TAX_TYPE))
+    .optional(),
+  items: Joi.array().items(purchaseOrderItemSchema).min(1).optional(),
+  finalQty: Joi.string().optional().allow("", null),
+  finalTax: Joi.string().optional().allow("", null),
+  finalTotal: Joi.string().optional().allow("", null),
+  flatDiscount: Joi.number().min(0).optional(),
   grossAmount: Joi.number().min(0).optional(),
   discountAmount: Joi.number().min(0).optional(),
-  taxAmount: Joi.number().min(0).optional(),
+  taxableAmount: Joi.number().min(0).optional(),
+  tax: Joi.number().min(0).optional(),
   roundOff: Joi.number().optional(),
   netAmount: Joi.number().min(0).optional(),
   notes: Joi.string().optional().allow("", null),
-  status: Joi.string().valid("pending", "received", "cancelled", "completed", "partially_delivered", "exceed").optional(),
+  status: Joi.string()
+    .valid(...Object.values(ORDER_STATUS))
+    .optional(),
+  ...baseApiSchema,
 });
 
 export const deletePurchaseOrderSchema = Joi.object().keys({
@@ -58,4 +76,3 @@ export const deletePurchaseOrderSchema = Joi.object().keys({
 export const getPurchaseOrderSchema = Joi.object().keys({
   id: objectId().required(),
 });
-

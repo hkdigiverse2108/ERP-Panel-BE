@@ -6,7 +6,8 @@ import { addTaxSchema, deleteTaxSchema, editTaxSchema, getTaxSchema } from "../.
 export const addTax = async (req, res) => {
   reqInfo(req);
   try {
-    let { user } = req.headers, companyId = null;
+    let { user } = req.headers,
+      companyId = null;
 
     const { error, value } = addTaxSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -24,7 +25,7 @@ export const addTax = async (req, res) => {
         name: value.name,
       },
       {},
-      {}
+      {},
     );
 
     if (existingTax) {
@@ -70,7 +71,7 @@ export const editTax = async (req, res) => {
           name: value.name,
         },
         {},
-        {}
+        {},
       );
 
       if (duplicateTax) {
@@ -143,7 +144,7 @@ export const getAllTax = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
     }
 
     const options: any = {
@@ -182,8 +183,11 @@ export const getTaxById = async (req, res) => {
       { _id: value?.id, isDeleted: false },
       {},
       {
-        populate: [{ path: "companyId", select: "name" }, { path: "branchId", select: "name" }],
-      }
+        populate: [
+          { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
+        ],
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Tax"), {}, {}));
@@ -218,7 +222,7 @@ export const getTaxDropdown = async (req, res) => {
       { _id: 1, name: 1, percentage: 1, type: 1 },
       {
         sort: { name: 1 },
-      }
+      },
     );
 
     const dropdownData = response.map((item) => ({

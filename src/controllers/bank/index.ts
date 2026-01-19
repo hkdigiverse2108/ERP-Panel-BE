@@ -177,7 +177,7 @@ export const getBankById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchIds", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Bank"), {}, {}));
@@ -207,7 +207,7 @@ export const getBankDropdown = async (req, res) => {
     else if (companyId) criteria.companyId = companyId;
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { accountHolderName: { $regex: search, $options: "i" } }, { bankAccountNumber: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { accountHolderName: { $regex: search, $options: "si" } }, { bankAccountNumber: { $regex: search, $options: "si" } }];
     }
 
     const response = await getDataWithSorting(
@@ -217,7 +217,7 @@ export const getBankDropdown = async (req, res) => {
       {
         sort: { name: 1 },
         limit: search ? 50 : 1000,
-      }
+      },
     );
     const dropdownData = response.map((item) => ({
       _id: item._id,

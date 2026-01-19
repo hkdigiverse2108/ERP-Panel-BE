@@ -120,7 +120,7 @@ export const getAllRecipe = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { number: { $regex: search, $options: "i" } }, { type: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { number: { $regex: search, $options: "si" } }, { type: { $regex: search, $options: "si" } }];
     }
 
     if (startDate && endDate) {
@@ -178,7 +178,7 @@ export const getRecipeById = async (req, res) => {
           { path: "rawProducts.productId", select: "name" },
           { path: "finalProducts.productId", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Recipe"), {}, {}));
@@ -216,7 +216,7 @@ export const getRecipeForBOM = async (req, res) => {
           expiryDate: product?.expiryDays ? new Date(Date.now() + product.expiryDays * 24 * 60 * 60 * 1000) : null,
           batchNo: "",
         };
-      })
+      }),
     );
 
     const rawProducts = await Promise.all(
@@ -230,7 +230,7 @@ export const getRecipeForBOM = async (req, res) => {
           availableQty: product?.availableQty || 0,
           useQty: rp.useQty,
         };
-      })
+      }),
     );
 
     return res.status(HTTP_STATUS.OK).json(
@@ -243,8 +243,8 @@ export const getRecipeForBOM = async (req, res) => {
           finalProducts,
           rawProducts,
         },
-        {}
-      )
+        {},
+      ),
     );
   } catch (error) {
     console.error(error);
@@ -269,7 +269,7 @@ export const getRecipeDropdown = async (req, res) => {
     else if (companyId) criteria.companyId = companyId;
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { name: { $regex: search, $options: "i" } }, { number: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { name: { $regex: search, $options: "si" } }, { number: { $regex: search, $options: "si" } }];
     }
 
     const response = await getDataWithSorting(
@@ -279,7 +279,7 @@ export const getRecipeDropdown = async (req, res) => {
       {
         sort: { name: 1 },
         limit: search ? 50 : 1000,
-      }
+      },
     );
 
     const dropdownData = response.map((item) => ({

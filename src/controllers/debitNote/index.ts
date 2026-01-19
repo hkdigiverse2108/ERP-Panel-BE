@@ -185,7 +185,7 @@ export const getAllDebitNote = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { supplierName: { $regex: search, $options: "i" } }, { reason: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { supplierName: { $regex: search, $options: "si" } }, { reason: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -256,7 +256,7 @@ export const getOneDebitNote = async (req, res) => {
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
         ],
-      }
+      },
     );
 
     if (!response) {

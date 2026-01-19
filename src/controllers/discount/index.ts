@@ -140,7 +140,7 @@ export const getAllDiscount = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ title: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ title: { $regex: search, $options: "si" } }];
     }
 
     if (status) {

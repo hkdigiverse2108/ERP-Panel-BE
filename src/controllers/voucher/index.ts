@@ -183,7 +183,7 @@ export const getAllVoucher = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ voucherNo: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ voucherNo: { $regex: search, $options: "si" } }];
     }
 
     if (startDate && endDate) {
@@ -242,7 +242,7 @@ export const getOneVoucher = async (req, res) => {
           { path: "bankAccountId", select: "name code type currentBalance" },
           { path: "entries.accountId", select: "name code type currentBalance" },
         ],
-      }
+      },
     );
 
     if (!response) {

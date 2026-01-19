@@ -54,7 +54,7 @@ export const editMaterial = async (req, res) => {
         isDeleted: false,
       },
       {},
-      {}
+      {},
     );
 
     if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Material"), {}, {}));
@@ -69,7 +69,7 @@ export const editMaterial = async (req, res) => {
           isDeleted: false,
         },
         {},
-        {}
+        {},
       );
 
       if (duplicate) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Material No"), {}, {}));
@@ -131,7 +131,7 @@ export const getAllMaterial = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ materialNo: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ materialNo: { $regex: search, $options: "si" } }, { description: { $regex: search, $options: "si" } }];
     }
 
     if (startDate && endDate) {
@@ -185,7 +185,7 @@ export const getMaterialById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Material"), {}, {}));

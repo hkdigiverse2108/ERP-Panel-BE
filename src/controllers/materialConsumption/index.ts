@@ -18,7 +18,7 @@ const generateConsumptionNo = async (companyId?: string | null) => {
       isDeleted: false,
     },
     {},
-    { sort: { createdAt: -1 } }
+    { sort: { createdAt: -1 } },
   );
 
   let nextNumber = 1;
@@ -37,7 +37,7 @@ const generateConsumptionNo = async (companyId?: string | null) => {
         ...(companyId ? { companyId } : {}),
       },
       {},
-      {}
+      {},
     )
   ) {
     nextNumber += 1;
@@ -80,12 +80,7 @@ export const addMaterialConsumption = async (req, res) => {
       value.consumptionNo = await generateConsumptionNo(value.companyId);
     }
 
-    const isExist = await getFirstMatch(
-      materialConsumptionModel,
-      { companyId: value.companyId, consumptionNo: value?.consumptionNo, isDeleted: false },
-      {},
-      {}
-    );
+    const isExist = await getFirstMatch(materialConsumptionModel, { companyId: value.companyId, consumptionNo: value?.consumptionNo, isDeleted: false }, {}, {});
 
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Consumption No"), {}, {}));
 
@@ -132,7 +127,7 @@ export const editMaterialConsumption = async (req, res) => {
           isDeleted: false,
         },
         {},
-        {}
+        {},
       );
 
       if (duplicate) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Consumption No"), {}, {}));
@@ -206,7 +201,7 @@ export const getAllMaterialConsumption = async (req, res) => {
     if (branchId) criteria.branchId = branchId;
 
     if (search) {
-      criteria.$or = [{ consumptionNo: { $regex: search, $options: "i" } }, { remark: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ consumptionNo: { $regex: search, $options: "si" } }, { remark: { $regex: search, $options: "si" } }];
     }
 
     if (startDate && endDate) {
@@ -237,14 +232,7 @@ export const getAllMaterialConsumption = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(
-      new apiResponse(
-        HTTP_STATUS.OK,
-        responseMessage.getDataSuccess("Material Consumption"),
-        { material_consumption_data: response, totalData, state: stateObj },
-        {}
-      )
-    );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Material Consumption"), { material_consumption_data: response, totalData, state: stateObj }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
@@ -269,7 +257,7 @@ export const getMaterialConsumptionById = async (req, res) => {
           { path: "items.productId", select: "name itemCode" },
           { path: "items.uomId", select: "name code" },
         ],
-      }
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Material Consumption"), {}, {}));

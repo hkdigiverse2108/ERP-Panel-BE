@@ -6,7 +6,8 @@ import { addUOMSchema, deleteUOMSchema, editUOMSchema, getUOMSchema } from "../.
 export const addUOM = async (req, res) => {
   reqInfo(req);
   try {
-    let { user } = req.headers, companyId = null;
+    let { user } = req.headers,
+      companyId = null;
     const { error, value } = addUOMSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
@@ -23,7 +24,7 @@ export const addUOM = async (req, res) => {
         $or: value.code ? [{ name: value.name }, { code: value.code }] : [{ name: value.name }],
       },
       {},
-      {}
+      {},
     );
 
     if (existingUOM) {
@@ -145,7 +146,7 @@ export const getAllUOM = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { code: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { code: { $regex: search, $options: "si" } }];
     }
 
     const options: any = {
@@ -184,10 +185,13 @@ export const getUOMDropdown = async (req, res) => {
     //   criteria.companyId = companyId;
     // }
 
-    const response = await getDataWithSorting(uomModel, criteria, { _id: 1, name: 1, code: 1 },
+    const response = await getDataWithSorting(
+      uomModel,
+      criteria,
+      { _id: 1, name: 1, code: 1 },
       {
         sort: { name: 1 },
-      }
+      },
     );
 
     const dropdownData = response.map((item) => ({
@@ -215,8 +219,11 @@ export const getUOMById = async (req, res) => {
       { _id: value?.id, isDeleted: false },
       {},
       {
-        populate: [{ path: "companyId", select: "name" }, { path: "branchId", select: "name" }],
-      }
+        populate: [
+          { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
+        ],
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("UOM"), {}, {}));

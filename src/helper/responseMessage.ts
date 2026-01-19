@@ -58,6 +58,9 @@ export const responseMessage = {
   invalidId: (message: string): any => {
     return `Invalid ${message}!`;
   },
+  fieldIsRequired: (message: string): any => {
+    return `The ${message} is Required!`;
+  },
   dataAlreadyExist: (message: any): any => {
     return `Please change ${message}, ${message} is already exists!`;
   },

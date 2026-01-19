@@ -213,7 +213,7 @@ export const getAllSupplierBill = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { supplierName: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { supplierName: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "                  ";
@@ -289,7 +289,7 @@ export const getOneSupplierBill = async (req, res) => {
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
         ],
-      }
+      },
     );
 
     if (!response) {
@@ -332,7 +332,7 @@ export const getSupplierBillDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { supplierName: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { supplierName: { $regex: search, $options: "si" } }];
     }
 
     const options: any = {

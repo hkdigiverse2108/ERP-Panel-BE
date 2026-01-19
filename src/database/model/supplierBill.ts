@@ -4,7 +4,7 @@ import { ISupplierBill } from "../../types/supplier";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
 import { purchaseItemSchema } from "./purchaseOrder";
 
-const supplierBillSchema = new Schema<ISupplierBill>(
+const supplierBillSchema = new Schema(
   {
     ...baseSchemaFields,
     documentNo: { type: String, required: true, index: true },
@@ -33,4 +33,4 @@ const supplierBillSchema = new Schema<ISupplierBill>(
   baseSchemaOptions
 );
 
-export const supplierBillModel = mongoose.model<ISupplierBill>("supplierBill", supplierBillSchema);
+export const supplierBillModel = mongoose.model("supplierBill", supplierBillSchema);

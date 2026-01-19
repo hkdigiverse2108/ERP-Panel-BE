@@ -138,7 +138,7 @@ export const getAllFeedback = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ comment: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ comment: { $regex: search, $options: "si" } }];
     }
 
     if (customerId) {
@@ -208,7 +208,7 @@ export const getOneFeedback = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) {

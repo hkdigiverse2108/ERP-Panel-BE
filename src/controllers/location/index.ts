@@ -26,7 +26,7 @@ export const addLocation = async (req, res) => {
         isDeleted: false,
       },
       {},
-      {}
+      {},
     );
 
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Location"), {}, {}));
@@ -40,7 +40,7 @@ export const addLocation = async (req, res) => {
           isDeleted: false,
         },
         {},
-        {}
+        {},
       );
 
       if (isExist) {
@@ -59,7 +59,7 @@ export const addLocation = async (req, res) => {
           isDeleted: false,
         },
         {},
-        {}
+        {},
       );
 
       if (isExist) {
@@ -115,7 +115,7 @@ export const editLocationById = async (req, res) => {
         isDeleted: false,
       },
       {},
-      {}
+      {},
     );
 
     if (isExist) {
@@ -132,7 +132,7 @@ export const editLocationById = async (req, res) => {
           _id: { $ne: value.locationId },
         },
         {},
-        {}
+        {},
       );
 
       if (isExist) {
@@ -152,7 +152,7 @@ export const editLocationById = async (req, res) => {
           _id: { $ne: value.locationId },
         },
         {},
-        {}
+        {},
       );
 
       if (isExist) {
@@ -211,7 +211,7 @@ export const deleteLocationById = async (req, res) => {
         isDeleted: true,
         updatedBy: user?._id || null,
       },
-      {}
+      {},
     );
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.deleteDataSuccess("Location"), response, {}));
@@ -244,7 +244,7 @@ export const getAllLocation = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { code: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { code: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -303,7 +303,7 @@ export const getLocationById = async (req, res) => {
       {},
       {
         populate: [{ path: "parentId", select: "name type" }],
-      }
+      },
     );
 
     if (!response) {
@@ -329,7 +329,7 @@ export const getAllCountries = async (req, res) => {
         isActive: true,
       },
       { name: 1, code: 1 },
-      { sort: { name: 1 } }
+      { sort: { name: 1 } },
     );
 
     const dropdownData = countries.map((item) => ({
@@ -365,7 +365,7 @@ export const getStatesByCountry = async (req, res) => {
         isActive: true,
       },
       { name: 1, code: 1 },
-      { sort: { name: 1 } }
+      { sort: { name: 1 } },
     );
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("State"), states, {}));
@@ -395,7 +395,7 @@ export const getCitiesByState = async (req, res) => {
         isActive: true,
       },
       { name: 1 },
-      { sort: { name: 1 } }
+      { sort: { name: 1 } },
     );
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("City"), cities, {}));

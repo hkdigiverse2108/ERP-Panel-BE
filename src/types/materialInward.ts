@@ -1,6 +1,6 @@
 import { Schema } from "mongoose";
 import { IPurchaseDocument } from "./purchase";
 
-export interface IMaterialInward extends IPurchaseDocument {
+export interface IMaterialInward {
   purchaseOrderId?: Schema.Types.ObjectId;
 }

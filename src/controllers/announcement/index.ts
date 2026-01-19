@@ -123,7 +123,7 @@ export const getAllAnnouncement = async (req, res) => {
     let criteria: any = { isDeleted: false };
 
     if (search) {
-      criteria.$or = [{ version: { $regex: search, $options: "i" } }, { link: { $regex: search, $options: "i" } }, { desc: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ version: { $regex: search, $options: "si" } }, { link: { $regex: search, $options: "si" } }, { desc: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -180,7 +180,7 @@ export const getAnnouncementById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Announcement details"), {}, {}));

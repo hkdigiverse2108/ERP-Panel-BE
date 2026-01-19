@@ -173,7 +173,7 @@ export const getAllDeliveryChallan = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -244,7 +244,7 @@ export const getOneDeliveryChallan = async (req, res) => {
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
         ],
-      }
+      },
     );
 
     if (!response) {

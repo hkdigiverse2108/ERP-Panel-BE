@@ -1,7 +1,5 @@
 import { Schema } from "mongoose";
-import { IPurchaseDocument } from "./purchase";
-
-export interface ISupplierBill extends IPurchaseDocument {
+export interface ISupplierBill {
     purchaseOrderId?: Schema.Types.ObjectId;
     materialInwardId?: Schema.Types.ObjectId;
     paymentStatus: 'paid' | 'unpaid' | 'partial';

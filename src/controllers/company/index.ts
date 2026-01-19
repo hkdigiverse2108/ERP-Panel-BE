@@ -141,7 +141,7 @@ export const getAllCompany = async (req, res) => {
     let criteria: any = { isDeleted: false };
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { displayName: { $regex: search, $options: "i" } }, { contactName: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }, { phoneNo: { $regex: search, $options: "i" } }, { ownerNo: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { displayName: { $regex: search, $options: "si" } }, { contactName: { $regex: search, $options: "si" } }, { email: { $regex: search, $options: "si" } }, { phoneNo: { $regex: search, $options: "si" } }, { ownerNo: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -200,7 +200,7 @@ export const getCompanyById = async (req, res) => {
           { path: "userIds", select: "fullName" },
           { path: "roles", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Company details"), {}, {}));
@@ -221,11 +221,7 @@ export const getCompanyDropdown = async (req, res) => {
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (search) {
-      criteria.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { displayName: { $regex: search, $options: "i" } },
-        { contactName: { $regex: search, $options: "i" } },
-      ];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { displayName: { $regex: search, $options: "si" } }, { contactName: { $regex: search, $options: "si" } }];
     }
 
     const response = await getDataWithSorting(
@@ -234,7 +230,7 @@ export const getCompanyDropdown = async (req, res) => {
       { _id: 1, name: 1, displayName: 1 },
       {
         sort: { name: 1 },
-      }
+      },
     );
 
     const dropdownData = response.map((item) => ({

@@ -185,7 +185,7 @@ export const getAllCreditNote = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }, { reason: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }, { reason: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -252,7 +252,7 @@ export const getOneCreditNote = async (req, res) => {
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },
           { path: "items.taxId", select: "name percentage type" },
         ],
-      }
+      },
     );
 
     if (!response) {

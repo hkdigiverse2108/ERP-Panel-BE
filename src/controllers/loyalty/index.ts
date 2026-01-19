@@ -135,7 +135,7 @@ export const getAllLoyalty = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -194,7 +194,7 @@ export const getOneLoyalty = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) {

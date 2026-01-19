@@ -3,7 +3,7 @@ import { IDebitNote } from "../../types";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
 import { purchaseItemSchema } from "./purchaseOrder";
 
-const debitNoteSchema = new Schema<IDebitNote>(
+const debitNoteSchema = new Schema(
   {
     ...baseSchemaFields,
     documentNo: { type: String, required: true, index: true },
@@ -23,7 +23,7 @@ const debitNoteSchema = new Schema<IDebitNote>(
   baseSchemaOptions
 );
 
-export const debitNoteModel = mongoose.model<IDebitNote>(
+export const debitNoteModel = mongoose.model(
   "debitNote",
   debitNoteSchema
 );

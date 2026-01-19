@@ -51,7 +51,7 @@ export const getAllCategory = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { code: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { code: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -81,7 +81,7 @@ export const getAllCategory = async (req, res) => {
       options.skip = (parseInt(page) - 1) * parseInt(limit);
       options.limit = parseInt(limit);
     }
-    
+
     const response = await getDataWithSorting(categoryModel, criteria, {}, options);
     const totalData = await countData(categoryModel, criteria);
 
@@ -117,7 +117,7 @@ export const getCategoryById = async (req, res) => {
           { path: "branchId", select: "name" },
           { path: "parentCategoryId", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) {
@@ -186,9 +186,11 @@ export const deleteCategoryById = async (req, res) => {
 // Dropdown API - returns only active categories in { _id, name } format
 export const getCategoryDropdown = async (req, res) => {
   reqInfo(req);
-  let { user } = req?.headers, { parentCategoryFilter } = req.query, companyId = null, criteria: any = { isDeleted: false, isActive: true };
+  let { user } = req?.headers,
+    { parentCategoryFilter } = req.query,
+    companyId = null,
+    criteria: any = { isDeleted: false, isActive: true };
   try {
-
     // if (user?.role?.name !== USER_ROLES.SUPER_ADMIN) {
     //   companyId = user?.companyId?._id;
     // }
@@ -203,7 +205,7 @@ export const getCategoryDropdown = async (req, res) => {
       { _id: 1, name: 1, parentCategoryId: 1 },
       {
         sort: { name: 1 },
-      }
+      },
     );
 
     const dropdownData = response.map((item) => ({

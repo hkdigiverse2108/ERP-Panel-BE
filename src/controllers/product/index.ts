@@ -18,7 +18,7 @@ export const addProduct = async (req, res) => {
       value.companyId = user?.companyId?._id;
       if (!value?.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
     }
-    
+
     if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
 
     if (value?.branchId && !(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
@@ -193,10 +193,7 @@ export const getProductDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { itemCode: { $regex: search, $options: "i" } },
-      ];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { itemCode: { $regex: search, $options: "si" } }];
     }
 
     const response = await getDataWithSorting(
@@ -205,7 +202,7 @@ export const getProductDropdown = async (req, res) => {
       { _id: 1, name: 1, productType: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1 },
       {
         sort: { name: 1 },
-      }
+      },
     );
 
     let stockCompanyId = null;
@@ -220,12 +217,7 @@ export const getProductDropdown = async (req, res) => {
     }
 
     const productIds = response.map((item) => item._id);
-    const stockResponse = await getDataWithSorting(
-      stockModel,
-      { isDeleted: false, isActive: true, companyId: stockCompanyId, productId: { $in: productIds } },
-      { productId: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1 },
-      { sort: { updatedAt: -1 } }
-    );
+    const stockResponse = await getDataWithSorting(stockModel, { isDeleted: false, isActive: true, companyId: stockCompanyId, productId: { $in: productIds } }, { productId: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1 }, { sort: { updatedAt: -1 } });
 
     const stockByProductId = new Map<string, any>();
     stockResponse.forEach((stock) => {
@@ -280,7 +272,7 @@ export const getOneProduct = async (req, res) => {
           { path: "salesTaxId", select: "name" },
           { path: "purchaseTaxId", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));

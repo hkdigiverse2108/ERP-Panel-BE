@@ -1,6 +1,6 @@
-import { HTTP_STATUS } from "../../common";
+import { HTTP_STATUS, USER_ROLES } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { contactModel, purchaseOrderModel, productModel, taxModel } from "../../database";
+import { contactModel, purchaseOrderModel, productModel, taxModel, companyModel } from "../../database";
 import { checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPurchaseOrderSchema, deletePurchaseOrderSchema, editPurchaseOrderSchema, getPurchaseOrderSchema } from "../../validation/purchaseOrder";
 
@@ -18,7 +18,7 @@ export const addPurchaseOrder = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
+    const userRole = user?.role?.name;
 
     const { error, value } = addPurchaseOrderSchema.validate(req.body);
 
@@ -26,22 +26,26 @@ export const addPurchaseOrder = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+    if (userRole !== USER_ROLES.SUPER_ADMIN) {
+      value.companyId = user?.companyId?._id;
+    }
+
+    if (!value.companyId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
     }
 
     // Validate supplier exists
+    if (!(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
     if (!(await checkIdExist(contactModel, value?.supplierId, "Supplier", res))) return;
 
     // Validate products exist
     for (const item of value.items) {
       if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
-      if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
     }
 
     // Generate document number if not provided
     if (!value.documentNo) {
-      value.documentNo = await generatePurchaseOrderNo(companyId);
+      value.documentNo = await generatePurchaseOrderNo(value.companyId);
     }
 
     // Get supplier name
@@ -58,14 +62,10 @@ export const addPurchaseOrder = async (req, res) => {
       value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
     }
 
-    const purchaseOrderData = {
-      ...value,
-      companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(purchaseOrderModel, purchaseOrderData);
+    const response = await createOne(purchaseOrderModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -108,7 +108,6 @@ export const editPurchaseOrder = async (req, res) => {
     if (value.items && value.items.length > 0) {
       for (const item of value.items) {
         if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
-        if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
       }
 
       // Recalculate totals
@@ -179,7 +178,7 @@ export const getAllPurchaseOrder = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { supplierName: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { supplierName: { $regex: search, $options: "si" } }];
     }
 
     if (status) {
@@ -199,7 +198,6 @@ export const getAllPurchaseOrder = async (req, res) => {
       populate: [
         { path: "supplierId", select: "firstName lastName companyName email phoneNo" },
         { path: "items.productId", select: "name itemCode" },
-        { path: "items.taxId", select: "name percentage" },
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
       ],
@@ -242,11 +240,10 @@ export const getOnePurchaseOrder = async (req, res) => {
         populate: [
           { path: "supplierId", select: "firstName lastName companyName email phoneNo addressDetails" },
           { path: "items.productId", select: "name itemCode purchasePrice landingCost" },
-          { path: "items.taxId", select: "name percentage type" },
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) {
@@ -280,12 +277,11 @@ export const getPurchaseOrderDropdown = async (req, res) => {
     if (status) {
       criteria.status = status;
     } else {
-      // Default: only show pending or in-progress orders
       criteria.status = { $in: ["pending", "partially_delivered"] };
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { supplierName: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { supplierName: { $regex: search, $options: "si" } }];
     }
 
     const options: any = {

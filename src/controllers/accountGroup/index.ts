@@ -122,7 +122,7 @@ export const getAllAccountGroup = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
     }
 
     const options: any = {
@@ -165,7 +165,7 @@ export const getOneAccountGroup = async (req, res) => {
       {},
       {
         populate: [{ path: "parentGroupId", select: "name" }],
-      }
+      },
     );
 
     if (!response) {
@@ -190,7 +190,7 @@ export const getAccountGroupDropdown = async (req, res) => {
       { _id: 1, name: 1 },
       {
         sort: { name: 1 },
-      }
+      },
     );
 
     const dropdownData = response.map((item) => ({

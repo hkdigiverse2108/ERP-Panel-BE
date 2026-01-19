@@ -3,7 +3,7 @@ import { baseSchemaFields, baseSchemaOptions } from "./base";
 import { IMaterialInward } from "../../types";
 import { purchaseItemSchema } from "./purchaseOrder";
 
-const materialInwardSchema = new Schema<IMaterialInward>(
+const materialInwardSchema = new Schema(
   { 
     ...baseSchemaFields,
     documentNo: { type: String, required: true, index: true },
@@ -23,7 +23,7 @@ const materialInwardSchema = new Schema<IMaterialInward>(
   baseSchemaOptions
 );
 
-export const materialInwardModel = mongoose.model<IMaterialInward>(
+export const materialInwardModel = mongoose.model(
   "materialInward",
   materialInwardSchema
 );

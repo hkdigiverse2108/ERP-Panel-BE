@@ -223,7 +223,7 @@ export const getAllInvoice = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }];
     }
 
     if (status) {
@@ -298,7 +298,7 @@ export const getOneInvoice = async (req, res) => {
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
         ],
-      }
+      },
     );
 
     if (!response) {
@@ -341,7 +341,7 @@ export const getInvoiceDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "i" } }, { customerName: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }];
     }
 
     const options: any = {

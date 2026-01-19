@@ -102,7 +102,7 @@ export const getAllBrand = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "i" } }, { code: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { code: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -168,7 +168,7 @@ export const getBrandById = async (req, res) => {
           { path: "branchId", select: "name" },
           { path: "parentBrandId", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) {
@@ -186,7 +186,9 @@ export const getBrandById = async (req, res) => {
 export const getBrandDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    let { user } = req?.headers, { parentBrandFilter} =req.query,  companyId = user?.companyId?._id;
+    let { user } = req?.headers,
+      { parentBrandFilter } = req.query,
+      companyId = user?.companyId?._id;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -204,7 +206,7 @@ export const getBrandDropdown = async (req, res) => {
       { _id: 1, name: 1, parentBrandId: 1 },
       {
         sort: { name: 1 },
-      }
+      },
     );
 
     const dropdownData = response.map((item) => ({

@@ -270,7 +270,7 @@ export const getEmployeeDropdown = async (req, res) => {
 
     // Search filter
     if (search) {
-      criteria.$or = [{ firstName: { $regex: search, $options: "i" } }, { lastName: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }, { username: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ firstName: { $regex: search, $options: "si" } }, { lastName: { $regex: search, $options: "si" } }, { email: { $regex: search, $options: "si" } }, { username: { $regex: search, $options: "si" } }];
     }
 
     const response = await getDataWithSorting(
@@ -280,7 +280,7 @@ export const getEmployeeDropdown = async (req, res) => {
       {
         sort: { firstName: 1 },
         limit: search ? 50 : 1000,
-      }
+      },
     );
 
     const dropdownData = response.map((item) => ({

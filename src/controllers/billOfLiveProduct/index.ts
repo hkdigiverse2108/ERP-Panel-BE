@@ -94,7 +94,7 @@ export const editBillOfLiveProductById = async (req, res) => {
         isDeleted: false,
       },
       {},
-      {}
+      {},
     );
 
     if (isNumberExist) {
@@ -173,7 +173,7 @@ export const getAllBillOfLiveProduct = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ number: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ number: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) {
@@ -229,8 +229,8 @@ export const getAllBillOfLiveProduct = async (req, res) => {
           totalData,
           state,
         },
-        {}
-      )
+        {},
+      ),
     );
   } catch (error) {
     console.error(error);
@@ -265,7 +265,7 @@ export const getBillOfLiveProductById = async (req, res) => {
             select: "name",
           },
         ],
-      }
+      },
     );
 
     if (!response) {
@@ -295,7 +295,7 @@ export const getBillOfLiveProductDropdown = async (req, res) => {
       { _id: 1, number: 1 },
       {
         sort: { number: 1 },
-      }
+      },
     );
 
     const dropdownData = response.map((item) => ({

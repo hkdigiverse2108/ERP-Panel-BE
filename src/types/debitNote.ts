@@ -1,7 +1,6 @@
 import { Schema } from "mongoose";
-import { IPurchaseDocument } from "./purchase";
 
-export interface IDebitNote extends IPurchaseDocument {
+export interface IDebitNote {
     supplierBillId?: Schema.Types.ObjectId;
     reason: string;
 }

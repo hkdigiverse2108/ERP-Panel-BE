@@ -146,7 +146,7 @@ export const getAllCoupon = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ code: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }];
+      criteria.$or = [{ code: { $regex: search, $options: "si" } }, { description: { $regex: search, $options: "si" } }];
     }
 
     if (status) {
