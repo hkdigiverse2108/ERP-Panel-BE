@@ -1,7 +1,9 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
-import { branchModel, companyModel, productModel, uomModel } from "../../database";
+import { branchModel, companyModel, productModel, stockModel, uomModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation/product";
+
+const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addProduct = async (req, res) => {
   reqInfo(req);
@@ -180,14 +182,11 @@ export const getProductDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userRole = user?.role?.name;
     const companyId = user?.companyId?._id;
-    const { productType, search } = req.query; // Optional filter by productType
+    const { productType, search, companyFilter } = req.query; // Optional filter by productType
 
     let criteria: any = { isDeleted: false, isActive: true };
-
-    // if (companyId) {
-    //   criteria.companyId = companyId;
-    // }
 
     if (productType) {
       criteria.productType = productType;
@@ -203,13 +202,53 @@ export const getProductDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       productModel,
       criteria,
-      { _id: 1, name: 1, productType: 1 },
+      { _id: 1, name: 1, productType: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1 },
       {
         sort: { name: 1 },
       }
     );
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Product"), response, {}));
+    let stockCompanyId = null;
+    if (userRole === USER_ROLES.SUPER_ADMIN) {
+      if (companyFilter) stockCompanyId = new ObjectId(companyFilter);
+    } else if (companyId) {
+      stockCompanyId = companyId;
+    }
+
+    if (!stockCompanyId) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Product"), response, {}));
+    }
+
+    const productIds = response.map((item) => item._id);
+    const stockResponse = await getDataWithSorting(
+      stockModel,
+      { isDeleted: false, isActive: true, companyId: stockCompanyId, productId: { $in: productIds } },
+      { productId: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1 },
+      { sort: { updatedAt: -1 } }
+    );
+
+    const stockByProductId = new Map<string, any>();
+    stockResponse.forEach((stock) => {
+      const key = String(stock.productId);
+      if (!stockByProductId.has(key)) stockByProductId.set(key, stock);
+    });
+
+    const mergedResponse = response.map((product) => {
+      const stock = stockByProductId.get(String(product._id));
+      return {
+        _id: product._id,
+        name: product.name,
+        productType: product.productType,
+        purchasePrice: stock?.purchasePrice ?? product.purchasePrice,
+        landingCost: stock?.landingCost ?? product.landingCost,
+        mrp: stock?.mrp ?? product.mrp,
+        sellingPrice: stock?.sellingPrice ?? product.sellingPrice,
+        sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
+        sellingMargin: stock?.sellingMargin ?? product.sellingMargin,
+      };
+    });
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Product"), mergedResponse, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
