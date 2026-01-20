@@ -52,7 +52,7 @@ export const addContactSchema = Joi.object({
     debitBalance: Joi.string().optional(),
     creditBalance: Joi.string().optional(),
   }).optional(),
-  tanNo: Joi.string().optional().allow("", null),
+  tanNo: Joi.string().optional(),
 
   customerCategory: Joi.string().optional(),
   customerType: Joi.string()

@@ -7,10 +7,13 @@ export interface IUser extends IBase {
   email?: string;
   phoneNo?: string;
   profileImage?: string;
-  //   isActive?: boolean;
+  //isActive?: boolean;
   password?: string;
   showPassword?: string;
   role?: Schema.Types.ObjectId;
+
+  userType: "user" | "employee" | "admin" | "superAdmin";
+
   permissions: IPermissions;
 
   username?: string;

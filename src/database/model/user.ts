@@ -18,8 +18,8 @@ import { IUser } from "../../types/user";
 //     },
 //     role: {
 //       type: String,
-//       enum: Object.values(USER_TYPES),
-//       default: USER_TYPES.ADMIN,
+//       enum: Object.values(),
+//       default: .ADMIN,
 //     },
 //     ...baseSchemaFields,
 //   },
@@ -44,6 +44,9 @@ const userSchema = new mongoose.Schema<IUser>(
       ref: "role",
       default: null,
     },
+
+    userType: { type: String, enum: Object.values(USER_TYPES), },
+
     permissions: { type: permissionsSchema, default: {} },
 
     designation: { type: String },

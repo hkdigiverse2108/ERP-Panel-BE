@@ -1,6 +1,7 @@
-import Joi from "joi";
+import Joi, { object } from "joi";
 import { baseApiSchema, commonContactSchema, objectId } from "./common";
 import { permissionsSchema } from "./permission";
+import { USER_TYPES } from "../common";
 
 const addAddressSchema = Joi.object({
   address: Joi.string().required(),
@@ -34,6 +35,9 @@ export const addUserSchema = Joi.object().keys({
   phoneNo: commonContactSchema.required(),
   password: Joi.string().required(),
   role: objectId().required(),
+  userType: Joi.string()
+    .valid(...Object.values(USER_TYPES))
+    .required(),
   address: addAddressSchema.optional(),
   bankDetails: bankDetailsSchema.optional(),
   panNumber: Joi.string().uppercase().optional().allow("", null),
@@ -55,6 +59,9 @@ export const editUserSchema = Joi.object().keys({
   password: Joi.string().optional(),
   designation: Joi.string().optional().allow("", null),
   role: objectId().optional(),
+  userType: Joi.string()
+    .valid(...Object.values(USER_TYPES))
+    .optional(),
   address: editAddressSchemaOptional.optional().allow("", null),
   bankDetails: bankDetailsSchema.optional().allow("", null),
   panNumber: Joi.string().uppercase().optional().allow("", null),

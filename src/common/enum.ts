@@ -5,6 +5,8 @@ export const USER_ROLES = {
 } as const;
 
 export const USER_TYPES = {
+  USER: "user",
+  EMPLOYEE: "employee",
   SUPER_ADMIN: "super-admin",
   ADMIN: "admin",
 } as const;

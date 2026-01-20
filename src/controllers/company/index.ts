@@ -1,6 +1,7 @@
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { companyModel } from "../../database/model";
+import { bankModel } from "../../database/model/bank";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCompanySchema, deleteCompanySchema, editCompanySchema, getCompanySchema } from "../../validation";
 
@@ -14,7 +15,7 @@ export const addCompany = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
-    // if (!(await checkIdExist(bankModel, value?.bankId, "Bank", res))) return;
+    if (!(await checkIdExist(bankModel, value?.bankId, "Bank", res))) return;
 
     const phoneNo = value?.phoneNo?.phoneNo;
     // const ownerNo = value?.ownerNo?.phoneNo;
@@ -66,7 +67,7 @@ export const editCompanyById = async (req, res) => {
 
     if (!(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
 
-    // if (!(await checkIdExist(bankModel, value?.bankId, "Bank", res))) return;
+    if (!(await checkIdExist(bankModel, value?.bankId, "Bank", res))) return;
 
     const phoneNo = value?.phoneNo?.phoneNo;
     // const ownerNo = value?.ownerNo?.phoneNo;
@@ -158,7 +159,7 @@ export const getAllCompany = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "bankId", select: "name" },
+        { path: "bankId", select: "name ifscCode branchName accountHolderName bankAccountNumber swiftCode upiId" },
         { path: "userIds", select: "fullName" },
         { path: "roles", select: "name" },
         { path: "address.country", select: "name code" },
