@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { IBase } from "../../types";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { baseCommonFields, baseSchemaOptions } from "./base";
 
 export interface IAnnouncement extends IBase {
   version: string;
@@ -10,7 +10,7 @@ export interface IAnnouncement extends IBase {
 
 const announcementSchema = new Schema<IAnnouncement>(
   {
-    ...baseSchemaFields,
+    ...baseCommonFields,
     version: { type: String },
     desc: { type: [String] },
     link: { type: String, defualt: null },

@@ -1,8 +1,41 @@
+import { populate } from "dotenv";
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { accountGroupModel } from "../../database/model";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addAccountGroupSchema, deleteAccountGroupSchema, editAccountGroupSchema, getAccountGroupSchema } from "../../validation";
+
+const MAX_GROUP_LEVEL = 3;
+
+const calculateGroupLevel = async (accountGroupModel, parentGroupId) => {
+  if (!parentGroupId) return 0;
+
+  let level = 0;
+  let currentParentId = parentGroupId;
+  const visited = new Set();
+
+  while (currentParentId) {
+    if (visited.has(String(currentParentId))) {
+      throw new Error("Circular parent group reference detected");
+    }
+
+    visited.add(String(currentParentId));
+
+    const parentGroup = await getFirstMatch(accountGroupModel, { _id: currentParentId, isDeleted: false }, { parentGroupId: 1 }, {});
+
+    if (!parentGroup) break;
+
+    level++;
+
+    if (level > MAX_GROUP_LEVEL) {
+      throw new Error(`Group level cannot be more than ${MAX_GROUP_LEVEL}`);
+    }
+
+    currentParentId = parentGroup.parentGroupId || null;
+  }
+
+  return level;
+};
 
 export const addAccountGroup = async (req, res) => {
   reqInfo(req);
@@ -18,11 +51,19 @@ export const addAccountGroup = async (req, res) => {
     let isExist = await getFirstMatch(accountGroupModel, { name: value?.name, isDeleted: false }, {}, {});
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Account Group Name"), {}, {}));
 
-    isExist = await getFirstMatch(accountGroupModel, { _id: value?.parentGroupId, isDeleted: false }, {}, {});
-    if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Parent Group ID"), {}, {}));
+    if (value?.parentGroupId && !(await checkIdExist(accountGroupModel, value?.parentGroupId, "Parent Group ID", res))) return;
+
+    // ===== Calculate group level safely
+    let groupLevel = 0;
+    try {
+      groupLevel = await calculateGroupLevel(accountGroupModel, value?.parentGroupId);
+    } catch (err) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, err.message, {}, {}));
+    }
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
+    value.groupLevel = groupLevel || 0;
 
     const response = await createOne(accountGroupModel, value);
 
@@ -60,6 +101,17 @@ export const editAccountGroup = async (req, res) => {
       if (isExist) {
         return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Account Group Name"), {}, {}));
       }
+    }
+
+    // ===== Calculate group level
+    if (value?.parentGroupId) {
+      let groupLevel = 0;
+      try {
+        groupLevel = await calculateGroupLevel(accountGroupModel, value?.parentGroupId);
+      } catch (err) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, err.message, {}, {}));
+      }
+      value.groupLevel = groupLevel || 0;
     }
 
     value.updatedBy = user?._id || null;
@@ -110,8 +162,6 @@ export const deleteAccountGroup = async (req, res) => {
 export const getAllAccountGroup = async (req, res) => {
   reqInfo(req);
   try {
-    const { user } = req?.headers;
-
     let { page = 1, limit = 100, search, activeFilter } = req.query;
 
     page = Number(page);
@@ -127,7 +177,16 @@ export const getAllAccountGroup = async (req, res) => {
 
     const options: any = {
       sort: { name: 1 },
-      populate: [{ path: "parentGroupId", select: "name" }],
+      populate: [
+        {
+          path: "parentGroupId",
+          select: "name parentGroupId nature groupLevel",
+          // populate: {
+          //   path: "parentGroupId",
+          //   select: "name parentGroupId",
+          // },
+        },
+      ],
       skip: (page - 1) * limit,
       limit,
     };
@@ -164,7 +223,12 @@ export const getOneAccountGroup = async (req, res) => {
       { _id: value?.id, isDeleted: false },
       {},
       {
-        populate: [{ path: "parentGroupId", select: "name" }],
+        populate: [
+          {
+            path: "parentGroupId",
+            select: "name parentGroupId nature groupLevel",
+          },
+        ],
       },
     );
 

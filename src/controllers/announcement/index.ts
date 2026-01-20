@@ -1,5 +1,5 @@
 import { HTTP_STATUS } from "../../common";
-import { apiResponse, isValidObjectId } from "../../common/utils";
+import { apiResponse } from "../../common/utils";
 import { announcementModel, companyModel } from "../../database/model";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { editAnnouncementSchema, addAnnouncementSchema, getAnnouncementSchema, deleteAnnouncementSchema } from "../../validation";
@@ -14,21 +14,15 @@ export const addAnnouncement = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
-    let existingCompany = await getFirstMatch(companyModel, { _id: value?.companyId, isDeleted: false }, {}, {});
-
-    if (!existingCompany || (Array.isArray(existingCompany) && existingCompany.length <= 0)) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Company"), {}, {}));
-    }
-
-    let existAnnouncement = undefined;
+    let isExist = undefined;
     if (value?.version) {
-      existAnnouncement = await getFirstMatch(announcementModel, { version: value?.version, isDeleted: false }, {}, {});
-      if (existAnnouncement) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Version"), {}, {}));
+      isExist = await getFirstMatch(announcementModel, { version: value?.version, isDeleted: false }, {}, {});
+      if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Version"), {}, {}));
     }
 
     // if(value?.link){
-    //   existAnnouncement = await getFirstMatch(announcementModel, { link: value?.link, isDeleted: false }, {}, {});
-    //   if (existAnnouncement) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Link"), {}, {}));
+    //   isExist = await getFirstMatch(announcementModel, { link: value?.link, isDeleted: false }, {}, {});
+    //   if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Link"), {}, {}));
     // }
 
     value.createdBy = user?._id || null;
@@ -53,24 +47,16 @@ export const editAnnouncementById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
-    // if (!isValidObjectId(value?.companyId)) {
-    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Company Id"), {}, {}));
-    // }
-
-    // if (!isValidObjectId(value?.id)) {
-    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidId("Announcement Id"), {}, {}));
-    // }
-
-    let existingAnnouncement = undefined;
+    let isExist = undefined;
 
     if (value?.version) {
-      existingAnnouncement = await getFirstMatch(announcementModel, { version: value?.version, isDeleted: false, _id: { $ne: value?.id } }, {}, {});
-      if (existingAnnouncement) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Version"), {}, {}));
+      isExist = await getFirstMatch(announcementModel, { version: value?.version, isDeleted: false, _id: { $ne: value?.id } }, {}, {});
+      if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Version"), {}, {}));
     }
 
     if (value?.link) {
-      existingAnnouncement = await getFirstMatch(announcementModel, { link: value?.link, isDeleted: false, _id: { $ne: value?.id } }, {}, {});
-      if (existingAnnouncement) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Link"), {}, {}));
+      isExist = await getFirstMatch(announcementModel, { link: value?.link, isDeleted: false, _id: { $ne: value?.id } }, {}, {});
+      if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Link"), {}, {}));
     }
 
     value.updatedBy = user?._id || null;
@@ -95,9 +81,9 @@ export const deleteAnnouncementById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).status(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const isAnnouncementExist = await getFirstMatch(announcementModel, { _id: new ObjectId(value?.id), isDeleted: false }, {}, {});
+    const isExist = await getFirstMatch(announcementModel, { _id: new ObjectId(value?.id), isDeleted: false }, {}, {});
 
-    if (!isAnnouncementExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Announcement"), {}, {}));
+    if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Announcement"), {}, {}));
 
     const payload = {
       isDeleted: true,
@@ -139,10 +125,6 @@ export const getAllAnnouncement = async (req, res) => {
 
     const options: any = {
       sort: { createdAt: -1 },
-      populate: [
-        { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
-      ],
     };
 
     if (page && limit) {
@@ -171,17 +153,7 @@ export const getAnnouncementById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const response = await getFirstMatch(
-      announcementModel,
-      { _id: value?.id, isDeleted: false },
-      {},
-      {
-        populate: [
-          { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
-        ],
-      },
-    );
+    const response = await getFirstMatch(announcementModel, { _id: value?.id, isDeleted: false }, {}, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Announcement details"), {}, {}));
 

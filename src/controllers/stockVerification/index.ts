@@ -1,5 +1,5 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
-import { stockVerificationModel, productModel, categoryModel } from "../../database";
+import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
+import { stockVerificationModel, productModel, categoryModel, companyModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addStockVerificationSchema, deleteStockVerificationSchema, editStockVerificationSchema, getStockVerificationSchema } from "../../validation/stockVerification";
 
@@ -15,11 +15,19 @@ export const addStockVerification = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
+    const userRole = user?.role?.name;
 
     const { error, value } = addStockVerificationSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    if (userRole !== USER_ROLES.SUPER_ADMIN) {
+      value.companyId = user?.companyId?._id;
+    }
+    
+    if (!value?.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+
+    if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
 
     if (!(await checkIdExist(categoryModel, value?.categoryId, "Category", res))) return;
 
@@ -51,7 +59,6 @@ export const addStockVerification = async (req, res) => {
       totalPhysicalQty,
       differenceAmount,
       status: value.status || "pending",
-      companyId,
       createdBy: user?._id || null,
       updatedBy: user?._id || null,
     };
@@ -201,7 +208,7 @@ export const getAllStockVerification = async (req, res) => {
         {
           path: "items.productId",
           select: "name itemCode",
-          populate: [{ path: "uomId", select: "name code" }],
+          // populate: [{ path: "uomId", select: "name code" }],
         },
       ],
       skip: (parseInt(page as string) - 1) * parseInt(limit as string),
@@ -254,13 +261,13 @@ export const getOneStockVerification = async (req, res) => {
             path: "items.productId",
             select: "name itemCode",
             populate: [
-              { path: "uomId", select: "name code" },
+              // { path: "uomId", select: "name code" },
               { path: "categoryId", select: "name" },
               { path: "brandId", select: "name" },
             ],
           },
         ],
-      }
+      },
     );
 
     if (!response) {
