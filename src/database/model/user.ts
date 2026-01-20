@@ -55,7 +55,7 @@ const userSchema = new mongoose.Schema<IUser>(
       country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
       state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
       city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-      postalCode: { type: Number },
+      pinCode: { type: Number },
     },
     bankDetails: {
       bankHolderName: { type: String },
@@ -72,7 +72,7 @@ const userSchema = new mongoose.Schema<IUser>(
 
     ...baseSchemaFields,
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
 export const userModel = mongoose.model<IUser>("user", userSchema);

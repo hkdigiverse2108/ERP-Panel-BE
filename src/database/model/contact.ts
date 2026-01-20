@@ -49,7 +49,7 @@ const contactSchema = new Schema<IContact>(
         country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
         state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
         city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-        pinCode: { type: String },
+        pinCode: { type: Number },
       },
     ],
     tanNo: { type: String },

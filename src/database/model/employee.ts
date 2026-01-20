@@ -7,7 +7,7 @@ const employeeSchema = new Schema<IEmployee>(
   {
     name: { type: String, required: true },
     phoneNo: { type: String, required: true },
-    email: { type: String, default: null }, 
+    email: { type: String, default: null },
     // designation: { type: String },
     role: { type: Schema.Types.ObjectId, ref: "role", default: null },
     username: { type: String },
@@ -18,7 +18,7 @@ const employeeSchema = new Schema<IEmployee>(
       country: { type: String },
       state: { type: String },
       city: { type: String },
-      postalCode: { type: Number },
+      pinCode: { type: Number },
     },
     bankDetails: {
       bankHolderName: { type: String },
@@ -35,7 +35,7 @@ const employeeSchema = new Schema<IEmployee>(
     target: { type: Number },
     ...baseSchemaFields,
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
 export const employeeModel = mongoose.model<IEmployee>("employee", employeeSchema);

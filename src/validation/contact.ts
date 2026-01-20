@@ -21,10 +21,7 @@ const addressSchema = Joi.object({
   city: Joi.string().optional().allow("", null),
 
   country: Joi.string().optional().allow("", null),
-  pinCode: Joi.string()
-    .pattern(/^[0-9]{6}$/)
-    .optional()
-    .allow("", null),
+  pinCode: Joi.number().optional().allow("", null),
 });
 
 export const addContactSchema = Joi.object({

@@ -22,7 +22,7 @@ export interface IUser extends IBase {
     country: string;
     state: string;
     city: string;
-    postalCode: string;
+    pinCode: number;
   };
   bankDetails: {
     bankHolderName: string;

@@ -1,6 +1,22 @@
 import Joi from "joi";
 import { commonContactSchema, objectId } from "./common";
 
+const addAddressSchema = Joi.object({
+  address: Joi.string().required(),
+  city: objectId().required(),
+  state: objectId().required(),
+  country: objectId().required(),
+  pinCode: Joi.number().optional(),
+});
+
+const editAddressSchemaOptional = Joi.object({
+  address: Joi.string().optional(),
+  city: objectId().optional(),
+  state: objectId().optional(),
+  country: objectId().optional(),
+  pinCode: Joi.number().optional().allow("", null),
+});
+
 export const addBranchSchema = Joi.object().keys({
   // Basic Info
   companyId: objectId().optional(),
@@ -27,12 +43,12 @@ export const addBranchSchema = Joi.object().keys({
   fssaiNo: Joi.string().length(14).optional(),
 
   // Address
-  address: Joi.string().required(),
-  city: objectId().required(),
-  state: objectId().required(),
-  country: objectId().required(),
-  pinCode: Joi.string().optional(),
-  // timeZone: Joi.string().optional(),
+  address: addAddressSchema.optional(),
+  // address: Joi.string().required(),
+  // city: objectId().required(),
+  // state: objectId().required(),
+  // country: objectId().required(),
+  // pinCode: Joi.number().optional(),
 
   // Bank Details
   bankId: objectId().optional(),
@@ -74,12 +90,12 @@ export const editBranchSchema = Joi.object().keys({
   fssaiNo: Joi.string().length(14).optional().allow("", null),
 
   // Address
-  address: Joi.string().optional(),
-  city: objectId().optional(),
-  state: objectId().optional(),
-  country: objectId().optional(),
-  pinCode: Joi.string().optional().allow("", null),
-  // timeZone: Joi.string().optional(),
+  address: editAddressSchemaOptional.optional(),
+  // address: Joi.string().optional(),
+  // city: objectId().optional(),
+  // state: objectId().optional(),
+  // country: objectId().optional(),
+  // pinCode: Joi.number ().optional().allow("", null),
 
   // Bank Details
   bankId: objectId().optional().allow("", null),

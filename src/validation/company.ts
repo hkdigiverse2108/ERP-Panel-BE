@@ -1,6 +1,22 @@
 import Joi from "joi";
 import { commonContactSchema, objectId } from "./common";
 
+const addAddressSchema = Joi.object({
+  address: Joi.string().required(),
+  city: objectId().required(),
+  state: objectId().required(),
+  country: objectId().required(),
+  pinCode: Joi.number().optional(),
+});
+
+const editAddressSchemaOptional = Joi.object({
+  address: Joi.string().optional(),
+  city: objectId().optional(),
+  state: objectId().optional(),
+  country: objectId().optional(),
+  pinCode: Joi.number().optional().allow("", null),
+});
+
 export const addCompanySchema = Joi.object().keys({
   // ******************* Basic Details *******************
   accountingType: Joi.string().optional(),
@@ -17,11 +33,13 @@ export const addCompanySchema = Joi.object().keys({
   userIds: Joi.array().items(Joi.string()).optional(),
 
   // ******************* Communication Details *******************
-  address: Joi.string().required(),
-  city: objectId().required(),
-  state: objectId().required(),
-  country: objectId().required(),
-  pinCode: Joi.number().required(),
+
+  address: addAddressSchema.optional(),
+  // address: Joi.string().required(),
+  // city: objectId().required(),
+  // state: objectId().required(),
+  // country: objectId().required(),
+  // pinCode: Joi.number().required(),
   // timeZone: Joi.string().optional(),
   webSite: Joi.string().optional(),
 
@@ -87,11 +105,12 @@ export const editCompanySchema = Joi.object().keys({
   userIds: Joi.array().items(Joi.string()).optional(),
 
   // ******************* Communication Details *******************
-  address: Joi.string().optional(),
-  city: objectId().optional(),
-  state: objectId().optional(),
-  country: objectId().optional(),
-  pinCode: Joi.number().optional(),
+  address: editAddressSchemaOptional.optional(),
+  // address: Joi.string().optional(),
+  // city: objectId().optional(),
+  // state: objectId().optional(),
+  // country: objectId().optional(),
+  // pinCode: Joi.number().optional(),
   // timeZone: Joi.string().optional().allow("", null),
   webSite: Joi.string().optional().allow("", null),
 

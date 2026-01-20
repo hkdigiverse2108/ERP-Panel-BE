@@ -26,11 +26,13 @@ const branchSchema: any = new mongoose.Schema(
     webSite: { type: String },
     fssaiNo: { type: String, length: 14 },
 
-    address: { type: String },
-    city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-    state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-    country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-    pinCode: { type: String },
+    address: {
+      address: { type: String },
+      city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+      state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+      country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+      pinCode: { type: Number },
+    },
     // timeZone: { type: String },
 
     // ******************* Bank Details *******************

@@ -23,11 +23,13 @@ const companySchema: any = new mongoose.Schema(
     customerCareNumber: { type: String },
 
     // ******************* Communication Details *******************
-    address: { type: String },
-    city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-    state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-    country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-    pinCode: { type: String },
+    address: {
+      address: { type: String },
+      city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+      state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+      country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+      pinCode: { type: Number },
+    },
     // timeZone: { type: String },
     webSite: { type: String },
 

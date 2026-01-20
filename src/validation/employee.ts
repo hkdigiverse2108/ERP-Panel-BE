@@ -6,7 +6,7 @@ const addAddressSchema = Joi.object({
   country: Joi.string().required(),
   state: Joi.string().required(),
   city: Joi.string().required(),
-  postalCode: Joi.number().required(),
+  pinCode: Joi.number().required(),
 });
 
 const editAddressSchemaOptional = Joi.object({
@@ -14,7 +14,7 @@ const editAddressSchemaOptional = Joi.object({
   country: Joi.string().optional(),
   state: Joi.string().optional(),
   city: Joi.string().optional(),
-  postalCode: Joi.number().optional(),
+  pinCode: Joi.number().optional(),
 });
 
 const bankDetailsSchema = Joi.object({

@@ -40,7 +40,7 @@ export interface IContact extends IBase {
         id: string;
         name: string;
       };
-      pinCode?: string;
+      pinCode?: number;
     },
   ];
   bankDetails?: {
