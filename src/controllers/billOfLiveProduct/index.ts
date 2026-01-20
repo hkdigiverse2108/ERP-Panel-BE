@@ -2,6 +2,7 @@ import { HTTP_STATUS, USER_ROLES } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { billOfLiveProductModel, brandModel, companyModel, productModel, recipeModel } from "../../database/model";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany } from "../../helper/checkCompany";
 import { addBillOfLiveProductSchema, deleteBillOfLiveProductSchema, deleteBrandSchema, editBillOfLiveProductSchema, getBillOfLiveProductSchema, getBrandSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -16,12 +17,16 @@ export const addBillOfLiveProduct = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
-    if (userRole !== USER_ROLES.SUPER_ADMIN) {
-      value.companyId = user?.companyId?._id;
-    }
-    if (!value?.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+    // if (!checkCompany(userRole, user, res, value)) return;
+    // ✅ company validation
+    value.companyId = await checkCompany(userRole, user, res, value);
 
-    if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
+    // if (userRole !== USER_ROLES.SUPER_ADMIN) {
+    //   value.companyId = user?.companyId?._id;
+    // }
+    // if (!value?.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+
+    // if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
 
     const isExist = await getFirstMatch(billOfLiveProductModel, { companyId: value.companyId, number: value.number, isDeleted: false }, {}, {});
 
@@ -57,7 +62,7 @@ export const addBillOfLiveProduct = async (req, res) => {
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage.addDataSuccess("Bill Of Live Product"), response, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage.internalServerError, {}, error));
   }
 };
 

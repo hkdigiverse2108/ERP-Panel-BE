@@ -123,7 +123,6 @@ export const deleteAccount = async (req, res) => {
 export const getAllAccount = async (req, res) => {
   reqInfo(req);
   try {
-    const { user } = req?.headers;
     let { page = 1, limit = 10, search, type, groupId, activeFilter } = req.query;
 
     page = Number(page);

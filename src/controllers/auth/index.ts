@@ -2,7 +2,7 @@ import { HTTP_STATUS } from "../../common";
 import { apiResponse, generateHash, generateToken } from "../../common/utils";
 import { roleModel } from "../../database/model/role";
 import { userModel } from "../../database/model/user";
-import { checkIdExist, createOne, findOneAndPopulate, getFirstMatch, reqInfo, responseMessage } from "../../helper";
+import { checkIdExist, createOne, getFirstMatch, reqInfo, responseMessage } from "../../helper";
 import { loginSchema, registerSchema } from "../../validation/auth";
 import bcryptjs from "bcryptjs";
 
