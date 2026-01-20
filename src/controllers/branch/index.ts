@@ -151,9 +151,9 @@ export const getAllBranch = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "bankId", select: "name" },
         { path: "userIds", select: "name" },
-        { path: "country", select: "name code" },
-        { path: "state", select: "name code" },
-        { path: "city", select: "name code" },
+        { path: "address.country", select: "name code" },
+        { path: "address.state", select: "name code" },
+        { path: "address.city", select: "name code" },
       ],
     };
 
@@ -192,9 +192,9 @@ export const getBranchById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "bankId", select: "name" },
           { path: "userIds", select: "name" },
-          { path: "country", select: "name code" },
-          { path: "state", select: "name code" },
-          { path: "city", select: "name code" },
+          { path: "address.country", select: "name code" },
+          { path: "address.state", select: "name code" },
+          { path: "address.city", select: "name code" },
         ],
       },
     );

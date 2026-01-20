@@ -134,9 +134,9 @@ export const getAllBank = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "branchIds", select: "name" },
-        { path: "country", select: "name code" },
-        { path: "state", select: "name code" },
-        { path: "city", select: "name code" },
+        { path: "address.country", select: "name code" },
+        { path: "address.state", select: "name code" },
+        { path: "address.city", select: "name code" },
       ],
     };
 
@@ -179,9 +179,9 @@ export const getBankById = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "branchIds", select: "name" },
-          { path: "country", select: "name code" },
-          { path: "state", select: "name code" },
-          { path: "city", select: "name code" },
+          { path: "address.country", select: "name code" },
+          { path: "address.state", select: "name code" },
+          { path: "address.city", select: "name code" },
         ],
       },
     );

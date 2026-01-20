@@ -15,12 +15,14 @@ const bankSchema = new mongoose.Schema(
     },
     upiId: { type: String },
 
-    addressLine1: { type: String },
-    addressLine2: { type: String },
-    country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-    state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-    city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-    pinCode: { type: String },
+    address: {
+      addressLine1: { type: String },
+      addressLine2: { type: String },
+      country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+      state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+      city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+      pinCode: { type: String },
+    },
 
     branchIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "branch", default: null }],
 
