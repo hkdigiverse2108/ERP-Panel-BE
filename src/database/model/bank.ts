@@ -20,7 +20,7 @@ const bankSchema = new mongoose.Schema(
     country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
     state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
     city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-    zipCode: { type: String },
+    pinCode: { type: String },
 
     branchIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "branch", default: null }],
 
