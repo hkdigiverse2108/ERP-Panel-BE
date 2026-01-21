@@ -1,5 +1,6 @@
 import Joi from "joi";
 import { commonContactSchema, objectId } from "./common";
+import { USER_TYPES } from "../common";
 
 export const registerSchema = Joi.object().keys({
   fullName: Joi.string().required(),
@@ -7,6 +8,9 @@ export const registerSchema = Joi.object().keys({
   password: Joi.string().required(),
   profileImage: Joi.string().optional().allow(""),
   role: objectId().required(),
+  userType: Joi.string()
+    .valid(...Object.values(USER_TYPES))
+    .required(),
   phoneNo: commonContactSchema.optional(),
 });
 

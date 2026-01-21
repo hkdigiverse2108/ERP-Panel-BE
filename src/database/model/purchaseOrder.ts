@@ -62,4 +62,4 @@ const purchaseOrderSchema = new Schema<IPurchaseOrder>(
   baseSchemaOptions,
 );
 
-export const purchaseOrderModel = mongoose.model<IPurchaseOrder>("purchaseOrder", purchaseOrderSchema);
+export const purchaseOrderModel = mongoose.model<IPurchaseOrder>("purchase-order", purchaseOrderSchema);

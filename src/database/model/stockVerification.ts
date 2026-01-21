@@ -16,7 +16,7 @@ const stockVerificationItemSchema = new Schema<IStockVerificationItem>(
     differenceQty: { type: Number, default: 0 },
     differenceAmount: { type: Number, default: 0 },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const stockVerificationSchema = new Schema<IStockVerification>(
@@ -33,10 +33,9 @@ const stockVerificationSchema = new Schema<IStockVerification>(
     totalPhysicalQty: { type: Number, default: 0 },
     differenceAmount: { type: Number, default: 0 },
     approvedQty: { type: Number },
-    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
-export const stockVerificationModel = mongoose.model<IStockVerification>("stockVerification", stockVerificationSchema);
-
+export const stockVerificationModel = mongoose.model<IStockVerification>("stock-verification", stockVerificationSchema);

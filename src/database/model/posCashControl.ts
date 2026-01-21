@@ -17,11 +17,10 @@ const posCashControlSchema = new Schema(
     closedBy: { type: Schema.Types.ObjectId, ref: "user" },
     closedAt: { type: Date },
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
 // Compound index to ensure one cash control per branch per day
 posCashControlSchema.index({ locationId: 1, date: 1, companyId: 1 }, { unique: true });
 
-export const PosCashControlModel = mongoose.model("posCashControl", posCashControlSchema);
-
+export const PosCashControlModel = mongoose.model("pos-cash-control", posCashControlSchema);

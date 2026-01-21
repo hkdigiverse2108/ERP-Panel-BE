@@ -14,7 +14,7 @@ const branchSchema: any = new mongoose.Schema(
     telephoneNumber: { type: String },
     email: { type: String },
     userName: { type: String },
-    password: { type: String },
+    // password: { type: String },
     yearInterval: { type: String },
 
     // ******************* Other Details *******************

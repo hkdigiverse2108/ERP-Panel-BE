@@ -20,7 +20,7 @@ export const salesItemSchema = new Schema(
     taxableAmount: { type: Number, required: true },
     totalAmount: { type: Number, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 // Estimate Schema
@@ -42,13 +42,10 @@ const EstimateSchema = new Schema<IEstimate>(
     notes: { type: String },
     status: { type: String, default: "pending" }, // Pending, Converted, Cancelled
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
-export const EstimateModel = mongoose.model<IEstimate>(
-  "estimate",
-  EstimateSchema
-);
+export const EstimateModel = mongoose.model<IEstimate>("estimate", EstimateSchema);
 
 // Sales Order Schema
 
@@ -69,10 +66,7 @@ const SalesOrderSchema = new Schema<ISalesOrder>(
     notes: { type: String },
     status: { type: String, default: "pending" }, // Pending, Completed, Cancelled
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
-export const SalesOrderModel = mongoose.model<ISalesOrder>(
-  "salesOrder",
-  SalesOrderSchema
-);
+export const SalesOrderModel = mongoose.model<ISalesOrder>("sales-order", SalesOrderSchema);

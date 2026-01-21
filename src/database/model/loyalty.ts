@@ -13,10 +13,7 @@ const loyaltyCampaignSchema = new Schema<ILoyaltyCampaign>(
     minRedemptionPoints: { type: Number },
     status: { type: String, enum: Object.values(LOYALTY_STATUS), default: LOYALTY_STATUS.ACTIVE },
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
-export const loyaltyCampaignModel = mongoose.model<ILoyaltyCampaign>(
-  "loyaltyCampaign",
-  loyaltyCampaignSchema
-);
+export const loyaltyCampaignModel = mongoose.model<ILoyaltyCampaign>("loyalty-campaign", loyaltyCampaignSchema);

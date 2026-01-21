@@ -26,7 +26,7 @@ const posOrderSchema = new Schema(
     notes: { type: String },
     invoiceId: { type: Schema.Types.ObjectId, ref: "invoice" }, // Linked invoice if converted
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
-export const PosOrderModel = mongoose.model("posOrder", posOrderSchema);
+export const PosOrderModel = mongoose.model("pos-order", posOrderSchema);

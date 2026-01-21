@@ -17,7 +17,7 @@ const stockItemSchema = new Schema(
     differenceQty: { type: Number, required: true },
     differenceAmount: { type: Number, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const stockAdjustmentSchema = new Schema<any>(
@@ -43,10 +43,7 @@ const stockAdjustmentSchema = new Schema<any>(
     updatedBy: { type: Schema.Types.ObjectId, ref: "employee" },
     isDeleted: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export const stockAdjustmentModel = mongoose.model(
-  "stockAdjustment",
-  stockAdjustmentSchema
-);
+export const stockAdjustmentModel = mongoose.model("stock-adjustment", stockAdjustmentSchema);

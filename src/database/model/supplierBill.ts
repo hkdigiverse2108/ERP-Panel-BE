@@ -12,8 +12,8 @@ const supplierBillSchema = new Schema(
     dueDate: { type: Date },
     supplierId: { type: Schema.Types.ObjectId, ref: "contact", required: true },
     supplierName: { type: String },
-    purchaseOrderId: { type: Schema.Types.ObjectId, ref: "purchaseOrder" },
-    materialInwardId: { type: Schema.Types.ObjectId, ref: "materialInward" },
+    purchaseOrderId: { type: Schema.Types.ObjectId, ref: "purchase-order" },
+    materialInwardId: { type: Schema.Types.ObjectId, ref: "material-inward" },
     items: [purchaseItemSchema],
     grossAmount: { type: Number, default: 0 },
     discountAmount: { type: Number, default: 0 },
@@ -33,4 +33,4 @@ const supplierBillSchema = new Schema(
   baseSchemaOptions
 );
 
-export const supplierBillModel = mongoose.model("supplierBill", supplierBillSchema);
+export const supplierBillModel = mongoose.model("supplier-bill", supplierBillSchema);

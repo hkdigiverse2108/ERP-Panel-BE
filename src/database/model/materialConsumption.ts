@@ -10,7 +10,7 @@ const materialConsumptionItemSchema = new Schema(
     unitPrice: { type: Number, default: 0 },
     totalAmount: { type: Number, default: 0 },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const materialConsumptionSchema = new Schema(
@@ -24,7 +24,7 @@ const materialConsumptionSchema = new Schema(
     items: { type: [materialConsumptionItemSchema], default: [] },
     totalAmount: { type: Number, default: 0 },
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
-export const materialConsumptionModel = mongoose.model("materialConsumption", materialConsumptionSchema);
+export const materialConsumptionModel = mongoose.model("material-consumption", materialConsumptionSchema);

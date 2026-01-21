@@ -10,7 +10,7 @@ const debitNoteSchema = new Schema(
     date: { type: Date, required: true },
     supplierId: { type: Schema.Types.ObjectId, ref: "contact", required: true },
     supplierName: { type: String },
-    supplierBillId: { type: Schema.Types.ObjectId, ref: "supplierBill" },
+    supplierBillId: { type: Schema.Types.ObjectId, ref: "supplier-bill" },
     items: [purchaseItemSchema],
     grossAmount: { type: Number, default: 0 },
     discountAmount: { type: Number, default: 0 },
@@ -20,10 +20,7 @@ const debitNoteSchema = new Schema(
     reason: { type: String },
     status: { type: String, default: "active" },
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
-export const debitNoteModel = mongoose.model(
-  "debitNote",
-  debitNoteSchema
-);
+export const debitNoteModel = mongoose.model("debit-note", debitNoteSchema);

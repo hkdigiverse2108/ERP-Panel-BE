@@ -1,4 +1,4 @@
-import Joi, { object } from "joi";
+import Joi from "joi";
 import { baseApiSchema, commonContactSchema, objectId } from "./common";
 import { permissionsSchema } from "./permission";
 import { USER_TYPES } from "../common";

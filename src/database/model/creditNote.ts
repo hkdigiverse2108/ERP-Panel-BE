@@ -25,4 +25,4 @@ const creditNoteSchema = new Schema<ICreditNote>({
     status: { type: String, default: 'active' }
 }, baseSchemaOptions);
 
-export const creditNoteModel = mongoose.model<ICreditNote>('creditNote', creditNoteSchema);
+export const creditNoteModel = mongoose.model<ICreditNote>('credit-note', creditNoteSchema);

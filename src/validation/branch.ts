@@ -30,7 +30,7 @@ export const addBranchSchema = Joi.object().keys({
   telephoneNumber: Joi.string().optional(),
   email: Joi.string().email().optional(),
   userName: Joi.string().required(),
-  password: Joi.string().required(),
+  // password: Joi.string().required(),
   yearInterval: Joi.string().required(),
 
   // GST / Legal
@@ -77,7 +77,7 @@ export const editBranchSchema = Joi.object().keys({
   telephoneNumber: Joi.string().optional().allow("", null),
   email: Joi.string().email().optional(),
   userName: Joi.string().optional(),
-  password: Joi.string().optional(),
+  // password: Joi.string().optional(),
   yearInterval: Joi.string().optional(),
 
   // GST / Legal

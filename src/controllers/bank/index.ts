@@ -174,7 +174,7 @@ export const getBankById = async (req, res) => {
     const response = await getFirstMatch(
       bankModel,
       { _id: id, isDeleted: false },
-      { password: 0 },
+      {},
       {
         populate: [
           { path: "companyId", select: "name" },

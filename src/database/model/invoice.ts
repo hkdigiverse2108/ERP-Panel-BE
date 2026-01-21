@@ -13,7 +13,7 @@ const invoiceSchema = new Schema<IInvoice>({
     dueDate: { type: Date },
     customerId: { type: Schema.Types.ObjectId, ref: 'contact', required: true },
     customerName: { type: String },
-    salesOrderId: { type: Schema.Types.ObjectId, ref: 'salesOrder' },
+    salesOrderId: { type: Schema.Types.ObjectId, ref: 'sales-order' },
     items: [salesItemSchema],
     grossAmount: { type: Number, default: 0 },
     discountAmount: { type: Number, default: 0 },

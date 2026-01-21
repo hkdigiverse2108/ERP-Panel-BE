@@ -11,4 +11,4 @@ const paymentTermSchema = new Schema<IPaymentTerm>(
   baseSchemaOptions
 );
 
-export const paymentTermModel = mongoose.model<IPaymentTerm>("paymentTerm", paymentTermSchema);
+export const paymentTermModel = mongoose.model<IPaymentTerm>("payment-term", paymentTermSchema);

@@ -4,13 +4,13 @@ import { IMaterialInward } from "../../types";
 import { purchaseItemSchema } from "./purchaseOrder";
 
 const materialInwardSchema = new Schema(
-  { 
+  {
     ...baseSchemaFields,
     documentNo: { type: String, required: true, index: true },
     date: { type: Date, required: true },
     supplierId: { type: Schema.Types.ObjectId, ref: "contact", required: true },
     supplierName: { type: String },
-    purchaseOrderId: { type: Schema.Types.ObjectId, ref: "purchaseOrder" },
+    purchaseOrderId: { type: Schema.Types.ObjectId, ref: "purchase-order" },
     items: [purchaseItemSchema],
     grossAmount: { type: Number, default: 0 },
     discountAmount: { type: Number, default: 0 },
@@ -20,10 +20,7 @@ const materialInwardSchema = new Schema(
     notes: { type: String },
     status: { type: String, default: "active" },
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
-export const materialInwardModel = mongoose.model(
-  "materialInward",
-  materialInwardSchema
-);
+export const materialInwardModel = mongoose.model("material-inward", materialInwardSchema);
