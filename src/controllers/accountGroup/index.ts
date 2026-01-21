@@ -111,8 +111,10 @@ export const editAccountGroup = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Account Group"), {}, {}));
     }
 
-    // Check if account name already exists (if being changed)
+    if (value.accountGroupId === value.parentGroupId) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.parentGroupError, {}, {}));
+
     if (value.name && value.name !== isExist.name) {
+      // Check if account name already exists (if being changed)
       isExist = await getFirstMatch(accountGroupModel, { name: value.name, companyId: isExist.companyId, isDeleted: false, _id: { $ne: value.accountGroupId } }, {}, {});
       if (isExist) {
         return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Account Group Name"), {}, {}));
@@ -183,7 +185,7 @@ export const getAllAccountGroup = async (req, res) => {
     page = Number(page);
     limit = Number(limit);
 
-    let criteria: any = { isDeleted: false };
+    let criteria: any = { isDeleted: false, groupLevel: { $ne: 0 } };
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
@@ -199,6 +201,7 @@ export const getAllAccountGroup = async (req, res) => {
           select: "name parentGroupId nature groupLevel",
         },
       ],
+
       skip: (page - 1) * limit,
       limit,
     };
@@ -258,7 +261,7 @@ export const getOneAccountGroup = async (req, res) => {
 export const getAccountGroupDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    let criteria: any = { isDeleted: false, isActive: true };
+    let criteria: any = { isDeleted: false, isActive: true, groupLevel: { $ne: 0 } };
 
     const response = await getDataWithSorting(
       accountGroupModel,

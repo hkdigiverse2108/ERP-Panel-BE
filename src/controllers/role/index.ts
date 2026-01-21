@@ -16,6 +16,8 @@ export const addRole = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
     if (value?.name) value.name = value.name.trim().toLowerCase();
 
+    if (value.name === USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.accessDenied, {}, {}));
+
     if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
     let companyId = null;
@@ -71,6 +73,8 @@ export const editRole = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     if (value?.name) value.name = value.name.trim().toLowerCase();
+
+    if (value.name === USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.accessDenied, {}, {}));
 
     if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
@@ -132,6 +136,8 @@ export const deleteRole = async (req, res) => {
     const existingRole = await getFirstMatch(roleModel, { _id: value?.id, isDeleted: false }, {}, {});
 
     if (!existingRole) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Role"), {}, {}));
+
+    if (existingRole.name === USER_ROLES.SUPER_ADMIN || existingRole.name === USER_ROLES.ADMIN) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.accessDenied, {}, {}));
 
     const isRoleUsed = await getFirstMatch(userModel, { role: value?.id, isDeleted: false }, {}, {});
 
@@ -234,7 +240,7 @@ export const getRoleById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
         ],
-      }
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Role"), {}, {}));
@@ -254,7 +260,7 @@ export const getRoleDropdown = async (req, res) => {
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (user?.companyId?._id) criteria.companyId = new ObjectId(user?.companyId?._id);
-    
+
     const response = await getDataWithSorting(roleModel, criteria, { _id: 1, name: 1 }, { sort: { name: 1 } });
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Role"), response, {}));
   } catch (error) {

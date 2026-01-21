@@ -1,8 +1,7 @@
-import { populate } from "dotenv";
-import { apiResponse, generateHash, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
-import { branchModel, companyModel, userModel } from "../../database/model";
+import { apiResponse, generateHash, HTTP_STATUS, LOCATION_TYPE, USER_ROLES, USER_TYPES } from "../../common";
+import { branchModel, companyModel, locationModel, userModel } from "../../database/model";
 import { roleModel } from "../../database/model/role";
-import { checkIdExist, countData, createOne, findOneAndPopulate, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, checkLocationExist, countData, createOne, findOneAndPopulate, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addUserSchema, deleteUserSchema, editUserSchema, getUserSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -11,13 +10,18 @@ export const addUser = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+
     let { error, value } = addUserSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (!(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
+    value.companyId = await checkCompany(user, value);
+
+    // if (!(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
     if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     if (!(await checkIdExist(roleModel, value?.role, "Role", res))) return;
+
+    if (!(await checkLocationExist(locationModel, value?.address, res))) return;
 
     const phoneNo = value?.phoneNo?.phoneNo;
 
@@ -32,11 +36,14 @@ export const addUser = async (req, res) => {
       existingUser = await getFirstMatch(userModel, { $or: orCondition, isDeleted: false }, {}, {});
 
       if (existingUser) {
-        if (existingUser?.email === value?.email) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
-        else if (Number(existingUser?.phoneNo?.phoneNo) === Number(phoneNo)) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {}));
-        else if (existingUser?.username === value?.username) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Username"), {}, {}));
-        else if (existingUser?.panNumber === value?.panNumber) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("PAN Number"), {}, {}));
-        else return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("User"), {}, {}));
+        let errorText = "";
+        if (existingUser?.email === value?.email) errorText = "Email";
+        else if (Number(existingUser?.phoneNo?.phoneNo) === Number(phoneNo)) errorText = "Phone number";
+        else if (existingUser?.username === value?.username) errorText = "Username";
+        else if (existingUser?.panNumber === value?.panNumber) errorText = "PAN Number";
+        else errorText = "User";
+
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(errorText), {}, {}));
       }
     }
 
@@ -69,19 +76,14 @@ export const editUserById = async (req, res) => {
     if (!isUserExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("User"), {}, {}));
 
     if (value?.companyId) {
-      const isCompanyExist = await getFirstMatch(companyModel, { _id: value?.companyId, isDeleted: false }, {}, {});
-      if (!isCompanyExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+      value.companyId = await checkCompany(user, value);
     }
 
-    if (value?.branchId) {
-      const isBranchExist = await getFirstMatch(branchModel, { _id: value?.branchId, isDeleted: false }, {}, {});
-      if (!isBranchExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Branch"), {}, {}));
-    }
+    if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
+    if (!(await checkIdExist(roleModel, value?.role, "Role", res))) return;
 
-    if (value?.role) {
-      const isRoleExist = await getFirstMatch(roleModel, { _id: value?.role, isDeleted: false }, {}, {});
-      if (!isRoleExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Role"), {}, {}));
-    }
+    if (!(await checkLocationExist(locationModel, value?.address, res))) return;
+
     const phoneNo = value?.phoneNo?.phoneNo;
 
     const orCondition = [];
@@ -96,11 +98,14 @@ export const editUserById = async (req, res) => {
       existingUser = await getFirstMatch(userModel, { $or: orCondition, _id: { $ne: value?.userId }, isDeleted: false }, {}, {});
 
       if (existingUser) {
-        if (existingUser?.email === value?.email) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
-        else if (Number(existingUser?.phoneNo?.phoneNo) === Number(phoneNo)) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {}));
-        else if (existingUser?.username === value?.username) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Username"), {}, {}));
-        else if (existingUser?.panNumber === value?.panNumber) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("PAN Number"), {}, {}));
-        else return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("User"), {}, {}));
+        let errorText = "";
+        if (existingUser?.email === value?.email) errorText = "Email";
+        else if (Number(existingUser?.phoneNo?.phoneNo) === Number(phoneNo)) errorText = "Phone number";
+        else if (existingUser?.username === value?.username) errorText = "Username";
+        else if (existingUser?.panNumber === value?.panNumber) errorText = "PAN Number";
+        else errorText = "User";
+
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(errorText), {}, {}));
       }
     }
     value.updatedBy = user?._id || null;
@@ -128,9 +133,13 @@ export const deleteUserById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).status(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const isUserExist = await getFirstMatch(userModel, { _id: new ObjectId(value?.id), isDeleted: false }, {}, {});
+    const isUserExist = await getFirstMatch(userModel, { _id: new ObjectId(value?.id), isDeleted: false }, {}, { populate: [{ path: "role", select: "name" }] });
 
     if (!isUserExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("User"), {}, {}));
+    if (isUserExist.role.name === USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.accessDenied, {}, {}));
+
+    if (isUserExist?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $pull: { userIds: isUserExist?._id } }, {});
+
     const payload = {
       isDeleted: true,
       updatedBy: user?._id || null,

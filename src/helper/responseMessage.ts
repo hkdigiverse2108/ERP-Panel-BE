@@ -51,6 +51,7 @@ export const responseMessage = {
   unsupportedFileType: "Unsupported file type in URL",
   roleInUse: "Role is assigned to users and cannot be deleted",
   posAlreadyOnHold: "the POS you requested is already on hold",
+  parentGroupError: "A group cannot be its own parent",
 
   customMessage: (message: string): any => {
     return `${message[0].toUpperCase() + message.slice(1).toLowerCase()}`;

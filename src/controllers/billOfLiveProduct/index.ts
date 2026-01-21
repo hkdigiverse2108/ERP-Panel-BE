@@ -11,15 +11,16 @@ export const addBillOfLiveProduct = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    const userRole = user?.role?.name;
 
     const { error, value } = addBillOfLiveProductSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
-    value.companyId = await checkCompany(userRole, user, value);
+    value.companyId = await checkCompany(user, value);
 
-    // if (userRole !== USER_ROLES.SUPER_ADMIN) {
+    if (!value.companyId) res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+
+    // if (userType !== USER_ROLES.SUPER_ADMIN) {
     //   value.companyId = user?.companyId?._id;
     // }
     // if (!value?.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
