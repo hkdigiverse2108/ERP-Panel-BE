@@ -14,4 +14,4 @@ const accountGroupSchema = new Schema<IAccountGroup>(
   baseSchemaOptions,
 );
 
-export const accountGroupModel = mongoose.model<IAccountGroup>("accountGroup", accountGroupSchema);
+export const accountGroupModel = mongoose.model<IAccountGroup>("account-group", accountGroupSchema);

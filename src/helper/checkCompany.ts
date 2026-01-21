@@ -3,7 +3,7 @@ import { companyModel } from "../database";
 import { getFirstMatch } from "./databaseServices";
 import { responseMessage } from "./responseMessage";
 
-export const checkCompany = async (userRole, user, res, value) => {
+export const checkCompany = async (userRole, user, value) => {
   if (!userRole) return false;
 
   let companyId = null;

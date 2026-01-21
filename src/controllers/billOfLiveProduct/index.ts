@@ -17,9 +17,7 @@ export const addBillOfLiveProduct = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
-    // if (!checkCompany(userRole, user, res, value)) return;
-    // ✅ company validation
-    value.companyId = await checkCompany(userRole, user, res, value);
+    value.companyId = await checkCompany(userRole, user, value);
 
     // if (userRole !== USER_ROLES.SUPER_ADMIN) {
     //   value.companyId = user?.companyId?._id;

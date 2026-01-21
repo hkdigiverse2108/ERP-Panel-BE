@@ -5,6 +5,7 @@ const router = express.Router();
 
 router.get("/all", accountGroupController.getAllAccountGroup);
 router.get("/dropdown", accountGroupController.getAccountGroupDropdown);
+router.get("/tree", accountGroupController.getAccountGroupTree);
 
 router.post("/add", accountGroupController.addAccountGroup);
 router.put("/edit", accountGroupController.editAccountGroup);

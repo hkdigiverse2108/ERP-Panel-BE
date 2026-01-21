@@ -1,4 +1,3 @@
-import { populate } from "dotenv";
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { accountGroupModel } from "../../database/model";
@@ -53,6 +52,23 @@ export const addAccountGroup = async (req, res) => {
 
     if (value?.parentGroupId && !(await checkIdExist(accountGroupModel, value?.parentGroupId, "Parent Group ID", res))) return;
 
+    if (!value?.parentGroupId) {
+      let primaryParentId = await getFirstMatch(accountGroupModel, { name: "primary", isDeleted: false }, {}, {});
+      if (!primaryParentId) {
+        const payload = {
+          name: "primary",
+          groupLevel: 0,
+          nature: null,
+          createdBy: user?._id || null,
+          updatedBy: user?._id || null,
+        };
+        const response = await createOne(accountGroupModel, payload);
+        console.log("res", response);
+        primaryParentId = response._id;
+      }
+      value.parentGroupId = primaryParentId;
+    }
+
     // ===== Calculate group level safely
     let groupLevel = 0;
     try {
@@ -63,7 +79,7 @@ export const addAccountGroup = async (req, res) => {
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.groupLevel = groupLevel || 0;
+    value.groupLevel = groupLevel || 1;
 
     const response = await createOne(accountGroupModel, value);
 
@@ -181,10 +197,6 @@ export const getAllAccountGroup = async (req, res) => {
         {
           path: "parentGroupId",
           select: "name parentGroupId nature groupLevel",
-          // populate: {
-          //   path: "parentGroupId",
-          //   select: "name parentGroupId",
-          // },
         },
       ],
       skip: (page - 1) * limit,
@@ -251,18 +263,90 @@ export const getAccountGroupDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       accountGroupModel,
       criteria,
-      { _id: 1, name: 1 },
+      { _id: 1, name: 1, parentGroupId: 1 },
       {
         sort: { name: 1 },
+        populate: [{ path: "parentGroupId", select: "name parentGroupId nature groupLevel" }],
       },
     );
 
-    const dropdownData = response.map((item) => ({
-      _id: item._id,
-      name: item.name,
-    }));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Account Group"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+  }
+};
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Account Group"), dropdownData, {}));
+export const getAccountGroupTree = async (req, res) => {
+  reqInfo(req);
+  try {
+    const treeData = await accountGroupModel.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          isActive: true,
+          parentGroupId: null,
+        },
+      },
+      {
+        $graphLookup: {
+          from: "accountgroups",
+          startWith: "$_id",
+          connectFromField: "_id",
+          connectToField: "parentGroupId",
+          as: "descendants",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          parentGroupId: 1,
+          descendants: {
+            _id: 1,
+            name: 1,
+            parentGroupId: 1,
+          },
+        },
+      },
+      {
+        $sort: { name: 1 },
+      },
+    ]);
+
+    const buildTree = (root) => {
+      const map = {};
+
+      map[root._id.toString()] = {
+        _id: root._id,
+        name: root.name,
+        parentGroupId: null,
+        children: [],
+      };
+
+      root.descendants.forEach((node) => {
+        map[node._id.toString()] = {
+          _id: node._id,
+          name: node.name,
+          parentGroupId: node.parentGroupId,
+          children: [],
+        };
+      });
+
+      Object.values(map).forEach((node: any) => {
+        if (node.parentGroupId) {
+          const parent = map[node.parentGroupId.toString()];
+          if (parent) {
+            parent.children.push(node);
+          }
+        }
+      });
+
+      return map[root._id.toString()];
+    };
+    const response = treeData.map(buildTree);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Account Group"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
