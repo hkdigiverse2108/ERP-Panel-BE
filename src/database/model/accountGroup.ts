@@ -7,7 +7,7 @@ const accountGroupSchema = new Schema<IAccountGroup>(
   {
     ...baseCommonFields,
     name: { type: String, required: true },
-    parentGroupId: { type: Schema.Types.ObjectId, ref: "accountGroup" },
+    parentGroupId: { type: Schema.Types.ObjectId, ref: "account-group" },
     nature: { type: String, enum: Object.values(ACCOUNT_NATURE), default: ACCOUNT_NATURE.ASSETS },
     groupLevel: { type: Number },
   },

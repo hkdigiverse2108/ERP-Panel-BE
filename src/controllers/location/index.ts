@@ -235,7 +235,7 @@ export const getAllLocation = async (req, res) => {
       criteria.companyId = companyId;
     }
 
-    if (typeFilter) {
+    if (!parentFilter && typeFilter) {
       criteria.type = typeFilter;
     }
 

@@ -290,7 +290,7 @@ export const getAccountGroupTree = async (req, res) => {
       },
       {
         $graphLookup: {
-          from: "accountgroups",
+          from: "account-groups",
           startWith: "$_id",
           connectFromField: "_id",
           connectToField: "parentGroupId",
