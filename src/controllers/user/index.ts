@@ -1,7 +1,6 @@
-import { apiResponse, generateHash, HTTP_STATUS,  USER_ROLES, USER_TYPES } from "../../common";
-import { branchModel, companyModel, locationModel, userModel } from "../../database/model";
-import { roleModel } from "../../database/model/role";
-import { checkCompany, checkIdExist, checkLocationExist, countData, createOne, findOneAndPopulate, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { apiResponse, generateHash, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
+import { branchModel, companyModel, locationModel, moduleModel, permissionModel, roleModel, userModel } from "../../database";
+import { checkCompany, checkIdExist, checkLocationExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addUserSchema, deleteUserSchema, editUserSchema, getUserSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -17,7 +16,6 @@ export const addUser = async (req, res) => {
 
     value.companyId = await checkCompany(user, value);
 
-    // if (!(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
     if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     if (!(await checkIdExist(roleModel, value?.role, "Role", res))) return;
 
@@ -57,6 +55,26 @@ export const addUser = async (req, res) => {
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
     if (value?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $push: { userIds: response?._id } }, {});
+
+    if (value?.role) {
+      let allModules = await getData(moduleModel, { isActive: true, isDeleted: false, default: true }, {}, {});
+      if (allModules && allModules.length > 0) {
+        for (let module of allModules) {
+          let permissionData = {
+            moduleId: new ObjectId(module._id),
+            roleId: new ObjectId(value.role),
+            view: true,
+            add: true,
+            edit: true,
+            delete: true,
+            isActive: true
+          };
+
+          await updateData(permissionModel, { roleId: new ObjectId(value.role), moduleId: new ObjectId(module._id) }, permissionData, { upsert: true, new: true });
+          await updateData(moduleModel, { _id: new ObjectId(module._id) }, { default: true }, {});
+        }
+      }
+    }
 
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("User"), response, {}));
   } catch (error) {

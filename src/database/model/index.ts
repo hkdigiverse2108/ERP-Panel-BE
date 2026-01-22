@@ -15,7 +15,6 @@ export * from "./recipe";
 export * from "./stockItem";
 export * from "./materials";
 export * from "./materialConsumption";
-
 export * from "./operation";
 export * from "./permissions";
 export * from "./employee";
@@ -54,3 +53,6 @@ export * from "./stockItem";
 export * from "./uom";
 export * from "./billOfLiveProduct";
 export * from "./location";
+export * from "./module";   
+export * from "./permission";
+export * from "./role";

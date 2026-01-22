@@ -43,14 +43,17 @@ import { prefixRouter } from "./prefix";
 import { posOrderRouter } from "./posOrder";
 import { productRequestRouter } from "./productRequest";
 import { billOfLiveProductRouter } from "./billOfLiveProduct";
+import { moduleRoute } from "./module";
+import { permissionRoute } from "./permission";
 
 const router = Router();
 
 router.use("/auth", authRoute);
-
 // router.use(userJwt);
 router.use(adminJwt);
 
+router.use("/module", moduleRoute);
+router.use("/permission", permissionRoute);
 router.use("/upload", adminJwt, uploadRoute);
 
 router.use("/user", userRoute);
