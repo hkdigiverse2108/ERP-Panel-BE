@@ -1,20 +1,20 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { callRequestModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCallRequestSchema, deleteCallRequestSchema, editCallRequestSchema, getCallRequestSchema } from "../../validation";
 
 export const addCallRequest = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
     let { error, value } = addCallRequestSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
+    value.companyId = await checkCompany(user, value);
+
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.companyId = companyId;
 
     const response = await createOne(callRequestModel, value);
 
@@ -88,11 +88,16 @@ export const getAllCallRequest = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
+
     if (companyId) {
       criteria.companyId = companyId;
+    }
+    
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (search) {

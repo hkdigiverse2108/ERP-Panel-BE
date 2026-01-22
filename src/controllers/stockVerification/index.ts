@@ -224,9 +224,9 @@ export const getAllStockVerification = async (req, res) => {
       page: parseInt(page as string),
       limit: parseInt(limit as string),
       totalPages,
-      totalData,
-      hasNextPage: parseInt(page as string) < totalPages,
-      hasPrevPage: parseInt(page as string) > 1,
+      // totalData,
+      // hasNextPage: parseInt(page as string) < totalPages,
+      // hasPrevPage: parseInt(page as string) > 1,
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Verification"), { stockVerification_data: response, totalData, state: stateObj }, {}));

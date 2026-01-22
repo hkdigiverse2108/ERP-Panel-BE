@@ -340,9 +340,6 @@ export const getAllStock = async (req, res) => {
       page: parseInt(page as string),
       limit: parseInt(limit as string),
       totalPages,
-      totalData,
-      hasNextPage: parseInt(page as string) < totalPages,
-      hasPrevPage: parseInt(page as string) > 1,
     };
 
     return res.status(HTTP_STATUS.OK).json(

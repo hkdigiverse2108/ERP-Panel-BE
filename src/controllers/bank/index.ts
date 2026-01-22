@@ -1,23 +1,20 @@
-import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
-import { branchModel, companyModel } from "../../database";
+import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
+import { branchModel } from "../../database";
 import { bankModel } from "../../database/model/bank";
-import { checkIdExist, countData, createOne, findOneAndPopulate, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBankSchema, deleteBankSchema, editBankSchema, getBankSchema } from "../../validation";
 
 export const addBank = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    let companyId = user?.companyId?._id;
 
     const { error, value } = addBankSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
 
-    if (user.role?.name === USER_ROLES.SUPER_ADMIN) {
-      companyId = value?.companyId;
-    }
+    value.companyId = await checkCompany(user, value);
 
-    if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     if (value?.branchIds?.length) {
       for (const branch of value?.branchIds) {
@@ -30,7 +27,6 @@ export const addBank = async (req, res) => {
 
     value.createdBy = user?._id;
     value.updatedBy = user?._id;
-    value.companyId = companyId;
 
     const response = await createOne(bankModel, value);
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -38,7 +34,7 @@ export const addBank = async (req, res) => {
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Bank"), response, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -46,17 +42,11 @@ export const editBank = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    let companyId = user?.companyId?._id;
 
     const { error, value } = editBankSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
 
-    if (user.role === USER_ROLES.SUPER_ADMIN) {
-      companyId = value?.companyId;
-    }
     if (!(await checkIdExist(bankModel, value?.bankId, "Bank", res))) return;
-
-    if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
 
     if (value?.branchIds?.length) {
       for (const branch of value?.branchIds) {
@@ -209,7 +199,7 @@ export const getBankDropdown = async (req, res) => {
 
     let criteria: any = { isDeleted: false, isActive: true };
 
-    if (queryCompanyId && userRole === USER_ROLES.SUPER_ADMIN) criteria.companyId = queryCompanyId;
+    if (queryCompanyId && userRole === USER_TYPES.SUPER_ADMIN) criteria.companyId = queryCompanyId;
     else if (companyId) criteria.companyId = companyId;
 
     if (search) {

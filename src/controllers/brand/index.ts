@@ -1,4 +1,4 @@
-import { HTTP_STATUS, USER_ROLES } from "../../common";
+import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { brandModel } from "../../database/model";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
@@ -10,7 +10,6 @@ export const addBrand = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    const companyId = user?.companyId?._id;
     const { error, value } = addBrandSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
@@ -21,7 +20,6 @@ export const addBrand = async (req, res) => {
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
-    if (companyId) value.companyId = companyId;
 
     const response = await createOne(brandModel, value);
 
@@ -91,14 +89,13 @@ export const deleteBrandById = async (req, res) => {
 export const getAllBrand = async (req, res) => {
   reqInfo(req);
   try {
-    const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
-    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
+
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
-    if (companyId) {
-      criteria.companyId = companyId;
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (search) {
@@ -186,19 +183,11 @@ export const getBrandById = async (req, res) => {
 export const getBrandDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    let { user } = req?.headers,
-      { parentBrandFilter } = req.query,
-      companyId = user?.companyId?._id;
+    let { parentBrandFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
-    // if (user?.role?.name !== USER_ROLES.SUPER_ADMIN) {
-    //   companyId = new ObjectId(user?.companyId?._id);
-    // }
-
     if (parentBrandFilter) criteria.parentBrandId = new ObjectId(parentBrandFilter);
-
-    // if (companyId) criteria.companyId = companyId;
 
     const response = await getDataWithSorting(
       brandModel,

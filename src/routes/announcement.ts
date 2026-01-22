@@ -1,16 +1,15 @@
 import express from "express";
 import { announcementController } from "../controllers";
-import { adminJwt } from "../helper";
+import { superAdminJwt } from "../helper";
 
 const router = express.Router();
 
 router.get("/all", announcementController.getAllAnnouncement);
+router.get("/:id", announcementController.getAnnouncementById);
 
-router.use(adminJwt);
-
+router.use(superAdminJwt);
 router.post("/add", announcementController.addAnnouncement);
 router.put("/edit", announcementController.editAnnouncementById);
 router.delete("/:id", announcementController.deleteAnnouncementById);
-router.get("/:id", announcementController.getAnnouncementById);
 
 export const announcementRouter = router;

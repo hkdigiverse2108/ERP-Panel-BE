@@ -5,6 +5,7 @@ export const addAnnouncementSchema = Joi.object().keys({
   version: Joi.string().required(),
   link: Joi.string().optional(),
   desc: Joi.array().items(Joi.string().required()).required(),
+  isActive: Joi.boolean().optional(),
 });
 
 export const editAnnouncementSchema = Joi.object().keys({
@@ -12,6 +13,8 @@ export const editAnnouncementSchema = Joi.object().keys({
   version: Joi.string().required(),
   link: Joi.string().optional(),
   desc: Joi.array().items(Joi.string().required()).required(),
+  isActive: Joi.boolean().optional(),
+
 });
 
 export const deleteAnnouncementSchema = Joi.object().keys({

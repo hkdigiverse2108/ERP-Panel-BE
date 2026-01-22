@@ -1,4 +1,4 @@
-import { HTTP_STATUS, USER_ROLES } from "../../common";
+import { HTTP_STATUS, USER_TYPES } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { branchModel, companyModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
@@ -10,21 +10,10 @@ export const addBranch = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const userRole = user?.role?.name;
 
     let { error, value } = addBranchSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
-
-    if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
-
-    if (userRole !== USER_ROLES.SUPER_ADMIN) {
-      value.companyId = user?.companyId?._id;
-    }
-
-    if (!value.companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-    }
 
     if (!(await checkIdExist(companyModel, value.companyId, "Company", res))) return;
 
@@ -54,25 +43,22 @@ export const editBranchById = async (req, res) => {
 
   try {
     const { user } = req?.headers;
-    const userRole = user?.role?.name;
 
     let { error, value } = editBranchSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
-    if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+    let isExist = await getFirstMatch(branchModel, { _id: value.branchId, isDeleted: false }, {}, {});
 
-    let companyId = null;
-    if (userRole === USER_ROLES.SUPER_ADMIN) {
-      companyId = value?.companyId;
-    } else {
-      companyId = user?.companyId?._id;
+    if (!isExist) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Branch"), {}, {}));
     }
 
-    if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
-    if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
+    value.companyId = isExist.companyId;
 
-    let isExist = await getFirstMatch(branchModel, { companyId, name: value?.name, isDeleted: false, _id: { $ne: value?.branchId } }, {}, {});
+    if (!(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
+
+    isExist = await getFirstMatch(branchModel, { companyId: value.companyId, name: value?.name, isDeleted: false, _id: { $ne: value?.branchId } }, {}, {});
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Name"), {}, {}));
 
     value.updatedBy = user?._id || null;
@@ -217,14 +203,14 @@ export const getBranchDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const userRole = user?.role?.name;
+    const userType = user?.userType;
     let companyId = user?.companyId?._id;
 
     const queryCompanyId = req.query?.companyFilter;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
-    if (queryCompanyId && userRole === USER_ROLES.SUPER_ADMIN) criteria.companyId = queryCompanyId;
+    if (queryCompanyId && userType === USER_TYPES.SUPER_ADMIN) criteria.companyId = queryCompanyId;
     else if (companyId) criteria.companyId = companyId;
 
     const response = await getDataWithSorting(

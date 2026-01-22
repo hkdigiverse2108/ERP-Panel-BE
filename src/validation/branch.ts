@@ -19,7 +19,7 @@ const editAddressSchemaOptional = Joi.object({
 
 export const addBranchSchema = Joi.object().keys({
   // Basic Info
-  companyId: objectId().optional(),
+  companyId: objectId().required(),
   name: Joi.string().required(),
   displayName: Joi.string().required(),
   contactName: Joi.string().optional(),
@@ -86,11 +86,6 @@ export const editBranchSchema = Joi.object().keys({
 
   // Address
   address: editAddressSchemaOptional.optional(),
-  // address: Joi.string().optional(),
-  // city: objectId().optional(),
-  // state: objectId().optional(),
-  // country: objectId().optional(),
-  // pinCode: Joi.number ().optional().allow("", null),
 
   // Bank Details
   bankId: objectId().optional().allow("", null),

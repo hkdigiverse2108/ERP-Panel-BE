@@ -1,7 +1,7 @@
-import { HTTP_STATUS, USER_ROLES } from "../../common";
+import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { companyModel, contactModel } from "../../database";
-import { checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { contactModel } from "../../database";
+import { checkCompany, checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addContactSchema, deleteContactSchema, editContactSchema, getContactSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -10,21 +10,16 @@ export const addContact = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const userRole = user?.role?.name;
 
     let { error, value } = addContactSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (userRole !== USER_ROLES.SUPER_ADMIN) {
-      value.companyId = user?.companyId?._id;
-    }
+    value.companyId = await checkCompany(user, value);
 
     if (!value.companyId) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
     }
-
-    if (!(await checkIdExist(companyModel, value.companyId, "Company", res))) return;
 
     const phoneNo = value?.phoneNo?.phoneNo;
     const whatsappNo = value?.whatsappNo?.phoneNo;
@@ -40,11 +35,15 @@ export const addContact = async (req, res) => {
       isExist = await getFirstMatch(contactModel, { $or: orCondition, isDeleted: false }, {}, {});
 
       if (isExist) {
-        if (isExist?.email === value?.email) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Email"), {}, {}));
-        else if (Number(isExist?.phoneNo?.phoneNo) === Number(phoneNo)) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Phone number"), {}, {}));
-        else if (Number(isExist?.whatsappNo?.phoneNo) === Number(whatsappNo)) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Whatsapp number"), {}, {}));
-        else if (isExist?.panNo === value?.panNo) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("PAN Number"), {}, {}));
-        else return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("User"), {}, {}));
+        let errorText = "";
+
+        if (isExist?.email === value?.email) errorText = "Email";
+        else if (Number(isExist?.phoneNo?.phoneNo) === Number(phoneNo)) errorText = "Phone number";
+        else if (Number(isExist?.whatsappNo?.phoneNo) === Number(whatsappNo)) errorText = "Whatsapp number";
+        else if (isExist?.panNo === value?.panNo) errorText = "PAN Number";
+        else errorText = "User";
+
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(errorText), {}, {}));
       }
     }
 
@@ -71,7 +70,11 @@ export const editContactById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
-    if (!(await checkIdExist(contactModel, value?.contactId, "Contact", res))) return;
+    let isExist = await getFirstMatch(contactModel, { _id: value?.contactId, isDeleted: false }, {}, {});
+
+    if (!isExist) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Bill Of Live Product"), {}, {}));
+    }
 
     const phoneNo = value?.phoneNo?.phoneNo;
     const whatsappNo = value?.whatsappNo?.phoneNo;
@@ -81,17 +84,20 @@ export const editContactById = async (req, res) => {
     if (phoneNo) orCondition.push({ "phoneNo.phoneNo": phoneNo });
     if (whatsappNo) orCondition.push({ "whatsappNo.phoneNo": phoneNo });
     if (value?.panNo) orCondition.push({ panNo: value?.panNo });
-    let isExist = null;
 
     if (orCondition.length) {
       isExist = await getFirstMatch(contactModel, { $or: orCondition, isDeleted: false, _id: { $ne: value?.contactId } }, {}, {});
 
       if (isExist) {
-        if (isExist?.email === value?.email) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Email"), {}, {}));
-        else if (Number(isExist?.phoneNo?.phoneNo) === Number(phoneNo)) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Phone number"), {}, {}));
-        else if (Number(isExist?.whatsappNo?.phoneNo) === Number(whatsappNo)) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Whatsapp number"), {}, {}));
-        else if (isExist?.panNo === value?.panNo) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("PAN Number"), {}, {}));
-        else return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("User"), {}, {}));
+        let errorText = "";
+
+        if (isExist?.email === value?.email) errorText = "Email";
+        else if (Number(isExist?.phoneNo?.phoneNo) === Number(phoneNo)) errorText = "Phone number";
+        else if (Number(isExist?.whatsappNo?.phoneNo) === Number(whatsappNo)) errorText = "Whatsapp number";
+        else if (isExist?.panNo === value?.panNo) errorText = "PAN Number";
+        else errorText = "User";
+
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(errorText), {}, {}));
       }
     }
 
@@ -139,11 +145,16 @@ export const getAllContact = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, startDate, endDate, activeFilter, typeFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, typeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
+
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (search) {
@@ -231,11 +242,16 @@ export const getContactDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { contactType, search } = req.query; // contactType: 'supplier', 'customer', 'both'
+    const { contactType, search, companyFilter } = req.query; // contactType: 'supplier', 'customer', 'both'
 
     let criteria: any = { isDeleted: false, isActive: true };
+
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     // Filter by contact type

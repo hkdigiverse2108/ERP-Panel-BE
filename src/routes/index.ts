@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { adminJwt, userJwt } from "../helper";
+import { adminJwt, superAdminJwt, userJwt } from "../helper";
 import { announcementRouter } from "./announcement";
 import { authRoute } from "./auth";
 import { branchRouter } from "./branch";
@@ -54,10 +54,9 @@ router.use(adminJwt);
 router.use("/upload", adminJwt, uploadRoute);
 
 router.use("/user", userRoute);
-router.use("/company", companyRouter);
-router.use("/announcement", announcementRouter);
+
 router.use("/role", roleRoute);
-router.use("/branch", branchRouter);
+
 router.use("/product", productRouter);
 router.use("/product-request", productRequestRouter);
 router.use("/employee", employeeRouter);
@@ -65,13 +64,8 @@ router.use("/call-request", callRequestRouter);
 router.use("/stock", stockRoute);
 router.use("/stock-verification", stockVerificationRoute);
 
-router.use("/brand", brandRouter);
-router.use("/category", categoryRouter);
-
 router.use("/contacts", contactRouter);
 router.use("/bank", bankRouter);
-router.use("/account-group", accountGroupRouter);
-router.use("/account", accountRouter);
 router.use("/payment-term", paymentTermRouter);
 router.use("/location", locationRouter);
 router.use("/uom", uomRouter);
@@ -100,6 +94,14 @@ router.use("/material", materialRouter);
 router.use("/material-consumption", materialConsumptionRouter);
 router.use("/bill-of-live-product", billOfLiveProductRouter);
 
+// === For Super Admin
+router.use("/account-group", accountGroupRouter);
+router.use("/account", accountRouter);
+router.use("/company", companyRouter);
+router.use("/branch", branchRouter);
+router.use("/announcement", announcementRouter);
+router.use("/brand", brandRouter);
+router.use("/category", categoryRouter);
 // router.use("/employee", employeeRouter);
 
 export { router };

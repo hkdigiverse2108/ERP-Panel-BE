@@ -1,7 +1,7 @@
-import { HTTP_STATUS, USER_ROLES } from "../../common";
+import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { categoryModel } from "../../database/model";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCategorySchema, deleteCategorySchema, editCategorySchema, getCategorySchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -10,18 +10,18 @@ export const addCategory = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    const companyId = user?.companyId?._id;
     const { error, value } = addCategorySchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
-    const existingCategory = await getFirstMatch(categoryModel, { companyId, code: value.code, isDeleted: false }, {}, {});
+    value.companyId = await checkCompany(user, value);
+
+    const existingCategory = await getFirstMatch(categoryModel, { companyId: value.companyId ?? null, code: value.code, isDeleted: false }, {}, {});
 
     if (existingCategory) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Category code"), {}, {}));
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.companyId = companyId;
 
     const response = await createOne(categoryModel, value);
 
@@ -42,12 +42,16 @@ export const getAllCategory = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (search) {
@@ -186,16 +190,9 @@ export const deleteCategoryById = async (req, res) => {
 // Dropdown API - returns only active categories in { _id, name } format
 export const getCategoryDropdown = async (req, res) => {
   reqInfo(req);
-  let { user } = req?.headers,
-    { parentCategoryFilter } = req.query,
-    companyId = null,
-    criteria: any = { isDeleted: false, isActive: true };
   try {
-    // if (user?.role?.name !== USER_ROLES.SUPER_ADMIN) {
-    //   companyId = user?.companyId?._id;
-    // }
-
-    if (companyId) criteria.companyId = new ObjectId(companyId);
+    let { parentCategoryFilter } = req.query;
+    let criteria: any = { isDeleted: false, isActive: true };
 
     if (parentCategoryFilter) criteria.parentCategoryId = new ObjectId(parentCategoryFilter);
 

@@ -1,9 +1,9 @@
-import { HTTP_STATUS, USER_ROLES } from "../../common";
+import { HTTP_STATUS} from "../../common";
 import { apiResponse } from "../../common/utils";
-import { billOfLiveProductModel, brandModel, companyModel, productModel, recipeModel } from "../../database/model";
+import { billOfLiveProductModel,  productModel, recipeModel } from "../../database/model";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { checkCompany } from "../../helper/checkCompany";
-import { addBillOfLiveProductSchema, deleteBillOfLiveProductSchema, deleteBrandSchema, editBillOfLiveProductSchema, getBillOfLiveProductSchema, getBrandSchema } from "../../validation";
+import { addBillOfLiveProductSchema, deleteBillOfLiveProductSchema, editBillOfLiveProductSchema, getBillOfLiveProductSchema} from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -19,13 +19,6 @@ export const addBillOfLiveProduct = async (req, res) => {
     value.companyId = await checkCompany(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-
-    // if (userType !== USER_ROLES.SUPER_ADMIN) {
-    //   value.companyId = user?.companyId?._id;
-    // }
-    // if (!value?.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-
-    // if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
 
     const isExist = await getFirstMatch(billOfLiveProductModel, { companyId: value.companyId, number: value.number, isDeleted: false }, {}, {});
 
@@ -69,7 +62,6 @@ export const editBillOfLiveProductById = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    const userRole = user?.role?.name;
 
     const { error, value } = editBillOfLiveProductSchema.validate(req.body);
     if (error) {
@@ -83,11 +75,7 @@ export const editBillOfLiveProductById = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Bill Of Live Product"), {}, {}));
     }
 
-    if (userRole !== USER_ROLES.SUPER_ADMIN) {
-      value.companyId = user?.companyId?._id;
-    }
-
-    if (value?.companyId && !(await checkIdExist(companyModel, value.companyId, "Company", res))) return;
+    value.companyId = isBillExist.companyId;
 
     const isNumberExist = await getFirstMatch(
       billOfLiveProductModel,
@@ -232,8 +220,8 @@ export const getAllBillOfLiveProduct = async (req, res) => {
           billOfLiveProduct_data: response,
           totalData,
           state,
-        },
-        {},
+        },                                  
+        {}
       ),
     );
   } catch (error) {
