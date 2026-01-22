@@ -120,13 +120,48 @@ export const getAllProduct = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userRole = user?.role?.name;
     const companyId = user?.companyId?._id;
     const { page, limit, search, startDate, endDate, activeFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
+    let productIds: any[] = [];
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { itemCode: { $regex: search, $options: "si" } }];
+      const searchCriteria = [{ name: { $regex: search, $options: "si" } }, { itemCode: { $regex: search, $options: "si" } }];
+      if (criteria.$or) {
+        criteria.$or = [...criteria.$or, ...searchCriteria];
+      } else {
+        criteria.$or = searchCriteria;
+      }
+    }
+
+    if (userRole !== USER_ROLES.SUPER_ADMIN && companyId) {
+      const stockCriteria: any = {
+        isDeleted: false,
+        companyId: companyId,
+      };
+
+      const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
+
+      const uniqueProductIds = new Set<string>();
+      stockEntries.forEach((stock: any) => {
+        if (stock.productId) {
+          uniqueProductIds.add(stock.productId.toString());
+        }
+      });
+      productIds = Array.from(uniqueProductIds).map((id: string) => new ObjectId(id));
+
+      if (productIds.length === 0) {
+        const stateObj = {
+          page: parseInt(page) || 1,
+          limit: parseInt(limit) || 10,
+          totalPages: 0,
+        };
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), { product_data: [], totalData: 0, state: stateObj }, {}));
+      }
+
+      criteria._id = { $in: productIds };
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -135,7 +170,7 @@ export const getAllProduct = async (req, res) => {
       const start = new Date(startDate);
       const end = new Date(endDate);
 
-      if (!isNaN(start.getTime()) && isNaN(end.getTime())) {
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
         criteria.createdAt = {
           $gte: start,
           $lte: end,
@@ -163,6 +198,36 @@ export const getAllProduct = async (req, res) => {
     const response = await getDataWithSorting(productModel, criteria, { password: 0 }, options);
     const totalData = await countData(productModel, criteria);
 
+    const productsWithStock = await Promise.all(
+      response.map(async (product: any) => {
+        const stockCriteria: any = {
+          productId: product._id,
+          isDeleted: false,
+        };
+
+        if (userRole !== USER_ROLES.SUPER_ADMIN && companyId) {
+          stockCriteria.companyId = companyId;
+        }
+
+        const stockAggregation = await stockModel.aggregate([
+          { $match: stockCriteria },
+          {
+            $group: {
+              _id: "$productId",
+              totalQty: { $sum: "$qty" },
+            },
+          },
+        ]);
+
+        const qty = stockAggregation.length > 0 ? stockAggregation[0].totalQty : 0;
+
+        return {
+          ...product.toObject ? product.toObject() : product,
+          qty,
+        };
+      })
+    );
+
     const totalPages = Math.ceil(totalData / limit) || 1;
 
     const stateObj = {
@@ -171,7 +236,7 @@ export const getAllProduct = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), { product_data: response, totalData, state: stateObj }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), { product_data: productsWithStock, totalData, state: stateObj }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
