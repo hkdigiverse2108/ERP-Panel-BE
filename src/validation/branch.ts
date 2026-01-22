@@ -44,15 +44,10 @@ export const addBranchSchema = Joi.object().keys({
 
   // Address
   address: addAddressSchema.optional(),
-  // address: Joi.string().required(),
-  // city: objectId().required(),
-  // state: objectId().required(),
-  // country: objectId().required(),
-  // pinCode: Joi.number().optional(),
 
   // Bank Details
   bankId: objectId().optional(),
-  upiId: Joi.string().optional(),
+  // upiId: Joi.string().optional(),
 
   // Other
   outletSize: Joi.string().optional(),
@@ -99,7 +94,7 @@ export const editBranchSchema = Joi.object().keys({
 
   // Bank Details
   bankId: objectId().optional().allow("", null),
-  upiId: Joi.string().optional().allow("", null),
+  // upiId: Joi.string().optional().allow("", null),
 
   // Other
   outletSize: Joi.string().optional().allow("", null),

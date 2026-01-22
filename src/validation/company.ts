@@ -29,28 +29,17 @@ export const addCompanySchema = Joi.object().keys({
   phoneNo: commonContactSchema.required(),
   customerCareNumber: Joi.string().optional(),
 
-  roles: Joi.array().items(Joi.string()).optional(),
-  userIds: Joi.array().items(Joi.string()).optional(),
+  // roles: Joi.array().items(Joi.string()).optional(),
+  // userIds: Joi.array().items(Joi.string()).optional(),
 
   // ******************* Communication Details *******************
 
   address: addAddressSchema.optional(),
-  // address: Joi.string().required(),
-  // city: objectId().required(),
-  // state: objectId().required(),
-  // country: objectId().required(),
-  // pinCode: Joi.number().required(),
-  // timeZone: Joi.string().optional(),
   webSite: Joi.string().optional(),
 
   // ******************* Bank Details *******************
   bankId: objectId().optional(),
-  upiId: Joi.string().optional(),
-  // accountHolderName: Joi.string().required(),
-  // bankAccountNumber: Joi.string().required(),
-  // name: Joi.string().required(),
-  // bankIFSC: Joi.string().required(),
-  // branchName: Joi.string().optional().allow("", null),
+  // upiId: Joi.string().optional(),
 
   // ******************* Additional Details *******************
   userName: Joi.string().optional(),
@@ -58,7 +47,6 @@ export const addCompanySchema = Joi.object().keys({
   gstRegistrationType: Joi.string().optional(),
   gstIdentificationNumber: Joi.string().optional(),
   financialMonthInterval: Joi.string().optional(),
-  // defaultFinancialYear: Joi.string().optional(),
 
   // *******************  Other Details *******************
   corporateIdentificationNumber: Joi.string().optional(),
@@ -101,8 +89,8 @@ export const editCompanySchema = Joi.object().keys({
   phoneNo: commonContactSchema.optional(),
   customerCareNumber: Joi.string().optional().allow("", null),
 
-  roles: Joi.array().items(Joi.string()).optional(),
-  userIds: Joi.array().items(Joi.string()).optional(),
+  // roles: Joi.array().items(Joi.string()).optional(),
+  // userIds: Joi.array().items(Joi.string()).optional(),
 
   // ******************* Communication Details *******************
   address: editAddressSchemaOptional.optional(),
@@ -116,7 +104,7 @@ export const editCompanySchema = Joi.object().keys({
 
   // ******************* Bank Details *******************
   bankId: objectId().optional(),
-  upiId: Joi.string().optional(),
+  // upiId: Joi.string().optional(),
   // accountHolderName: Joi.string().optional(),
   // bankAccountNumber: Joi.string().optional(),
   // name: Joi.string().optional(),

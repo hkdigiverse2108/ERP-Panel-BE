@@ -11,7 +11,7 @@ const generateConsumptionNo = async (companyId?: string | null) => {
       isDeleted: false,
     },
     {},
-    { sort: { createdAt: -1 } }
+    { sort: { createdAt: -1 } },
   );
 
   let nextNumber = 1;
@@ -30,7 +30,7 @@ const generateConsumptionNo = async (companyId?: string | null) => {
         ...(companyId ? { companyId } : {}),
       },
       {},
-      {}
+      {},
     )
   ) {
     nextNumber += 1;
@@ -47,7 +47,6 @@ export const addStock = async (req, res) => {
 
     const { error, value } = addStockSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-
 
     if (user?.role?.name !== USER_ROLES.SUPER_ADMIN) {
       value.companyId = user?.companyId?._id;
@@ -68,9 +67,9 @@ export const addStock = async (req, res) => {
 
     const existingStock = await getFirstMatch(stockModel, existingStockCriteria, {}, {});
     if (existingStock) {
-       let stock = await updateData(stockModel, { _id: existingStock?._id }, value, {});
-       if (!stock) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
-       return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock"), stock, {}));
+      let stock = await updateData(stockModel, { _id: existingStock?._id }, value, {});
+      if (!stock) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock"), stock, {}));
     }
 
     value.createdBy = user?._id || null;
@@ -122,12 +121,7 @@ export const editStock = async (req, res) => {
       const currentQty = stock?.qty || 0;
       const nextQty = currentQty - item.qty;
 
-      const updatedStock = await updateData(
-        stockModel,
-        { _id: stock?._id },
-        { qty: nextQty < 0 ? 0 : nextQty, updatedBy: user?._id || null },
-        {}
-      );
+      const updatedStock = await updateData(stockModel, { _id: stock?._id }, { qty: nextQty < 0 ? 0 : nextQty, updatedBy: user?._id || null }, {});
 
       if (!updatedStock) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Stock"), {}, {}));
 
@@ -135,7 +129,6 @@ export const editStock = async (req, res) => {
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), { items: updatedItems }, {}));
-
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -149,7 +142,6 @@ export const bulkStockAdjustment = async (req, res) => {
 
     let items = [];
     let remark: string | null = null;
-
 
     const { error, value } = bulkStockAdjustmentSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -217,7 +209,6 @@ export const bulkStockAdjustment = async (req, res) => {
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), { remark, items: updatedItems, consumption: consumptionRecord }, {}));
-
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -238,7 +229,7 @@ export const deleteStock = async (req, res) => {
     const isExist = await getFirstMatch(stockModel, { _id: value?.id, isDeleted: false }, {}, {});
 
     if (!isExist) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Stock"), {}, {}));
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
     }
 
     const response = await updateData(stockModel, { _id: value?.id }, { isDeleted: true, updatedBy: user?._id }, {});
@@ -338,7 +329,7 @@ export const getAllStock = async (req, res) => {
           ...product,
           availableQty,
         };
-      })
+      }),
     );
 
     const filteredStockData = stockData.filter((item) => item !== null);
@@ -363,8 +354,8 @@ export const getAllStock = async (req, res) => {
           totalData,
           state: stateObj,
         },
-        {}
-      )
+        {},
+      ),
     );
   } catch (error) {
     console.error(error);
@@ -393,7 +384,7 @@ export const getOneStock = async (req, res) => {
           // { path: "departmentId", select: "name" },
           { path: "uomId", select: "name code" },
         ],
-      }
+      },
     );
 
     if (!product) {
@@ -418,7 +409,7 @@ export const getOneStock = async (req, res) => {
           { path: "productId", select: "name itemCode" },
           // { path: "branchId", select: "name" },
         ],
-      }
+      },
     );
 
     const totalQty = stockRecords.reduce((sum: number, stock: any) => sum + (stock.qty || 0), 0);

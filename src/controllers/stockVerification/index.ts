@@ -24,7 +24,7 @@ export const addStockVerification = async (req, res) => {
     if (userRole !== USER_ROLES.SUPER_ADMIN) {
       value.companyId = user?.companyId?._id;
     }
-    
+
     if (!value?.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
 
     if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
@@ -140,7 +140,7 @@ export const deleteStockVerification = async (req, res) => {
     const isExist = await getFirstMatch(stockVerificationModel, { _id: value?.id, isDeleted: false }, {}, {});
 
     if (!isExist) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Stock Verification"), {}, {}));
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Verification"), {}, {}));
     }
 
     const response = await updateData(stockVerificationModel, { _id: value?.id }, { isDeleted: true }, {});

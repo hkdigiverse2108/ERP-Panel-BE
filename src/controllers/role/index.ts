@@ -1,53 +1,45 @@
-import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
+import { apiResponse, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
 import { companyModel, userModel } from "../../database";
 import { roleModel } from "../../database/model/role";
-import { checkIdExist, countData, createOne, findOneAndPopulate, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addRoleSchema, deleteRoleSchema, editRoleSchema, getRoleSchema } from "../../validation";
-
-const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addRole = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const userRole = user?.role?.name;
+    const userType = user?.userType;
+
     let { error, value } = addRoleSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
+
+    if (userType !== USER_TYPES.ADMIN && userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+
     if (value?.name) value.name = value.name.trim().toLowerCase();
 
-    if (value.name === USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.accessDenied, {}, {}));
+    if (value.name === USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
-    if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+    if (value?.name === USER_ROLES.ADMIN && userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
-    let companyId = null;
-    if (userRole === USER_ROLES.SUPER_ADMIN) {
-      companyId = value?.companyId;
-    } else {
-      companyId = user?.companyId?._id;
+    value.companyId = await checkCompany(user, value);
+
+    if (userType === USER_TYPES.ADMIN && !value.companyId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
     }
 
-    if (companyId) {
-      if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
+    const roleFilter = {
+      name: value.name,
+      isDeleted: false,
+      companyId: value.companyId ?? null,
+    };
+    const existingRole = await getFirstMatch(roleModel, roleFilter, {}, {});
+    if (existingRole) {
+      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Role"), {}, {}));
     }
-
-    const isAdminRole = value?.name === USER_ROLES.ADMIN || value?.name === USER_ROLES.SUPER_ADMIN;
-
-    if (isAdminRole && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.accessDenied, {}, {}));
-
-    let existingRole = null;
-
-    if (companyId) {
-      existingRole = await getFirstMatch(roleModel, { companyId, name: value?.name, isDeleted: false }, {}, {});
-    } else {
-      existingRole = await getFirstMatch(roleModel, { name: value?.name, isDeleted: false, companyId: null }, {}, {});
-    }
-
-    if (existingRole) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Role"), {}, {}));
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.companyId = companyId ?? null;
 
     const response = await createOne(roleModel, value);
 
@@ -66,50 +58,43 @@ export const editRole = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const userRole = user?.role?.name;
+    // const userRole = user?.role?.name;
+    const userType = user?.userType;
 
     let { error, value } = editRoleSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
+    if (userType !== USER_TYPES.ADMIN && userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+
     if (value?.name) value.name = value.name.trim().toLowerCase();
 
-    if (value.name === USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.accessDenied, {}, {}));
+    if (value.name === USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
-    if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+    if (value?.name === USER_ROLES.ADMIN && userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
-    let companyId = null;
-    if (userRole === USER_ROLES.SUPER_ADMIN) {
-      companyId = value?.companyId;
-    } else {
-      companyId = user?.companyId?._id;
-    }
-
-    if (companyId) {
-      const isCompanyExist = await getFirstMatch(companyModel, { _id: companyId, isDeleted: false }, {}, {});
-      if (!isCompanyExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
+    value.companyId = await checkCompany(user, value);
 
     let existingRole;
 
     existingRole = await getFirstMatch(roleModel, { _id: value?.roleId, isDeleted: false }, {}, {});
     if (!existingRole) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Role"), {}, {}));
 
-    const isAdminRole = value?.name === USER_ROLES.ADMIN || value?.name === USER_ROLES.SUPER_ADMIN;
-
-    if (isAdminRole && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.accessDenied, {}, {}));
-
     if (value?.name) {
-      if (companyId) {
-        existingRole = await getFirstMatch(roleModel, { companyId, name: value?.name, isDeleted: false, _id: { $ne: value?.roleId } }, {}, {});
-      } else {
-        existingRole = await getFirstMatch(roleModel, { name: value?.name, isDeleted: false, companyId: null, _id: { $ne: value?.roleId } }, {}, {});
+      const roleFilter = {
+        name: value.name,
+        isDeleted: false,
+        companyId: value.companyId ?? null,
+        _id: { $ne: value?.roleId },
+      };
+
+      existingRole = await getFirstMatch(roleModel, roleFilter, {}, {});
+      if (existingRole) {
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Role"), {}, {}));
       }
-      if (existingRole) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Role"), {}, {}));
     }
 
     value.updatedBy = user?._id;
-    value.companyId = companyId ?? null;
     const response = await updateData(roleModel, { _id: value?.roleId, isDeleted: false }, value, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Role"), {}, {}));
@@ -125,19 +110,19 @@ export const deleteRole = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const userRole = user?.role?.name;
+    const userType = user?.userType;
 
     let { error, value } = deleteRoleSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+    if (userType !== USER_TYPES.ADMIN && userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
     const existingRole = await getFirstMatch(roleModel, { _id: value?.id, isDeleted: false }, {}, {});
 
     if (!existingRole) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Role"), {}, {}));
 
-    if (existingRole.name === USER_ROLES.SUPER_ADMIN || existingRole.name === USER_ROLES.ADMIN) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.accessDenied, {}, {}));
+    if (existingRole.name === USER_ROLES.SUPER_ADMIN || existingRole.name === USER_ROLES.ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
     const isRoleUsed = await getFirstMatch(userModel, { role: value?.id, isDeleted: false }, {}, {});
 
@@ -165,7 +150,7 @@ export const getAllRole = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -173,8 +158,12 @@ export const getAllRole = async (req, res) => {
       criteria.companyId = companyId;
     }
 
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
     if (search) {
-      criteria.$or = [{ role: { $regex: search, $options: "si" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -215,7 +204,7 @@ export const getAllRole = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Role"), { role_data: response, totalData, state: stateObj }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), { role_data: response, totalData, state: stateObj }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -243,12 +232,12 @@ export const getRoleById = async (req, res) => {
       },
     );
 
-    if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Role"), {}, {}));
+    if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Role"), {}, {}));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), response, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -257,14 +246,21 @@ export const getRoleDropdown = async (req, res) => {
   try {
     let { user } = req?.headers;
 
+    const userType = user?.userType;
+    let companyId = user?.companyId?._id;
+
+    const queryCompanyId = req.query?.companyFilter;
+
     let criteria: any = { isDeleted: false, isActive: true };
 
-    if (user?.companyId?._id) criteria.companyId = new ObjectId(user?.companyId?._id);
+    if (queryCompanyId && userType === USER_TYPES.SUPER_ADMIN) criteria.companyId = queryCompanyId;
+    else if (companyId) criteria.companyId = companyId;
 
     const response = await getDataWithSorting(roleModel, criteria, { _id: 1, name: 1 }, { sort: { name: 1 } });
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Role"), response, {}));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), response, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };

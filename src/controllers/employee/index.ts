@@ -41,10 +41,10 @@ export const addEmployee = async (req, res) => {
     //   existingEmployee = await getFirstMatch(userModel, { $or: orCondition, _id: { $ne: value?.employeeId }, isDeleted: false }, {}, {});
 
     //   if (existingEmployee) {
-    //     if (existingEmployee?.email === value?.email) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
-    //     if (existingEmployee?.phoneNo === value?.phoneNo) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {}));
-    //     if (existingEmployee?.username === value?.username) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Username"), {}, {}));
-    //     if (existingEmployee?.panNumber === value?.panNumber) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("PAN Number"), {}, {}));
+    //     if (existingEmployee?.email === value?.email) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Email"), {}, {}));
+    //     if (existingEmployee?.phoneNo === value?.phoneNo) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Phone number"), {}, {}));
+    //     if (existingEmployee?.username === value?.username) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Username"), {}, {}));
+    //     if (existingEmployee?.panNumber === value?.panNumber) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("PAN Number"), {}, {}));
     //   }
     // }
 
@@ -101,10 +101,10 @@ export const editEmployeeById = async (req, res) => {
     //   existingEmployee = await getFirstMatch(userModel, { $or: orCondition, _id: { $ne: value?.employeeId }, isDeleted: false }, {}, {});
 
     //   if (existingEmployee) {
-    //     if (existingEmployee?.email === value?.email) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
-    //     if (existingEmployee?.phoneNo === value?.phoneNo) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {}));
-    //     if (existingEmployee?.username === value?.username) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Username"), {}, {}));
-    //     if (existingEmployee?.panNumber === value?.panNumber) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("PAN Number"), {}, {}));
+    //     if (existingEmployee?.email === value?.email) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Email"), {}, {}));
+    //     if (existingEmployee?.phoneNo === value?.phoneNo) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Phone number"), {}, {}));
+    //     if (existingEmployee?.username === value?.username) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Username"), {}, {}));
+    //     if (existingEmployee?.panNumber === value?.panNumber) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("PAN Number"), {}, {}));
     //   }
     // }
     // value.updatedBy = user?._id || null;

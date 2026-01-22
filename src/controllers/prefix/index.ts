@@ -26,7 +26,7 @@ export const addPrefix = async (req, res) => {
     // Check if prefix for this module already exists
     const isExist = await getFirstMatch(PrefixModel, { module: value?.module, companyId, isDeleted: false }, {}, {});
     if (isExist) {
-      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(`Prefix for module ${value.module}`), {}, {}));
+      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist(`Prefix for module ${value.module}`), {}, {}));
     }
 
     const prefixData = {
@@ -70,7 +70,7 @@ export const editPrefix = async (req, res) => {
     if (value.module && value.module !== isExist.module) {
       const moduleExist = await getFirstMatch(PrefixModel, { module: value.module, companyId: isExist.companyId, isDeleted: false, _id: { $ne: value.prefixId } }, {}, {});
       if (moduleExist) {
-        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(`Prefix for module ${value.module}`), {}, {}));
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist(`Prefix for module ${value.module}`), {}, {}));
       }
     }
 

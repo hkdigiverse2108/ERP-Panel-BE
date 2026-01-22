@@ -17,12 +17,12 @@ export const addAnnouncement = async (req, res) => {
     let isExist = undefined;
     if (value?.version) {
       isExist = await getFirstMatch(announcementModel, { version: value?.version, isDeleted: false }, {}, {});
-      if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Version"), {}, {}));
+      if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Version"), {}, {}));
     }
 
     // if(value?.link){
     //   isExist = await getFirstMatch(announcementModel, { link: value?.link, isDeleted: false }, {}, {});
-    //   if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Link"), {}, {}));
+    //   if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Link"), {}, {}));
     // }
 
     value.createdBy = user?._id || null;
@@ -51,12 +51,12 @@ export const editAnnouncementById = async (req, res) => {
 
     if (value?.version) {
       isExist = await getFirstMatch(announcementModel, { version: value?.version, isDeleted: false, _id: { $ne: value?.id } }, {}, {});
-      if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Version"), {}, {}));
+      if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Version"), {}, {}));
     }
 
     if (value?.link) {
       isExist = await getFirstMatch(announcementModel, { link: value?.link, isDeleted: false, _id: { $ne: value?.id } }, {}, {});
-      if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Link"), {}, {}));
+      if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Link"), {}, {}));
     }
 
     value.updatedBy = user?._id || null;

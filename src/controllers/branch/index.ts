@@ -33,7 +33,7 @@ export const addBranch = async (req, res) => {
     const existingBranch = await getFirstMatch(branchModel, { companyId: value.companyId, name: value?.name, isDeleted: false }, {}, {});
 
     if (existingBranch) {
-      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Branch"), {}, {}));
+      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Branch"), {}, {}));
     }
 
     value.createdBy = user?._id || null;
@@ -48,6 +48,7 @@ export const addBranch = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
 export const editBranchById = async (req, res) => {
   reqInfo(req);
 
@@ -72,7 +73,7 @@ export const editBranchById = async (req, res) => {
     if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
 
     let isExist = await getFirstMatch(branchModel, { companyId, name: value?.name, isDeleted: false, _id: { $ne: value?.branchId } }, {}, {});
-    if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Name"), {}, {}));
+    if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Name"), {}, {}));
 
     value.updatedBy = user?._id || null;
 
@@ -122,12 +123,16 @@ export const getAllBranch = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (search) {
@@ -208,7 +213,6 @@ export const getBranchById = async (req, res) => {
   }
 };
 
-// Dropdown API - returns only active branches in { _id, name } format
 export const getBranchDropdown = async (req, res) => {
   reqInfo(req);
   try {
@@ -237,9 +241,9 @@ export const getBranchDropdown = async (req, res) => {
       name: item.name,
     }));
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Branch"), dropdownData, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Branch"), dropdownData, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.internalServerError, {}, error));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };

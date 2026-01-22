@@ -25,7 +25,7 @@ export const addCoupon = async (req, res) => {
     // Check if coupon code already exists
     const isExist = await getFirstMatch(couponModel, { code: value?.code, companyId, isDeleted: false }, {}, {});
     if (isExist) {
-      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Coupon Code"), {}, {}));
+      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Coupon Code"), {}, {}));
     }
 
     // Validate date range
@@ -74,7 +74,7 @@ export const editCoupon = async (req, res) => {
     if (value.code && value.code !== isExist.code) {
       const codeExist = await getFirstMatch(couponModel, { code: value.code, companyId: isExist.companyId, isDeleted: false, _id: { $ne: value.couponId } }, {}, {});
       if (codeExist) {
-        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Coupon Code"), {}, {}));
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Coupon Code"), {}, {}));
       }
     }
 

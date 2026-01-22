@@ -31,7 +31,7 @@ export const addBankSchema = Joi.object().keys({
     creditBalance: Joi.number().optional(),
     debitBalance: Joi.number().optional(),
   },
-  // upiId: Joi.string().optional(),
+  upiId: Joi.string().optional(),
 
   address: addAddressSchema.optional(),
 
@@ -51,7 +51,7 @@ export const editBankSchema = Joi.object().keys({
     creditBalance: Joi.number().optional(),
     debitBalance: Joi.number().optional(),
   },
-  // upiId: Joi.string().optional(),
+  upiId: Joi.string().optional(),
 
   address: editAddressSchemaOptional.optional(),
 

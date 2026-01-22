@@ -18,8 +18,10 @@ export const checkCompany = async (user, value) => {
   if (companyId) {
     const isExist = await getFirstMatch(companyModel, { _id: companyId, isDeleted: false }, {}, {});
     if (!isExist) {
-      throw new Error(responseMessage.getDataNotFound("Company"));
+      throw new Error(responseMessage?.getDataNotFound("Company"));
     }
+  } else {
+    companyId = null;
   }
 
   return companyId;

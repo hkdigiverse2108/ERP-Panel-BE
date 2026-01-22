@@ -33,7 +33,7 @@ export const checkLocationExist = async (model, address, res) => {
     const exists = await getFirstMatch(model, { _id: loc._id, type: loc.type, isDeleted: false }, {}, {});
 
     if (!exists) {
-      res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.getDataNotFound(loc.label), {}, {}));
+      res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound(loc.label), {}, {}));
       return false;
     }
   }

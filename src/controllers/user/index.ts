@@ -1,4 +1,4 @@
-import { apiResponse, generateHash, HTTP_STATUS, LOCATION_TYPE, USER_ROLES, USER_TYPES } from "../../common";
+import { apiResponse, generateHash, HTTP_STATUS,  USER_ROLES, USER_TYPES } from "../../common";
 import { branchModel, companyModel, locationModel, userModel } from "../../database/model";
 import { roleModel } from "../../database/model/role";
 import { checkCompany, checkIdExist, checkLocationExist, countData, createOne, findOneAndPopulate, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
@@ -43,7 +43,7 @@ export const addUser = async (req, res) => {
         else if (existingUser?.panNumber === value?.panNumber) errorText = "PAN Number";
         else errorText = "User";
 
-        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(errorText), {}, {}));
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist(errorText), {}, {}));
       }
     }
 
@@ -61,7 +61,7 @@ export const addUser = async (req, res) => {
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("User"), response, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -105,7 +105,7 @@ export const editUserById = async (req, res) => {
         else if (existingUser?.panNumber === value?.panNumber) errorText = "PAN Number";
         else errorText = "User";
 
-        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(errorText), {}, {}));
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist(errorText), {}, {}));
       }
     }
     value.updatedBy = user?._id || null;
@@ -136,7 +136,8 @@ export const deleteUserById = async (req, res) => {
     const isUserExist = await getFirstMatch(userModel, { _id: new ObjectId(value?.id), isDeleted: false }, {}, { populate: [{ path: "role", select: "name" }] });
 
     if (!isUserExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("User"), {}, {}));
-    if (isUserExist.role.name === USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.accessDenied, {}, {}));
+
+    if (isUserExist.role.name === USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
     if (isUserExist?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $pull: { userIds: isUserExist?._id } }, {});
 

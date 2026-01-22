@@ -22,7 +22,7 @@ export const addAccount = async (req, res) => {
     const isExist = await getFirstMatch(accountModel, { name: value?.name, isDeleted: false }, {}, {});
 
     if (isExist) {
-      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Account Name"), {}, {}));
+      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Account Name"), {}, {}));
     }
 
     if (value.currentBalance === undefined || value.currentBalance === null) {
@@ -71,7 +71,7 @@ export const editAccount = async (req, res) => {
     if (value.name && value.name !== isExist.name) {
       const nameExist = await getFirstMatch(accountModel, { name: value.name, isDeleted: false, _id: { $ne: value.accountId } }, {}, {});
       if (nameExist) {
-        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Account Name"), {}, {}));
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Account Name"), {}, {}));
       }
     }
 

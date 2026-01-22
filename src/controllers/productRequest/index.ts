@@ -80,7 +80,7 @@ export const deleteProductRequest = async (req, res) => {
 
     const isExist = await getFirstMatch(productRequestModel, { _id: value?.id, isDeleted: false }, {}, {});
 
-    if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Product Request"), {}, {}));
+    if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product Request"), {}, {}));
 
     const payload = {
       updatedBy: user?._id || null,
@@ -170,7 +170,7 @@ export const getOneProductRequest = async (req, res) => {
       {},
       {
         populate: [{ path: "companyId", select: "name" }],
-      }
+      },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));

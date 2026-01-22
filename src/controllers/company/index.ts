@@ -1,8 +1,8 @@
-import { HTTP_STATUS } from "../../common";
+import { HTTP_STATUS, USER_TYPES } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { companyModel } from "../../database/model";
+import { companyModel, locationModel } from "../../database/model";
 import { bankModel } from "../../database/model/bank";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkIdExist, checkLocationExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCompanySchema, deleteCompanySchema, editCompanySchema, getCompanySchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -11,19 +11,24 @@ export const addCompany = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     let { error, value } = addCompanySchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
+    if (userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+
     if (!(await checkIdExist(bankModel, value?.bankId, "Bank", res))) return;
 
-    const phoneNo = value?.phoneNo?.phoneNo;
-    // const ownerNo = value?.ownerNo?.phoneNo;
+    if (!(await checkLocationExist(locationModel, value?.address, res))) return;
+
+    const phoneNo = Number(value?.phoneNo?.phoneNo);
+    const ownerNo = Number(value?.ownerNo?.phoneNo);
 
     const orCondition = [];
     if (value?.email) orCondition.push({ email: value?.email });
     if (phoneNo) orCondition.push({ "phoneNo.phoneNo": phoneNo });
-    // if (ownerNo) orCondition.push({ "owner.phoneNo": ownerNo });
+    if (ownerNo) orCondition.push({ "owner.phoneNo": ownerNo });
     if (value?.displayName) orCondition.push({ displayName: value?.displayName });
     if (value?.contactName) orCondition.push({ contactName: value?.contactName });
     if (value?.supportEmail) orCondition.push({ supportEmail: value?.supportEmail });
@@ -34,12 +39,17 @@ export const addCompany = async (req, res) => {
       existingCompany = await getFirstMatch(companyModel, { $or: orCondition, isDeleted: false }, {}, {});
 
       if (existingCompany) {
-        if (existingCompany?.email === value?.email) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
-        if (existingCompany?.phoneNo?.phoneNo === phoneNo) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {}));
-        // if (existingCompany?.ownerNo?.phoneNo === ownerNo) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Owner number"), {}, {}));
-        if (existingCompany?.displayName === value?.displayName) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Display Name"), {}, {}));
-        if (existingCompany?.contactName === value?.contactName) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Contact Name"), {}, {}));
-        if (existingCompany?.supportEmail === value?.supportEmail) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Support Email"), {}, {}));
+        let errorText = "";
+
+        if (existingCompany?.email === value?.email) errorText = "Email";
+        else if (existingCompany?.phoneNo?.phoneNo === phoneNo) errorText = "Phone number";
+        else if (existingCompany?.ownerNo?.phoneNo === ownerNo) errorText = "Owner number";
+        else if (existingCompany?.displayName === value?.displayName) errorText = "Display Name";
+        else if (existingCompany?.contactName === value?.contactName) errorText = "Contact Name";
+        else if (existingCompany?.supportEmail === value?.supportEmail) errorText = "Support Email";
+        else errorText = "Company";
+
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(errorText), {}, {}));
       }
     }
 
@@ -61,21 +71,25 @@ export const editCompanyById = async (req, res) => {
 
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
+
     let { error, value } = editCompanySchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
+
+    if (userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
     if (!(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
 
     if (!(await checkIdExist(bankModel, value?.bankId, "Bank", res))) return;
 
-    const phoneNo = value?.phoneNo?.phoneNo;
-    // const ownerNo = value?.ownerNo?.phoneNo;
+    const phoneNo = Number(value?.phoneNo?.phoneNo);
+    const ownerNo = Number(value?.ownerNo?.phoneNo);
 
     const orCondition = [];
     if (value?.email) orCondition.push({ email: value?.email });
     if (phoneNo) orCondition.push({ "phoneNo.phoneNo": phoneNo });
-    // if (ownerNo) orCondition.push({ "owner.phoneNo": ownerNo });
+    if (ownerNo) orCondition.push({ "owner.phoneNo": ownerNo });
     if (value?.displayName) orCondition.push({ displayName: value?.displayName });
     if (value?.contactName) orCondition.push({ contactName: value?.contactName });
     if (value?.supportEmail) orCondition.push({ supportEmail: value?.supportEmail });
@@ -86,12 +100,17 @@ export const editCompanyById = async (req, res) => {
       existingCompany = await getFirstMatch(companyModel, { $or: orCondition, _id: { $ne: value?.companyId }, isDeleted: false }, {}, {});
 
       if (existingCompany) {
-        if (existingCompany?.email === value?.email) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Email"), {}, {}));
-        if (existingCompany?.phoneNo?.phoneNo === phoneNo) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Phone number"), {}, {}));
-        // if (existingCompany?.ownerNo?.phoneNo === ownerNo) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Owner number"), {}, {}));
-        if (existingCompany?.displayName === value?.displayName) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Display Name"), {}, {}));
-        if (existingCompany?.contactName === value?.contactName) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Contact Name"), {}, {}));
-        if (existingCompany?.supportEmail === value?.supportEmail) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Support Email"), {}, {}));
+        let errorText = "";
+
+        if (existingCompany?.email === value?.email) errorText = "Email";
+        else if (existingCompany?.phoneNo?.phoneNo === phoneNo) errorText = "Phone number";
+        else if (existingCompany?.ownerNo?.phoneNo === ownerNo) errorText = "Owner number";
+        else if (existingCompany?.displayName === value?.displayName) errorText = "Display Name";
+        else if (existingCompany?.contactName === value?.contactName) errorText = "Contact Name";
+        else if (existingCompany?.supportEmail === value?.supportEmail) errorText = "Support Email";
+        else errorText = "Company";
+
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(errorText), {}, {}));
       }
     }
 
@@ -115,6 +134,8 @@ export const deleteCompanyById = async (req, res) => {
     let { error, value } = deleteCompanySchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).status(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    if (user.userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
     const isCompanyExist = await getFirstMatch(companyModel, { _id: new ObjectId(value?.id), isDeleted: false }, {}, {});
 
@@ -219,7 +240,6 @@ export const getCompanyById = async (req, res) => {
   }
 };
 
-// Dropdown API - returns only active companies in { _id, name } format
 export const getCompanyDropdown = async (req, res) => {
   reqInfo(req);
   try {
