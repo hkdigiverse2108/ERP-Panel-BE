@@ -2,7 +2,7 @@ import { populate } from "dotenv";
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { PrefixModel } from "../../database/model/prefix";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPrefixSchema, deletePrefixSchema, editPrefixSchema, getPrefixSchema } from "../../validation/prefix";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -11,7 +11,6 @@ export const addPrefix = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
     const { error, value } = addPrefixSchema.validate(req.body);
 
@@ -19,24 +18,20 @@ export const addPrefix = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
+    value.companyId = await checkCompany(user, value);
+
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Check if prefix for this module already exists
-    const isExist = await getFirstMatch(PrefixModel, { module: value?.module, companyId, isDeleted: false }, {}, {});
+    const isExist = await getFirstMatch(PrefixModel, { module: value?.module, companyId: value.companyId, isDeleted: false }, {}, {});
     if (isExist) {
       return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist(`Prefix for module ${value.module}`), {}, {}));
     }
 
-    const prefixData = {
-      ...value,
-      companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(PrefixModel, prefixData);
+    const response = await createOne(PrefixModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -124,11 +119,14 @@ export const getAllPrefix = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, module, activeFilter } = req.query;
+    let { page, limit, search, module, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
       criteria.companyId = companyId;
+    }
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (search) {

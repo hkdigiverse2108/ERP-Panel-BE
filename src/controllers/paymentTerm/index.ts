@@ -1,28 +1,24 @@
 import { HTTP_STATUS, USER_ROLES } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { companyModel, paymentTermModel } from "../../database/model";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPaymentTermSchema, deletePaymentTermSchema, editPaymentTermSchema, getPaymentTermSchema } from "../../validation";
 
 export const addPaymentTerm = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    let companyId = user?.companyId?._id;
 
     const { error, value } = addPaymentTermSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
-    if (user.role?.name === USER_ROLES.SUPER_ADMIN) {
-      companyId = value?.companyId;
-    }
+    value.companyId = await checkCompany(user, value);
 
-    if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    const isExist = await getFirstMatch(paymentTermModel, { name: value?.name, companyId, isDeleted: false }, {}, {});
+    const isExist = await getFirstMatch(paymentTermModel, { name: value?.name, companyId: value.companyId, isDeleted: false }, {}, {});
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Payment Term"), {}, {}));
 
-    value.companyId = companyId;
     value.createdBy = user?._id;
     value.updatedBy = user?._id;
 
@@ -40,23 +36,18 @@ export const editPaymentTerm = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    let companyId = user?.companyId?._id;
 
     const { error, value } = editPaymentTermSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
-    if (user.role?.name === USER_ROLES.SUPER_ADMIN) {
-      companyId = value?.companyId;
-    }
+    let isExist = await getFirstMatch(paymentTermModel, { _id: value.paymentTermId, isDeleted: false }, {}, {});
+    if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Material Consumption"), {}, {}));
 
-    if (!(await checkIdExist(paymentTermModel, value?.paymentTermId, "Payment Term", res))) return;
-    if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
-
-    const isExist = await getFirstMatch(
+    isExist = await getFirstMatch(
       paymentTermModel,
       {
         name: value?.name,
-        companyId,
+        companyId: isExist.companyId,
         isDeleted: false,
         _id: { $ne: value?.paymentTermId },
       },
@@ -108,7 +99,7 @@ export const getAllPaymentTerm = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page = 1, limit = 100, search, activeFilter } = req.query;
+    let { page = 1, limit = 100, search, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -117,6 +108,10 @@ export const getAllPaymentTerm = async (req, res) => {
 
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";

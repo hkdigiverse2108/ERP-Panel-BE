@@ -2,7 +2,7 @@ import { HTTP_STATUS, VOUCHAR_TYPE } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { contactModel, accountModel } from "../../database";
 import { voucherModel } from "../../database/model/voucher";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addVoucherSchema, deleteVoucherSchema, editVoucherSchema, getVoucherSchema } from "../../validation/voucher";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -34,9 +34,9 @@ export const addVoucher = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
+    value.companyId = await checkCompany(user, value);
+
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Validate party (customer/supplier) for Payment/Receipt
     if ((value.type === VOUCHAR_TYPE.PAYMENT || value.type === VOUCHAR_TYPE.RECEIPT) && value.partyId) {
@@ -57,17 +57,13 @@ export const addVoucher = async (req, res) => {
 
     // Generate voucher number if not provided
     if (!value.voucherNo) {
-      value.voucherNo = await generateVoucherNo(companyId, value.type);
+      value.voucherNo = await generateVoucherNo(value.companyId, value.type);
     }
 
-    const voucherData = {
-      ...value,
-      companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(voucherModel, voucherData);
+    const response = await createOne(voucherModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));

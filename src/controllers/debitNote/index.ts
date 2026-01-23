@@ -1,7 +1,7 @@
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { contactModel, debitNoteModel, supplierBillModel, productModel, taxModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addDebitNoteSchema, deleteDebitNoteSchema, editDebitNoteSchema, getDebitNoteSchema } from "../../validation/debitNote";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -18,7 +18,6 @@ export const addDebitNote = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
     const { error, value } = addDebitNoteSchema.validate(req.body);
 
@@ -26,9 +25,9 @@ export const addDebitNote = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
+    value.companyId = await checkCompany(user, value);
+
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Validate supplier exists
     if (!(await checkIdExist(contactModel, value?.supplierId, "Supplier", res))) return;
@@ -44,7 +43,7 @@ export const addDebitNote = async (req, res) => {
 
     // Generate document number if not provided
     if (!value.documentNo) {
-      value.documentNo = await generateDebitNoteNo(companyId);
+      value.documentNo = await generateDebitNoteNo(value.companyId);
     }
 
     // Get supplier name
@@ -61,14 +60,10 @@ export const addDebitNote = async (req, res) => {
       value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
     }
 
-    const debitNoteData = {
-      ...value,
-      companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(debitNoteModel, debitNoteData);
+    const response = await createOne(debitNoteModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -174,7 +169,7 @@ export const getAllDebitNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter } = req.query;
+    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -182,6 +177,10 @@ export const getAllDebitNote = async (req, res) => {
     let criteria: any = { isDeleted: false };
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (search) {

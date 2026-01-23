@@ -1,8 +1,7 @@
-import { populate } from "dotenv";
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { loyaltyCampaignModel } from "../../database/model/loyalty";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addLoyaltySchema, deleteLoyaltySchema, editLoyaltySchema, getLoyaltySchema } from "../../validation/loyalty";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -11,7 +10,6 @@ export const addLoyalty = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
     const { error, value } = addLoyaltySchema.validate(req.body);
 
@@ -19,24 +17,20 @@ export const addLoyalty = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
+    value.companyId = await checkCompany(user, value);
+
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Check if loyalty campaign name already exists
-    const isExist = await getFirstMatch(loyaltyCampaignModel, { name: value?.name, companyId, isDeleted: false }, {}, {});
+    const isExist = await getFirstMatch(loyaltyCampaignModel, { name: value?.name, companyId: value.companyId, isDeleted: false }, {}, {});
     if (isExist) {
       return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Loyalty Campaign Name"), {}, {}));
     }
 
-    const loyaltyData = {
-      ...value,
-      companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(loyaltyCampaignModel, loyaltyData);
+    const response = await createOne(loyaltyCampaignModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -124,7 +118,7 @@ export const getAllLoyalty = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, type, status, activeFilter } = req.query;
+    let { page = 1, limit = 10, search, type, status, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -132,6 +126,9 @@ export const getAllLoyalty = async (req, res) => {
     let criteria: any = { isDeleted: false };
     if (companyId) {
       criteria.companyId = companyId;
+    }
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (search) {

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { companyModel, productModel, productRequestModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { productModel, productRequestModel } from "../../database";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addProductRequestSchema, deleteProductRequestSchema, editProductRequestSchema, getProductRequestSchema } from "../../validation";
 
 export const addProductRequest = async (req, res) => {
@@ -8,14 +8,13 @@ export const addProductRequest = async (req, res) => {
   try {
     const { user } = req.headers;
 
-    let companyId = user?.companyId?._id;
     let { error, value } = addProductRequestSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
+    value.companyId = await checkCompany(user, value);
 
-    if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     let isExist = await getFirstMatch(productModel, { name: value?.name, isDeleted: false }, {}, {});
 
@@ -25,7 +24,6 @@ export const addProductRequest = async (req, res) => {
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.companyId = companyId || null;
 
     let response = await createOne(productRequestModel, value);
 
@@ -103,12 +101,16 @@ export const getAllProductRequest = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { page, limit, search, startDate, endDate, activeFilter } = req.query;
+    const { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (search) {

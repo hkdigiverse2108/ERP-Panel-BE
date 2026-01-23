@@ -1,7 +1,7 @@
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { contactModel, creditNoteModel, InvoiceModel, productModel, taxModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCreditNoteSchema, deleteCreditNoteSchema, editCreditNoteSchema, getCreditNoteSchema } from "../../validation/creditNote";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -18,7 +18,6 @@ export const addCreditNote = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
     const { error, value } = addCreditNoteSchema.validate(req.body);
 
@@ -26,9 +25,9 @@ export const addCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
+    value.companyId = await checkCompany(user, value);
+
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Validate customer exists
     if (!(await checkIdExist(contactModel, value?.customerId, "Customer", res))) return;
@@ -44,7 +43,7 @@ export const addCreditNote = async (req, res) => {
 
     // Generate document number if not provided
     if (!value.documentNo) {
-      value.documentNo = await generateCreditNoteNo(companyId);
+      value.documentNo = await generateCreditNoteNo(value.companyId);
     }
 
     // Get customer name
@@ -61,14 +60,10 @@ export const addCreditNote = async (req, res) => {
       value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
     }
 
-    const creditNoteData = {
-      ...value,
-      companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(creditNoteModel, creditNoteData);
+    const response = await createOne(creditNoteModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -174,14 +169,19 @@ export const getAllCreditNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter } = req.query;
+    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
+
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (search) {

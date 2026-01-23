@@ -1,7 +1,7 @@
-import { HTTP_STATUS, COUPON_STATUS } from "../../common";
+import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { couponModel } from "../../database/model/coupon";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCouponSchema, deleteCouponSchema, editCouponSchema, getCouponSchema } from "../../validation/coupon";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -10,7 +10,6 @@ export const addCoupon = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
     const { error, value } = addCouponSchema.validate(req.body);
 
@@ -18,12 +17,11 @@ export const addCoupon = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
+    value.companyId = await checkCompany(user, value);
 
-    // Check if coupon code already exists
-    const isExist = await getFirstMatch(couponModel, { code: value?.code, companyId, isDeleted: false }, {}, {});
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+
+    const isExist = await getFirstMatch(couponModel, { code: value?.code, companyId: value.companyId, isDeleted: false }, {}, {});
     if (isExist) {
       return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Coupon Code"), {}, {}));
     }
@@ -33,14 +31,10 @@ export const addCoupon = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Valid From date must be before Valid To date", {}, {}));
     }
 
-    const couponData = {
-      ...value,
-      companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(couponModel, couponData);
+    const response = await createOne(couponModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -70,7 +64,6 @@ export const editCoupon = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Coupon"), {}, {}));
     }
 
-    // Check if coupon code already exists (if being changed)
     if (value.code && value.code !== isExist.code) {
       const codeExist = await getFirstMatch(couponModel, { code: value.code, companyId: isExist.companyId, isDeleted: false, _id: { $ne: value.couponId } }, {}, {});
       if (codeExist) {
@@ -78,7 +71,6 @@ export const editCoupon = async (req, res) => {
       }
     }
 
-    // Validate date range if dates are being updated
     if (value.validFrom && value.validTo && new Date(value.validFrom) >= new Date(value.validTo)) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Valid From date must be before Valid To date", {}, {}));
     }
@@ -133,14 +125,19 @@ export const getAllCoupon = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter } = req.query;
+    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
+
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
 import { branchModel, companyModel, materialConsumptionModel, productModel, stockModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation/stock";
 
 const generateConsumptionNo = async (companyId?: string | null) => {
@@ -48,11 +48,10 @@ export const addStock = async (req, res) => {
     const { error, value } = addStockSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (user?.role?.name !== USER_ROLES.SUPER_ADMIN) {
-      value.companyId = user?.companyId?._id;
-    }
+    value.companyId = await checkCompany(user, value);
 
-    if (!(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+
     if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     if (!(await checkIdExist(productModel, value?.productId, "Product", res))) return;
 
@@ -248,7 +247,7 @@ export const deleteStock = async (req, res) => {
 export const getAllStock = async (req, res) => {
   reqInfo(req);
   try {
-    const { page = 1, limit = 10, search, activeFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, branchFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
+    const { page = 1, limit = 10, search, activeFilter, companyFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, branchFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -257,6 +256,10 @@ export const getAllStock = async (req, res) => {
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
 
     if (categoryFilter) criteria.categoryId = categoryFilter;
 
