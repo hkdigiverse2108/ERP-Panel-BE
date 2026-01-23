@@ -31,7 +31,7 @@ export const addModuleSchema = Joi.object().keys({
 });
 
 export const editModuleSchema = Joi.object().keys({
-  _id: objectId().required(),
+  moduleId: objectId().required(),
   tabName: Joi.string().trim().optional(),
   displayName: Joi.string().trim().optional().allow("", null),
   tabUrl: Joi.string().trim().optional().allow("", null),
