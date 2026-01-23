@@ -32,7 +32,7 @@ export const addStockVerification = async (req, res) => {
       }
     }
 
-    const stockVerificationNo = await generateStockVerificationNo();
+    const stockVerificationNo = await   generateStockVerificationNo();
 
     // Calculate totals
     const items = value.items || [];
