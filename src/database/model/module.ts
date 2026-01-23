@@ -11,7 +11,6 @@ const moduleSchema: any = new mongoose.Schema({
     hasDelete: { type: Boolean, default: false },
     default: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
-    isBlocked: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     parentId: { type: mongoose.Schema.Types.ObjectId, default: null, ref: "module" },
 }, { timestamps: true, versionKey: false })

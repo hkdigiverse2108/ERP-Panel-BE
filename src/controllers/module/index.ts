@@ -11,7 +11,7 @@ export const add_module = async (req, res) => {
         let { error, value: body } = addModuleSchema.validate(req.body);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-        let isExist = await getFirstMatch(moduleModel, { tabName: body.tabName }, {}, {});
+        let isExist = await getFirstMatch(moduleModel, { tabName: body.tabName, isDeleted: false }, {}, {});
         if (isExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("name"), {}, {}));
 
         if (body.tabName && isExist?.tabName !== body.tabName) {
@@ -21,7 +21,7 @@ export const add_module = async (req, res) => {
         }
 
         if (body.number && isExist?.number !== body.number) {
-            let isNumberExist = await getData(moduleModel, { number: body.number }, {}, {});
+            let isNumberExist = await getData(moduleModel, { number: body.number, isDeleted: false }, {}, {});
             if (isNumberExist?.length > 0) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("tab number"), {}, {}));
         }
 
@@ -41,10 +41,10 @@ export const edit_module_by_id = async (req, res) => {
         let { error, value: body } = editModuleSchema.validate(req.body);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-        let isExist = await getFirstMatch(moduleModel, { _id: new ObjectId(body._id) }, {}, {});
+        let isExist = await getFirstMatch(moduleModel, { _id: new ObjectId(body._id), isDeleted: false }, {}, {});
         if (!isExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.getDataNotFound("module"), {}, {}));
 
-        let getAllModuleData = await getData(moduleModel, {}, {}, {});
+        let getAllModuleData = await getData(moduleModel, { isDeleted: false }, {}, {});
         if (body.tabName && isExist?.tabName !== body.tabName) {
             let isNameExist = getAllModuleData?.find(item => item.tabName === body.tabName);
             if (isNameExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("module name"), {}, {}));
@@ -99,7 +99,7 @@ export const get_all_module = async (req, res) => {
         }
 
         if (activeFilter !== undefined) {
-            criteria.isBlocked = activeFilter;
+            criteria.isActive = activeFilter;
         }
 
         const options: any = {
