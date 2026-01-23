@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { commonContactSchema, objectId } from "./common";
-import { USER_TYPES } from "../common";
+import { LOGIN_SOURCES, USER_TYPES } from "../common";
 
 export const registerSchema = Joi.object().keys({
   fullName: Joi.string().required(),
@@ -17,4 +17,7 @@ export const registerSchema = Joi.object().keys({
 export const loginSchema = Joi.object().keys({
   email: Joi.string().lowercase().required(),
   password: Joi.string().required(),
+  loginSource: Joi.string()
+    .valid(...Object.values(LOGIN_SOURCES))
+    .required(),
 });

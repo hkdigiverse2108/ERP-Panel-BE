@@ -1,3 +1,9 @@
+export const LOGIN_SOURCES = {
+  SUPER_ADMIN_PANEL: "super-admin-panel",
+  ADMIN_PANEL: "admin-panel",
+  WEBSITE: "website",
+} as const;
+
 export const USER_ROLES = {
   SUPER_ADMIN: "super-admin",
   ADMIN: "admin",
