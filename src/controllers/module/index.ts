@@ -71,7 +71,7 @@ export const delete_module_by_id = async (req, res) => {
 
         const response = await updateData(moduleModel, { _id: new ObjectId(value.id), isDeleted: false }, { isDeleted: true }, {})
         if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.getDataNotFound("module"), {}, {}))
-        await updateMany(permissionModel, { moduleId: ObjectId(value.id), isDeleted: false }, { isDeleted: true }, {})
+        await updateMany(permissionModel, { moduleId: new ObjectId(value.id), isDeleted: false }, { isDeleted: true }, {})
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("module"), response, {}))
     } catch (error) {
