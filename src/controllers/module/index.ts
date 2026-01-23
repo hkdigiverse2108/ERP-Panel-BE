@@ -20,9 +20,14 @@ export const add_module = async (req, res) => {
             if (isNameExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("module name"), {}, {}));
         }
 
-        if (body.number && isExist?.number !== body.number) {
-            let isNumberExist = await getData(moduleModel, { number: body.number, isDeleted: false }, {}, {});
-            if (isNumberExist?.length > 0) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("tab number"), {}, {}));
+        if (body.number && isExist?.number !== body.number && !body.parentId) {
+            if (!body.parentId) {
+                let isNumberExist = await getData(moduleModel, { number: body.number, isDeleted: false }, {}, {});
+                if (isNumberExist?.length > 0) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("tab number"), {}, {}));
+            } else {
+                let isNumberExist = await getData(moduleModel, { number: body.number, parentId: new ObjectId(body.parentId), isDeleted: false }, {}, {});
+                if (isNumberExist?.length > 0) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("tab number"), {}, {}));
+            }
         }
 
         const response = await createOne(moduleModel, body);
@@ -41,21 +46,26 @@ export const edit_module_by_id = async (req, res) => {
         let { error, value: body } = editModuleSchema.validate(req.body);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-        let isExist = await getFirstMatch(moduleModel, { _id: new ObjectId(body._id), isDeleted: false }, {}, {});
+        let isExist = await getFirstMatch(moduleModel, { _id: new ObjectId(body.moduleId), isDeleted: false }, {}, {});
         if (!isExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.getDataNotFound("module"), {}, {}));
 
-        let getAllModuleData = await getData(moduleModel, { isDeleted: false }, {}, {});
+        let getAllModuleData = await getData(moduleModel, { isDeleted: false, _id: { $ne: new ObjectId(body.moduleId) } }, {}, {});
         if (body.tabName && isExist?.tabName !== body.tabName) {
             let isNameExist = getAllModuleData?.find(item => item.tabName === body.tabName);
             if (isNameExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("module name"), {}, {}));
         }
 
         if (body.number && isExist?.number !== body.number) {
-            let isNumberExist = getAllModuleData?.find(item => item.number === body.number);
-            if (isNumberExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("module number"), {}, {}));
+            if (!body.parentId) {
+                let isNumberExist = getAllModuleData?.find(item => item.number === body.number);
+                if (isNumberExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("module number"), {}, {}));
+            } else {
+                let isNumberExist = await getData(moduleModel, { number: body.number, parentId: new ObjectId(body.parentId), isDeleted: false, _id: { $ne: new ObjectId(body.moduleId) } }, {}, {});
+                if (isNumberExist?.length > 0) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("tab number"), {}, {}));
+            }
         }
 
-        const response = await updateData(moduleModel, { _id: new ObjectId(body._id) }, body, {});
+        const response = await updateData(moduleModel, { _id: new ObjectId(body.moduleId) }, body, {});
         if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("module"), {}, {}));
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.updateDataSuccess("module"), response, {}));
@@ -200,7 +210,7 @@ export const get_users_permissions_by_moduleId = async (req, res) => {
         const module = await getFirstMatch(moduleModel, { _id: new ObjectId(moduleId), isDeleted: false }, {}, {})
         if (!module) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound('module'), {}, {}))
 
-        const users = await getData(userModel, { isDeleted: false }, { password: 0 }, {})
+        const users = await getData(userModel, { isDeleted: false, isActive: true }, { password: 0 }, {})
         const userIds = users.map((u: any) => u._id)
 
         const perms = await getData(
