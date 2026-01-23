@@ -50,7 +50,7 @@ export const addRole = async (req, res) => {
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Role"), response, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -72,8 +72,6 @@ export const editRole = async (req, res) => {
 
     if (value?.name === USER_ROLES.ADMIN && userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
-    value.companyId = await checkCompany(user, value);
-
     let existingRole;
 
     existingRole = await getFirstMatch(roleModel, { _id: value?.roleId, isDeleted: false }, {}, {});
@@ -83,7 +81,7 @@ export const editRole = async (req, res) => {
       const roleFilter = {
         name: value.name,
         isDeleted: false,
-        companyId: value.companyId ?? null,
+        companyId: existingRole.companyId ?? null,
         _id: { $ne: value?.roleId },
       };
 

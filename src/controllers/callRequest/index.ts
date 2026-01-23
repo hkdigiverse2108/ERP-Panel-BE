@@ -23,7 +23,7 @@ export const addCallRequest = async (req, res) => {
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Call Request"), response, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -95,7 +95,7 @@ export const getAllCallRequest = async (req, res) => {
     if (companyId) {
       criteria.companyId = companyId;
     }
-    
+
     if (companyFilter) {
       criteria.companyId = companyFilter;
     }

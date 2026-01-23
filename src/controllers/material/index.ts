@@ -30,7 +30,7 @@ export const addMaterial = async (req, res) => {
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.getDataSuccess("Material"), response, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -38,13 +38,10 @@ export const editMaterial = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
     const { error, value } = editMaterialSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
-
-    value.companyId = await checkCompany(user, value);
 
     const { materialId } = value;
 
@@ -65,7 +62,7 @@ export const editMaterial = async (req, res) => {
         materialModel,
         {
           _id: { $ne: materialId },
-          companyId: value.companyId,
+          companyId: isExist.companyId,
           materialNo: value.materialNo,
           isDeleted: false,
         },
