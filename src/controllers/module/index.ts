@@ -14,7 +14,7 @@ export const add_module = async (req, res) => {
         let isExist = await getFirstMatch(moduleModel, { tabName: body.tabName, isDeleted: false }, {}, {});
         if (isExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("name"), {}, {}));
 
-        if (body.number && isExist?.number !== body.number && !body.parentId) {
+        if (body.number) {
             if (!body.parentId) {
                 let isNumberExist = await getFirstMatch(moduleModel, { number: body.number, isDeleted: false }, {}, {});
                 if (isNumberExist?.length > 0) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("tab number"), {}, {}));
@@ -43,7 +43,7 @@ export const edit_module_by_id = async (req, res) => {
         let isExist = await getFirstMatch(moduleModel, { _id: new ObjectId(body.moduleId), isDeleted: false }, {}, {});
         if (!isExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.getDataNotFound("module"), {}, {}));
 
-        if (body.number && isExist?.number !== body.number) {
+        if (body.number) {
             if (!body.parentId) {
                 let isNumberExist = await getFirstMatch(moduleModel, { number: body.number, isDeleted: false, _id: { $ne: new ObjectId(body.moduleId) } }, {}, {});
                 if (isNumberExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("module number"), {}, {}));
