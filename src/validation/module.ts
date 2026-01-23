@@ -1,21 +1,6 @@
 import Joi from "joi";
 import { objectId } from "./common";
 
-const moduleSchema = Joi.object().keys({
-  _id: objectId().optional(),
-  tabName: Joi.string().trim().required(),
-  displayName: Joi.string().trim().optional().allow("", null),
-  tabUrl: Joi.string().trim().optional().allow("", null),
-  number: Joi.number().min(0).optional(),
-  hasView: Joi.boolean().default(false).optional(),
-  hasAdd: Joi.boolean().default(false).optional(),
-  hasEdit: Joi.boolean().default(false).optional(),
-  hasDelete: Joi.boolean().default(false).optional(),
-  default: Joi.boolean().default(false).optional(),
-  isActive: Joi.boolean().default(true).optional(),
-  parentId: objectId().optional().allow("", null),
-});
-
 export const addModuleSchema = Joi.object().keys({
   tabName: Joi.string().trim().required(),
   displayName: Joi.string().trim().optional().allow("", null),

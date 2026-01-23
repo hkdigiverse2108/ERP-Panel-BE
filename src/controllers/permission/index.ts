@@ -37,7 +37,6 @@ export const get_permission_by_userId = async (req, res) => {
     reqInfo(req)
     try {
         let { error, value } = getPermissionSchema.validate(req.query);
-        console.log(error);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
         let { userId, search } = value, match: any = {};
@@ -54,6 +53,7 @@ export const get_permission_by_userId = async (req, res) => {
         }
 
         match.isActive = true;
+        match.isDeleted = false;
 
         let moduleData = await moduleModel.aggregate([
             { $match: match },
@@ -62,34 +62,74 @@ export const get_permission_by_userId = async (req, res) => {
                     from: "modules",
                     let: { tabId: '$parentId' },
                     pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$_id', '$$tabId'] },], }, } }],
-                    as: "modules"
+                    as: "parentTab"
                 }
             },
             {
-                $unwind: { path: "$modules", preserveNullAndEmptyArrays: true }
+                $unwind: { path: "$parentTab", preserveNullAndEmptyArrays: true }
             },
+            {
+                $sort: { number: 1 }
+            }
         ])
-        let newUserPermissionData = [];
+
+        let parentModules: any[] = [];
+        let childModulesByParent: any = {};
+
         moduleData?.forEach(item => {
-            let newObj = {
-                parentTab: item.modules !== null ? item.modules : {},
+            if (item.parentId) {
+                let parentIdStr = item.parentId.toString();
+                if (!childModulesByParent[parentIdStr]) {
+                    childModulesByParent[parentIdStr] = [];
+                }
+                childModulesByParent[parentIdStr].push(item);
+            } else {
+                parentModules.push(item);
+            }
+        });
+
+        let newUserPermissionData = [];
+
+        parentModules?.forEach(item => {
+            let newObj: any = {
+                parentTab: {},
                 view: false,
                 add: false,
                 edit: false,
                 delete: false,
             };
 
-            let permission = userPermissionData?.find(item2 => item2.userId.toString() == userId.toString() && item2.moduleId.toString() == item._id.toString() && item.isActive == true);
+            let permission = userPermissionData?.find(item2 => item2.userId && item2.userId.toString() == userId.toString() && item2.moduleId && item2.moduleId.toString() == item._id.toString() && item.isActive == true);
             if (permission) {
-                newObj.view = permission.view;
-                newObj.add = permission.add;
-                newObj.edit = permission.edit;
-                newObj.delete = permission.delete;
+                newObj.view = permission.view || false;
+                newObj.add = permission.add || false;
+                newObj.edit = permission.edit || false;
+                newObj.delete = permission.delete || false;
             }
-            newUserPermissionData.push({ ...item, ...newObj });
+
+            let moduleItem = { ...item, ...newObj };
+
+            let itemIdStr = item._id.toString();
+            if (childModulesByParent[itemIdStr] && childModulesByParent[itemIdStr].length > 0) {
+                let children = childModulesByParent[itemIdStr].map((child: any) => {
+                    let childPermission = userPermissionData?.find(item2 => item2.userId && item2.userId.toString() == userId.toString() && item2.moduleId && item2.moduleId.toString() == child._id.toString() && child.isActive == true);
+                    return {
+                        ...child,
+                        parentTab: item,
+                        view: childPermission?.view || false,
+                        add: childPermission?.add || false,
+                        edit: childPermission?.edit || false,
+                        delete: childPermission?.delete || false,
+                    };
+                });
+                moduleItem.children = children.sort((a: any, b: any) => a.number - b.number);
+            }
+
+            newUserPermissionData.push(moduleItem);
         });
 
-        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("user permissions"), newUserPermissionData.sort((a, b) => a.number - b.number), {}));
+        newUserPermissionData.sort((a, b) => a.number - b.number);
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("user permissions"), newUserPermissionData, {}));
     } catch (error) {
         console.log(error);
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
