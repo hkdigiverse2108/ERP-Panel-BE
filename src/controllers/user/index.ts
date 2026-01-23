@@ -67,7 +67,7 @@ export const addUser = async (req, res) => {
             add: true,
             edit: true,
             delete: true,
-            isActive: true
+            isActive: true,
           };
 
           await updateData(permissionModel, { roleId: new ObjectId(value.role), moduleId: new ObjectId(module._id) }, permissionData, { upsert: true, new: true });
@@ -92,10 +92,6 @@ export const editUserById = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
     const isUserExist = await getFirstMatch(userModel, { _id: value?.userId, isDeleted: false }, {}, {});
     if (!isUserExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("User"), {}, {}));
-
-    if (value?.companyId) {
-      value.companyId = await checkCompany(user, value);
-    }
 
     if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     if (!(await checkIdExist(roleModel, value?.role, "Role", res))) return;

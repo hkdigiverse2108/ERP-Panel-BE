@@ -19,7 +19,7 @@ export const addLoyalty = async (req, res) => {
 
     value.companyId = await checkCompany(user, value);
 
-    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.message || responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Check if loyalty campaign name already exists
     const isExist = await getFirstMatch(loyaltyCampaignModel, { name: value?.name, companyId: value.companyId, isDeleted: false }, {}, {});

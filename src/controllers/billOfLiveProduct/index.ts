@@ -1,9 +1,9 @@
-import { HTTP_STATUS} from "../../common";
+import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { billOfLiveProductModel,  productModel, recipeModel } from "../../database/model";
+import { billOfLiveProductModel, productModel, recipeModel } from "../../database/model";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { checkCompany } from "../../helper/checkCompany";
-import { addBillOfLiveProductSchema, deleteBillOfLiveProductSchema, editBillOfLiveProductSchema, getBillOfLiveProductSchema} from "../../validation";
+import { addBillOfLiveProductSchema, deleteBillOfLiveProductSchema, editBillOfLiveProductSchema, getBillOfLiveProductSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -220,8 +220,8 @@ export const getAllBillOfLiveProduct = async (req, res) => {
           billOfLiveProduct_data: response,
           totalData,
           state,
-        },                                  
-        {}
+        },
+        {},
       ),
     );
   } catch (error) {
