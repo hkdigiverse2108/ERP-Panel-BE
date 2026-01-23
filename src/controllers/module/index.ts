@@ -17,10 +17,10 @@ export const add_module = async (req, res) => {
         if (body.number) {
             if (!body.parentId) {
                 let isNumberExist = await getFirstMatch(moduleModel, { number: body.number, isDeleted: false }, {}, {});
-                if (isNumberExist?.length > 0) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("tab number"), {}, {}));
+                if (isNumberExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("tab number"), {}, {}));
             } else {
                 let isNumberExist = await getFirstMatch(moduleModel, { number: body.number, parentId: new ObjectId(body.parentId), isDeleted: false }, {}, {});
-                if (isNumberExist?.length > 0) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("tab number"), {}, {}));
+                if (isNumberExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("tab number"), {}, {}));
             }
         }
 
@@ -49,7 +49,7 @@ export const edit_module_by_id = async (req, res) => {
                 if (isNumberExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("module number"), {}, {}));
             } else {
                 let isNumberExist = await getFirstMatch(moduleModel, { number: body.number, parentId: new ObjectId(body.parentId), isDeleted: false, _id: { $ne: new ObjectId(body.moduleId) } }, {}, {});
-                if (isNumberExist?.length > 0) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("tab number"), {}, {}));
+                if (isNumberExist) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.dataAlreadyExist("tab number"), {}, {}));
             }
         }
 
