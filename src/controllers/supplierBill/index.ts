@@ -1,7 +1,7 @@
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { contactModel, supplierBillModel, purchaseOrderModel, productModel, taxModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addSupplierBillSchema, deleteSupplierBillSchema, editSupplierBillSchema, getSupplierBillSchema } from "../../validation/supplierBill";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -18,17 +18,15 @@ export const addSupplierBill = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
     const { error, value } = addSupplierBillSchema.validate(req.body);
 
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+    value.companyId = await checkCompany(user, value);
 
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Validate supplier exists
     if (!(await checkIdExist(contactModel, value?.supplierId, "Supplier", res))) return;
@@ -44,7 +42,7 @@ export const addSupplierBill = async (req, res) => {
 
     // Generate document number if not provided
     if (!value.documentNo) {
-      value.documentNo = await generateSupplierBillNo(companyId);
+      value.documentNo = await generateSupplierBillNo(value.companyId);
     }
 
     // Get supplier name
@@ -75,14 +73,10 @@ export const addSupplierBill = async (req, res) => {
       }
     }
 
-    const supplierBillData = {
-      ...value,
-      companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(supplierBillModel, supplierBillData);
+    const response = await createOne(supplierBillModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -202,7 +196,7 @@ export const getAllSupplierBill = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, activeFilter, status, paymentStatus, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, activeFilter, companyFilter, status, paymentStatus, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -210,6 +204,10 @@ export const getAllSupplierBill = async (req, res) => {
     let criteria: any = { isDeleted: false };
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (search) {
@@ -303,7 +301,6 @@ export const getOneSupplierBill = async (req, res) => {
   }
 };
 
-// Supplier Bill Dropdown API
 export const getSupplierBillDropdown = async (req, res) => {
   reqInfo(req);
   try {

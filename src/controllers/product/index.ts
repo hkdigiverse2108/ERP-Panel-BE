@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
+import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel, productModel, stockModel, uomModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation/product";
@@ -9,12 +9,12 @@ export const addProduct = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    const userRole = user?.role?.name;
+    const userType = user?.userType;
     let { error, value } = addProductSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (userRole !== USER_ROLES.SUPER_ADMIN) {
+    if (userType !== USER_TYPES.SUPER_ADMIN) {
       value.companyId = user?.companyId?._id;
       if (!value?.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
     }
@@ -120,7 +120,8 @@ export const getAllProduct = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const userRole = user?.role?.name;
+    const userType = user?.userType;
+
     const companyId = user?.companyId?._id;
     const { page, limit, search, startDate, endDate, activeFilter } = req.query;
 
@@ -136,7 +137,7 @@ export const getAllProduct = async (req, res) => {
       }
     }
 
-    if (userRole !== USER_ROLES.SUPER_ADMIN && companyId) {
+    if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
       const stockCriteria: any = {
         isDeleted: false,
         companyId: companyId,
@@ -205,7 +206,7 @@ export const getAllProduct = async (req, res) => {
           isDeleted: false,
         };
 
-        if (userRole !== USER_ROLES.SUPER_ADMIN && companyId) {
+        if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
           stockCriteria.companyId = companyId;
         }
 
@@ -222,10 +223,10 @@ export const getAllProduct = async (req, res) => {
         const qty = stockAggregation.length > 0 ? stockAggregation[0].totalQty : 0;
 
         return {
-          ...product.toObject ? product.toObject() : product,
+          ...(product.toObject ? product.toObject() : product),
           qty,
         };
-      })
+      }),
     );
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -247,7 +248,7 @@ export const getProductDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const userRole = user?.role?.name;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const { productType, search, companyFilter } = req.query; // Optional filter by productType
 
@@ -271,7 +272,7 @@ export const getProductDropdown = async (req, res) => {
     );
 
     let stockCompanyId = null;
-    if (userRole === USER_ROLES.SUPER_ADMIN) {
+    if (userType === USER_TYPES.SUPER_ADMIN) {
       if (companyFilter) stockCompanyId = new ObjectId(companyFilter);
     } else if (companyId) {
       stockCompanyId = companyId;

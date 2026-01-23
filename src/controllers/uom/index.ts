@@ -1,25 +1,23 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
 import { uomModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addUOMSchema, deleteUOMSchema, editUOMSchema, getUOMSchema } from "../../validation";
 
 export const addUOM = async (req, res) => {
   reqInfo(req);
   try {
-    let { user } = req.headers,
-      companyId = null;
+    let { user } = req.headers;
     const { error, value } = addUOMSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (user?.role?.name !== USER_ROLES.SUPER_ADMIN) {
-      companyId = user?.companyId?._id;
-      if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
+    value.companyId = await checkCompany(user, value);
+
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     let existingUOM = await getFirstMatch(
       uomModel,
       {
-        companyId,
+        companyId: value.companyId,
         isDeleted: false,
         $or: value.code ? [{ name: value.name }, { code: value.code }] : [{ name: value.name }],
       },
@@ -36,7 +34,6 @@ export const addUOM = async (req, res) => {
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.companyId = companyId;
 
     const response = await createOne(uomModel, value);
 
@@ -53,7 +50,6 @@ export const editUOM = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    const companyId = user?.companyId?._id;
     const { error, value } = editUOMSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -62,10 +58,9 @@ export const editUOM = async (req, res) => {
 
     if (!existingUOM) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("UOM"), {}, {}));
 
-    // Check if another UOM with same name or code already exists (excluding current one)
     let duplicateCriteria: any = {
       _id: { $ne: value?.uomId },
-      companyId,
+      companyId: existingUOM.companyId,
       isDeleted: false,
     };
 
@@ -132,7 +127,7 @@ export const getAllUOM = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, activeFilter } = req.query;
+    let { page, limit, search, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -141,6 +136,10 @@ export const getAllUOM = async (req, res) => {
 
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -181,9 +180,9 @@ export const getUOMDropdown = async (req, res) => {
 
     let criteria: any = { isDeleted: false, isActive: true };
 
-    // if (companyId) {
-    //   criteria.companyId = companyId;
-    // }
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
 
     const response = await getDataWithSorting(
       uomModel,

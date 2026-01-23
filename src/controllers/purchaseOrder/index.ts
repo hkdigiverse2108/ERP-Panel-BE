@@ -1,7 +1,7 @@
 import { HTTP_STATUS, USER_ROLES } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { contactModel, purchaseOrderModel, productModel, taxModel, companyModel } from "../../database";
-import { checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPurchaseOrderSchema, deletePurchaseOrderSchema, editPurchaseOrderSchema, getPurchaseOrderSchema } from "../../validation/purchaseOrder";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -18,7 +18,6 @@ export const addPurchaseOrder = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const userRole = user?.role?.name;
 
     const { error, value } = addPurchaseOrderSchema.validate(req.body);
 
@@ -26,13 +25,9 @@ export const addPurchaseOrder = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (userRole !== USER_ROLES.SUPER_ADMIN) {
-      value.companyId = user?.companyId?._id;
-    }
+    value.companyId = await checkCompany(user, value);
 
-    if (!value.companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-    }
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Validate supplier exists
     if (!(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
@@ -58,6 +53,7 @@ export const addPurchaseOrder = async (req, res) => {
     if (!value.grossAmount) {
       value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
     }
+
     if (value.netAmount === undefined || value.netAmount === null) {
       value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
     }
@@ -165,14 +161,19 @@ export const getAllPurchaseOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter } = req.query;
+    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
+
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";

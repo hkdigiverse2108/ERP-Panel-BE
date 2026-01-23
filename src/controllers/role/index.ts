@@ -58,7 +58,6 @@ export const editRole = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    // const userRole = user?.role?.name;
     const userType = user?.userType;
 
     let { error, value } = editRoleSchema.validate(req.body);

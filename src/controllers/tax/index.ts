@@ -1,26 +1,24 @@
-import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
+import { apiResponse, HTTP_STATUS } from "../../common";
 import { taxModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addTaxSchema, deleteTaxSchema, editTaxSchema, getTaxSchema } from "../../validation";
 
 export const addTax = async (req, res) => {
   reqInfo(req);
   try {
-    let { user } = req.headers,
-      companyId = null;
+    let { user } = req.headers;
 
     const { error, value } = addTaxSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (user?.role?.name !== USER_ROLES.SUPER_ADMIN) {
-      companyId = user?.companyId?._id;
-      if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
+    value.companyId = await checkCompany(user, value);
+
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     let existingTax = await getFirstMatch(
       taxModel,
       {
-        companyId,
+        companyId: value.companyId,
         isDeleted: false,
         name: value.name,
       },
@@ -34,7 +32,6 @@ export const addTax = async (req, res) => {
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.companyId = companyId;
 
     const response = await createOne(taxModel, value);
 
@@ -51,7 +48,6 @@ export const editTax = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    const companyId = user?.companyId?._id;
     const { error, value } = editTaxSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -66,7 +62,7 @@ export const editTax = async (req, res) => {
         taxModel,
         {
           _id: { $ne: value?.taxId },
-          companyId,
+          companyId: existingTax.companyId,
           isDeleted: false,
           name: value.name,
         },
@@ -126,7 +122,7 @@ export const getAllTax = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, activeFilter, type } = req.query;
+    let { page, limit, search, activeFilter, typeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -137,10 +133,14 @@ export const getAllTax = async (req, res) => {
       criteria.companyId = companyId;
     }
 
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
-    if (type) {
-      criteria.type = type;
+    if (typeFilter) {
+      criteria.type = typeFilter;
     }
 
     if (search) {

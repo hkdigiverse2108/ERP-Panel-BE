@@ -1,7 +1,7 @@
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { discountModel } from "../../database/model/discount";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addDiscountSchema, deleteDiscountSchema, editDiscountSchema, getDiscountSchema } from "../../validation/discount";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -10,7 +10,6 @@ export const addDiscount = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
     const { error, value } = addDiscountSchema.validate(req.body);
 
@@ -18,27 +17,23 @@ export const addDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
+    value.companyId = await checkCompany(user, value);
+
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Validate date range
     if (new Date(value.validFrom) >= new Date(value.validTo)) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Valid From date must be before Valid To date", {}, {}));
     }
 
-    const isExist = await getFirstMatch(discountModel, { companyId, title: value?.title, isDeleted: false }, {}, {});
+    const isExist = await getFirstMatch(discountModel, { companyId: value.companyId, title: value?.title, isDeleted: false }, {}, {});
 
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Title"), {}, {}));
 
-    const discountData = {
-      ...value,
-      companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(discountModel, discountData);
+    const response = await createOne(discountModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -127,7 +122,7 @@ export const getAllDiscount = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter } = req.query;
+    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -135,6 +130,10 @@ export const getAllDiscount = async (req, res) => {
     let criteria: any = { isDeleted: false };
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";

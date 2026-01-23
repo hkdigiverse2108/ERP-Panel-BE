@@ -1,28 +1,27 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
 import { companyModel, materialModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addMaterialSchema, deleteMaterialSchema, editMaterialSchema, getMaterialSchema } from "../../validation";
 
 export const addMaterial = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
     const { error, value } = addMaterialSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
-    if (companyId) {
-      if (!(await checkIdExist(companyModel, companyId, "Company", res))) return;
-    }
-    let isExist = await getFirstMatch(materialModel, { companyId, materialNo: value?.materialNo, isDeleted: false }, {}, {});
+    value.companyId = await checkCompany(user, value);
+
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+
+    let isExist = await getFirstMatch(materialModel, { companyId: value.companyId, materialNo: value?.materialNo, isDeleted: false }, {}, {});
 
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Material No"), {}, {}));
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.companyId = companyId ?? null;
 
     const response = await createOne(materialModel, value);
 
@@ -44,13 +43,15 @@ export const editMaterial = async (req, res) => {
     const { error, value } = editMaterialSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
+
+    value.companyId = await checkCompany(user, value);
+
     const { materialId } = value;
 
     const isExist = await getFirstMatch(
       materialModel,
       {
         _id: materialId,
-        companyId,
         isDeleted: false,
       },
       {},
@@ -64,7 +65,7 @@ export const editMaterial = async (req, res) => {
         materialModel,
         {
           _id: { $ne: materialId },
-          companyId,
+          companyId: value.companyId,
           materialNo: value.materialNo,
           isDeleted: false,
         },
@@ -117,7 +118,7 @@ export const getAllMaterial = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page) || 1;
     limit = Number(limit) || 10;
@@ -126,6 +127,10 @@ export const getAllMaterial = async (req, res) => {
 
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
