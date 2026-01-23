@@ -7,7 +7,7 @@ export const objectId = () =>
       return helpers.error("any.invalid");
     }
     return value;
-  }, "ObjectId Validation");
+  }, "ObjectId Validation").allow("", null);
 
 export const baseApiSchema = {
   companyId: objectId().optional().allow("", null),
