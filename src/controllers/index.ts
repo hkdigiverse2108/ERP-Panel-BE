@@ -41,3 +41,5 @@ export * as creditNoteController from "./creditNote";
 export * as voucherController from "./voucher";
 export * as billOfLiveProductController from "./billOfLiveProduct";
 // export * as stockItemController from "./stockItem";
+export * as moduleController from "./module";
+export * as permissionController from "./permission";
