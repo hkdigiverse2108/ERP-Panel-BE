@@ -53,6 +53,7 @@ export const get_permission_by_userId = async (req, res) => {
         }
 
         match.isActive = true;
+        match.isDeleted = false;
 
         let moduleData = await moduleModel.aggregate([
             { $match: match },
