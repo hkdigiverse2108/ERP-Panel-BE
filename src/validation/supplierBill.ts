@@ -1,71 +1,119 @@
 import Joi from "joi";
-import { objectId } from "./common";
+import { baseApiSchema, objectId } from "./common";
+import { DISCOUNT_TYPE } from "../common";
+
+const discountSchema = Joi.object().keys({
+  value: Joi.number().min(0).default(0),
+  type: Joi.string()
+    .valid(...Object.values(DISCOUNT_TYPE))
+    .default(DISCOUNT_TYPE.PERCENTAGE),
+});
 
 const supplierBillItemSchema = Joi.object().keys({
   productId: objectId().required(),
-  productName: Joi.string().required(),
-  batchNo: Joi.string().optional().allow("", null),
-  qty: Joi.number().min(0.01).required(),
-  receivedQty: Joi.number().min(0).default(0).optional(),
-  uom: Joi.string().optional().allow("", null),
-  price: Joi.number().min(0).required(),
-  discountPercent: Joi.number().min(0).max(100).default(0).optional(),
-  discountAmount: Joi.number().min(0).default(0).optional(),
-  taxId: objectId().optional().allow("", null),
-  taxPercent: Joi.number().min(0).default(0).optional(),
-  taxAmount: Joi.number().min(0).default(0).optional(),
-  taxableAmount: Joi.number().min(0).required(),
-  totalAmount: Joi.number().min(0).required(),
+  qty: Joi.number().min(0).required(),
+  freeQty: Joi.number().min(0).default(0),
+  unitCost: Joi.number().min(0).required(),
+  mrp: Joi.number().min(0).optional(),
+  sellingPrice: Joi.number().min(0).optional(),
+  discount1: discountSchema.optional(),
+  discount2: discountSchema.optional(),
+});
+
+const supplierBillReturnItemSchema = Joi.object().keys({
+  productId: objectId().required(),
+  batchNo: Joi.string().optional(),
+  qty: Joi.number().min(0).required(),
+  unit: Joi.string().optional(),
+  unitCost: Joi.number().min(0).required(),
+  discount1: discountSchema.optional(),
+  discount2: discountSchema.optional(),
+});
+
+const additionalChargeSchema = Joi.object().keys({
+  chargeId: objectId().required(),
+  value: Joi.number().min(0).required(),
+  taxRate: Joi.number().min(0).optional(),
 });
 
 export const addSupplierBillSchema = Joi.object().keys({
-  documentNo: Joi.string().optional(), // Auto-generated if not provided
-  date: Joi.date().required(),
-  dueDate: Joi.date().optional().allow("", null),
   supplierId: objectId().required(),
-  supplierName: Joi.string().optional(),
-  purchaseOrderId: objectId().optional().allow("", null),
-  materialInwardId: objectId().optional().allow("", null),
-  items: Joi.array().items(supplierBillItemSchema).min(1).required(),
-  grossAmount: Joi.number().min(0).default(0).optional(),
-  discountAmount: Joi.number().min(0).default(0).optional(),
-  taxAmount: Joi.number().min(0).default(0).optional(),
-  roundOff: Joi.number().default(0).optional(),
-  netAmount: Joi.number().min(0).default(0).optional(),
-  paidAmount: Joi.number().min(0).default(0).optional(),
-  balanceAmount: Joi.number().min(0).default(0).optional(),
-  paymentStatus: Joi.string().valid("paid", "unpaid", "partial").default("unpaid").optional(),
-  notes: Joi.string().optional().allow("", null),
-  status: Joi.string().valid("active", "draft", "cancelled").default("active").optional(),
+
+  supplierBillNo: Joi.string().optional(),
+  referenceBillNo: Joi.string().optional(),
+  supplierBillDate: Joi.date().required(),
+
+  purchaseOrderId: objectId().optional(),
+
+  paymentTerm: Joi.string().optional(),
+  dueDate: Joi.date().optional(),
+
+  reverseCharge: Joi.boolean().default(false),
+  shippingDate: Joi.date().optional(),
+
+  taxType: Joi.string().required(),
+  invoiceAmount: Joi.string().optional(),
+
+  productDetails: Joi.array().items(supplierBillItemSchema).optional(),
+  returnProductDetails: Joi.array().items(supplierBillReturnItemSchema).optional(),
+  additionalCharges: Joi.array().items(additionalChargeSchema).optional(),
+  termsAndConditionId: objectId().optional(),
+  notes: Joi.string().allow("").optional(),
+  summary: Joi.object()
+    .keys({
+      flatDiscount: discountSchema.optional(),
+      roundOff: Joi.number().optional(),
+    })
+    .optional(),
+  paidAmount: Joi.number().min(0).default(0),
+
+  ...baseApiSchema,
 });
 
 export const editSupplierBillSchema = Joi.object().keys({
   supplierBillId: objectId().required(),
-  documentNo: Joi.string().optional(),
-  date: Joi.date().optional(),
-  dueDate: Joi.date().optional().allow("", null),
-  supplierId: objectId().optional(),
-  supplierName: Joi.string().optional(),
-  purchaseOrderId: objectId().optional().allow("", null),
-  materialInwardId: objectId().optional().allow("", null),
-  items: Joi.array().items(supplierBillItemSchema).optional(),
-  grossAmount: Joi.number().min(0).optional(),
-  discountAmount: Joi.number().min(0).optional(),
-  taxAmount: Joi.number().min(0).optional(),
-  roundOff: Joi.number().optional(),
-  netAmount: Joi.number().min(0).optional(),
-  paidAmount: Joi.number().min(0).optional(),
-  balanceAmount: Joi.number().min(0).optional(),
-  paymentStatus: Joi.string().valid("paid", "unpaid", "partial").optional(),
-  notes: Joi.string().optional().allow("", null),
-  status: Joi.string().valid("active", "draft", "cancelled").optional(),
-});
 
-export const deleteSupplierBillSchema = Joi.object().keys({
-  id: objectId().required(),
+  supplierId: objectId().optional(),
+  supplierBillNo: Joi.string().optional(),
+  referenceBillNo: Joi.string().optional(),
+  supplierBillDate: Joi.date().optional(),
+
+  purchaseOrderId: objectId().optional(),
+
+  paymentTerm: Joi.string().optional(),
+  dueDate: Joi.date().optional(),
+
+  reverseCharge: Joi.boolean().optional(),
+  shippingDate: Joi.date().optional(),
+
+  taxType: Joi.string().optional(),
+  invoiceAmount: Joi.string().optional(),
+
+  productDetails: Joi.array().items(supplierBillItemSchema).optional(),
+
+  returnProductDetails: Joi.array().items(supplierBillReturnItemSchema).optional(),
+
+  additionalCharges: Joi.array().items(additionalChargeSchema).optional(),
+
+  termsAndConditionId: objectId().optional(),
+  notes: Joi.string().allow("").optional(),
+
+  summary: Joi.object()
+    .keys({
+      flatDiscount: discountSchema.optional(),
+      roundOff: Joi.number().optional(),
+    })
+    .optional(),
+
+  paidAmount: Joi.number().min(0).optional(),
+
+  ...baseApiSchema,
 });
 
 export const getSupplierBillSchema = Joi.object().keys({
   id: objectId().required(),
 });
 
+export const deleteSupplierBillSchema = Joi.object().keys({
+  id: objectId().required(),
+});

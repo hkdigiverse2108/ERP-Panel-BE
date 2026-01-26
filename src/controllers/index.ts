@@ -43,3 +43,4 @@ export * as billOfLiveProductController from "./billOfLiveProduct";
 // export * as stockItemController from "./stockItem";
 export * as moduleController from "./module";
 export * as permissionController from "./permission";
+export * as termsConditionController from "./termsCondition";

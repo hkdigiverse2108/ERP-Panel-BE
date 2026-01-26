@@ -53,6 +53,7 @@ export * from "./stockItem";
 export * from "./uom";
 export * from "./billOfLiveProduct";
 export * from "./location";
-export * from "./module";   
+export * from "./module";
 export * from "./permission";
 export * from "./role";
+export * from "./termsCondition";

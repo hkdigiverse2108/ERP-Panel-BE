@@ -45,6 +45,7 @@ import { productRequestRouter } from "./productRequest";
 import { billOfLiveProductRouter } from "./billOfLiveProduct";
 import { moduleRoute } from "./module";
 import { permissionRoute } from "./permission";
+import { termsConditionRouter } from "./termsCondition";
 
 const router = Router();
 
@@ -73,6 +74,7 @@ router.use("/payment-term", paymentTermRouter);
 router.use("/location", locationRouter);
 router.use("/uom", uomRouter);
 router.use("/tax", taxRouter);
+router.use("/terms-condition", termsConditionRouter);
 router.use("/purchase-order", purchaseOrderRouter);
 router.use("/supplier-bill", supplierBillRouter);
 router.use("/debit-note", debitNoteRouter);
