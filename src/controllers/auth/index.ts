@@ -1,8 +1,9 @@
 import { HTTP_STATUS, LOGIN_SOURCES, USER_TYPES } from "../../common";
 import { apiResponse, generateHash, generateToken } from "../../common/utils";
+import { moduleModel, permissionModel } from "../../database";
 import { roleModel } from "../../database/model/role";
 import { userModel } from "../../database/model/user";
-import { checkIdExist, createOne, getFirstMatch, reqInfo, responseMessage } from "../../helper";
+import { checkIdExist, createOne, findAllAndPopulateWithSorting, getData, getFirstMatch, reqInfo, responseMessage } from "../../helper";
 import { loginSchema, registerSchema } from "../../validation/auth";
 import bcryptjs from "bcryptjs";
 
@@ -100,7 +101,85 @@ export const login = async (req, res) => {
       token,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.loginSuccess, response, {}));
+    let criteria: any = {
+      isActive: true,
+      isDeleted: false,
+    };
+
+    let populateModel = [
+      { path: "parentId", model: "module" }
+    ];
+
+    let moduleData = await findAllAndPopulateWithSorting(
+      moduleModel,
+      criteria,
+      {},
+      { sort: { number: 1 } },
+      populateModel
+    );
+
+    let userPermissionData = await getData(permissionModel, { userId: response?._id }, {}, {});
+
+    let parentModules: any[] = [];
+    let childModulesByParent: any = {};
+
+    moduleData?.forEach(item => {
+      // Check if parentId exists (either as ObjectId or populated object)
+      if (item.parentId) {
+        // Get parentId string - handle both populated object and ObjectId
+        let parentIdStr = item.parentId._id ? item.parentId._id.toString() : item.parentId.toString();
+        if (!childModulesByParent[parentIdStr]) {
+          childModulesByParent[parentIdStr] = [];
+        }
+        childModulesByParent[parentIdStr].push(item);
+      } else {
+        parentModules.push(item);
+      }
+    });
+
+    let newUserPermissionData: any = [];
+
+    parentModules?.forEach(item => {
+      let newObj: any = {
+        parentTab: {},
+        view: false,
+        add: false,
+        edit: false,
+        delete: false,
+      };
+
+      let permission = userPermissionData?.find(item2 => item2.userId && item2.userId.toString() == response?._id.toString() && item2.moduleId && item2.moduleId.toString() == item._id.toString() && item.isActive == true);
+      if (permission) {
+        newObj.view = permission.view || false;
+        newObj.add = permission.add || false;
+        newObj.edit = permission.edit || false;
+        newObj.delete = permission.delete || false;
+      }
+
+      let moduleItem = { ...item, ...newObj };
+
+      let itemIdStr = item._id.toString();
+      if (childModulesByParent[itemIdStr] && childModulesByParent[itemIdStr].length > 0) {
+        let children = childModulesByParent[itemIdStr].map((child: any) => {
+          let childPermission = userPermissionData?.find(item2 => item2.userId && item2.userId.toString() == response?._id.toString() && item2.moduleId && item2.moduleId.toString() == child._id.toString() && child.isActive == true);
+          return {
+            ...child,
+            parentTab: item,
+            view: childPermission?.view || false,
+            add: childPermission?.add || false,
+            edit: childPermission?.edit || false,
+            delete: childPermission?.delete || false,
+          };
+        });
+        moduleItem.children = children.sort((a: any, b: any) => a.number - b.number);
+      }
+
+      newUserPermissionData.push(moduleItem);
+    });
+
+    newUserPermissionData.sort((a, b) => a.number - b.number);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.loginSuccess, { ...response, permissions: newUserPermissionData }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));

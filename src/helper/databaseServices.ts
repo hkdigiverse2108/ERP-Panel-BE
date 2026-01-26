@@ -30,7 +30,7 @@ export const findAllAndPopulate = async (modelName, criteria, projection, option
   return await modelName.find(criteria, projection, options).populate(populateModel);
 };
 
-export const findALlAndPopulateWithSorting = async (modelName, criteria, projection, options, populateModel) => {
+export const findAllAndPopulateWithSorting = async (modelName, criteria, projection, options, populateModel) => {
   options.lean = true;
   return await modelName.find(criteria, projection, options).collation({ locale: "en" }).populate(populateModel);
 };
