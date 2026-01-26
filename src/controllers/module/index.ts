@@ -193,12 +193,20 @@ export const get_users_permissions_by_moduleId = async (req, res) => {
         let { error, value } = getUsersPermissionsByModuleIdSchema.validate(req.query);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-        let { moduleId } = value;
+        let { moduleId, search } = value;
 
         const module = await getFirstMatch(moduleModel, { _id: new ObjectId(moduleId), isDeleted: false }, {}, {})
         if (!module) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound('module'), {}, {}))
 
-        const users = await getData(userModel, { isDeleted: false, isActive: true }, { password: 0 }, {})
+        let match: any = { isDeleted: false, isActive: true };
+        if (search) {
+            match.$or = [
+                { fullName: { $regex: search, $options: 'si' } },
+                { email: { $regex: search, $options: 'si' } },
+            ];
+        }
+        
+        const users = await getData(userModel, match, { password: 0 }, {})
         const userIds = users.map((u: any) => u._id)
 
         const perms = await getData(
