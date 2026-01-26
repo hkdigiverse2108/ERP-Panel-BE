@@ -11,7 +11,7 @@ export const edit_permission_by_id = async (req, res) => {
         let { error, value } = editPermissionSchema.validate(req.body);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-        let { modules, roleId } = value;
+        let { modules, userId } = value;
         let updatedRoleDetails: any = [];
         for (let roleDetails of modules) {
             let updateDataObj = {
@@ -23,7 +23,7 @@ export const edit_permission_by_id = async (req, res) => {
                 isActive: roleDetails.isActive
             }
 
-            let updateRoleDetails = await updateData(permissionModel, { roleId: new ObjectId(roleId), moduleId: new ObjectId(roleDetails._id) }, updateDataObj, { upsert: true, new: true });
+            let updateRoleDetails = await updateData(permissionModel, { userId: new ObjectId(userId), moduleId: new ObjectId(roleDetails._id) }, updateDataObj, { upsert: true, new: true });
             updatedRoleDetails.push(updateRoleDetails);
         }
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("role details"), updatedRoleDetails, {}))

@@ -28,7 +28,7 @@ const modulePermissionSchema = Joi.object().keys({
 
 export const editPermissionSchema = Joi.object().keys({
   modules: Joi.array().items(modulePermissionSchema).min(1).required(),
-  roleId: objectId().required(),
+  userId: objectId().required(),
 });
 
 export const getPermissionSchema = Joi.object().keys({
