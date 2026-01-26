@@ -7,8 +7,6 @@ import { ORDER_STATUS, TAX_TYPE } from "../../common";
 export const purchaseItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
-    // productName: { type: String, required: true },
-    // batchNo: { type: String },
     qty: { type: Number, required: true },
     uom: { type: String },
     unitCost: { type: Number },
@@ -16,16 +14,6 @@ export const purchaseItemSchema = new Schema(
     landingCost: { type: String },
     margin: { type: String },
     total: { type: Number },
-
-    // receivedQty: { type: Number, default: 0 }, // For PO tracking
-    // price: { type: Number, required: true }, // Unit Cost
-    // discountPercent: { type: Number, default: 0 },
-    // discountAmount: { type: Number, default: 0 },
-    // taxId: { type: Schema.Types.ObjectId, ref: "tax" },
-    // taxPercent: { type: Number, default: 0 },
-    // taxAmount: { type: Number, default: 0 },
-    // taxableAmount: { type: Number, required: true },
-    // totalAmount: { type: Number, required: true },
   },
   { _id: false },
 );

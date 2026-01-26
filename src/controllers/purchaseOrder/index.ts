@@ -1,7 +1,7 @@
-import { HTTP_STATUS, USER_ROLES } from "../../common";
+import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { contactModel, purchaseOrderModel, productModel, taxModel, companyModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { contactModel, purchaseOrderModel, productModel,  companyModel } from "../../database";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPurchaseOrderSchema, deletePurchaseOrderSchema, editPurchaseOrderSchema, getPurchaseOrderSchema } from "../../validation/purchaseOrder";
 
 const ObjectId = require("mongoose").Types.ObjectId;
