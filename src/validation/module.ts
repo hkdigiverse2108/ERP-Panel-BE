@@ -52,4 +52,5 @@ export const bulkEditModuleSchema = Joi.object().keys({
 
 export const getUsersPermissionsByModuleIdSchema = Joi.object().keys({
   moduleId: objectId().required(),
+  search: Joi.string().optional().allow("", null),
 });
