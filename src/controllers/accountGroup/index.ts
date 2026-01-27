@@ -63,7 +63,6 @@ export const addAccountGroup = async (req, res) => {
           updatedBy: user?._id || null,
         };
         const response = await createOne(accountGroupModel, payload);
-        console.log("res", response);
         primaryParentId = response._id;
       }
       value.parentGroupId = primaryParentId;

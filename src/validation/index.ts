@@ -42,3 +42,4 @@ export * from "./location";
 export * from "./module";
 export * from "./permission";
 export * from "./termsCondition";
+export * from "./additionalCharge";

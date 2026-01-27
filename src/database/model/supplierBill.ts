@@ -1,10 +1,10 @@
 import mongoose, { Schema } from "mongoose";
-import { DISCOUNT_TYPE, SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS } from "../../common";
+import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS, VALUE_TYPE } from "../../common";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
 
 const discountSchema = {
   value: { type: Number, default: 0, min: 0 },
-  type: { type: String, enum: DISCOUNT_TYPE, default: DISCOUNT_TYPE.PERCENTAGE },
+  type: { type: String, enum: VALUE_TYPE, default: VALUE_TYPE.PERCENTAGE },
 };
 
 export const supplierBillItemSchema = new Schema(

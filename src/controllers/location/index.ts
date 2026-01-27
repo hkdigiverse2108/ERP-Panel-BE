@@ -94,7 +94,7 @@ export const addLocation = async (req, res) => {
 export const editLocationById = async (req, res) => {
   reqInfo(req);
   try {
-    const user = req.headers;
+    const {user} = req.headers;
 
     const { error, value } = editLocationSchema.validate(req.body);
 
@@ -186,7 +186,7 @@ export const editLocationById = async (req, res) => {
 export const deleteLocationById = async (req, res) => {
   reqInfo(req);
   try {
-    const user = req.headers;
+    const {user} = req.headers;
 
     const { error, value } = deleteLocationSchema.validate(req.params);
 

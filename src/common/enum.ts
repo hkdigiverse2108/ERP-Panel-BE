@@ -91,7 +91,7 @@ export const COUPON_STATUS = {
   INACTIVE: "inactive",
 } as const;
 
-export const DISCOUNT_TYPE = {
+export const VALUE_TYPE = {
   PERCENTAGE: "percentage",
   FLAT: "flat",
 } as const;
@@ -173,4 +173,9 @@ export const ORDER_STATUS = {
   EXCEED: "exceed",
   COMPLETED: "completed",
   CANCELLED: "cancelled",
+} as const;
+
+export const ADDITIONAL_CHARGE_TYPE = {
+  PURCHASE: "Purchase",
+  SALE: "Sale",
 } as const;
