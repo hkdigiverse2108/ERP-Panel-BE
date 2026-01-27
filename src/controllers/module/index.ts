@@ -86,7 +86,7 @@ export const get_all_module = async (req, res) => {
         let { error, value } = getModuleSchema.validate(req.query);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-        let { page, limit, search, activeFilter } = value;
+        let { page, limit, search, activeFilter, parentFilter} = value;
         let criteria: any = { isDeleted: false };
 
         if (search) {
@@ -98,6 +98,10 @@ export const get_all_module = async (req, res) => {
 
         if (activeFilter !== undefined) {
             criteria.isActive = activeFilter;
+        }
+
+        if (parentFilter) {
+            criteria.parentId = parentFilter;
         }
 
         const options: any = {
