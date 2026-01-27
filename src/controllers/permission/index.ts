@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
-import { moduleModel, permissionModel } from "../../database";
-import { getData, reqInfo, responseMessage, updateData } from "../../helper";
+import { apiResponse, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
+import { moduleModel, permissionModel, userModel } from "../../database";
+import { getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { editPermissionSchema, getPermissionSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -43,13 +43,18 @@ export const get_permission_by_userId = async (req, res) => {
     let { userId, search } = value,
       match: any = {};
 
+    let userData = await getFirstMatch(userModel, { _id: new ObjectId(userId), isDeleted: false }, {}, {});
+    if (!userData) return res.status(HTTP_STATUS.METHOD_NOT_ALLOWED).json(new apiResponse(HTTP_STATUS.METHOD_NOT_ALLOWED, responseMessage.getDataNotFound("user"), {}, {}));
+
+    userId = user.userType === USER_TYPES.ADMIN ? user?._id : userId;
+
     let userPermissionData = await getData(permissionModel, { userId: new ObjectId(userId), isDeleted: false, isActive: true }, {}, {});
     if (!userPermissionData) return res.status(HTTP_STATUS.METHOD_NOT_ALLOWED).json(new apiResponse(HTTP_STATUS.METHOD_NOT_ALLOWED, responseMessage.getDataNotFound("user permissions"), {}, {}));
 
     if (search) {
       match.$or = [{ tabName: { $regex: search, $options: "si" } }, { displayName: { $regex: search, $options: "si" } }, { tabUrl: { $regex: search, $options: "si" } }];
     }
-    if (user.userType != USER_TYPES.SUPER_ADMIN) {
+    if (user.userType === USER_TYPES.ADMIN) {
       let moduleIds = [];
       for (let e of userPermissionData) {
         if (e.view === true || e.add === true || e.edit === true || e.delete === true) {
@@ -57,7 +62,6 @@ export const get_permission_by_userId = async (req, res) => {
         }
       }
       match._id = { $in: moduleIds };
-      match.parentId = null;
     }
 
     match.isActive = true;
@@ -131,7 +135,6 @@ export const get_permission_by_userId_child = async (req, res) => {
     if (user.userType != USER_TYPES.SUPER_ADMIN) {
       let moduleIds = [];
       for (let e of userPermissionData) {
-        console.log(e);
         if (e.view === true || e.add === true || e.edit === true || e.delete === true) {
           moduleIds.push(new ObjectId(e.moduleId));
         }
