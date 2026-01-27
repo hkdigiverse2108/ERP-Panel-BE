@@ -46,6 +46,7 @@ import { billOfLiveProductRouter } from "./billOfLiveProduct";
 import { moduleRoute } from "./module";
 import { permissionRoute } from "./permission";
 import { termsConditionRouter } from "./termsCondition";
+import { additionalChargeRouter } from "./additionalCharge";
 
 const router = Router();
 
@@ -107,6 +108,7 @@ router.use("/branch", branchRouter);
 router.use("/announcement", announcementRouter);
 router.use("/brand", brandRouter);
 router.use("/category", categoryRouter);
+router.use("/additional-charge", additionalChargeRouter);
 // router.use("/employee", employeeRouter);
 
 export { router };

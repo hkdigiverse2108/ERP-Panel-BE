@@ -176,7 +176,7 @@ export const getAllUser = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, startDate, endDate, activeFilter, branchFilter, companyFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, branchFilter, companyFilter, typeFilter } = req.query;
 
     // let criteria: any = { isDeleted: false, role: USER_ROLES.USER };
     let criteria: any = { isDeleted: false };
@@ -194,6 +194,10 @@ export const getAllUser = async (req, res) => {
     }
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (typeFilter) {
+      criteria.userType = typeFilter;
     }
 
     if (search) {

@@ -129,7 +129,7 @@ export const editBillOfLiveProductById = async (req, res) => {
 export const deleteBillOfLiveProductById = async (req, res) => {
   reqInfo(req);
   try {
-    const user = req.headers;
+    const {user} = req.headers;
     const { error, value } = deleteBillOfLiveProductSchema.validate(req.params);
 
     if (error) {

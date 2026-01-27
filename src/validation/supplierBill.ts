@@ -1,12 +1,12 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
-import { DISCOUNT_TYPE } from "../common";
+import { VALUE_TYPE } from "../common";
 
 const discountSchema = Joi.object().keys({
   value: Joi.number().min(0).default(0),
   type: Joi.string()
-    .valid(...Object.values(DISCOUNT_TYPE))
-    .default(DISCOUNT_TYPE.PERCENTAGE),
+    .valid(...Object.values(VALUE_TYPE))
+    .default(VALUE_TYPE.PERCENTAGE),
 });
 
 const supplierBillItemSchema = Joi.object().keys({

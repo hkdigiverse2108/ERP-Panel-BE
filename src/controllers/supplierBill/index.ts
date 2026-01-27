@@ -1,6 +1,6 @@
-import { HTTP_STATUS, DISCOUNT_TYPE } from "../../common";
+import { HTTP_STATUS, VALUE_TYPE } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { contactModel, supplierBillModel, purchaseOrderModel, productModel, taxModel, termsConditionModel } from "../../database";
+import { contactModel, supplierBillModel, purchaseOrderModel, productModel, taxModel, termsConditionModel, additionalChargeModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addSupplierBillSchema, deleteSupplierBillSchema, editSupplierBillSchema, getSupplierBillSchema } from "../../validation/supplierBill";
 
@@ -17,7 +17,7 @@ const generateSupplierBillNo = async (companyId): Promise<string> => {
 // Calculate discount amount
 const calculateDiscount = (amount: number, discount: any): number => {
   if (!discount || !discount.value) return 0;
-  if (discount.type === DISCOUNT_TYPE.PERCENTAGE) {
+  if (discount.type === VALUE_TYPE.PERCENTAGE) {
     return (amount * discount.value) / 100;
   }
   return discount.value; // Fixed amount
@@ -207,11 +207,11 @@ export const addSupplierBill = async (req, res) => {
       }
     }
 
-    // if (value.additionalCharges && value.additionalCharges.length > 0) {
-    //   for (const item of value.additionalCharges) {
-    //     if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
-    //   }
-    // }
+    if (value.additionalCharges && value.additionalCharges.length > 0) {
+      for (const item of value.additionalCharges) {
+        if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
+      }
+    }
 
     // Generate bill number if not provided
     if (!value.supplierBillNo) {
@@ -426,7 +426,7 @@ export const getAllSupplierBill = async (req, res) => {
         { path: "purchaseOrderId", select: "orderNo" },
         { path: "productDetails.productId", select: "name itemCode purchasePrice" },
         { path: "returnProductDetails.productId", select: "name itemCode" },
-        // { path: "additionalCharges.chargeId", select: "name" },
+        { path: "additionalCharges.chargeId", select: "name type" },
         { path: "termsAndConditionId", select: "termsCondition" },
         { path: "companyId", select: "name" },
       ],
@@ -471,7 +471,7 @@ export const getOneSupplierBill = async (req, res) => {
           { path: "purchaseOrderId", select: "orderNo" },
           { path: "productDetails.productId", select: "name itemCode purchasePrice hsn gst" },
           { path: "returnProductDetails.productId", select: "name itemCode purchasePrice" },
-          // { path: "additionalCharges.chargeId", select: "name type" },
+          { path: "additionalCharges.chargeId", select: " name type" },
           { path: "termsAndConditionId", select: "termsCondition" },
           { path: "companyId", select: "name gstNo" },
         ],

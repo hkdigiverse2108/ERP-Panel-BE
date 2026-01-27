@@ -3,10 +3,10 @@ import { apiResponse, HTTP_STATUS } from "../../common";
 import { moduleModel, permissionModel, userModel } from "../../database";
 import { addModuleSchema, editModuleSchema, deleteModuleSchema, getModuleSchema, getModuleByIdSchema, bulkEditModuleSchema, getUsersPermissionsByModuleIdSchema } from "../../validation";
 
-const ObjectId = require('mongoose').Types.ObjectId
+const ObjectId = require("mongoose").Types.ObjectId;
 
 export const add_module = async (req, res) => {
-    reqInfo(req)
+    reqInfo(req);
     try {
         let { error, value: body } = addModuleSchema.validate(req.body);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -29,13 +29,13 @@ export const add_module = async (req, res) => {
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("module"), response, {}));
     } catch (error) {
-        console.log(error);
-        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error))
+        console.error(error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
     }
-}
+};
 
 export const edit_module_by_id = async (req, res) => {
-    reqInfo(req)
+    reqInfo(req);
     try {
         let { error, value: body } = editModuleSchema.validate(req.body);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -58,30 +58,30 @@ export const edit_module_by_id = async (req, res) => {
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.updateDataSuccess("module"), response, {}));
     } catch (error) {
-        console.log(error);
-        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error))
+        console.error(error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
     }
-}
+};
 
 export const delete_module_by_id = async (req, res) => {
-    reqInfo(req)
+    reqInfo(req);
     try {
         let { error, value } = deleteModuleSchema.validate({ id: req.params.id });
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-        const response = await updateData(moduleModel, { _id: new ObjectId(value.id), isDeleted: false }, { isDeleted: true }, {})
-        if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.getDataNotFound("module"), {}, {}))
-        await updateMany(permissionModel, { moduleId: new ObjectId(value.id), isDeleted: false }, { isDeleted: true }, {})
+        const response = await updateData(moduleModel, { _id: new ObjectId(value.id), isDeleted: false }, { isDeleted: true }, {});
+        if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.getDataNotFound("module"), {}, {}));
+        await updateMany(permissionModel, { moduleId: new ObjectId(value.id), isDeleted: false }, { isDeleted: true }, {});
 
-        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("module"), response, {}))
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("module"), response, {}));
     } catch (error) {
-        console.log(error);
-        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error))
+        console.error(error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
     }
-}
+};
 
 export const get_all_module = async (req, res) => {
-    reqInfo(req)
+    reqInfo(req);
     try {
         let { error, value } = getModuleSchema.validate(req.query);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -139,26 +139,26 @@ export const get_all_module = async (req, res) => {
         console.log(error);
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error))
     }
-}
+};
 
 export const get_by_id_module = async (req, res) => {
-    reqInfo(req)
+    reqInfo(req);
     try {
         let { error, value } = getModuleByIdSchema.validate({ id: req.params.id });
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-        const response = await getFirstMatch(moduleModel, { _id: new ObjectId(value.id), isDeleted: false }, {}, {})
-        if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("module"), {}, {}))
+        const response = await getFirstMatch(moduleModel, { _id: new ObjectId(value.id), isDeleted: false }, {}, {});
+        if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("module"), {}, {}));
 
-        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("module"), response, {}))
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("module"), response, {}));
     } catch (error) {
-        console.log(error);
-        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error))
+        console.error(error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
     }
-}
+};
 
 export const bulk_edit_permissions_by_module = async (req, res) => {
-    reqInfo(req)
+    reqInfo(req);
     try {
         let { error, value } = bulkEditModuleSchema.validate(req.body);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -176,31 +176,26 @@ export const bulk_edit_permissions_by_module = async (req, res) => {
                 delete: user.permissions?.delete || false,
             };
 
-            const updated = await updateData(
-                permissionModel,
-                { userId: new ObjectId(user._id), moduleId: new ObjectId(moduleId) },
-                setData,
-                { upsert: true }
-            );
+            const updated = await updateData(permissionModel, { userId: new ObjectId(user._id), moduleId: new ObjectId(moduleId) }, setData, { upsert: true });
             updatedPermissions.push(updated);
         }
-        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("bulk user permissions"), updatedPermissions, {}))
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("bulk user permissions"), updatedPermissions, {}));
     } catch (error) {
-        console.log(error);
-        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error))
+        console.error(error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
     }
-}
+};
 
 export const get_users_permissions_by_moduleId = async (req, res) => {
-    reqInfo(req)
+    reqInfo(req);
     try {
         let { error, value } = getUsersPermissionsByModuleIdSchema.validate(req.query);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
         let { moduleId, search } = value;
 
-        const module = await getFirstMatch(moduleModel, { _id: new ObjectId(moduleId), isDeleted: false }, {}, {})
-        if (!module) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound('module'), {}, {}))
+        const module = await getFirstMatch(moduleModel, { _id: new ObjectId(moduleId), isDeleted: false }, {}, {});
+        if (!module) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("module"), {}, {}));
 
         let match: any = { isDeleted: false, isActive: true };
         if (search) {
@@ -251,3 +246,4 @@ export const get_users_permissions_by_moduleId = async (req, res) => {
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error))
     }
 }
+
