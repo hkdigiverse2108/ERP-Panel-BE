@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel, productModel, stockModel, uomModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation/product";
+import { addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
