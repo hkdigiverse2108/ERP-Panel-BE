@@ -62,7 +62,7 @@ export const addUser = async (req, res) => {
         for (let module of allModules) {
           let permissionData = {
             moduleId: new ObjectId(module._id),
-            roleId: new ObjectId(value.role),
+            userId: new ObjectId(response?._id),
             view: true,
             add: true,
             edit: true,
@@ -70,7 +70,7 @@ export const addUser = async (req, res) => {
             isActive: true,
           };
 
-          await updateData(permissionModel, { roleId: new ObjectId(value.role), moduleId: new ObjectId(module._id) }, permissionData, { upsert: true, new: true });
+          await updateData(permissionModel, { userId: new ObjectId(response?._id), moduleId: new ObjectId(module._id) }, permissionData, { upsert: true, new: true });
           await updateData(moduleModel, { _id: new ObjectId(module._id) }, { default: true }, {});
         }
       }

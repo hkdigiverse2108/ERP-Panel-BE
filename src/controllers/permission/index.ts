@@ -52,12 +52,12 @@ export const get_permission_by_userId = async (req, res) => {
     if (user.userType != USER_TYPES.SUPER_ADMIN) {
       let moduleIds = [];
       for (let e of userPermissionData) {
-        console.log(e);
         if (e.view === true || e.add === true || e.edit === true || e.delete === true) {
           moduleIds.push(new ObjectId(e.moduleId));
         }
       }
       match._id = { $in: moduleIds };
+      match.parentId = null;
     }
 
     match.isActive = true;

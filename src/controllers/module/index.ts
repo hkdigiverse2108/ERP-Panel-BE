@@ -86,7 +86,7 @@ export const get_all_module = async (req, res) => {
         let { error, value } = getModuleSchema.validate(req.query);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-        let { page, limit, search, activeFilter, parentFilter} = value;
+        let { page, limit, search, activeFilter, parentFilter } = value;
         let criteria: any = { isDeleted: false };
 
         if (search) {
@@ -209,7 +209,7 @@ export const get_users_permissions_by_moduleId = async (req, res) => {
                 { email: { $regex: search, $options: 'si' } },
             ];
         }
-        
+
         const users = await getData(userModel, match, { password: 0 }, {})
         const userIds = users.map((u: any) => u._id)
 
