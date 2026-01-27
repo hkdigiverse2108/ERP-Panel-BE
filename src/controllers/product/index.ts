@@ -283,7 +283,7 @@ export const getProductDropdown = async (req, res) => {
     }
 
     const productIds = response.map((item) => item._id);
-    const stockResponse = await getDataWithSorting(stockModel, { isDeleted: false, isActive: true, companyId: stockCompanyId, productId: { $in: productIds } }, { productId: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1 }, { sort: { updatedAt: -1 } });
+    const stockResponse = await getDataWithSorting(stockModel, { isDeleted: false, isActive: true, companyId: stockCompanyId, productId: { $in: productIds } }, { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1 }, { sort: { updatedAt: -1 } });
 
     const stockByProductId = new Map<string, any>();
     stockResponse.forEach((stock) => {
@@ -297,6 +297,7 @@ export const getProductDropdown = async (req, res) => {
         _id: product._id,
         name: product.name,
         productType: product.productType,
+        qty: stock?.qty ?? 0,
         purchasePrice: stock?.purchasePrice ?? product.purchasePrice,
         landingCost: stock?.landingCost ?? product.landingCost,
         mrp: stock?.mrp ?? product.mrp,
