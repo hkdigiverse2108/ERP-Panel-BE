@@ -39,6 +39,7 @@ export const getModuleSchema = Joi.object().keys({
   limit: Joi.number().optional(),
   search: Joi.string().optional().allow("", null),
   activeFilter: Joi.boolean().optional(),
+  parentFilter: objectId().optional().allow("", null),
 });
 
 export const getModuleByIdSchema = Joi.object().keys({
