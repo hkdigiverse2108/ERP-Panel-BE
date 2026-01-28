@@ -58,3 +58,5 @@ export * from "./permission";
 export * from "./role";
 export * from "./termsCondition";
 export * from "./additionalCharge";
+export * from "./salesCreditNote";
+export * from "./salesDebitNote";

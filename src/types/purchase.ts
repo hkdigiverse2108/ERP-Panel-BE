@@ -5,7 +5,7 @@ import { ORDER_STATUS, TAX_TYPE } from "../common";
 export interface IPurchaseItem {
   productId: Schema.Types.ObjectId;
   qty: number;
-  uom?: string;
+  uomId?: string;
   unitCost?: number;
   tax?: string;
   landingCost?: string;
@@ -13,7 +13,7 @@ export interface IPurchaseItem {
   total?: number;
 }
 
-export interface IPurchaseDocument extends IBase {
+export interface IPurchaseOrder extends IBase {
   supplierId: Schema.Types.ObjectId;
 
   orderDate: Date;
@@ -25,9 +25,12 @@ export interface IPurchaseDocument extends IBase {
 
   items: IPurchaseItem[];
 
-  finalQty?: string;
-  finalTax?: string;
-  finalTotal?: string;
+  termsAndConditionIds?: Schema.Types.ObjectId[];
+  notes?: string;
+
+  totalQty?: string;
+  totalTax?: string;
+  total?: string;
 
   flatDiscount?: number;
   grossAmount?: number;
@@ -37,29 +40,5 @@ export interface IPurchaseDocument extends IBase {
   roundOff?: number;
   netAmount?: number;
 
-  notes?: string;
   status?: (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
-}
-
-// export interface IPurchaseDocument extends IBase {
-//   documentNo: string;
-//   date: Date;
-//   dueDate?: Date;
-//   supplierId: Schema.Types.ObjectId;
-//   supplierName: string;
-
-//   items: any[];
-
-//   grossAmount: number;
-//   discountAmount: number;
-//   taxAmount: number;
-//   roundOff: number;
-//   netAmount: number;
-
-//   notes?: string;
-//   status: string;
-// }
-
-export interface IPurchaseOrder extends IPurchaseDocument {
-  supplyDate?: Date;
 }

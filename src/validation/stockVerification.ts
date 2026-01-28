@@ -1,41 +1,52 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
+import { APPROVAL_STATUS } from "../common";
 
-const stockVerificationItemSchema = Joi.object().keys({
+const stockVerificationItemSchema = Joi.object({
   productId: objectId().required(),
-  batchNo: Joi.string().optional(),
   landingCost: Joi.number().min(0).default(0),
   price: Joi.number().min(0).default(0),
   mrp: Joi.number().min(0).default(0),
   sellingPrice: Joi.number().min(0).default(0),
-  unit: Joi.string().optional(),
-  systemQty: Joi.number().default(0),
-  physicalQty: Joi.number().required().min(0),
+  systemQty: Joi.number().min(0).default(0),
+  physicalQty: Joi.number().min(0).required(),
   differenceQty: Joi.number().default(0),
+  approvedQty: Joi.number().optional(),
+
   differenceAmount: Joi.number().default(0),
 });
 
-export const addStockVerificationSchema = Joi.object().keys({
-  verificationDate: Joi.date().required(),
-  departmentId: objectId().optional(),
-  categoryId: objectId().optional(),
-  brandId: objectId().optional(),
+export const addStockVerificationSchema = Joi.object({
   remark: Joi.string().optional(),
   items: Joi.array().items(stockVerificationItemSchema).min(1).required(),
-  status: Joi.string().valid("pending", "approved", "rejected").default("pending"),
+
+  totalProducts: Joi.number().optional(),
+  totalPhysicalQty: Joi.number().optional(),
+  totalDifferenceAmount: Joi.number().optional(),
+  totalApprovedQty: Joi.number().optional(),
+
+  status: Joi.string()
+    .valid(...Object.values(APPROVAL_STATUS))
+    .default(APPROVAL_STATUS.PENDING),
+
   ...baseApiSchema,
 });
 
-export const editStockVerificationSchema = Joi.object().keys({
+export const editStockVerificationSchema = Joi.object({
   stockVerificationId: objectId().required(),
-  verificationDate: Joi.date().optional(),
-  departmentId: objectId().optional(),
-  categoryId: objectId().optional(),
-  brandId: objectId().optional(),
+
   remark: Joi.string().optional(),
   items: Joi.array().items(stockVerificationItemSchema).optional(),
-  approvedQty: Joi.number().optional(),
-  status: Joi.string().valid("pending", "approved", "rejected").optional(),
+
+  totalProducts: Joi.number().optional(),
+  totalPhysicalQty: Joi.number().optional(),
+  totalDifferenceAmount: Joi.number().optional(),
+  totalApprovedQty: Joi.number().optional(),
+
+  status: Joi.string()
+    .valid(...Object.values(APPROVAL_STATUS))
+    .optional(),
+
   ...baseApiSchema,
 });
 

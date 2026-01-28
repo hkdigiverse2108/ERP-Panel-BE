@@ -250,12 +250,20 @@ export const getProductDropdown = async (req, res) => {
     const { user } = req?.headers;
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
-    const { productType, search, companyFilter } = req.query; // Optional filter by productType
+    const { productType, search, companyFilter, categoryFilter, brandFilter } = req.query; // Optional filter by productType
 
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (productType) {
       criteria.productType = productType;
+    }
+
+    if (categoryFilter) {
+      criteria.categoryId = categoryFilter;
+    }
+
+    if (brandFilter) {
+      criteria.brandId = brandFilter;
     }
 
     if (search) {

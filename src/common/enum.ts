@@ -42,6 +42,12 @@ export const PRODUCT_REQUEST_STATUS = {
   PENDING: "pending",
 } as const;
 
+export const APPROVAL_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+} as const;
+
 export const ACCOUNT_TYPE = {
   BANK: "bank",
   CASH: "cash",
@@ -102,8 +108,8 @@ export const DISCOUNT_STATUS = {
 } as const;
 
 export const EMPLOYEE_STATUS = {
-  ACTIVE: "ACTIVE",
-  INACTIVE: "INACTIVE",
+  ACTIVE: "active",
+  INACTIVE: "inactive",
 } as const;
 
 export const INVOICE_PAYMENT_STATUS = {

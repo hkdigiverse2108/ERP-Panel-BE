@@ -1,11 +1,11 @@
-import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
-import { stockVerificationModel, productModel, categoryModel, companyModel } from "../../database";
+import { apiResponse, HTTP_STATUS } from "../../common";
+import { stockVerificationModel, productModel, categoryModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addStockVerificationSchema, deleteStockVerificationSchema, editStockVerificationSchema, getStockVerificationSchema } from "../../validation/stockVerification";
 
 // Generate unique stock verification number
-const generateStockVerificationNo = async (): Promise<string> => {
-  const count = await stockVerificationModel.countDocuments();
+const generateStockVerificationNo = async (companyId): Promise<string> => {
+  const count = await stockVerificationModel.countDocuments({ companyId });
   const prefix = "SV";
   const number = String(count + 1).padStart(6, "0");
   return `${prefix}${number}`;
@@ -32,33 +32,27 @@ export const addStockVerification = async (req, res) => {
       }
     }
 
-    const stockVerificationNo = await   generateStockVerificationNo();
+    let stockVerificationNo = await generateStockVerificationNo(value.companyId);
 
-    // Calculate totals
-    const items = value.items || [];
-    const totalProducts = items.length;
-    const totalPhysicalQty = items.reduce((sum: number, item: any) => sum + (item.physicalQty || 0), 0);
+    while (true) {
+      const isExist = await getFirstMatch(stockVerificationModel, { companyId: value.companyId, isDeleted: false, stockVerificationNo }, {}, {});
 
-    // Calculate difference amount for each item
-    items.forEach((item: any) => {
-      item.differenceQty = (item.physicalQty || 0) - (item.systemQty || 0);
-      item.differenceAmount = item.differenceQty * (item.landingCost || item.price || 0);
-    });
+      if (!isExist) break;
 
-    const differenceAmount = items.reduce((sum: number, item: any) => sum + (item.differenceAmount || 0), 0);
+      const match = stockVerificationNo.match(/^([A-Z]+)(\d+)$/);
+      if (!match) throw new Error("Invalid stockVerificationNo format");
 
-    const stockVerificationData = {
-      ...value,
-      stockVerificationNo,
-      totalProducts,
-      totalPhysicalQty,
-      differenceAmount,
-      status: value.status || "pending",
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+      const [, text, numStr] = match;
+      const nextNumber = String(Number(numStr) + 1).padStart(numStr.length, "0");
 
-    const response = await createOne(stockVerificationModel, stockVerificationData);
+      stockVerificationNo = `${text}${nextNumber}`;
+    }
+
+    value.stockVerificationNo = stockVerificationNo;
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
+
+    const response = await createOne(stockVerificationModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -92,20 +86,6 @@ export const editStockVerification = async (req, res) => {
       for (const item of value.items) {
         if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
       }
-    }
-
-    // Recalculate totals if items are updated
-    if (value.items && value.items.length > 0) {
-      const items = value.items;
-      value.totalProducts = items.length;
-      value.totalPhysicalQty = items.reduce((sum: number, item: any) => sum + (item.physicalQty || 0), 0);
-
-      items.forEach((item: any) => {
-        item.differenceQty = (item.physicalQty || 0) - (item.systemQty || 0);
-        item.differenceAmount = item.differenceQty * (item.landingCost || item.price || 0);
-      });
-
-      value.differenceAmount = items.reduce((sum: number, item: any) => sum + (item.differenceAmount || 0), 0);
     }
 
     value.updatedBy = user?._id || null;
@@ -198,12 +178,8 @@ export const getAllStockVerification = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "departmentId", select: "name" },
-        { path: "categoryId", select: "name" },
         { path: "companyId", select: "name" },
-        { path: "brandId", select: "name" },
         { path: "branchId", select: "name" },
-        { path: "createdBy", select: "name email" },
         {
           path: "items.productId",
           select: "name itemCode",
@@ -250,12 +226,8 @@ export const getOneStockVerification = async (req, res) => {
       {},
       {
         populate: [
-          { path: "departmentId", select: "name" },
-          { path: "categoryId", select: "name" },
           { path: "companyId", select: "name" },
-          { path: "brandId", select: "name" },
           { path: "branchId", select: "name" },
-          { path: "createdBy", select: "name email" },
           {
             path: "items.productId",
             select: "name itemCode",

@@ -1,6 +1,6 @@
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { contactModel, purchaseOrderModel, productModel,  companyModel } from "../../database";
+import { contactModel, purchaseOrderModel, productModel, companyModel, termsConditionModel, uomModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPurchaseOrderSchema, deletePurchaseOrderSchema, editPurchaseOrderSchema, getPurchaseOrderSchema } from "../../validation/purchaseOrder";
 
@@ -36,26 +36,15 @@ export const addPurchaseOrder = async (req, res) => {
     // Validate products exist
     for (const item of value.items) {
       if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+      // if (!(await checkIdExist(uomModel, item?.uomId, "UOM", res))) return;
     }
 
-    // Generate document number if not provided
-    if (!value.documentNo) {
-      value.documentNo = await generatePurchaseOrderNo(value.companyId);
+    for (const item of value.termsAndConditionIds) {
+      if (!(await checkIdExist(termsConditionModel, item, "terms And Condition ", res))) return;
     }
 
-    // Get supplier name
-    const supplier = await getFirstMatch(contactModel, { _id: value.supplierId, isDeleted: false }, {}, {});
-    if (supplier) {
-      value.supplierName = supplier.companyName || `${supplier.firstName} ${supplier.lastName || ""}`.trim();
-    }
-
-    // Calculate totals if not provided
-    if (!value.grossAmount) {
-      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
-    }
-
-    if (value.netAmount === undefined || value.netAmount === null) {
-      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
+    if (!value.orderNo) {
+      value.orderNo = await generatePurchaseOrderNo(value.companyId);
     }
 
     value.createdBy = user?._id || null;
@@ -94,21 +83,14 @@ export const editPurchaseOrder = async (req, res) => {
     // Validate supplier if being changed
     if (value.supplierId && value.supplierId !== isExist.supplierId.toString()) {
       if (!(await checkIdExist(contactModel, value.supplierId, "Supplier", res))) return;
-      const supplier = await getFirstMatch(contactModel, { _id: value.supplierId, isDeleted: false }, {}, {});
-      if (supplier) {
-        value.supplierName = supplier.companyName || `${supplier.firstName} ${supplier.lastName || ""}`.trim();
-      }
     }
 
     // Validate products if items are being updated
     if (value.items && value.items.length > 0) {
       for (const item of value.items) {
         if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+        // if (!(await checkIdExist(uomModel, item?.uomId, "UOM", res))) return;
       }
-
-      // Recalculate totals
-      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
-      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
     }
 
     value.updatedBy = user?._id || null;
@@ -179,7 +161,7 @@ export const getAllPurchaseOrder = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { supplierName: { $regex: search, $options: "si" } }];
+      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { supplierName: { $regex: search, $options: "si" } }];
     }
 
     if (status) {
@@ -282,7 +264,7 @@ export const getPurchaseOrderDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { supplierName: { $regex: search, $options: "si" } }];
+      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { supplierName: { $regex: search, $options: "si" } }];
     }
 
     const options: any = {
@@ -291,12 +273,11 @@ export const getPurchaseOrderDropdown = async (req, res) => {
       populate: [{ path: "supplierId", select: "firstName lastName companyName" }],
     };
 
-    const response = await getDataWithSorting(purchaseOrderModel, criteria, { documentNo: 1, supplierName: 1, date: 1, netAmount: 1 }, options);
+    const response = await getDataWithSorting(purchaseOrderModel, criteria, { orderNo: 1, supplierName: 1, date: 1, netAmount: 1 }, options);
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
-      name: item.documentNo,
-      documentNo: item.documentNo,
+      orderNo: item.orderNo,
       supplierName: item.supplierName,
       date: item.date,
       netAmount: item.netAmount,
