@@ -16,8 +16,9 @@ const additionalChargeSchema = new mongoose.Schema(
     },
 
     defaultValue: {
-      value: { type: Number, default: 0, min: 0 },
-      type: { type: String, enum: VALUE_TYPE, default: VALUE_TYPE.PERCENTAGE },
+      type: Number,
+      default: 0,
+      min: 0,
     },
 
     taxId: {

@@ -1,23 +1,16 @@
 import mongoose, { Schema } from "mongoose";
-import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS, VALUE_TYPE } from "../../common";
+import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS } from "../../common";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
-
-const discountSchema = {
-  value: { type: Number, default: 0, min: 0 },
-  type: { type: String, enum: VALUE_TYPE, default: VALUE_TYPE.PERCENTAGE },
-};
 
 export const supplierBillItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
     qty: { type: Number, min: 0 },
     freeQty: { type: Number, default: 0, min: 0 },
-    unitCost: { type: Number, min: 0 },
     mrp: { type: Number, min: 0 },
     sellingPrice: { type: Number, min: 0 },
-    discount1: discountSchema,
-    discount2: discountSchema,
-    taxableAmount: { type: Number, min: 0 },
+    discount1: { type: Number, default: 0, min: 0 },
+    discount2: { type: Number, default: 0, min: 0 },
     taxAmount: { type: Number, min: 0 },
     landingCost: { type: Number, min: 0 },
     margin: { type: Number, min: 0 },
@@ -29,7 +22,7 @@ export const supplierBillItemSchema = new Schema(
 const additionalChargeSchema = new Schema(
   {
     chargeId: { type: Schema.Types.ObjectId, ref: "additional-charge", required: true },
-    value: { type: Number, min: 0 },
+    value: { type: Number, default: 0, min: 0 },
     taxRate: { type: Number },
     total: { type: Number },
   },
@@ -39,14 +32,10 @@ const additionalChargeSchema = new Schema(
 export const supplierBillReturnItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
-    batchNo: { type: String },
     qty: { type: Number, min: 0 },
-    unit: { type: String },
-    unitCost: { type: Number, min: 0 },
-    discount1: discountSchema,
-    discount2: discountSchema,
-    taxableAmount: { type: Number, min: 0 },
-    tax: { rate: { type: Number }, amount: { type: Number } },
+    discount1: { type: Number, default: 0, min: 0 },
+    discount2: { type: Number, default: 0, min: 0 },
+    tax: { type: Number, default: 0, min: 0 },
     landingCost: { type: Number, min: 0 },
     total: { type: Number, min: 0 },
   },
@@ -63,7 +52,7 @@ const supplierBillSchema = new Schema(
     referenceBillNo: { type: String },
     supplierBillDate: { type: Date },
 
-    purchaseOrderId: { type: Schema.Types.ObjectId, ref: "purchase-order" },
+    // purchaseOrderId: { type: Schema.Types.ObjectId, ref: "purchase-order" },
 
     paymentTerm: { type: String },
     dueDate: { type: Date },
@@ -74,18 +63,37 @@ const supplierBillSchema = new Schema(
     taxType: { type: String },
     invoiceAmount: { type: String },
 
-    productDetails: [supplierBillItemSchema],
-    returnProductDetails: [supplierBillReturnItemSchema],
-    additionalCharges: [additionalChargeSchema],
+    productDetails: {
+      item: [supplierBillItemSchema],
+      totalQty: { type: Number },
+      totalTax: { type: Number },
+      total: { type: Number },
+    },
 
-    termsAndConditionId: { type: Schema.Types.ObjectId, ref: "terms-condition" },
+    returnProductDetails: {
+      item: [supplierBillReturnItemSchema],
+      totalQty: { type: Number },
+      total: { type: Number },
+      summary: {
+        grossAmount: Number,
+        taxAmount: Number,
+        roundOff: Number,
+        netAmount: Number,
+      },
+    },
+
+    additionalCharges: {
+      item: [additionalChargeSchema],
+      total: { type: Number },
+    },
+
+    termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
     notes: { type: String },
 
     summary: {
-      flatDiscount: discountSchema,
+      flatDiscount: { type: Number, default: 0, min: 0 },
       grossAmount: Number,
       itemDiscount: Number,
-      taxableAmount: Number,
       itemTax: Number,
       additionalChargeAmount: Number,
       additionalChargeTax: Number,
