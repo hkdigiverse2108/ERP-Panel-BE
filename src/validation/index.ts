@@ -43,6 +43,5 @@ export * from "./module";
 export * from "./permission";
 export * from "./termsCondition";
 export * from "./additionalCharge";
-export * from "./product";
 export * from "./salesCreditNote";
 export * from "./salesDebitNote";
