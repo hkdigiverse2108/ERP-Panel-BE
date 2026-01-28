@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
 import { uomModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addUOMSchema, deleteUOMSchema, editUOMSchema, getUOMSchema } from "../../validation";
 
 export const addUOM = async (req, res) => {
@@ -10,14 +10,9 @@ export const addUOM = async (req, res) => {
     const { error, value } = addUOMSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    value.companyId = await checkCompany(user, value);
-
-    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-
     let existingUOM = await getFirstMatch(
       uomModel,
       {
-        companyId: value.companyId,
         isDeleted: false,
         $or: value.code ? [{ name: value.name }, { code: value.code }] : [{ name: value.name }],
       },
@@ -60,7 +55,6 @@ export const editUOM = async (req, res) => {
 
     let duplicateCriteria: any = {
       _id: { $ne: value?.uomId },
-      companyId: existingUOM.companyId,
       isDeleted: false,
     };
 
@@ -125,22 +119,13 @@ export const getAllUOM = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
-    let { page, limit, search, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
-
-    if (companyId) {
-      criteria.companyId = companyId;
-    }
-
-    if (companyFilter) {
-      criteria.companyId = companyFilter;
-    }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
@@ -176,13 +161,8 @@ export const getUOMDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
 
     let criteria: any = { isDeleted: false, isActive: true };
-
-    if (companyId) {
-      criteria.companyId = companyId;
-    }
 
     const response = await getDataWithSorting(
       uomModel,
@@ -213,17 +193,7 @@ export const getUOMById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const response = await getFirstMatch(
-      uomModel,
-      { _id: value?.id, isDeleted: false },
-      {},
-      {
-        populate: [
-          { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
-        ],
-      },
-    );
+    const response = await getFirstMatch(uomModel, { _id: value?.id, isDeleted: false }, {}, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("UOM"), {}, {}));
 

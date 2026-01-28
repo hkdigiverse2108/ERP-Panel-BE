@@ -47,6 +47,8 @@ import { moduleRoute } from "./module";
 import { permissionRoute } from "./permission";
 import { termsConditionRouter } from "./termsCondition";
 import { additionalChargeRouter } from "./additionalCharge";
+import { salesCreditNoteRouter } from "./salesCreditNote";
+import { salesDebitNoteRouter } from "./salesDebitNote";
 
 const router = Router();
 
@@ -56,7 +58,7 @@ router.use(adminJwt);
 
 router.use("/module", moduleRoute);
 router.use("/permission", permissionRoute);
-router.use("/upload", adminJwt, uploadRoute);
+router.use("/upload", uploadRoute);
 
 router.use("/user", userRoute);
 
@@ -79,11 +81,13 @@ router.use("/terms-condition", termsConditionRouter);
 router.use("/purchase-order", purchaseOrderRouter);
 router.use("/supplier-bill", supplierBillRouter);
 router.use("/debit-note", debitNoteRouter);
+router.use("/sales-debit-note", salesDebitNoteRouter);
 router.use("/estimate", estimateRouter);
 router.use("/sales-order", salesOrderRouter);
 router.use("/invoice", invoiceRouter);
 router.use("/delivery-challan", deliveryChallanRouter);
 router.use("/credit-note", creditNoteRouter);
+router.use("/sales-credit-note", salesCreditNoteRouter);
 router.use("/voucher", voucherRouter);
 router.use("/payment", voucherRouter);
 router.use("/receipt", voucherRouter);

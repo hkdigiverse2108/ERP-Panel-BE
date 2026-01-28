@@ -45,3 +45,5 @@ export * as moduleController from "./module";
 export * as permissionController from "./permission";
 export * as termsConditionController from "./termsCondition";
 export * as additionalChargeController from "./additionalCharge";
+export * as salesCreditNoteController from "./salesCreditNote";
+export * as salesDebitNoteController from "./salesDebitNote";
