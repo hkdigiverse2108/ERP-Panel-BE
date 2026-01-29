@@ -4,8 +4,8 @@ import { baseSchemaFields, baseSchemaOptions } from "./base";
 export interface ICreditNote {
   voucherNumber: string;
   date: Date;
-  fromAccount: Schema.Types.ObjectId;
-  toAccount: Schema.Types.ObjectId;
+  fromAccountId: Schema.Types.ObjectId;
+  toAccountId: Schema.Types.ObjectId;
   amount: number;
   description?: string;
 }
@@ -16,8 +16,8 @@ const creditNoteSchema = new Schema<ICreditNote>(
 
     voucherNumber: { type: String },
     date: { type: Date },
-    fromAccount: { type: Schema.Types.ObjectId, ref: "account" },
-    toAccount: { type: Schema.Types.ObjectId, ref: "account" },
+    fromAccountId: { type: Schema.Types.ObjectId, ref: "account" },
+    toAccountId: { type: Schema.Types.ObjectId, ref: "account" },
     amount: { type: Number, min: 0 },
     description: { type: String, maxlength: 200 },
   },

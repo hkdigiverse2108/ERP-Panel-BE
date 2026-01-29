@@ -43,10 +43,10 @@ export const addDebitNote = async (req, res) => {
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Validate accounts
-    if (!(await checkIdExist(accountModel, value.fromAccount, "From Account", res))) return;
-    if (!(await checkIdExist(accountModel, value.toAccount, "To Account", res))) return;
+    if (!(await checkIdExist(accountModel, value.fromAccountId, "From Account", res))) return;
+    if (!(await checkIdExist(accountModel, value.toAccountId, "To Account", res))) return;
 
-    if (value.fromAccount.toString() === value.toAccount.toString()) {
+    if (value.fromAccountId.toString() === value.toAccountId.toString()) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
     }
 
@@ -85,23 +85,23 @@ export const editDebitNote = async (req, res) => {
     }
 
     // Validate accounts if being changed
-    if (value.fromAccount && value.fromAccount !== isExist.fromAccount.toString()) {
-      if (!(await checkIdExist(accountModel, value.fromAccount, "From Account", res))) return;
+    if (value.fromAccountId && value.fromAccountId !== isExist.fromAccountId.toString()) {
+      if (!(await checkIdExist(accountModel, value.fromAccountId, "From Account", res))) return;
     }
 
-    if (value.toAccount && value.toAccount !== isExist.toAccount.toString()) {
-      if (!(await checkIdExist(accountModel, value.toAccount, "To Account", res))) return;
+    if (value.toAccountId && value.toAccountId !== isExist.toAccountId.toString()) {
+      if (!(await checkIdExist(accountModel, value.toAccountId, "To Account", res))) return;
     }
 
-    if (value?.fromAccount?.toString() === value?.toAccount?.toString()) {
+    if (value?.fromAccountId?.toString() === value?.toAccountId?.toString()) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
     }
 
-    if (value.fromAccount && !value.toAccount && value.fromAccount === isExist.toAccount.toString()) {
+    if (value.fromAccountId && !value.toAccountId && value.fromAccountId === isExist.toAccountId.toString()) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
     }
 
-    if (value.toAccount && !value.fromAccount && value.toAccount === isExist.fromAccount.toString()) {
+    if (value.toAccountId && !value.fromAccountId && value.toAccountId === isExist.fromAccountId.toString()) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
     }
 
@@ -184,8 +184,8 @@ export const getAllDebitNote = async (req, res) => {
     const options = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "fromAccount", select: "name code" },
-        { path: "toAccount", select: "name code" },
+        { path: "fromAccountId", select: "name code" },
+        { path: "toAccountId", select: "name code" },
         { path: "companyId", select: "name" },
       ],
       skip: (page - 1) * limit,
@@ -225,8 +225,8 @@ export const getOneDebitNote = async (req, res) => {
       {},
       {
         populate: [
-          { path: "fromAccount", select: "name code" },
-          { path: "toAccount", select: "name code" },
+          { path: "fromAccountId", select: "name code" },
+          { path: "toAccountId", select: "name code" },
           { path: "companyId", select: "name" },
         ],
       },

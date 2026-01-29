@@ -8,8 +8,8 @@ const debitNoteSchema = new Schema<IDebitNote>(
 
     voucherNumber: { type: String },
     date: { type: Date },
-    fromAccount: { type: Schema.Types.ObjectId, ref: "account" },
-    toAccount: { type: Schema.Types.ObjectId, ref: "account" },
+    fromAccountId: { type: Schema.Types.ObjectId, ref: "account" },
+    toAccountId: { type: Schema.Types.ObjectId, ref: "account" },
     amount: { type: Number, min: 0 },
     description: { type: String, maxlength: 200 },
   },
