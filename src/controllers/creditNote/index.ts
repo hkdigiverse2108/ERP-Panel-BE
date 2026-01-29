@@ -1,17 +1,30 @@
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { contactModel, creditNoteModel, InvoiceModel, productModel, taxModel } from "../../database";
+import { creditNoteModel, accountModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCreditNoteSchema, deleteCreditNoteSchema, editCreditNoteSchema, getCreditNoteSchema } from "../../validation/creditNote";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
-// Generate unique credit note number
-const generateCreditNoteNo = async (companyId): Promise<string> => {
-  const count = await creditNoteModel.countDocuments({ companyId, isDeleted: false });
-  const prefix = "CN";
-  const number = String(count + 1).padStart(6, "0");
-  return `${prefix}${number}`;
+const generateVoucherNumber = async (companyId) => {
+  const lastRecord = await creditNoteModel
+    .findOne({ voucherNumber: { $regex: /^CN-\d+$/ }, companyId: companyId })
+    .sort({ createdAt: -1 })
+    .select("voucherNumber")
+    .lean();
+
+  let nextNumber = 1;
+
+  if (lastRecord?.voucherNumber) {
+    const parts = lastRecord.voucherNumber.split("-");
+    const lastNumber = Number(parts[1]);
+
+    if (!isNaN(lastNumber)) {
+      nextNumber = lastNumber + 1;
+    }
+  }
+
+  return `CN-${nextNumber}`;
 };
 
 export const addCreditNote = async (req, res) => {
@@ -29,37 +42,15 @@ export const addCreditNote = async (req, res) => {
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    // Validate customer exists
-    if (!(await checkIdExist(contactModel, value?.customerId, "Customer", res))) return;
+    // Validate accounts
+    if (!(await checkIdExist(accountModel, value.fromAccount, "From Account", res))) return;
+    if (!(await checkIdExist(accountModel, value.toAccount, "To Account", res))) return;
 
-    // Validate invoice if provided
-    if (value.invoiceId && !(await checkIdExist(InvoiceModel, value.invoiceId, "Invoice", res))) return;
-
-    // Validate products exist
-    for (const item of value.items) {
-      if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
-      if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+    if (value.fromAccount.toString() === value.toAccount.toString()) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
     }
 
-    // Generate document number if not provided
-    if (!value.documentNo) {
-      value.documentNo = await generateCreditNoteNo(value.companyId);
-    }
-
-    // Get customer name
-    const customer = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
-    if (customer) {
-      value.customerName = customer.companyName || `${customer.firstName} ${customer.lastName || ""}`.trim();
-    }
-
-    // Calculate totals if not provided
-    if (!value.grossAmount) {
-      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
-    }
-    if (value.netAmount === undefined || value.netAmount === null) {
-      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
-    }
-
+    value.voucherNumber = await generateVoucherNumber(value.companyId);
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
@@ -93,30 +84,25 @@ export const editCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Credit Note"), {}, {}));
     }
 
-    // Validate customer if being changed
-    if (value.customerId && value.customerId !== isExist.customerId.toString()) {
-      if (!(await checkIdExist(contactModel, value.customerId, "Customer", res))) return;
-      const customer = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
-      if (customer) {
-        value.customerName = customer.companyName || `${customer.firstName} ${customer.lastName || ""}`.trim();
-      }
+    // Validate accounts if being changed
+    if (value.fromAccount && value.fromAccount !== isExist.fromAccount.toString()) {
+      if (!(await checkIdExist(accountModel, value.fromAccount, "From Account", res))) return;
     }
 
-    // Validate invoice if being changed
-    if (value.invoiceId && value.invoiceId !== isExist.invoiceId?.toString()) {
-      if (!(await checkIdExist(InvoiceModel, value.invoiceId, "Invoice", res))) return;
+    if (value.toAccount && value.toAccount !== isExist.toAccount.toString()) {
+      if (!(await checkIdExist(accountModel, value.toAccount, "To Account", res))) return;
     }
 
-    // Validate products if items are being updated
-    if (value.items && value.items.length > 0) {
-      for (const item of value.items) {
-        if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
-        if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
-      }
+    if (value?.fromAccount?.toString() === value?.toAccount?.toString()) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
+    }
 
-      // Recalculate totals
-      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
-      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
+    if (value.fromAccount && !value.toAccount && value.fromAccount === isExist.toAccount.toString()) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
+    }
+
+    if (value.toAccount && !value.fromAccount && value.toAccount === isExist.fromAccount.toString()) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
     }
 
     value.updatedBy = user?._id || null;
@@ -169,13 +155,12 @@ export const getAllCreditNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
+    let { page = 1, limit = 10, search, startDate, endDate, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
-
     if (companyId) {
       criteria.companyId = companyId;
     }
@@ -185,13 +170,7 @@ export const getAllCreditNote = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }, { reason: { $regex: search, $options: "si" } }];
-    }
-
-    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
-
-    if (status) {
-      criteria.status = status;
+      criteria.$or = [{ voucherNumber: { $regex: search, $options: "si" } }, { description: { $regex: search, $options: "si" } }];
     }
 
     if (startDate && endDate) {
@@ -205,10 +184,9 @@ export const getAllCreditNote = async (req, res) => {
     const options = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "customerId", select: "firstName lastName companyName email phoneNo" },
-        { path: "invoiceId", select: "documentNo" },
-        { path: "items.productId", select: "name itemCode" },
-        { path: "items.taxId", select: "name percentage" },
+        { path: "fromAccount", select: "name code" },
+        { path: "toAccount", select: "name code" },
+        { path: "companyId", select: "name" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -247,10 +225,9 @@ export const getOneCreditNote = async (req, res) => {
       {},
       {
         populate: [
-          { path: "customerId", select: "firstName lastName companyName email phoneNo address" },
-          { path: "invoiceId", select: "documentNo date netAmount" },
-          { path: "items.productId", select: "name itemCode sellingPrice mrp" },
-          { path: "items.taxId", select: "name percentage type" },
+          { path: "fromAccount", select: "name code" },
+          { path: "toAccount", select: "name code" },
+          { path: "companyId", select: "name" },
         ],
       },
     );

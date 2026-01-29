@@ -6,9 +6,9 @@ import { addDebitNoteSchema, deleteDebitNoteSchema, editDebitNoteSchema, getDebi
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
-const generateVoucherNumber = async () => {
+const generateVoucherNumber = async (companyId) => {
   const lastRecord = await debitNoteModel
-    .findOne({ voucherNumber: { $regex: /^DN-\d+$/ } })
+    .findOne({ voucherNumber: { $regex: /^DN-\d+$/ }, companyId: companyId })
     .sort({ createdAt: -1 })
     .select("voucherNumber")
     .lean();
@@ -50,7 +50,7 @@ export const addDebitNote = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
     }
 
-    value.voucherNumber = await generateVoucherNumber();
+    value.voucherNumber = await generateVoucherNumber(value.companyId);
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
