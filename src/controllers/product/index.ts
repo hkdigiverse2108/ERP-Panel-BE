@@ -217,6 +217,12 @@ export const getAllProduct = async (req, res) => {
             $group: {
               _id: "$productId",
               totalQty: { $sum: "$qty" },
+              totalMrp: { $sum: "$mrp" },
+              totalSellingPrice: { $sum: "$sellingPrice" },
+              totalSellingDiscount: { $sum: "$sellingDiscount" },
+              totalLandingCost: { $sum: "$landingCost" },
+              totalPurchasePrice: { $sum: "$purchasePrice" },
+              totalSellingMargin: { $sum: "$sellingMargin" },
             },
           },
         ]);
@@ -225,6 +231,12 @@ export const getAllProduct = async (req, res) => {
 
         return {
           ...(product.toObject ? product.toObject() : product),
+          mrp: stockAggregation.length > 0 ? stockAggregation[0].totalMrp : 0,
+          sellingPrice: stockAggregation.length > 0 ? stockAggregation[0].totalSellingPrice : 0,
+          sellingDiscount: stockAggregation.length > 0 ? stockAggregation[0].totalSellingDiscount : 0,
+          landingCost: stockAggregation.length > 0 ? stockAggregation[0].totalLandingCost : 0,
+          purchasePrice: stockAggregation.length > 0 ? stockAggregation[0].totalPurchasePrice : 0,
+          sellingMargin: stockAggregation.length > 0 ? stockAggregation[0].totalSellingMargin : 0,
           qty,
         };
       }),
