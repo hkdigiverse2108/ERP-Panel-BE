@@ -1,28 +1,27 @@
 import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
-import { salesItemSchema } from "./salesOrder";
-import { ISalesDocument } from "../../types";
 
-export interface ICreditNote extends ISalesDocument {
-    invoiceId?: Schema.Types.ObjectId;
-    reason: string;
+export interface ICreditNote {
+  voucherNumber: string;
+  date: Date;
+  fromAccount: Schema.Types.ObjectId;
+  toAccount: Schema.Types.ObjectId;
+  amount: number;
+  description?: string;
 }
 
-const creditNoteSchema = new Schema<ICreditNote>({
+const creditNoteSchema = new Schema<ICreditNote>(
+  {
     ...baseSchemaFields,
-    documentNo: { type: String, required: true, index: true },
-    date: { type: Date, required: true },
-    customerId: { type: Schema.Types.ObjectId, ref: 'contact', required: true },
-    customerName: { type: String },
-    invoiceId: { type: Schema.Types.ObjectId, ref: 'invoice' },
-    items: [salesItemSchema],
-    grossAmount: { type: Number, default: 0 },
-    discountAmount: { type: Number, default: 0 },
-    taxAmount: { type: Number, default: 0 },
-    roundOff: { type: Number, default: 0 },
-    netAmount: { type: Number, default: 0 },
-    reason: { type: String },
-    status: { type: String, default: 'active' }
-}, baseSchemaOptions);
 
-export const creditNoteModel = mongoose.model<ICreditNote>('credit-note', creditNoteSchema);
+    voucherNumber: { type: String },
+    date: { type: Date },
+    fromAccount: { type: Schema.Types.ObjectId, ref: "account" },
+    toAccount: { type: Schema.Types.ObjectId, ref: "account" },
+    amount: { type: Number, min: 0 },
+    description: { type: String, maxlength: 200 },
+  },
+  baseSchemaOptions,
+);
+
+export const creditNoteModel = mongoose.model<ICreditNote>("credit-note", creditNoteSchema);

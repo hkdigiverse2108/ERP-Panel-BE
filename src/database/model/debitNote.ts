@@ -1,26 +1,18 @@
 import mongoose, { Schema } from "mongoose";
 import { IDebitNote } from "../../types";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
-import { purchaseItemSchema } from "./purchaseOrder";
 
-const debitNoteSchema = new Schema(
+const debitNoteSchema = new Schema<IDebitNote>(
   {
     ...baseSchemaFields,
-    documentNo: { type: String, required: true, index: true },
-    date: { type: Date, required: true },
-    supplierId: { type: Schema.Types.ObjectId, ref: "contact", required: true },
-    supplierName: { type: String },
-    supplierBillId: { type: Schema.Types.ObjectId, ref: "supplier-bill" },
-    items: [purchaseItemSchema],
-    grossAmount: { type: Number, default: 0 },
-    discountAmount: { type: Number, default: 0 },
-    taxAmount: { type: Number, default: 0 },
-    roundOff: { type: Number, default: 0 },
-    netAmount: { type: Number, default: 0 },
-    reason: { type: String },
-    status: { type: String, default: "active" },
+
+    voucherNumber: { type: String },
+    date: { type: Date },
+    fromAccount: { type: Schema.Types.ObjectId, ref: "account" },
+    toAccount: { type: Schema.Types.ObjectId, ref: "account" },
+    amount: { type: Number, min: 0 },
+    description: { type: String, maxlength: 200 },
   },
   baseSchemaOptions,
 );
-
-export const debitNoteModel = mongoose.model("debit-note", debitNoteSchema);
+export const debitNoteModel = mongoose.model<IDebitNote>("debit-note", debitNoteSchema);

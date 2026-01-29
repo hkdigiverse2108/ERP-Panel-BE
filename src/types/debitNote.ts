@@ -1,6 +1,10 @@
 import { Schema } from "mongoose";
 
 export interface IDebitNote {
-    supplierBillId?: Schema.Types.ObjectId;
-    reason: string;
+    voucherNumber: string;
+    date: Date;
+    fromAccount: Schema.Types.ObjectId;
+    toAccount: Schema.Types.ObjectId;
+    amount: number;
+    description?: string;
 }

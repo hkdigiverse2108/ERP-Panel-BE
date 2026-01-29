@@ -52,7 +52,10 @@ export const responseMessage = {
   roleInUse: "Role is assigned to users and cannot be deleted",
   posAlreadyOnHold: "the POS you requested is already on hold",
   parentGroupError: "A group cannot be its own parent",
-
+  
+  fieldIsSame: (message: string): any => {
+    return `${message} cannot be same!`;
+  },
   customMessage: (message: string): any => {
     return `${message[0].toUpperCase() + message.slice(1).toLowerCase()}`;
   },
