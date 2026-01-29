@@ -93,7 +93,7 @@ export const editDebitNote = async (req, res) => {
       if (!(await checkIdExist(accountModel, value.toAccountId, "To Account", res))) return;
     }
 
-    if (value?.fromAccountId?.toString() === value?.toAccountId?.toString()) {
+    if (value.fromAccountId && value.toAccountId && value?.fromAccountId?.toString() === value?.toAccountId?.toString()) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
     }
 
@@ -155,7 +155,7 @@ export const getAllDebitNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, startDate, endDate, companyFilter } = req.query;
+    let { page = 1, limit = 10, search, startDate, endDate, companyFilter, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -168,6 +168,7 @@ export const getAllDebitNote = async (req, res) => {
     if (companyFilter) {
       criteria.companyId = companyFilter;
     }
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
       criteria.$or = [{ voucherNumber: { $regex: search, $options: "si" } }, { description: { $regex: search, $options: "si" } }];

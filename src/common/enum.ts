@@ -185,3 +185,10 @@ export const ADDITIONAL_CHARGE_TYPE = {
   PURCHASE: "Purchase",
   SALE: "Sale",
 } as const;
+
+export const CONSUMPTION_TYPE = {
+  EXPIRED: "expired",
+  SAMPLE: "sample",
+  PRODUCTION: "production",
+  SCRAP_WASTAGE: "scrap_wastage",
+} as const;

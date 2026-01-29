@@ -1,38 +1,39 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
+import { CONSUMPTION_TYPE } from "../common";
 
 const materialConsumptionItemSchema = Joi.object({
   productId: objectId().required(),
-  itemCode: Joi.string().allow("", null).optional(),
-  uomId: objectId().optional(),
-  qty: Joi.number().positive().required(),
-  unitPrice: Joi.number().min(0).optional(),
-  totalAmount: Joi.number().min(0).optional(),
+  qty: Joi.number().positive().optional(),
+  price: Joi.number().min(0).optional().default(0),
+  totalPrice: Joi.number().min(0).optional().default(0),
 });
 
 export const addMaterialConsumptionSchema = Joi.object({
-  consumptionNo: Joi.string().trim().optional(),
-  consumptionDate: Joi.date().required(),
-  userId: objectId().optional(),
-  branchId: objectId().optional(),
-  consumptionType: Joi.string().allow("", null).optional(),
+  ...baseApiSchema,
+  number: Joi.string().trim().optional(),
+  date: Joi.date().required(),
+  type: Joi.string()
+    .valid(...Object.values(CONSUMPTION_TYPE))
+    .default(CONSUMPTION_TYPE.PRODUCTION),
   remark: Joi.string().allow("", null).optional(),
   items: Joi.array().items(materialConsumptionItemSchema).min(1).required(),
+  totalQty: Joi.number().min(0).optional(),
   totalAmount: Joi.number().min(0).optional(),
-  ...baseApiSchema,
 });
 
 export const editMaterialConsumptionSchema = Joi.object({
-  materialConsumptionId: objectId().required(),
-  consumptionNo: Joi.string().trim().optional(),
-  consumptionDate: Joi.date().optional(),
-  userId: objectId().optional(),
-  branchId: objectId().optional(),
-  consumptionType: Joi.string().allow("", null).optional(),
+  ...baseApiSchema,
+  materialConsumptionId: objectId().required(), // used to find the document
+  number: Joi.string().trim().optional(),
+  date: Joi.date().optional(),
+  type: Joi.string()
+    .valid(...Object.values(CONSUMPTION_TYPE))
+    .default(CONSUMPTION_TYPE.PRODUCTION),
   remark: Joi.string().allow("", null).optional(),
   items: Joi.array().items(materialConsumptionItemSchema).optional(),
+  totalQty: Joi.number().min(0).optional(),
   totalAmount: Joi.number().min(0).optional(),
-  ...baseApiSchema,
 });
 
 export const deleteMaterialConsumptionSchema = Joi.object().keys({

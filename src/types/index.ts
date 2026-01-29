@@ -23,3 +23,4 @@ export * from "./recipe";
 export * from "./uom";
 export * from "./location";
 export * from "./termsCondition";
+export * from "./materialConsumption";

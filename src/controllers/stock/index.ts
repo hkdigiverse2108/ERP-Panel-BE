@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
-import { branchModel, companyModel, materialConsumptionModel, productModel, stockModel } from "../../database";
+import { branchModel, materialConsumptionModel, productModel, stockModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation/stock";
 
@@ -140,12 +140,12 @@ export const bulkStockAdjustment = async (req, res) => {
     const { user } = req.headers;
 
     let items = [];
-    let remark: string | null = null;
+    let type: string | null = null;
 
     const { error, value } = bulkStockAdjustmentSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     items = value?.items || [];
-    remark = value?.remark || null;
+    type = value?.type || null;
 
     if (!items.length) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Stock items are required"), {}, {}));
 
@@ -168,6 +168,9 @@ export const bulkStockAdjustment = async (req, res) => {
       const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
       if (!stock) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
 
+      item.price = stock?.mrp;
+      item.totalPrice = item?.qty * item?.price;
+
       if ((stock?.qty || 0) < item?.qty) continue;
 
       const currentQty = stock?.qty || 0;
@@ -186,20 +189,21 @@ export const bulkStockAdjustment = async (req, res) => {
       const companyId = user?.companyId?._id || null;
       const consumptionNo = await generateConsumptionNo(companyId);
       const totalAmount = processedItems.reduce((sum, item: any) => {
-        const itemTotal = item?.totalAmount ?? (item?.qty || 0) * (item?.unitPrice || 0);
+        const itemTotal = item?.totalPrice ?? (item?.qty || 0) * (item?.price || 0);
         return sum + itemTotal;
       }, 0);
+      const totalQty = processedItems.reduce((sum: number, item: any) => sum + (item?.qty || 0), 0);
 
       const consumptionPayload: any = {
         companyId,
         branchId: value?.branchId || user?.branchId?._id || null,
-        consumptionNo,
-        consumptionDate: value?.consumptionDate || new Date(),
-        userId: value?.userId || user?._id || null,
-        consumptionType: value?.consumptionType || null,
-        remark,
+        number: consumptionNo,
+        date: value?.consumptionDate || new Date(),
+        type: type,
+        remark: null,
         items: processedItems,
         totalAmount,
+        totalQty,
         createdBy: user?._id || null,
         updatedBy: user?._id || null,
       };
@@ -207,7 +211,7 @@ export const bulkStockAdjustment = async (req, res) => {
       consumptionRecord = await createOne(materialConsumptionModel, consumptionPayload);
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), { remark, items: updatedItems, consumption: consumptionRecord }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), { type, items: updatedItems, consumption: consumptionRecord }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

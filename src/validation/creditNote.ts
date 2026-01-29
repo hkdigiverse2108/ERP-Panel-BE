@@ -2,7 +2,6 @@ import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
 
 export const addCreditNoteSchema = Joi.object().keys({
-  // voucherNumber: Joi.string().required(),
   date: Joi.date().required(),
   fromAccountId: objectId().required(),
   toAccountId: objectId().required(),
@@ -13,7 +12,6 @@ export const addCreditNoteSchema = Joi.object().keys({
 
 export const editCreditNoteSchema = Joi.object().keys({
   creditNoteId: objectId().required(),
-  // voucherNumber: Joi.string().optional(),
   date: Joi.date().optional(),
   fromAccountId: objectId().optional(),
   toAccountId: objectId().optional(),

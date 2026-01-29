@@ -1,6 +1,6 @@
 import { HTTP_STATUS, VALUE_TYPE } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { contactModel, supplierBillModel, purchaseOrderModel, productModel, taxModel, termsConditionModel, additionalChargeModel } from "../../database";
+import { contactModel, supplierBillModel,  productModel, termsConditionModel, additionalChargeModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addSupplierBillSchema, deleteSupplierBillSchema, editSupplierBillSchema, getSupplierBillSchema } from "../../validation/supplierBill";
 
@@ -172,7 +172,7 @@ export const getAllSupplierBill = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, activeFilter, companyFilter, status, paymentStatus, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, activeFilter, companyFilter, statusFilter, paymentStatus, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -192,8 +192,8 @@ export const getAllSupplierBill = async (req, res) => {
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter === "true";
 
-    if (status) {
-      criteria.status = status;
+    if (statusFilter) {
+      criteria.status = statusFilter;
     }
 
     if (paymentStatus) {

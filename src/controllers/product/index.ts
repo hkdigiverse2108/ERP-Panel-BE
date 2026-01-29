@@ -123,7 +123,7 @@ export const getAllProduct = async (req, res) => {
     const userType = user?.userType;
 
     const companyId = user?.companyId?._id;
-    const { page, limit, search, startDate, endDate, activeFilter } = req.query;
+    const { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
     let productIds: any[] = [];
@@ -166,6 +166,7 @@ export const getAllProduct = async (req, res) => {
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+    if (companyFilter) criteria.companyId = companyFilter 
 
     if (startDate && endDate) {
       const start = new Date(startDate);

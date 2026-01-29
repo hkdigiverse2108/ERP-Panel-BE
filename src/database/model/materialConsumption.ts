@@ -1,14 +1,13 @@
 import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { CONSUMPTION_TYPE } from "../../common";
 
 const materialConsumptionItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product" },
-    itemCode: { type: String },
-    uomId: { type: Schema.Types.ObjectId, ref: "uom" },
     qty: { type: Number },
-    unitPrice: { type: Number, default: 0 },
-    totalAmount: { type: Number, default: 0 },
+    price: { type: Number, default: 0 },
+    totalPrice: { type: Number, default: 0 },
   },
   { _id: false },
 );
@@ -16,13 +15,13 @@ const materialConsumptionItemSchema = new Schema(
 const materialConsumptionSchema = new Schema(
   {
     ...baseSchemaFields,
-    consumptionNo: { type: String, index: true },
-    consumptionDate: { type: Date },
-    userId: { type: Schema.Types.ObjectId, ref: "user" },
-    consumptionType: { type: String },
+    number: { type: String, index: true },
+    date: { type: Date },
+    type: { type: String, enum: Object.values(CONSUMPTION_TYPE), default: CONSUMPTION_TYPE.PRODUCTION },
     remark: { type: String },
-    items: { type: [materialConsumptionItemSchema], default: [] },
-    totalAmount: { type: Number, default: 0 },
+    items: [materialConsumptionItemSchema],
+    totalQty: { type: Number },
+    totalAmount: { type: Number },
   },
   baseSchemaOptions,
 );
