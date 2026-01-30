@@ -3,7 +3,7 @@ import { branchModel, materialConsumptionModel, productModel, userModel } from "
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addMaterialConsumptionSchema, deleteMaterialConsumptionSchema, editMaterialConsumptionSchema, getMaterialConsumptionSchema } from "../../validation";
 
-const generateConsumptionNo = async (companyId?: string | null) => {
+export const generateConsumptionNo = async (companyId?: string | null) => {
   const latest = await getFirstMatch(
     materialConsumptionModel,
     {
@@ -15,17 +15,17 @@ const generateConsumptionNo = async (companyId?: string | null) => {
   );
 
   let nextNumber = 1;
-  if (latest?.consumptionNo) {
-    const match = String(latest.consumptionNo).match(/(\d+)\s*$/);
+  if (latest?.number) {
+    const match = String(latest.number).match(/(\d+)\s*$/);
     if (match) nextNumber = parseInt(match[1], 10) + 1;
   }
 
-  let candidate = `Con${nextNumber}`;
+  let candidate = `Con-${nextNumber}`;
   while (
     await getFirstMatch(
       materialConsumptionModel,
       {
-        consumptionNo: candidate,
+        number: candidate,
         isDeleted: false,
         ...(companyId ? { companyId } : {}),
       },
@@ -34,7 +34,7 @@ const generateConsumptionNo = async (companyId?: string | null) => {
     )
   ) {
     nextNumber += 1;
-    candidate = `Con${nextNumber}`;
+    candidate = `Con-${nextNumber}`;
   }
 
   return candidate;
@@ -59,7 +59,8 @@ export const addMaterialConsumption = async (req, res) => {
     for (const item of value.items || []) {
       if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
     }
-    
+
+    value.number = await generateConsumptionNo(value.companyId);
     const isExist = await getFirstMatch(materialConsumptionModel, { companyId: value.companyId, number: value?.number, isDeleted: false }, {}, {});
 
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Number"), {}, {}));
@@ -92,21 +93,21 @@ export const editMaterialConsumption = async (req, res) => {
     const isExist = await getFirstMatch(materialConsumptionModel, criteria, {}, {});
     if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Material Consumption"), {}, {}));
 
-    if (value?.number) {
-      const duplicate = await getFirstMatch(
-        materialConsumptionModel,
-        {
-          _id: { $ne: materialConsumptionId },
-          companyId: isExist.companyId,
-          number: value.number,
-          isDeleted: false,
-        },
-        {},
-        {},
-      );
+    // if (value?.number) {
+    //   const duplicate = await getFirstMatch(
+    //     materialConsumptionModel,
+    //     {
+    //       _id: { $ne: materialConsumptionId },
+    //       companyId: isExist.companyId,
+    //       number: value.number,
+    //       isDeleted: false,
+    //     },
+    //     {},
+    //     {},
+    //   );
 
-      if (duplicate) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Number"), {}, {}));
-    }
+    //   if (duplicate) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Number"), {}, {}));
+    // }
 
     if (value.branchId) {
       if (!(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
