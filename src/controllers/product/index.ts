@@ -264,7 +264,43 @@ export const getProductDropdown = async (req, res) => {
     const companyId = user?.companyId?._id;
     const { productType, search, companyFilter, categoryFilter, brandFilter } = req.query; // Optional filter by productType
 
-    let criteria: any = { isDeleted: false, isActive: true };
+    let stockCompanyId = null;
+    if (userType === USER_TYPES.SUPER_ADMIN) {
+      if (companyFilter) stockCompanyId = new ObjectId(companyFilter);
+    } else if (companyId) {
+      stockCompanyId = companyId;
+    }
+
+    // Only show products that have stock (stock-wise dropdown)
+    if (!stockCompanyId) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [], {}));
+    }
+
+    // 1. Get productIds that have stock for this company
+    const stockResponse = await getDataWithSorting(
+      stockModel,
+      { isDeleted: false, isActive: true, companyId: stockCompanyId },
+      { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1 },
+      { sort: { updatedAt: -1 } },
+    );
+
+    const productIdsWithStock = [...new Set(stockResponse.map((s: any) => String(s.productId)))];
+    if (productIdsWithStock.length === 0) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [], {}));
+    }
+
+    const stockByProductId = new Map<string, any>();
+    stockResponse.forEach((stock) => {
+      const key = String(stock.productId);
+      if (!stockByProductId.has(key)) stockByProductId.set(key, stock);
+    });
+
+    // 2. Fetch only products that have stock + other filters
+    let criteria: any = {
+      isDeleted: false,
+      isActive: true,
+      _id: { $in: productIdsWithStock },
+    };
 
     if (productType) {
       criteria.productType = productType;
@@ -290,26 +326,6 @@ export const getProductDropdown = async (req, res) => {
         sort: { name: 1 },
       },
     );
-
-    let stockCompanyId = null;
-    if (userType === USER_TYPES.SUPER_ADMIN) {
-      if (companyFilter) stockCompanyId = new ObjectId(companyFilter);
-    } else if (companyId) {
-      stockCompanyId = companyId;
-    }
-
-    if (!stockCompanyId) {
-      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), response, {}));
-    }
-
-    const productIds = response.map((item) => item._id);
-    const stockResponse = await getDataWithSorting(stockModel, { isDeleted: false, isActive: true, companyId: stockCompanyId, productId: { $in: productIds } }, { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1 }, { sort: { updatedAt: -1 } });
-
-    const stockByProductId = new Map<string, any>();
-    stockResponse.forEach((stock) => {
-      const key = String(stock.productId);
-      if (!stockByProductId.has(key)) stockByProductId.set(key, stock);
-    });
 
     const mergedResponse = response.map((product) => {
       const stock = stockByProductId.get(String(product._id));
