@@ -218,7 +218,61 @@ export const getAllStock = async (req, res) => {
   try {
     const { page = 1, limit = 10, search, activeFilter, companyFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, branchFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
 
-    let criteria: any = { isDeleted: false };
+    const stockMatchCriteria: any = { isDeleted: false };
+    if (branchFilter) stockMatchCriteria.branchId = branchFilter;
+    if (companyFilter) stockMatchCriteria.companyId = companyFilter;
+
+    const stockAggregationPipeline: any[] = [
+      { $match: stockMatchCriteria },
+      {
+        $group: {
+          _id: "$productId",
+          totalQty: { $sum: "$qty" },
+        },
+      },
+    ];
+
+    if (minStockQty !== undefined || maxStockQty !== undefined) {
+      const minQty = minStockQty ? parseFloat(minStockQty as string) : -Infinity;
+      const maxQty = maxStockQty ? parseFloat(maxStockQty as string) : Infinity;
+      stockAggregationPipeline.push({
+        $match: {
+          totalQty: { $gte: minQty, $lte: maxQty },
+        },
+      });
+    }
+
+    const stockByProduct = await stockModel.aggregate(stockAggregationPipeline);
+    const productIdsWithStock = stockByProduct.map((s: any) => s._id);
+    const qtyByProductId: Record<string, number> = {};
+    stockByProduct.forEach((s: any) => {
+      qtyByProductId[s._id.toString()] = s.totalQty;
+    });
+
+    if (productIdsWithStock.length === 0) {
+      const stateObj = {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        totalPages: 0,
+      };
+      return res.status(HTTP_STATUS.OK).json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Stock"),
+          {
+            stock_data: [],
+            totalData: 0,
+            state: stateObj,
+          },
+          {},
+        ),
+      );
+    }
+
+    let criteria: any = {
+      isDeleted: false,
+      _id: { $in: productIdsWithStock },
+    };
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { itemCode: { $regex: search, $options: "si" } }];
@@ -238,8 +292,6 @@ export const getAllStock = async (req, res) => {
 
     if (subBrandFilter) criteria.subBrandId = subBrandFilter;
 
-    // if (departmentFilter) criteria.departmentId = departmentFilter;
-
     if (hsnCodeFilter) criteria.hsnCode = hsnCodeFilter;
 
     if (purchaseTaxFilter) criteria.purchaseTaxId = purchaseTaxFilter;
@@ -248,12 +300,12 @@ export const getAllStock = async (req, res) => {
 
     if (productTypeFilter) criteria.productType = productTypeFilter;
 
-    if (branchFilter) criteria.branchId = branchFilter;
-
     if (expiryFilter !== undefined) criteria.hasExpiry = expiryFilter === "true";
 
     const options: any = {
       sort: { createdAt: -1 },
+      skip: (parseInt(page as string) - 1) * parseInt(limit as string),
+      limit: parseInt(limit as string),
       populate: [
         { path: "categoryId", select: "name" },
         { path: "subCategoryId", select: "name" },
@@ -265,46 +317,10 @@ export const getAllStock = async (req, res) => {
     const products = await getDataWithSorting(productModel, criteria, {}, options);
     const totalData = await countData(productModel, criteria);
 
-    const stockData = await Promise.all(
-      products.map(async (product: any) => {
-        const stockCriteria: any = {
-          productId: product._id,
-          isDeleted: false,
-        };
-
-        if (branchFilter) {
-          stockCriteria.branchId = branchFilter;
-        }
-
-        // Aggregate stock quantities
-        const stockAggregation = await stockModel.aggregate([
-          { $match: stockCriteria },
-          {
-            $group: {
-              _id: "$productId",
-              totalQty: { $sum: "$qty" },
-            },
-          },
-        ]);
-
-        const availableQty = stockAggregation.length > 0 ? stockAggregation[0].totalQty : 0;
-
-        if (minStockQty !== undefined || maxStockQty !== undefined) {
-          const minQty = minStockQty ? parseFloat(minStockQty as string) : -Infinity;
-          const maxQty = maxStockQty ? parseFloat(maxStockQty as string) : Infinity;
-          if (availableQty < minQty || availableQty > maxQty) {
-            return null;
-          }
-        }
-
-        return {
-          ...product,
-          availableQty,
-        };
-      }),
-    );
-
-    const filteredStockData = stockData.filter((item) => item !== null);
+    const stockData = products.map((product: any) => ({
+      ...product,
+      availableQty: qtyByProductId[product._id.toString()] ?? 0,
+    }));
 
     const totalPages = Math.ceil(totalData / parseInt(limit as string)) || 1;
 
@@ -319,7 +335,7 @@ export const getAllStock = async (req, res) => {
         HTTP_STATUS.OK,
         responseMessage?.getDataSuccess("Stock"),
         {
-          stock_data: filteredStockData,
+          stock_data: stockData,
           totalData,
           state: stateObj,
         },
