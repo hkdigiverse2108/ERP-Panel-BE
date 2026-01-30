@@ -166,7 +166,6 @@ export const getAllProduct = async (req, res) => {
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
-    if (companyFilter) criteria.companyId = companyFilter;
 
     if (startDate && endDate) {
       const start = new Date(startDate);
@@ -269,10 +268,6 @@ export const getProductDropdown = async (req, res) => {
 
     if (productType) {
       criteria.productType = productType;
-    }
-
-    if (companyFilter) {
-      criteria.companyId = companyFilter;
     }
 
     if (categoryFilter) {
