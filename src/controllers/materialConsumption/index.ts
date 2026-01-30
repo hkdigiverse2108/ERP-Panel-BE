@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { branchModel, materialConsumptionModel, productModel, userModel } from "../../database";
+import { branchModel, materialConsumptionModel, productModel, stockModel, userModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addMaterialConsumptionSchema, deleteMaterialConsumptionSchema, editMaterialConsumptionSchema, getMaterialConsumptionSchema } from "../../validation";
 
@@ -58,6 +58,24 @@ export const addMaterialConsumption = async (req, res) => {
 
     for (const item of value.items || []) {
       if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+
+      // check stock qty and update stock
+      const stockCriteria: any = {
+        productId: item?.productId,
+        isDeleted: false,
+      };
+
+      stockCriteria.companyId = value?.companyId;
+
+      const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
+      if (!stock) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
+
+      if ((stock?.qty || 0) < item?.qty) continue;
+      const currentQty = stock?.qty || 0;
+      const nextQty = currentQty - item.qty;
+      const updatedStock = await updateData(stockModel, { _id: stock?._id }, { qty: nextQty < 0 ? 0 : nextQty, updatedBy: user?._id || null }, {});
+
+      if (!updatedStock) continue;
     }
 
     value.number = await generateConsumptionNo(value.companyId);
@@ -93,29 +111,68 @@ export const editMaterialConsumption = async (req, res) => {
     const isExist = await getFirstMatch(materialConsumptionModel, criteria, {}, {});
     if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Material Consumption"), {}, {}));
 
-    // if (value?.number) {
-    //   const duplicate = await getFirstMatch(
-    //     materialConsumptionModel,
-    //     {
-    //       _id: { $ne: materialConsumptionId },
-    //       companyId: isExist.companyId,
-    //       number: value.number,
-    //       isDeleted: false,
-    //     },
-    //     {},
-    //     {},
-    //   );
-
-    //   if (duplicate) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Number"), {}, {}));
-    // }
-
     if (value.branchId) {
       if (!(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
     }
 
     if (value.items) {
-      for (const item of value.items) {
-        if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+      // 1. Map Old Items
+      const oldItemMap = new Map();
+      if (isExist.items && isExist.items.length > 0) {
+        isExist.items.forEach((item) => {
+          oldItemMap.set(item.productId.toString(), item.qty);
+        });
+      }
+
+      // 2. Map New Items
+      const newItemMap = new Map();
+      value.items.forEach((item) => {
+        newItemMap.set(item.productId.toString(), item.qty);
+      });
+
+      // 3. Identify all affected products
+      const allProductIds = new Set([...oldItemMap.keys(), ...newItemMap.keys()]);
+
+      for (const productId of allProductIds) {
+        if (!(await checkIdExist(productModel, productId, "Product", res))) return;
+
+        const oldQty = oldItemMap.get(productId) || 0;
+        const newQty = newItemMap.get(productId) || 0;
+        const difference = newQty - oldQty;
+
+        if (difference === 0) continue;
+
+        const stockCriteria: any = {
+          productId: productId,
+          isDeleted: false,
+          companyId: isExist.companyId, // Use existing company ID
+        };
+        // branchId logic if needed (assuming stock is company-wide or branch-specific based on existing patterns)
+        // if (isExist.branchId) stockCriteria.branchId = isExist.branchId;
+        const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
+        if (!stock) {
+          // If trying to increase consumption but no stock record exists
+          // if (difference > 0) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound(`Stock for product ${productId}`), {}, {}));
+          // If decreasing consumption (adding back to stock), we might need to handle 'creating' stock or erroring.
+          // For now assuming stock record must exist to have consumed from it in the first place.
+          continue;
+        }
+
+        let nextStockQty = stock.qty || 0;
+
+        if (difference > 0) {
+          // Consumption increased -> Decrease Stock
+          if (nextStockQty < difference) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage(`Insufficient stock for product ${productId}`), {}, {}));
+          }
+          nextStockQty -= difference;
+        } else {
+          // Consumption decreased (negative difference) -> Increase Stock (Add back abs(difference))
+          nextStockQty += Math.abs(difference);
+        }
+
+        const updatedStock = await updateData(stockModel, { _id: stock._id }, { qty: nextStockQty, updatedBy: user?._id || null }, {});
+        if (!updatedStock) return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.updateDataError("Stock"), {}, {}));
       }
     }
 
@@ -191,6 +248,7 @@ export const getAllMaterialConsumption = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
+        { path: "items.productId", select: "name" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -227,7 +285,7 @@ export const getMaterialConsumptionById = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
-          { path: "items.productId", select: "name itemCode" },
+          { path: "items.productId", select: "name" },
         ],
       },
     );
