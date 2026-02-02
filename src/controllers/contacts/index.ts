@@ -244,13 +244,13 @@ export const getContactDropdown = async (req, res) => {
 
     let criteria: any = { isDeleted: false, isActive: true };
 
-    // if (companyId) {
-    //   criteria.companyId = companyId;
-    // }
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
 
-    // if (companyFilter) {
-    //   criteria.companyId = companyFilter;
-    // }
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
 
     // Filter by contact type
     if (typeFilter) {
@@ -274,7 +274,7 @@ export const getContactDropdown = async (req, res) => {
     const response = await getData(
       contactModel,
       criteria,
-      { firstName: 1, lastName: 1, dob: 1,  email: 1, phoneNo: 1, whatsappNo: 1, contactType: 1, "address.addressLine1": 1, "address.city": 1, "address.state": 1, "address.country": 1, "address.pinCode": 1 },
+      { firstName: 1, lastName: 1, dob: 1, email: 1, phoneNo: 1, whatsappNo: 1, contactType: 1, customerType: 1, "address.addressLine1": 1, "address.city": 1, "address.state": 1, "address.country": 1, "address.pinCode": 1 },
       {
         sort: { companyName: 1, firstName: 1 },
         limit: search ? 50 : 1000,
@@ -291,7 +291,6 @@ export const getContactDropdown = async (req, res) => {
       name: item.companyName || `${item.firstName} ${item.lastName || ""}`.trim(),
       firstName: item.firstName,
       lastName: item.lastName,
-      customerCategory: item.customerCategory,
       customerType: item.customerType,
       contactType: item.contactType,
       address: item.address,
