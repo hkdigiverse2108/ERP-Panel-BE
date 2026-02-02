@@ -1,5 +1,6 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
+import { POS_ORDER_STATUS, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS } from "../common";
 
 const posOrderItemSchema = Joi.object().keys({
   productId: objectId().required(),
@@ -19,7 +20,7 @@ const posOrderItemSchema = Joi.object().keys({
 });
 
 export const addPosOrderSchema = Joi.object().keys({
-  orderNo: Joi.string().optional(), // Auto-generated if not provided
+  // orderNo: Joi.string().optional(), // Auto-generated if not provided
   date: Joi.date()
     .default(() => new Date())
     .optional(),
@@ -34,16 +35,16 @@ export const addPosOrderSchema = Joi.object().keys({
   netAmount: Joi.number().min(0).default(0).optional(),
   paidAmount: Joi.number().min(0).default(0).optional(),
   balanceAmount: Joi.number().min(0).default(0).optional(),
-  paymentMethod: Joi.string().valid("cash", "card", "upi", "wallet", "credit").default("cash").optional(),
-  paymentStatus: Joi.string().valid("paid", "unpaid", "partial").default("paid").optional(),
-  status: Joi.string().valid("pending", "completed", "hold", "cancelled").default("pending").optional(),
+  paymentMethod: Joi.string().valid(...Object.values(POS_PAYMENT_METHOD)).default(POS_PAYMENT_METHOD.CASH).optional(),
+  paymentStatus: Joi.string().valid(...Object.values(POS_PAYMENT_STATUS)).default(POS_PAYMENT_STATUS.PAID).optional(),
+  status: Joi.string().valid(...Object.values(POS_ORDER_STATUS)).default(POS_ORDER_STATUS.PENDING).optional(),
   notes: Joi.string().optional().allow("", null),
   ...baseApiSchema,
 });
 
 export const editPosOrderSchema = Joi.object().keys({
   posOrderId: objectId().required(),
-  orderNo: Joi.string().optional(),
+  // orderNo: Joi.string().optional(),
   date: Joi.date().optional(),
   tableNo: Joi.string().optional().allow("", null),
   customerId: objectId().optional().allow("", null),
@@ -56,9 +57,9 @@ export const editPosOrderSchema = Joi.object().keys({
   netAmount: Joi.number().min(0).optional(),
   paidAmount: Joi.number().min(0).optional(),
   balanceAmount: Joi.number().min(0).optional(),
-  paymentMethod: Joi.string().valid("cash", "card", "upi", "wallet", "credit").optional(),
-  paymentStatus: Joi.string().valid("paid", "unpaid", "partial").optional(),
-  status: Joi.string().valid("pending", "completed", "hold", "cancelled").optional(),
+  paymentMethod: Joi.string().valid(...Object.values(POS_PAYMENT_METHOD)).optional(),
+  paymentStatus: Joi.string().valid(...Object.values(POS_PAYMENT_STATUS)).optional(),
+  status: Joi.string().valid(...Object.values(POS_ORDER_STATUS)).optional(),
   notes: Joi.string().optional().allow("", null),
   ...baseApiSchema,
 });
@@ -84,12 +85,12 @@ export const getPosOrderSchema = Joi.object().keys({
 });
 
 export const getPosCashControlSchema = Joi.object().keys({
-  locationId: objectId().required(),
+  branchId: objectId().required(),
   date: Joi.date().optional(),
 });
 
 export const updatePosCashControlSchema = Joi.object().keys({
-  locationId: objectId().required(),
+  branchId: objectId().required(),
   date: Joi.date().optional(),
   openingCash: Joi.number().min(0).optional(),
   actualCash: Joi.number().min(0).optional(),

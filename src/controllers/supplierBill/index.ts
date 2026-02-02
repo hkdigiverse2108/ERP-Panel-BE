@@ -1,18 +1,18 @@
 import { HTTP_STATUS, VALUE_TYPE } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { contactModel, supplierBillModel,  productModel, termsConditionModel, additionalChargeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { contactModel, supplierBillModel, productModel, termsConditionModel, additionalChargeModel } from "../../database";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addSupplierBillSchema, deleteSupplierBillSchema, editSupplierBillSchema, getSupplierBillSchema } from "../../validation/supplierBill";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
 // Generate unique supplier bill number
-const generateSupplierBillNo = async (companyId): Promise<string> => {
-  const count = await supplierBillModel.countDocuments({ companyId, isDeleted: false });
-  const prefix = "SB";
-  const number = String(count + 1).padStart(6, "0");
-  return `${prefix}${number}`;
-};
+// const generateSupplierBillNo = async (companyId): Promise<string> => {
+//   const count = await supplierBillModel.countDocuments({ companyId, isDeleted: false });
+//   const prefix = "SB";
+//   const number = String(count + 1).padStart(6, "0");
+//   return `${prefix}${number}`;
+// };
 
 export const addSupplierBill = async (req, res) => {
   reqInfo(req);
@@ -62,7 +62,10 @@ export const addSupplierBill = async (req, res) => {
 
     // Generate bill number if not provided
     if (!value?.supplierBillNo) {
-      value.supplierBillNo = await generateSupplierBillNo(value.companyId);
+      value.supplierBillNo = await generateSequenceNumber({ model: supplierBillModel, prefix: "SB", fieldName: "supplierBillNo", companyId: value.companyId });
+    }
+    if (!value?.referenceBillNo) {
+      value.referenceBillNo = await generateSequenceNumber({ model: supplierBillModel, prefix: "REF", fieldName: "referenceBillNo", companyId: value.companyId });
     }
 
     value.createdBy = user?._id || null;

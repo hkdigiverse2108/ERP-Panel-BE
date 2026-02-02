@@ -1,10 +1,10 @@
-import { HTTP_STATUS, VOUCHAR_TYPE } from "../../common";
+import { HTTP_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, VOUCHAR_TYPE } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { contactModel, productModel, taxModel, branchModel, InvoiceModel } from "../../database";
 import { PosOrderModel } from "../../database/model/posOrder";
 import { PosCashControlModel } from "../../database/model/posCashControl";
 import { voucherModel } from "../../database/model/voucher";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema } from "../../validation/posOrder";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -21,7 +21,7 @@ export const addPosOrder = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
+    // const companyId = user?.companyId?._id;
 
     const { error, value } = addPosOrderSchema.validate(req.body);
 
@@ -29,11 +29,9 @@ export const addPosOrder = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
+    value.companyId = await checkCompany(user, value);
 
-    // Validate location if provided
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     if (!(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
 
@@ -47,9 +45,10 @@ export const addPosOrder = async (req, res) => {
     }
 
     // Generate order number if not provided
-    if (!value.orderNo) {
-      value.orderNo = await generatePosOrderNo(companyId);
-    }
+    // if (!value.orderNo) {
+    // value.orderNo = await generatePosOrderNo(value.companyId);
+    value.orderNo = await generateSequenceNumber({ model: PosOrderModel, prefix: "POS", fieldName: "orderNo", companyId: value.companyId });
+    // }
 
     // Get customer name if customer provided
     if (value.customerId) {
@@ -73,27 +72,23 @@ export const addPosOrder = async (req, res) => {
     // Set payment status based on paid amount
     if (!value.paymentStatus) {
       if (value.paidAmount === 0) {
-        value.paymentStatus = "unpaid";
+        value.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
       } else if (value.paidAmount >= value.netAmount) {
-        value.paymentStatus = "paid";
+        value.paymentStatus = POS_PAYMENT_STATUS.PAID;
       } else {
-        value.paymentStatus = "partial";
+        value.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
       }
     }
 
     // Set hold date if status is hold
-    if (value.status === "hold") {
+    if (value.status === POS_ORDER_STATUS.HOLD) {
       value.holdDate = new Date();
     }
 
-    const posOrderData = {
-      ...value,
-      companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
+    value.createdBy = user?._id || null;
+    value.updatedBy = user?._id || null;
 
-    const response = await createOne(PosOrderModel, posOrderData);
+    const response = await createOne(PosOrderModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -123,9 +118,9 @@ export const editPosOrder = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
 
-    // Validate location if being changed
+    // Validate Branch if being changed
     if (value.branchId && value.branchId !== isExist.branchId?.toString()) {
-      if (!(await checkIdExist(branchModel, value.branchId, "Location", res))) return;
+      if (!(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
     }
 
     // Validate customer if being changed
@@ -155,16 +150,16 @@ export const editPosOrder = async (req, res) => {
       const paidAmt = value.paidAmount;
       const netAmt = value.netAmount || isExist.netAmount;
       if (paidAmt === 0) {
-        value.paymentStatus = "unpaid";
+        value.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
       } else if (paidAmt >= netAmt) {
-        value.paymentStatus = "paid";
+        value.paymentStatus = POS_PAYMENT_STATUS.PAID;
       } else {
-        value.paymentStatus = "partial";
+        value.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
       }
     }
 
     // Update hold date if status is being changed to hold
-    if (value.status === "hold" && isExist.status !== "hold") {
+    if (value.status === POS_ORDER_STATUS.HOLD && isExist.status !== POS_ORDER_STATUS.HOLD) {
       value.holdDate = new Date();
     }
 
@@ -195,15 +190,15 @@ export const holdPosOrder = async (req, res) => {
     const isExist = await getFirstMatch(PosOrderModel, { _id: value?.posOrderId, isDeleted: false }, {}, {});
 
     if (!isExist) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS 0"), {}, {}));
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
 
-    if (isExist?.status === "hold") {
+    if (isExist?.status === POS_ORDER_STATUS.HOLD) {
       return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.posAlreadyOnHold, {}, {}));
     }
 
     const payload = {
-      status: "hold",
+      status: POS_ORDER_STATUS.HOLD,
       holdDate: new Date(),
       updatedBy: user?._id || null,
     };
@@ -235,7 +230,7 @@ export const releasePosOrder = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
 
-    if (isExist.status !== "hold") {
+    if (isExist.status !== POS_ORDER_STATUS.HOLD) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Order is not on hold", {}, {}));
     }
 
@@ -490,7 +485,7 @@ export const getAllHoldOrders = async (req, res) => {
     const companyId = user?.companyId?._id;
     const { search } = req.query;
 
-    let criteria: any = { isDeleted: false, status: "hold" };
+    let criteria: any = { isDeleted: false, status: POS_ORDER_STATUS.HOLD };
     if (companyId) {
       criteria.companyId = companyId;
     }
@@ -584,18 +579,18 @@ export const getPosCashControl = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const { locationId, date } = value;
+    const { branchId, date } = value;
 
     if (!companyId) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
     }
 
-    if (!locationId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Location ID is required", {}, {}));
+    if (!branchId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Branch ID is required", {}, {}));
     }
 
-    // Validate location
-    if (!(await checkIdExist(branchModel, locationId, "Location", res))) return;
+    // Validate Branch
+    if (!(await checkIdExist(branchModel, branchId, "Branch", res))) return;
 
     // Use today's date if not provided
     const targetDate = date ? new Date(date as string) : new Date();
@@ -604,11 +599,11 @@ export const getPosCashControl = async (req, res) => {
     // Find or create cash control for the day
     let cashControl = await getFirstMatch(
       PosCashControlModel,
-      { companyId, locationId, date: targetDate, isDeleted: false },
+      { companyId, branchId, date: targetDate, isDeleted: false },
       {},
       {
         populate: [
-          { path: "locationId", select: "name" },
+          { path: "branchId", select: "name" },
           { path: "closedBy", select: "firstName lastName" },
         ],
       },
@@ -619,11 +614,11 @@ export const getPosCashControl = async (req, res) => {
       // Get yesterday's closing cash as today's opening cash
       const yesterday = new Date(targetDate);
       yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayCash = await getFirstMatch(PosCashControlModel, { companyId, locationId, date: yesterday, isDeleted: false }, {}, {});
+      const yesterdayCash = await getFirstMatch(PosCashControlModel, { companyId, branchId, date: yesterday, isDeleted: false }, {}, {});
 
       const cashControlData = {
         companyId,
-        locationId,
+        branchId,
         date: targetDate,
         openingCash: yesterdayCash?.closingCash || 0,
         closingCash: 0,
@@ -657,31 +652,31 @@ export const updatePosCashControl = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const { locationId, date, openingCash, actualCash, notes, isClosed } = value;
+    const { branchId, date, openingCash, actualCash, notes, isClosed } = value;
 
     if (!companyId) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
     }
 
-    if (!locationId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Location ID is required", {}, {}));
+    if (!branchId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Branch ID is required", {}, {}));
     }
 
-    // Validate location
-    if (!(await checkIdExist(branchModel, locationId, "Location", res))) return;
+    // Validate Branch
+    if (!(await checkIdExist(branchModel, branchId, "Branch", res))) return;
 
     // Use today's date if not provided
     const targetDate = date ? new Date(date) : new Date();
     targetDate.setHours(0, 0, 0, 0);
 
     // Find existing cash control
-    let cashControl = await getFirstMatch(PosCashControlModel, { companyId, locationId, date: targetDate, isDeleted: false }, {}, {});
+    let cashControl = await getFirstMatch(PosCashControlModel, { companyId, branchId, date: targetDate, isDeleted: false }, {}, {});
 
     if (!cashControl) {
       // Create new if doesn't exist
       const cashControlData = {
         companyId,
-        locationId,
+        branchId,
         date: targetDate,
         openingCash: openingCash || 0,
         actualCash: actualCash || 0,
@@ -694,18 +689,18 @@ export const updatePosCashControl = async (req, res) => {
       cashControl = await createOne(PosCashControlModel, cashControlData);
     } else {
       // Update existing
-      const updateData: any = {
+      const updateDataPayload: any = {
         updatedBy: user?._id || null,
       };
 
-      if (openingCash !== undefined) updateData.openingCash = openingCash;
-      if (actualCash !== undefined) updateData.actualCash = actualCash;
-      if (notes !== undefined) updateData.notes = notes;
+      if (openingCash !== undefined) updateDataPayload.openingCash = openingCash;
+      if (actualCash !== undefined) updateDataPayload.actualCash = actualCash;
+      if (notes !== undefined) updateDataPayload.notes = notes;
       if (isClosed !== undefined) {
-        updateData.isClosed = isClosed;
+        updateDataPayload.isClosed = isClosed;
         if (isClosed) {
-          updateData.closedBy = user?._id || null;
-          updateData.closedAt = new Date();
+          updateDataPayload.closedBy = user?._id || null;
+          updateDataPayload.closedAt = new Date();
         }
       }
 
@@ -720,7 +715,7 @@ export const updatePosCashControl = async (req, res) => {
         {
           $match: {
             companyId: new ObjectId(companyId),
-            locationId: new ObjectId(locationId),
+            branchId: new ObjectId(branchId),
             date: { $gte: startOfDay, $lte: endOfDay },
             paymentMethod: "cash",
             paymentStatus: "paid",
@@ -748,12 +743,12 @@ export const updatePosCashControl = async (req, res) => {
 
       const totalExpenses = expensesResult.length > 0 ? expensesResult[0].total : 0;
 
-      const opening = updateData.openingCash !== undefined ? updateData.openingCash : cashControl.openingCash;
-      updateData.expectedCash = opening + totalSales - totalExpenses;
-      updateData.closingCash = updateData.actualCash !== undefined ? updateData.actualCash : cashControl.actualCash;
-      updateData.difference = updateData.expectedCash - updateData.closingCash;
+      const opening = updateDataPayload.openingCash !== undefined ? updateDataPayload.openingCash : cashControl.openingCash;
+      updateDataPayload.expectedCash = opening + totalSales - totalExpenses;
+      updateDataPayload.closingCash = updateDataPayload.actualCash !== undefined ? updateDataPayload.actualCash : cashControl.actualCash;
+      updateDataPayload.difference = updateDataPayload.expectedCash - updateDataPayload.closingCash;
 
-      cashControl = await updateData(PosCashControlModel, { _id: cashControl._id }, updateData, {});
+      cashControl = await updateData(PosCashControlModel, { _id: cashControl._id }, updateDataPayload, {});
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("POS Cash Control"), cashControl, {}));
@@ -856,7 +851,7 @@ export const getCombinedPayments = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    let { page = 1, limit = 10, search, startDate, endDate, locationId } = value;
+    let { page = 1, limit = 10, search, startDate, endDate, branchId } = value;
 
     page = Number(page);
     limit = Number(limit);

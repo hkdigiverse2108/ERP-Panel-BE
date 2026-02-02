@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { branchModel, materialConsumptionModel, productModel, stockModel, userModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addMaterialConsumptionSchema, deleteMaterialConsumptionSchema, editMaterialConsumptionSchema, getMaterialConsumptionSchema } from "../../validation";
 
 export const generateConsumptionNo = async (companyId?: string | null) => {
@@ -78,7 +78,8 @@ export const addMaterialConsumption = async (req, res) => {
       if (!updatedStock) continue;
     }
 
-    value.number = await generateConsumptionNo(value.companyId);
+    value.number = await generateSequenceNumber({ model: materialConsumptionModel, prefix: "Con", fieldName: "number", companyId: value.companyId });
+   
     const isExist = await getFirstMatch(materialConsumptionModel, { companyId: value.companyId, number: value?.number, isDeleted: false }, {}, {});
 
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Number"), {}, {}));

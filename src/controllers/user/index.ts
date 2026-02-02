@@ -315,3 +315,38 @@ export const superAdminOverridePermissions = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).status(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
   }
 };
+
+export const getUserDropDown = async (req, res) => {
+  reqInfo(req);
+  try {
+    let { user } = req?.headers;
+    let companyId = user?.companyId?._id;
+
+    let { typeFilter, companyFilter, roleFilter } = req.query;
+
+    let criteria: any = { isDeleted: false, isActive: true };
+
+    if (companyId) {
+      criteria.companyId = new ObjectId(companyId);
+    }
+
+    if (companyFilter) {
+      criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (typeFilter) {
+      criteria.userType = typeFilter;
+    }
+
+    if (roleFilter) {
+      criteria.role = new ObjectId(roleFilter);
+    }
+
+    const response = await getData(userModel, criteria, { _id: 1, fullName: 1, userType: 1, role: 1 }, { sort: { fullName: 1 }, populate: [{ path: "role", select: "name" }] });
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("User"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};

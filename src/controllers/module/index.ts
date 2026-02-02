@@ -136,7 +136,7 @@ export const get_all_module = async (req, res) => {
             state: stateObj
         }, {}));
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error))
     }
 };
@@ -242,7 +242,7 @@ export const get_users_permissions_by_moduleId = async (req, res) => {
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess('users permissions for module'), payload, {}))
     } catch (error) {
-        console.log(error)
+        console.error(error)
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error))
     }
 }

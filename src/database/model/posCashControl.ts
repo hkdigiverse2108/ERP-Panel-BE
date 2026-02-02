@@ -5,7 +5,7 @@ import { baseSchemaFields, baseSchemaOptions } from "./base";
 const posCashControlSchema = new Schema(
   {
     ...baseSchemaFields,
-    locationId: { type: Schema.Types.ObjectId, ref: "branch", required: true, index: true }, // Branch/Location
+    branchId: { type: Schema.Types.ObjectId, ref: "branch", required: true, index: true }, // Branch/Location
     date: { type: Date, required: true, index: true }, // Date for which cash control is set
     openingCash: { type: Number, default: 0 }, // Opening cash balance
     closingCash: { type: Number, default: 0 }, // Closing cash balance (calculated)
@@ -21,6 +21,6 @@ const posCashControlSchema = new Schema(
 );
 
 // Compound index to ensure one cash control per branch per day
-posCashControlSchema.index({ locationId: 1, date: 1, companyId: 1 }, { unique: true });
+posCashControlSchema.index({ branchId: 1, date: 1, companyId: 1 }, { unique: true });
 
 export const PosCashControlModel = mongoose.model("pos-cash-control", posCashControlSchema);

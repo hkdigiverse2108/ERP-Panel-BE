@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(adminJwt);
 
 router.get("/all", userController.getAllUser);
+router.get("/dropdown", userController.getUserDropDown);
 router.post("/add", userController.addUser);
 router.put("/edit", userController.editUserById);
 router.delete("/:id", userController.deleteUserById);

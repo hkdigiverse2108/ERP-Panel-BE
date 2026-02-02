@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
-import { ADDITIONAL_CHARGE_TYPE, VALUE_TYPE } from "../../common";
+import { ADDITIONAL_CHARGE_TYPE } from "../../common";
 
 const additionalChargeSchema = new mongoose.Schema(
   {

@@ -192,3 +192,29 @@ export const CONSUMPTION_TYPE = {
   PRODUCTION: "production",
   SCRAP_WASTAGE: "scrap_wastage",
 } as const;
+
+export const POS_PAYMENT_METHOD = {
+  CASH: "cash",
+  CARD: "card",
+  UPI: "upi",
+  WALLET: "wallet",
+  CREDIT: "credit",
+} as const;
+
+export const POS_PAYMENT_STATUS = {
+  PAID: "paid",
+  UNPAID: "unpaid",
+  PARTIAL: "partial",
+} as const;
+
+export const POS_ORDER_STATUS = {
+  PENDING: "pending",
+  COMPLETED: "completed",
+  HOLD: "hold",
+  CANCELLED: "cancelled",
+} as const;
+
+export const POS_ORDER_TYPE = {
+  WALK_IN: "walk_in",
+  DELIVERY: "delivery",
+} as const;

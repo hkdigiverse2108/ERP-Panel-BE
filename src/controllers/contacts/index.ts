@@ -236,13 +236,12 @@ export const getContactById = async (req, res) => {
   }
 };
 
-// Contact Dropdown API - supports filtering by contactType (supplier, customer, both)
 export const getContactDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { contactType, search, companyFilter } = req.query; // contactType: 'supplier', 'customer', 'both'
+    const { typeFilter, search, companyFilter } = req.query; // typeFilter: 'supplier', 'customer', 'both'
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -255,13 +254,13 @@ export const getContactDropdown = async (req, res) => {
     }
 
     // Filter by contact type
-    if (contactType) {
-      if (contactType === "supplier") {
+    if (typeFilter) {
+      if (typeFilter === "supplier") {
         criteria.$or = [{ contactType: "supplier" }, { contactType: "both" }];
-      } else if (contactType === "customer") {
+      } else if (typeFilter === "customer") {
         criteria.$or = [{ contactType: "customer" }, { contactType: "both" }];
       } else {
-        criteria.contactType = contactType;
+        criteria.contactType = typeFilter;
       }
     }
 
