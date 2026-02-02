@@ -1,6 +1,5 @@
-import { HTTP_STATUS, USER_ROLES } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { companyModel, paymentTermModel } from "../../database/model";
+import { apiResponse, HTTP_STATUS } from "../../common";
+import { paymentTermModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPaymentTermSchema, deletePaymentTermSchema, editPaymentTermSchema, getPaymentTermSchema } from "../../validation";
 

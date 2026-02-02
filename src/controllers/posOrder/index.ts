@@ -1,11 +1,7 @@
-import { HTTP_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, VOUCHAR_TYPE } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel } from "../../database";
-import { PosOrderModel } from "../../database/model/posOrder";
-import { PosCashControlModel } from "../../database/model/posCashControl";
-import { voucherModel } from "../../database/model/voucher";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema } from "../../validation/posOrder";
+import { apiResponse, HTTP_STATUS, VOUCHAR_TYPE } from "../../common";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel } from "../../database";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 

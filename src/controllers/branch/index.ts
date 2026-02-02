@@ -1,5 +1,4 @@
-import { HTTP_STATUS, USER_TYPES } from "../../common";
-import { apiResponse } from "../../common/utils";
+import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBranchSchema, deleteBranchSchema, editBranchSchema, getBranchSchema } from "../../validation";

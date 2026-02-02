@@ -1,8 +1,7 @@
-import { HTTP_STATUS } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { loyaltyCampaignModel } from "../../database/model/loyalty";
+import { apiResponse, HTTP_STATUS } from "../../common";
+import { loyaltyCampaignModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addLoyaltySchema, deleteLoyaltySchema, editLoyaltySchema, getLoyaltySchema } from "../../validation/loyalty";
+import { addLoyaltySchema, deleteLoyaltySchema, editLoyaltySchema, getLoyaltySchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 

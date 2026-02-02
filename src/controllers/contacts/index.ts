@@ -1,5 +1,4 @@
-import { HTTP_STATUS } from "../../common";
-import { apiResponse } from "../../common/utils";
+import { apiResponse, HTTP_STATUS } from "../../common";
 import { contactModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addContactSchema, deleteContactSchema, editContactSchema, getContactSchema } from "../../validation";

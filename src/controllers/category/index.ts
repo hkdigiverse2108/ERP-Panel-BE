@@ -1,6 +1,5 @@
-import { HTTP_STATUS } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { categoryModel } from "../../database/model";
+import { apiResponse, HTTP_STATUS } from "../../common";
+import { categoryModel } from "../../database";
 import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCategorySchema, deleteCategorySchema, editCategorySchema, getCategorySchema } from "../../validation";
 

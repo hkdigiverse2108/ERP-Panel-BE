@@ -1,8 +1,6 @@
-import { HTTP_STATUS } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { billOfLiveProductModel, productModel, recipeModel } from "../../database/model";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { checkCompany } from "../../helper/checkCompany";
+import { apiResponse, HTTP_STATUS } from "../../common";
+import { billOfLiveProductModel, productModel, recipeModel } from "../../database";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBillOfLiveProductSchema, deleteBillOfLiveProductSchema, editBillOfLiveProductSchema, getBillOfLiveProductSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -129,7 +127,7 @@ export const editBillOfLiveProductById = async (req, res) => {
 export const deleteBillOfLiveProductById = async (req, res) => {
   reqInfo(req);
   try {
-    const {user} = req.headers;
+    const { user } = req.headers;
     const { error, value } = deleteBillOfLiveProductSchema.validate(req.params);
 
     if (error) {

@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
+import { apiResponse, HTTP_STATUS } from "../../common";
 import { uomModel } from "../../database";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addUOMSchema, deleteUOMSchema, editUOMSchema, getUOMSchema } from "../../validation";

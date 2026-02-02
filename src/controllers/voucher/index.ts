@@ -1,9 +1,7 @@
-import { HTTP_STATUS, VOUCHAR_TYPE } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { contactModel, accountModel } from "../../database";
-import { voucherModel } from "../../database/model/voucher";
+import { apiResponse, HTTP_STATUS, VOUCHAR_TYPE } from "../../common";
+import { contactModel, accountModel, voucherModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addVoucherSchema, deleteVoucherSchema, editVoucherSchema, getVoucherSchema } from "../../validation/voucher";
+import { addVoucherSchema, deleteVoucherSchema, editVoucherSchema, getVoucherSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 

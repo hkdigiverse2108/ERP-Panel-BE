@@ -1,6 +1,5 @@
-import { HTTP_STATUS } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { brandModel } from "../../database/model";
+import { apiResponse, HTTP_STATUS } from "../../common";
+import { brandModel } from "../../database";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBrandSchema, deleteBrandSchema, editBrandSchema, getBrandSchema } from "../../validation";
 
@@ -37,7 +36,7 @@ export const addBrand = async (req, res) => {
 export const editBrandById = async (req, res) => {
   reqInfo(req);
   try {
-    const {user} = req.headers;
+    const { user } = req.headers;
     const { error, value } = editBrandSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
@@ -66,7 +65,7 @@ export const editBrandById = async (req, res) => {
 export const deleteBrandById = async (req, res) => {
   reqInfo(req);
   try {
-    const {user} = req.headers;
+    const { user } = req.headers;
     const { error, value } = deleteBrandSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));

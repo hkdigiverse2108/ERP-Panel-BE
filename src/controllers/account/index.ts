@@ -1,8 +1,7 @@
-import { HTTP_STATUS } from "../../common";
-import { apiResponse } from "../../common/utils";
+import { apiResponse, HTTP_STATUS } from "../../common";
 import { accountModel, accountGroupModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addAccountSchema, deleteAccountSchema, editAccountSchema, getAccountSchema } from "../../validation/account";
+import { addAccountSchema, deleteAccountSchema, editAccountSchema, getAccountSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 

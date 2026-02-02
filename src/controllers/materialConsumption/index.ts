@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { branchModel, materialConsumptionModel, productModel, stockModel, userModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { branchModel, materialConsumptionModel, productModel, stockModel } from "../../database";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addMaterialConsumptionSchema, deleteMaterialConsumptionSchema, editMaterialConsumptionSchema, getMaterialConsumptionSchema } from "../../validation";
 
 export const generateConsumptionNo = async (companyId?: string | null) => {

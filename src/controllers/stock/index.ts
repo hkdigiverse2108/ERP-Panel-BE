@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, materialConsumptionModel, productModel, stockModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation/stock";
+import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation";
 import { generateConsumptionNo } from "../materialConsumption";
 
 export const addStock = async (req, res) => {
