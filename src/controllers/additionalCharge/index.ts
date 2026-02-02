@@ -1,6 +1,5 @@
-import { HTTP_STATUS } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { accountGroupModel, additionalChargeModel, taxModel } from "../../database/model";
+import { apiResponse, HTTP_STATUS } from "../../common";
+import { accountGroupModel, additionalChargeModel, taxModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addAdditionalChargeSchema, deleteAdditionalChargeSchema, editAdditionalChargeSchema, getAdditionalChargeSchema } from "../../validation";
 

@@ -1,6 +1,5 @@
-import { HTTP_STATUS } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { announcementModel, companyModel } from "../../database/model";
+import { apiResponse, HTTP_STATUS } from "../../common";
+import { announcementModel } from "../../database";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { editAnnouncementSchema, addAnnouncementSchema, getAnnouncementSchema, deleteAnnouncementSchema } from "../../validation";
 

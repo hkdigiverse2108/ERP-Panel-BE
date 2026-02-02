@@ -1,6 +1,5 @@
-import { HTTP_STATUS } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { accountGroupModel } from "../../database/model";
+import { apiResponse, HTTP_STATUS } from "../../common";
+import { accountGroupModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addAccountGroupSchema, deleteAccountGroupSchema, editAccountGroupSchema, getAccountGroupSchema } from "../../validation";
 

@@ -1,8 +1,7 @@
-import { HTTP_STATUS } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { couponModel } from "../../database/model/coupon";
+import { apiResponse, HTTP_STATUS } from "../../common";
+import { couponModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addCouponSchema, deleteCouponSchema, editCouponSchema, getCouponSchema } from "../../validation/coupon";
+import { addCouponSchema, deleteCouponSchema, editCouponSchema, getCouponSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 

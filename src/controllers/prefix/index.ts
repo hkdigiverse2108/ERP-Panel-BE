@@ -1,9 +1,7 @@
-import { populate } from "dotenv";
-import { HTTP_STATUS } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { PrefixModel } from "../../database/model/prefix";
+import { apiResponse, HTTP_STATUS } from "../../common";
+import { PrefixModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addPrefixSchema, deletePrefixSchema, editPrefixSchema, getPrefixSchema } from "../../validation/prefix";
+import { addPrefixSchema, deletePrefixSchema, editPrefixSchema, getPrefixSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 

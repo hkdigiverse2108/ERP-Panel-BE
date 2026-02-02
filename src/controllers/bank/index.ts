@@ -1,6 +1,5 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
-import { branchModel } from "../../database";
-import { bankModel } from "../../database/model/bank";
+import { bankModel, branchModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBankSchema, deleteBankSchema, editBankSchema, getBankSchema } from "../../validation";
 

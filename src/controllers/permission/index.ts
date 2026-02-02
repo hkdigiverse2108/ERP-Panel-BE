@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
+import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { moduleModel, permissionModel, userModel } from "../../database";
 import { getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { editPermissionSchema, getPermissionSchema } from "../../validation";

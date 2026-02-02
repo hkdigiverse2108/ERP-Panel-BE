@@ -1,9 +1,7 @@
-import { HTTP_STATUS, USER_TYPES } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { branchModel, companyModel, employeeModel, userModel } from "../../database/model";
-import { roleModel } from "../../database/model/role";
+import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
+import { branchModel, companyModel, employeeModel, roleModel, userModel } from "../../database";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addEmployeeSchema, deleteEmployeeSchema, editEmployeeSchema, getEmployeeSchema } from "../../validation/employee";
+import { addEmployeeSchema, deleteEmployeeSchema, editEmployeeSchema, getEmployeeSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 const notAvailable = "Sorry this Route Is Not Available";

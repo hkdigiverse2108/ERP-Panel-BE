@@ -1,7 +1,5 @@
-import { HTTP_STATUS, USER_TYPES } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { companyModel, locationModel } from "../../database/model";
-import { bankModel } from "../../database/model/bank";
+import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
+import { bankModel, companyModel, locationModel } from "../../database";
 import { checkIdExist, checkLocationExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCompanySchema, deleteCompanySchema, editCompanySchema, getCompanySchema } from "../../validation";
 

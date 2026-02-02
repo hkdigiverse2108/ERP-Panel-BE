@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { stockVerificationModel, productModel, categoryModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addStockVerificationSchema, deleteStockVerificationSchema, editStockVerificationSchema, getStockVerificationSchema } from "../../validation/stockVerification";
+import { addStockVerificationSchema, deleteStockVerificationSchema, editStockVerificationSchema, getStockVerificationSchema } from "../../validation";
 
 // Generate unique stock verification number
 const generateStockVerificationNo = async (companyId): Promise<string> => {

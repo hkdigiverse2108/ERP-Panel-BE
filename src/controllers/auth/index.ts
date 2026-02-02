@@ -1,10 +1,8 @@
-import { HTTP_STATUS, LOGIN_SOURCES, USER_TYPES } from "../../common";
-import { apiResponse, generateHash, generateToken } from "../../common/utils";
-import { moduleModel, permissionModel } from "../../database";
-import { roleModel } from "../../database/model/role";
-import { userModel } from "../../database/model/user";
+import { apiResponse, generateHash, generateToken, HTTP_STATUS, LOGIN_SOURCES, USER_TYPES } from "../../common";
+import { moduleModel, permissionModel, roleModel, userModel } from "../../database";
 import { checkIdExist, createOne, findAllAndPopulateWithSorting, getData, getFirstMatch, reqInfo, responseMessage } from "../../helper";
-import { loginSchema, registerSchema } from "../../validation/auth";
+import { loginSchema, registerSchema } from "../../validation";
+
 import bcryptjs from "bcryptjs";
 
 export const register = async (req, res) => {

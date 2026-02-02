@@ -1,6 +1,5 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
-import { companyModel, userModel } from "../../database";
-import { roleModel } from "../../database/model/role";
+import { companyModel, roleModel, userModel } from "../../database";
 import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addRoleSchema, deleteRoleSchema, editRoleSchema, getRoleSchema } from "../../validation";
 

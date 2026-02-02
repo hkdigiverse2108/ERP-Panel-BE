@@ -1,5 +1,4 @@
-import { HTTP_STATUS, LOCATION_TYPE } from "../../common";
-import { apiResponse } from "../../common/utils";
+import { apiResponse, HTTP_STATUS, LOCATION_TYPE } from "../../common";
 import { locationModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addLocationSchema, deleteLocationSchema, editLocationSchema, getCityByStateSchema, getLocationSchema, getStateByCountrySchema } from "../../validation";
@@ -94,7 +93,7 @@ export const addLocation = async (req, res) => {
 export const editLocationById = async (req, res) => {
   reqInfo(req);
   try {
-    const {user} = req.headers;
+    const { user } = req.headers;
 
     const { error, value } = editLocationSchema.validate(req.body);
 
@@ -186,7 +185,7 @@ export const editLocationById = async (req, res) => {
 export const deleteLocationById = async (req, res) => {
   reqInfo(req);
   try {
-    const {user} = req.headers;
+    const { user } = req.headers;
 
     const { error, value } = deleteLocationSchema.validate(req.params);
 
