@@ -303,7 +303,6 @@ export const getAllStock = async (req, res) => {
     if (expiryFilter !== undefined) criteria.hasExpiry = expiryFilter === "true";
 
     const options: any = {
-      sort: { createdAt: -1 },
       skip: (parseInt(page as string) - 1) * parseInt(limit as string),
       limit: parseInt(limit as string),
       populate: [
