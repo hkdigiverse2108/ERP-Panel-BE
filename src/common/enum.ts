@@ -198,7 +198,6 @@ export const POS_PAYMENT_METHOD = {
   CARD: "card",
   UPI: "upi",
   WALLET: "wallet",
-  CREDIT: "credit",
 } as const;
 
 export const POS_PAYMENT_STATUS = {
@@ -217,4 +216,10 @@ export const POS_ORDER_STATUS = {
 export const POS_ORDER_TYPE = {
   WALK_IN: "walk_in",
   DELIVERY: "delivery",
+} as const;
+
+export const PAYLATER_STATUS = {
+  OPEN: "open",
+  PARTIAL: "partial",
+  SETTLED: "settled",
 } as const;

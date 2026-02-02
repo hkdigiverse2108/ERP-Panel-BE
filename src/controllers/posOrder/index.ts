@@ -1,23 +1,14 @@
-import { apiResponse, HTTP_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, VOUCHAR_TYPE } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel } from "../../database";
+import { apiResponse, HTTP_STATUS, POS_ORDER_STATUS, VOUCHAR_TYPE } from "../../common";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
-// Generate unique POS order number
-const generatePosOrderNo = async (companyId: any): Promise<string> => {
-  const count = await PosOrderModel.countDocuments({ companyId, isDeleted: false });
-  const prefix = "POS";
-  const number = String(count + 1).padStart(6, "0");
-  return `${prefix}${number}`;
-};
-
 export const addPosOrder = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    // const companyId = user?.companyId?._id;
 
     const { error, value } = addPosOrderSchema.validate(req.body);
 
@@ -31,21 +22,6 @@ export const addPosOrder = async (req, res) => {
 
     if (!(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
 
-    // Validate customer if provided
-    if (!(await checkIdExist(contactModel, value.customerId, "Customer", res))) return;
-
-    // Validate products exist
-    for (const item of value.items) {
-      if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
-      if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
-    }
-
-    // Generate order number if not provided
-    // if (!value.orderNo) {
-    // value.orderNo = await generatePosOrderNo(value.companyId);
-    value.orderNo = await generateSequenceNumber({ model: PosOrderModel, prefix: "POS", fieldName: "orderNo", companyId: value.companyId });
-    // }
-
     // Get customer name if customer provided
     if (value.customerId) {
       const customer = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
@@ -54,27 +30,19 @@ export const addPosOrder = async (req, res) => {
       }
     }
 
-    // Calculate totals if not provided
-    if (!value.grossAmount) {
-      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
-    }
-    if (value.netAmount === undefined || value.netAmount === null) {
-      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
+    // Validate products exist
+    for (const item of value.items) {
+      if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+      if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
     }
 
-    // Calculate balance amount
-    value.balanceAmount = (value.netAmount || 0) - (value.paidAmount || 0);
-
-    // Set payment status based on paid amount
-    if (!value.paymentStatus) {
-      if (value.paidAmount === 0) {
-        value.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
-      } else if (value.paidAmount >= value.netAmount) {
-        value.paymentStatus = POS_PAYMENT_STATUS.PAID;
-      } else {
-        value.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
-      }
+    for (const item of value.additionalCharges) {
+      if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
+      if (!(await checkIdExist(accountGroupModel, item.accountGroupId, "Account Group", res))) return;
+      if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
     }
+
+    value.orderNo = await generateSequenceNumber({ model: PosOrderModel, prefix: "POS", fieldName: "orderNo", companyId: value.companyId });
 
     // Set hold date if status is hold
     if (value.status === POS_ORDER_STATUS.HOLD) {
@@ -114,11 +82,6 @@ export const editPosOrder = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
 
-    // Validate Branch if being changed
-    if (value.branchId && value.branchId !== isExist.branchId?.toString()) {
-      if (!(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
-    }
-
     // Validate customer if being changed
     if (value.customerId && value.customerId !== isExist.customerId?.toString()) {
       if (!(await checkIdExist(contactModel, value.customerId, "Customer", res))) return;
@@ -128,30 +91,16 @@ export const editPosOrder = async (req, res) => {
       }
     }
 
-    // Validate products if items are being updated
-    if (value.items && value.items.length > 0) {
-      for (const item of value.items) {
-        if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
-        if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
-      }
-
-      // Recalculate totals
-      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
-      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
+    // Validate products exist
+    for (const item of value.items) {
+      if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+      if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
     }
 
-    // Recalculate balance and payment status
-    value.balanceAmount = (value.netAmount || isExist.netAmount) - (value.paidAmount !== undefined ? value.paidAmount : isExist.paidAmount);
-    if (value.paidAmount !== undefined) {
-      const paidAmt = value.paidAmount;
-      const netAmt = value.netAmount || isExist.netAmount;
-      if (paidAmt === 0) {
-        value.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
-      } else if (paidAmt >= netAmt) {
-        value.paymentStatus = POS_PAYMENT_STATUS.PAID;
-      } else {
-        value.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
-      }
+    for (const item of value.additionalCharges) {
+      if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
+      if (!(await checkIdExist(accountGroupModel, item.accountGroupId, "Account Group", res))) return;
+      if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
     }
 
     // Update hold date if status is being changed to hold
@@ -201,7 +150,7 @@ export const holdPosOrder = async (req, res) => {
 
     const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, payload, {});
 
-    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("POS Order"), {}, {}));
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Hold POS Order"), {}, {}));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order put on hold successfully", response, {}));
   } catch (error) {
@@ -231,7 +180,7 @@ export const releasePosOrder = async (req, res) => {
     }
 
     const payload = {
-      status: "pending",
+      status: POS_ORDER_STATUS.PENDING,
       updatedBy: user?._id || null,
     };
 

@@ -6,19 +6,19 @@ import { baseSchemaFields, baseSchemaOptions } from "./base";
 export const salesItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
-    productName: { type: String, required: true }, // Snapshot
+    productName: { type: String }, // Snapshot
     batchNo: { type: String },
-    qty: { type: Number, required: true },
+    qty: { type: Number },
     freeQty: { type: Number, default: 0 },
     uom: { type: String }, // Snapshot
-    price: { type: Number, required: true }, // Unit Price
+    price: { type: Number }, // Unit Price
     discountPercent: { type: Number, default: 0 },
     discountAmount: { type: Number, default: 0 },
     taxId: { type: Schema.Types.ObjectId, ref: "tax" },
     taxPercent: { type: Number, default: 0 },
     taxAmount: { type: Number, default: 0 },
-    taxableAmount: { type: Number, required: true },
-    totalAmount: { type: Number, required: true },
+    taxableAmount: { type: Number },
+    totalAmount: { type: Number },
   },
   { _id: false },
 );
@@ -28,10 +28,10 @@ export const salesItemSchema = new Schema(
 const EstimateSchema = new Schema<IEstimate>(
   {
     ...baseSchemaFields,
-    documentNo: { type: String, required: true, index: true },
-    date: { type: Date, required: true },
+    documentNo: { type: String, index: true },
+    date: { type: Date },
     dueDate: { type: Date },
-    customerId: { type: Schema.Types.ObjectId, ref: "contact", required: true },
+    customerId: { type: Schema.Types.ObjectId, ref: "contact" },
     customerName: { type: String },
     items: [salesItemSchema],
     grossAmount: { type: Number, default: 0 },
@@ -52,10 +52,10 @@ export const EstimateModel = mongoose.model<IEstimate>("estimate", EstimateSchem
 const SalesOrderSchema = new Schema<ISalesOrder>(
   {
     ...baseSchemaFields,
-    documentNo: { type: String, required: true, index: true },
-    date: { type: Date, required: true },
+    documentNo: { type: String, index: true },
+    date: { type: Date },
     dueDate: { type: Date },
-    customerId: { type: Schema.Types.ObjectId, ref: "contact", required: true },
+    customerId: { type: Schema.Types.ObjectId, ref: "contact" },
     customerName: { type: String },
     items: [salesItemSchema],
     grossAmount: { type: Number, default: 0 },
