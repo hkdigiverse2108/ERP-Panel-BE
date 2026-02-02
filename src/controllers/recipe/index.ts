@@ -1,6 +1,5 @@
-import { HTTP_STATUS, USER_ROLES } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { companyModel, productModel, recipeModel } from "../../database/model";
+import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
+import { companyModel, productModel, recipeModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addRecipeSchema, deleteRecipeSchema, editRecipeSchema, getRecipeSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
