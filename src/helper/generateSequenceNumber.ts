@@ -13,6 +13,8 @@ export const generateSequenceNumber = async ({ model, prefix, fieldName = "numbe
     isDeleted: false,
   };
 
+  prefix = prefix.toUpperCase();
+
   const latest = await model.findOne(baseQuery).select(fieldName).sort({ createdAt: -1 }).lean();
 
   let nextNumber = 1;

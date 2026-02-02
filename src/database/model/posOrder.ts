@@ -1,7 +1,63 @@
 import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
-import { salesItemSchema } from "./salesOrder";
 import { POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS } from "../../common";
+
+export const posAdditionalChargeSchema = new Schema(
+  {
+    chargeId: {
+      type: Schema.Types.ObjectId,
+      ref: "additional-charge",
+    },
+
+    value: {
+      type: Number,
+      required: true,
+    },
+
+    taxId: {
+      type: Schema.Types.ObjectId,
+      ref: "tax",
+    },
+
+    accountGroupId: {
+      type: Schema.Types.ObjectId,
+      ref: "account-group",
+    },
+
+    accountGroupName: {
+      type: String,
+    },
+
+    totalAmount: {
+      type: Number,
+      required: true,
+    },
+  },
+  { _id: false },
+);
+
+export const posItemSchema = new Schema(
+  {
+    productId: {
+      type: Schema.Types.ObjectId,
+      ref: "product",
+      required: true,
+    },
+
+    qty: { type: Number },
+
+    mrp: { type: Number },
+
+    discountAmount: { type: Number, default: 0 },
+    additionalDiscountAmount: { type: Number, default: 0 },
+
+    unitCost: { type: Number },
+    netAmount: { type: Number },
+  },
+  {
+    _id: false,
+  },
+);
 
 // POS Order Schema
 const posOrderSchema = new Schema(
@@ -12,28 +68,26 @@ const posOrderSchema = new Schema(
     customerId: { type: Schema.Types.ObjectId, ref: "contact" },
     orderType: { type: String, enum: Object.values(POS_ORDER_TYPE), default: POS_ORDER_TYPE.WALK_IN },
 
-    items: [salesItemSchema],
+    items: [posItemSchema],
+
     remark: { type: String },
     totalQty: { type: Number, default: 0 },
     totalMrp: { type: Number, default: 0 },
     totalTaxAmount: { type: Number, default: 0 },
+    totalAdditionalCharge: { type: Number, default: 0 },
     totalDiscount: { type: Number, default: 0 },
+    flatDiscountAmount: { type: Number, default: 0 },
     roundOff: { type: Number, default: 0 },
     totalAmount: { type: Number, default: 0 },
 
-    paymentMethod: { type: String, enum: Object.values(POS_PAYMENT_METHOD), default: POS_PAYMENT_METHOD.CASH },
-    paymentStatus: { type: String, enum: Object.values(POS_PAYMENT_STATUS), default: POS_PAYMENT_STATUS.PAID },
+    additionalCharges: [posAdditionalChargeSchema],
+
+    paymentMethod: { type: String, enum: Object.values(POS_PAYMENT_METHOD) },
+    paymentStatus: { type: String, enum: Object.values(POS_PAYMENT_STATUS), default: POS_PAYMENT_STATUS.UNPAID },
     status: { type: String, enum: Object.values(POS_ORDER_STATUS), default: POS_ORDER_STATUS.PENDING },
     holdDate: { type: Date },
-    notes: { type: String },
     invoiceId: { type: Schema.Types.ObjectId, ref: "invoice" },
-
-    // grossAmount: { type: Number, default: 0 },
-    // discountAmount: { type: Number, default: 0 },
-    // taxAmount: { type: Number, default: 0 },
-    // netAmount: { type: Number, default: 0 },
-    // paidAmount: { type: Number, default: 0 },
-    // balanceAmount: { type: Number, default: 0 },
+    // notes: { type: String },
   },
   baseSchemaOptions,
 );

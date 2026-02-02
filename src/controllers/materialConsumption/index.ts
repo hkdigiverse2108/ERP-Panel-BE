@@ -78,7 +78,7 @@ export const addMaterialConsumption = async (req, res) => {
       if (!updatedStock) continue;
     }
 
-    value.number = await generateSequenceNumber({ model: materialConsumptionModel, prefix: "Con", fieldName: "number", companyId: value.companyId });
+    value.number = await generateSequenceNumber({ model: materialConsumptionModel, prefix: "CON", fieldName: "number", companyId: value.companyId });
    
     const isExist = await getFirstMatch(materialConsumptionModel, { companyId: value.companyId, number: value?.number, isDeleted: false }, {}, {});
 
