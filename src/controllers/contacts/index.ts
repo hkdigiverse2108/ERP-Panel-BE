@@ -244,13 +244,13 @@ export const getContactDropdown = async (req, res) => {
 
     let criteria: any = { isDeleted: false, isActive: true };
 
-    if (companyId) {
-      criteria.companyId = companyId;
-    }
+    // if (companyId) {
+    //   criteria.companyId = companyId;
+    // }
 
-    if (companyFilter) {
-      criteria.companyId = companyFilter;
-    }
+    // if (companyFilter) {
+    //   criteria.companyId = companyFilter;
+    // }
 
     // Filter by contact type
     if (typeFilter) {
@@ -271,14 +271,34 @@ export const getContactDropdown = async (req, res) => {
       criteria = { ...criteria, ...searchCriteria };
     }
 
-    const response = await getData(contactModel, criteria, { firstName: 1, lastName: 1, companyName: 1 }, { sort: { companyName: 1, firstName: 1 }, limit: search ? 50 : 1000 });
+    const response = await getData(
+      contactModel,
+      criteria,
+      { firstName: 1, lastName: 1, dob: 1,  email: 1, phoneNo: 1, whatsappNo: 1, contactType: 1, "address.addressLine1": 1, "address.city": 1, "address.state": 1, "address.country": 1, "address.pinCode": 1 },
+      {
+        sort: { companyName: 1, firstName: 1 },
+        limit: search ? 50 : 1000,
+        populate: [
+          { path: "address.country", select: "name code" },
+          { path: "address.state", select: "name code" },
+          { path: "address.city", select: "name code" },
+        ],
+      },
+    );
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
       name: item.companyName || `${item.firstName} ${item.lastName || ""}`.trim(),
-      companyName: item.companyName,
       firstName: item.firstName,
       lastName: item.lastName,
+      customerCategory: item.customerCategory,
+      customerType: item.customerType,
+      contactType: item.contactType,
+      address: item.address,
+      email: item.email,
+      phoneNo: item.phoneNo,
+      whatsappNo: item.whatsappNo,
+      dob: item.dob,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Contact Dropdown"), dropdownData, {}));
