@@ -61,7 +61,7 @@ export const addPosOrder = async (req, res) => {
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("POS Order"), response, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -197,84 +197,6 @@ export const releasePosOrder = async (req, res) => {
   }
 };
 
-export const convertToInvoice = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { user } = req?.headers;
-    const { error, value } = convertToInvoiceSchema.validate(req.body);
-
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
-
-    const posOrder = await getFirstMatch(PosOrderModel, { _id: value?.posOrderId, isDeleted: false }, {}, {});
-
-    if (!posOrder) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
-    }
-
-    // Create invoice from POS order
-    // Note: Invoice requires customerId, so we need to handle walk-in customers
-    // Option 1: Create a default "Walk-in Customer" contact
-    // Option 2: Make customerId optional in invoice (but model requires it)
-    // For now, we'll require customerId or use a default walk-in customer ID
-
-    if (!posOrder.customerId) {
-      // Try to find or create a default walk-in customer
-      const walkInCustomer = await getFirstMatch(contactModel, { companyName: "Walk-in Customer", companyId: posOrder.companyId, isDeleted: false }, {}, {});
-      if (!walkInCustomer) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Please create a default 'Walk-in Customer' contact for POS orders", {}, {}));
-      }
-      posOrder.customerId = walkInCustomer._id;
-      posOrder.customerName = walkInCustomer.companyName || "Walk-in Customer";
-    }
-
-    const invoiceData = {
-      documentNo: posOrder.orderNo.replace("POS", "INV"), // Convert order number to invoice number
-      date: posOrder.date,
-      customerId: posOrder.customerId,
-      customerName: posOrder.customerName || "Walk-in Customer",
-      items: posOrder.items,
-      grossAmount: posOrder.grossAmount,
-      discountAmount: posOrder.discountAmount,
-      taxAmount: posOrder.taxAmount,
-      roundOff: posOrder.roundOff,
-      netAmount: posOrder.netAmount,
-      paidAmount: posOrder.paidAmount,
-      balanceAmount: posOrder.balanceAmount,
-      paymentStatus: posOrder.paymentStatus,
-      status: "active",
-      notes: posOrder.notes,
-      companyId: posOrder.companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
-
-    const invoice = await createOne(InvoiceModel, invoiceData);
-
-    if (!invoice) {
-      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, "Failed to create invoice", {}, {}));
-    }
-
-    // Update POS order with invoice ID and mark as completed
-    await updateData(
-      PosOrderModel,
-      { _id: value?.posOrderId },
-      {
-        invoiceId: invoice._id,
-        status: "completed",
-        updatedBy: user?._id || null,
-      },
-      {},
-    );
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order converted to invoice successfully", { posOrder, invoice }, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
-
 export const deletePosOrder = async (req, res) => {
   reqInfo(req);
   try {
@@ -310,7 +232,7 @@ export const getAllPosOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, activeFilter, companyFilter, status, paymentStatus, branchId, tableNo, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, activeFilter, companyFilter, statusFilter, paymentStatusFilter, branchFilter, tableNoFilter, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -329,20 +251,20 @@ export const getAllPosOrder = async (req, res) => {
       criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }, { tableNo: { $regex: search, $options: "si" } }];
     }
 
-    if (status) {
-      criteria.status = status;
+    if (statusFilter) {
+      criteria.status = statusFilter;
     }
 
-    if (paymentStatus) {
-      criteria.paymentStatus = paymentStatus;
+    if (paymentStatusFilter) {
+      criteria.paymentStatus = paymentStatusFilter;
     }
 
-    if (branchId) {
-      criteria.branchId = branchId;
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
-    if (tableNo) {
-      criteria.tableNo = tableNo;
+    if (tableNoFilter) {
+      criteria.tableNo = tableNoFilter;
     }
 
     if (startDate && endDate) {
@@ -360,8 +282,10 @@ export const getAllPosOrder = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "customerId", select: "firstName lastName companyName email phoneNo" },
         { path: "items.productId", select: "name itemCode" },
-        { path: "items.taxId", select: "name percentage" },
         { path: "invoiceId", select: "documentNo" },
+        { path: "additionalCharges.taxId", select: "name percentage" },
+        { path: "additionalCharges.chargeId", select: "name" },
+        { path: "additionalCharges.accountGroupId", select: "name" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -400,13 +324,14 @@ export const getOnePosOrder = async (req, res) => {
       {},
       {
         populate: [
-          { path: "branchId", select: "name address" },
+          { path: "branchId", select: "name" },
           { path: "companyId", select: "name" },
-
-          { path: "customerId", select: "firstName lastName companyName email phoneNo address" },
-          { path: "items.productId", select: "name itemCode sellingPrice mrp" },
-          { path: "items.taxId", select: "name percentage type" },
-          { path: "invoiceId", select: "documentNo date netAmount" },
+          { path: "customerId", select: "firstName lastName companyName email phoneNo" },
+          { path: "items.productId", select: "name itemCode" },
+          { path: "invoiceId", select: "documentNo" },
+          { path: "additionalCharges.taxId", select: "name percentage" },
+          { path: "additionalCharges.chargeId", select: "name" },
+          { path: "additionalCharges.accountGroupId", select: "name" },
         ],
       },
     );
@@ -511,7 +436,6 @@ export const quickAddProduct = async (req, res) => {
   }
 };
 
-// POS Cash Control - Get/Update opening cash balance
 export const getPosCashControl = async (req, res) => {
   reqInfo(req);
   try {
@@ -703,7 +627,6 @@ export const updatePosCashControl = async (req, res) => {
   }
 };
 
-// Get Customer Loyalty Points
 export const getCustomerLoyaltyPoints = async (req, res) => {
   reqInfo(req);
   try {
@@ -735,7 +658,6 @@ export const getCustomerLoyaltyPoints = async (req, res) => {
   }
 };
 
-// Redeem Loyalty Points
 export const redeemLoyaltyPoints = async (req, res) => {
   reqInfo(req);
   try {
@@ -783,7 +705,6 @@ export const redeemLoyaltyPoints = async (req, res) => {
   }
 };
 
-// Get Combined Payments (Receipt, Payment, Expense) for POS Payments modal
 export const getCombinedPayments = async (req, res) => {
   reqInfo(req);
   try {
@@ -845,6 +766,84 @@ export const getCombinedPayments = async (req, res) => {
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payments"), { payments_data: response, state }, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const convertToInvoice = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = convertToInvoiceSchema.validate(req.body);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const posOrder = await getFirstMatch(PosOrderModel, { _id: value?.posOrderId, isDeleted: false }, {}, {});
+
+    if (!posOrder) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+    }
+
+    // Create invoice from POS order
+    // Note: Invoice requires customerId, so we need to handle walk-in customers
+    // Option 1: Create a default "Walk-in Customer" contact
+    // Option 2: Make customerId optional in invoice (but model requires it)
+    // For now, we'll require customerId or use a default walk-in customer ID
+
+    if (!posOrder.customerId) {
+      // Try to find or create a default walk-in customer
+      const walkInCustomer = await getFirstMatch(contactModel, { companyName: "Walk-in Customer", companyId: posOrder.companyId, isDeleted: false }, {}, {});
+      if (!walkInCustomer) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Please create a default 'Walk-in Customer' contact for POS orders", {}, {}));
+      }
+      posOrder.customerId = walkInCustomer._id;
+      posOrder.customerName = walkInCustomer.companyName || "Walk-in Customer";
+    }
+
+    const invoiceData = {
+      documentNo: posOrder.orderNo.replace("POS", "INV"), // Convert order number to invoice number
+      date: posOrder.date,
+      customerId: posOrder.customerId,
+      customerName: posOrder.customerName || "Walk-in Customer",
+      items: posOrder.items,
+      grossAmount: posOrder.grossAmount,
+      discountAmount: posOrder.discountAmount,
+      taxAmount: posOrder.taxAmount,
+      roundOff: posOrder.roundOff,
+      netAmount: posOrder.netAmount,
+      paidAmount: posOrder.paidAmount,
+      balanceAmount: posOrder.balanceAmount,
+      paymentStatus: posOrder.paymentStatus,
+      status: "active",
+      notes: posOrder.notes,
+      companyId: posOrder.companyId,
+      createdBy: user?._id || null,
+      updatedBy: user?._id || null,
+    };
+
+    const invoice = await createOne(InvoiceModel, invoiceData);
+
+    if (!invoice) {
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, "Failed to create invoice", {}, {}));
+    }
+
+    // Update POS order with invoice ID and mark as completed
+    await updateData(
+      PosOrderModel,
+      { _id: value?.posOrderId },
+      {
+        invoiceId: invoice._id,
+        status: "completed",
+        updatedBy: user?._id || null,
+      },
+      {},
+    );
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order converted to invoice successfully", { posOrder, invoice }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

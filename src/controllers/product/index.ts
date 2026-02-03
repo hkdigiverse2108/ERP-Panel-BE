@@ -277,12 +277,7 @@ export const getProductDropdown = async (req, res) => {
     }
 
     // 1. Get productIds that have stock for this company
-    const stockResponse = await getDataWithSorting(
-      stockModel,
-      { isDeleted: false, isActive: true, companyId: stockCompanyId },
-      { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1 },
-      { sort: { updatedAt: -1 } },
-    );
+    const stockResponse = await getDataWithSorting(stockModel, { isDeleted: false, isActive: true, companyId: stockCompanyId }, { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1 }, { sort: { updatedAt: -1 } });
 
     const productIdsWithStock = [...new Set(stockResponse.map((s: any) => String(s.productId)))];
     if (productIdsWithStock.length === 0) {
@@ -364,16 +359,12 @@ export const getOneProduct = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
           { path: "categoryId", select: "name" },
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
-          // { path: "departmentId", select: "name" },
-          { path: "uomId", select: "name" },
           { path: "purchaseTaxId", select: "name" },
           { path: "salesTaxId", select: "name" },
-          { path: "purchaseTaxId", select: "name" },
         ],
       },
     );

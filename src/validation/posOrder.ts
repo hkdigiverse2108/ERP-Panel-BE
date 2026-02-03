@@ -4,11 +4,10 @@ import { POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATU
 
 const posAdditionalChargeSchema = Joi.object({
   chargeId: objectId().optional().allow(null),
-  value: Joi.number().min(0).required(),
+  value: Joi.number().min(0).optional(),
   taxId: objectId().optional().allow(null),
   accountGroupId: objectId().optional().allow(null),
-  accountGroupName: Joi.string().optional().allow("", null),
-  totalAmount: Joi.number().min(0).required(),
+  totalAmount: Joi.number().min(0).optional(),
 });
 
 const posOrderItemSchema = Joi.object({

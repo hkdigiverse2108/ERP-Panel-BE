@@ -24,10 +24,6 @@ export const posAdditionalChargeSchema = new Schema(
       ref: "account-group",
     },
 
-    accountGroupName: {
-      type: String,
-    },
-
     totalAmount: {
       type: Number,
       required: true,
