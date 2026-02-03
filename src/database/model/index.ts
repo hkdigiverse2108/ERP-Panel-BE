@@ -61,3 +61,4 @@ export * from "./additionalCharge";
 export * from "./salesCreditNote";
 export * from "./salesDebitNote";
 export * from "./bank";
+export * from "./payLater";

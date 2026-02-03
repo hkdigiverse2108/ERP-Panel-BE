@@ -360,13 +360,12 @@ export const getOneStock = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
           { path: "categoryId", select: "name" },
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
-          // { path: "departmentId", select: "name" },
-          { path: "uomId", select: "name code" },
+          { path: "purchaseTaxId", select: "name" },
+          { path: "salesTaxId", select: "name" },
         ],
       },
     );
@@ -391,7 +390,8 @@ export const getOneStock = async (req, res) => {
       {
         populate: [
           { path: "productId", select: "name itemCode" },
-          // { path: "branchId", select: "name" },
+          { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
         ],
       },
     );

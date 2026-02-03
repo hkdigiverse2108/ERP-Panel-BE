@@ -47,3 +47,4 @@ export * from "./salesCreditNote";
 export * from "./salesDebitNote";
 export * from "./stock";
 export * from "./employee";
+export * from "./payLater";

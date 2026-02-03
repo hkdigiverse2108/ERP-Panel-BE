@@ -128,6 +128,10 @@ export const getAllProduct = async (req, res) => {
     let criteria: any = { isDeleted: false };
     let productIds: any[] = [];
 
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
     if (search) {
       const searchCriteria = [{ name: { $regex: search, $options: "si" } }, { itemCode: { $regex: search, $options: "si" } }];
       if (criteria.$or) {
@@ -186,8 +190,8 @@ export const getAllProduct = async (req, res) => {
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
         { path: "subBrandId", select: "name" },
-        { path: "purchaseTaxId", select: "name" },
-        { path: "salesTaxId", select: "name" },
+        { path: "purchaseTaxId", select: "name percentage" },
+        { path: "salesTaxId", select: "name percentage" },
       ],
     };
 
@@ -348,6 +352,10 @@ export const getProductDropdown = async (req, res) => {
 export const getOneProduct = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+
     const { error, value } = getProductSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -358,20 +366,63 @@ export const getOneProduct = async (req, res) => {
       {},
       {
         populate: [
-          { path: "companyId", select: "name" },
           { path: "categoryId", select: "name" },
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
-          { path: "purchaseTaxId", select: "name" },
-          { path: "salesTaxId", select: "name" },
+          { path: "purchaseTaxId", select: "name percentage" },
+          { path: "salesTaxId", select: "name percentage" },  
         ],
       },
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), response, {}));
+    const stockCriteria: any = {
+      productId: response._id,
+      isDeleted: false,
+    };
+
+    if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+      stockCriteria.companyId = companyId;
+    }
+
+    const stockAggregation = await stockModel.aggregate([
+      { $match: stockCriteria },
+      {
+        $group: {
+          _id: "$productId",
+          totalQty: { $sum: "$qty" },
+          totalMrp: { $sum: "$mrp" },
+          totalSellingPrice: { $sum: "$sellingPrice" },
+          totalSellingDiscount: { $sum: "$sellingDiscount" },
+          totalLandingCost: { $sum: "$landingCost" },
+          totalPurchasePrice: { $sum: "$purchasePrice" },
+          totalSellingMargin: { $sum: "$sellingMargin" },
+        },
+      },
+    ]);
+
+    const productsWithStock = [
+      {
+        ...(response.toObject ? response.toObject() : response),
+        mrp: stockAggregation.length > 0 ? stockAggregation[0].totalMrp : 0,
+        sellingPrice: stockAggregation.length > 0 ? stockAggregation[0].totalSellingPrice : 0,
+        sellingDiscount: stockAggregation.length > 0 ? stockAggregation[0].totalSellingDiscount : 0,
+        landingCost: stockAggregation.length > 0 ? stockAggregation[0].totalLandingCost : 0,
+        purchasePrice: stockAggregation.length > 0 ? stockAggregation[0].totalPurchasePrice : 0,
+        sellingMargin: stockAggregation.length > 0 ? stockAggregation[0].totalSellingMargin : 0,
+        qty: stockAggregation.length > 0 ? stockAggregation[0].totalQty : 0,
+      },
+    ];
+
+    const stateObj = {
+      page: 1,
+      limit: 1,
+      totalPages: 1,
+    };
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), { product_data: productsWithStock, totalData: 1, state: stateObj }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

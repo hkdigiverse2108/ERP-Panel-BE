@@ -47,3 +47,4 @@ export * as termsConditionController from "./termsCondition";
 export * as additionalChargeController from "./additionalCharge";
 export * as salesCreditNoteController from "./salesCreditNote";
 export * as salesDebitNoteController from "./salesDebitNote";
+export * as payLaterController from "./payLater";
