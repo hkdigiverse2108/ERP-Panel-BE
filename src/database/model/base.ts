@@ -14,13 +14,6 @@ export const baseSchemaFields = {
   branchId: { type: Schema.Types.ObjectId, ref: "branch", index: true },
 };
 
-// export const baseSchemaOptions = {
-//   timestamps: true,
-//   versionKey: false,
-//   // toJSON: { virtuals: false, versionKey: false },
-//   // toObject: { virtuals: false, versionKey: false },
-// };
-
 export const baseSchemaOptions: SchemaOptions<any> = {
   timestamps: true,
   versionKey: false,

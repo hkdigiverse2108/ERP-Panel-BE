@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { taxModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addTaxSchema, deleteTaxSchema, editTaxSchema, getTaxSchema } from "../../validation";
 
 export const addTax = async (req, res) => {
@@ -11,14 +11,9 @@ export const addTax = async (req, res) => {
     const { error, value } = addTaxSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    value.companyId = await checkCompany(user, value);
-
-    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-
     let existingTax = await getFirstMatch(
       taxModel,
       {
-        companyId: value.companyId,
         isDeleted: false,
         name: value.name,
       },
@@ -62,7 +57,6 @@ export const editTax = async (req, res) => {
         taxModel,
         {
           _id: { $ne: value?.taxId },
-          companyId: existingTax.companyId,
           isDeleted: false,
           name: value.name,
         },
@@ -119,23 +113,12 @@ export const deleteTax = async (req, res) => {
 export const getAllTax = async (req, res) => {
   reqInfo(req);
   try {
-    const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
-
-    let { page, limit, search, activeFilter, typeFilter, companyFilter } = req.query;
+    let { page, limit, search, activeFilter, typeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
-
-    if (companyId) {
-      criteria.companyId = companyId;
-    }
-
-    if (companyFilter) {
-      criteria.companyId = companyFilter;
-    }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
@@ -178,17 +161,7 @@ export const getTaxById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const response = await getFirstMatch(
-      taxModel,
-      { _id: value?.id, isDeleted: false },
-      {},
-      {
-        populate: [
-          { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
-        ],
-      },
-    );
+    const response = await getFirstMatch(taxModel, { _id: value?.id, isDeleted: false }, {}, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Tax"), {}, {}));
 
@@ -202,15 +175,9 @@ export const getTaxById = async (req, res) => {
 export const getTaxDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
     const { type } = req.query; // Optional filter by type (purchase/sales)
 
     let criteria: any = { isDeleted: false, isActive: true };
-
-    // if (companyId) {
-    //   criteria.companyId = companyId;
-    // }
 
     if (type) {
       criteria.type = type;

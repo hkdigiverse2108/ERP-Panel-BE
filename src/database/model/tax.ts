@@ -1,11 +1,14 @@
-import mongoose, { Schema } from 'mongoose';
-import { baseSchemaFields, baseSchemaOptions } from './base';
-import { ITax } from '../../types';
+import mongoose, { Schema } from "mongoose";
+import { baseCommonFields, baseSchemaOptions } from "./base";
+import { ITax } from "../../types";
 
-const taxSchema = new Schema<ITax>({
-    ...baseSchemaFields,
+const taxSchema = new Schema<ITax>(
+  {
+    ...baseCommonFields,
     name: { type: String },
     percentage: { type: Number },
-}, baseSchemaOptions);
+  },
+  baseSchemaOptions,
+);
 
-export const taxModel = mongoose.model<ITax>('tax', taxSchema);
+export const taxModel = mongoose.model<ITax>("tax", taxSchema);

@@ -371,7 +371,7 @@ export const getOneProduct = async (req, res) => {
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
           { path: "purchaseTaxId", select: "name percentage" },
-          { path: "salesTaxId", select: "name percentage" },  
+          { path: "salesTaxId", select: "name percentage" },
         ],
       },
     );
@@ -403,26 +403,20 @@ export const getOneProduct = async (req, res) => {
       },
     ]);
 
-    const productsWithStock = [
-      {
-        ...(response.toObject ? response.toObject() : response),
-        mrp: stockAggregation.length > 0 ? stockAggregation[0].totalMrp : 0,
-        sellingPrice: stockAggregation.length > 0 ? stockAggregation[0].totalSellingPrice : 0,
-        sellingDiscount: stockAggregation.length > 0 ? stockAggregation[0].totalSellingDiscount : 0,
-        landingCost: stockAggregation.length > 0 ? stockAggregation[0].totalLandingCost : 0,
-        purchasePrice: stockAggregation.length > 0 ? stockAggregation[0].totalPurchasePrice : 0,
-        sellingMargin: stockAggregation.length > 0 ? stockAggregation[0].totalSellingMargin : 0,
-        qty: stockAggregation.length > 0 ? stockAggregation[0].totalQty : 0,
-      },
-    ];
+    const stock = stockAggregation.length > 0 ? stockAggregation[0] : {};
 
-    const stateObj = {
-      page: 1,
-      limit: 1,
-      totalPages: 1,
+    const productsWithStock = {
+      ...(response.toObject ? response.toObject() : response),
+      mrp: stock.totalMrp ?? 0,
+      sellingPrice: stock.totalSellingPrice ?? 0,
+      sellingDiscount: stock.totalSellingDiscount ?? 0,
+      landingCost: stock.totalLandingCost ?? 0,
+      purchasePrice: stock.totalPurchasePrice ?? 0,
+      sellingMargin: stock.totalSellingMargin ?? 0,
+      qty: stock.totalQty ?? 0,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), { product_data: productsWithStock, totalData: 1, state: stateObj }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), productsWithStock, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
