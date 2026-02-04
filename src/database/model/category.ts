@@ -14,8 +14,8 @@ export interface ICategory extends IBase {
 
 const categorySchema = new Schema<ICategory>({
     ...baseSchemaFields,
-    name: { type: String, required: true },
-    code: { type: String, required: true },
+    name: { type: String },
+    code: { type: String },
     description: { type: String },
     parentCategoryId: { type: Schema.Types.ObjectId, ref: 'category' },
     image: { type: String },
