@@ -190,7 +190,6 @@ export const getAdditionalChargeById = async (req, res) => {
   }
 };
 
-// Dropdown API - returns only active additional charges in { _id, additionalCharge, type, defaultValue } format
 export const getAdditionalChargeDropdown = async (req, res) => {
   reqInfo(req);
   try {
