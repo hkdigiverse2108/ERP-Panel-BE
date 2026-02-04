@@ -48,6 +48,7 @@ export const addPosOrderSchema = Joi.object({
     .default(POS_ORDER_STATUS.PENDING),
   holdDate: Joi.date().optional().allow(null),
   invoiceId: objectId().optional().allow(null),
+  payLaterId: objectId().optional().allow(null),
   ...baseApiSchema,
 });
 
@@ -83,6 +84,7 @@ export const editPosOrderSchema = Joi.object().keys({
     .optional(),
   holdDate: Joi.date().optional().allow(null),
   invoiceId: objectId().optional().allow(null),
+  payLaterId: objectId().optional().allow(null),
   ...baseApiSchema,
 });
 

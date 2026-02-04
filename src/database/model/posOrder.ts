@@ -83,6 +83,9 @@ const posOrderSchema = new Schema(
     status: { type: String, enum: Object.values(POS_ORDER_STATUS), default: POS_ORDER_STATUS.PENDING },
     holdDate: { type: Date },
     invoiceId: { type: Schema.Types.ObjectId, ref: "invoice" },
+
+    payLaterId: { type: Schema.Types.ObjectId, ref: "pay-later" },
+
     // notes: { type: String },
   },
   baseSchemaOptions,

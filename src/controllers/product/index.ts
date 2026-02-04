@@ -66,12 +66,11 @@ export const editProduct = async (req, res) => {
 
     if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
 
-    isExist = await getFirstMatch(productModel, { isDeleted: false, $or: [{ name: value?.name }, { itemCode: value?.itemCode }], _id: { $ne: value?.productId } }, {}, {});
+    isExist = await getFirstMatch(productModel, { isDeleted: false, $or: [{ name: value?.name }], _id: { $ne: value?.productId } }, {}, {});
 
     if (isExist) {
       let errorText = "";
       if (isExist?.name === value?.name) errorText = "Product Name";
-      if (isExist?.itemCode === value?.itemCode) errorText = "Product Item Code";
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.dataAlreadyExist(errorText), {}, {}));
     }
 
@@ -133,7 +132,7 @@ export const getAllProduct = async (req, res) => {
     }
 
     if (search) {
-      const searchCriteria = [{ name: { $regex: search, $options: "si" } }, { itemCode: { $regex: search, $options: "si" } }];
+      const searchCriteria = [{ name: { $regex: search, $options: "si" } }];
       if (criteria.$or) {
         criteria.$or = [...criteria.$or, ...searchCriteria];
       } else {
@@ -294,7 +293,6 @@ export const getProductDropdown = async (req, res) => {
       if (!stockByProductId.has(key)) stockByProductId.set(key, stock);
     });
 
-    // 2. Fetch only products that have stock + other filters
     let criteria: any = {
       isDeleted: false,
       isActive: true,
@@ -314,7 +312,7 @@ export const getProductDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { itemCode: { $regex: search, $options: "si" } }];
+      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
     }
 
     const response = await getDataWithSorting(
