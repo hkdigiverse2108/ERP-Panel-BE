@@ -182,9 +182,13 @@ export const getBrandById = async (req, res) => {
 export const getBrandDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    let { parentBrandFilter } = req.query;
+    let { parentBrandFilter, onlyBrandFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
+
+    if(Boolean(onlyBrandFilter) === true) {
+      criteria.parentBrandId = null;
+    }
 
     if (parentBrandFilter) criteria.parentBrandId = new ObjectId(parentBrandFilter);
 
