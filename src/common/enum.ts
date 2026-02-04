@@ -223,3 +223,14 @@ export const PAYLATER_STATUS = {
   PARTIAL: "partial",
   SETTLED: "settled",
 } as const;
+
+export const POS_PAYMENT_TYPE = {
+  RECEIPT: "receipt",
+  PAYMENT: "payment",
+  EXPENSE: "expense",
+} as const;
+
+export const POS_RECEIPT_TYPE = {
+  AGAINST_BILL: "against_bill",
+  ADVANCE: "advance",
+} as const;

@@ -1,5 +1,5 @@
-import { apiResponse, HTTP_STATUS, POS_ORDER_STATUS, VOUCHAR_TYPE } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel } from "../../database";
+import { apiResponse, HTTP_STATUS, PAYLATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_RECEIPT_TYPE, VOUCHAR_TYPE } from "../../common";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PayLaterModel, PosPaymentModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema } from "../../validation";
 
@@ -20,7 +20,8 @@ export const addPosOrder = async (req, res) => {
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    if (!(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
+    if (value.branchId && !(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
+    if (value.payLaterId && !(await checkIdExist(PayLaterModel, value.payLaterId, "Pay Later", res))) return;
 
     // Get customer name if customer provided
     if (value.customerId) {
@@ -52,10 +53,48 @@ export const addPosOrder = async (req, res) => {
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
+    // Set payment status based on paid amount
+    if (value.paidAmount >= value.totalAmount) {
+      value.paymentStatus = POS_PAYMENT_STATUS.PAID;
+      value.status = POS_ORDER_STATUS.COMPLETED;
+    } else if (value.paidAmount > 0 && value.paidAmount < value.totalAmount) {
+      value.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+    } else {
+      value.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+    }
+
     const response = await createOne(PosOrderModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+    }
+
+    if (response.payLaterId) {
+      const payLater = await getFirstMatch(PayLaterModel, { _id: response.payLaterId, isDeleted: false }, {}, {});
+      if (payLater) {
+        payLater.posOrderId = response._id;
+        payLater.totalAmount = response.totalAmount;
+        payLater.paidAmount = response.paidAmount || 0;
+        payLater.dueAmount = Math.max(0, response.totalAmount - (response.paidAmount || 0));
+        payLater.status = payLater.dueAmount <= 0 ? PAYLATER_STATUS.SETTLED : payLater.paidAmount > 0 ? PAYLATER_STATUS.PARTIAL : PAYLATER_STATUS.OPEN;
+        await updateData(PayLaterModel, { _id: response.payLaterId }, payLater, {});
+      }
+    }
+
+    // Add payment entry
+    if (response.paidAmount > 0) {
+      const paymentData = {
+        companyId: response.companyId,
+        branchId: response.branchId,
+        posOrderId: response._id,
+        amount: response.paidAmount,
+        type: POS_PAYMENT_TYPE.RECEIPT,
+        receiptType: POS_RECEIPT_TYPE.AGAINST_BILL,
+        receiptNo: await generateSequenceNumber({ model: PosPaymentModel, prefix: "RCP", fieldName: "receiptNo", companyId: response.companyId }),
+        createdBy: user?._id || null,
+        updatedBy: user?._id || null,
+      };
+      await createOne(PosPaymentModel, paymentData);
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("POS Order"), response, {}));
@@ -82,6 +121,8 @@ export const editPosOrder = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
 
+    if (value.payLaterId && !(await checkIdExist(PayLaterModel, value.payLaterId, "Pay Later", res))) return;
+
     // Validate customer if being changed
     if (value.customerId && value.customerId !== isExist.customerId?.toString()) {
       if (!(await checkIdExist(contactModel, value.customerId, "Customer", res))) return;
@@ -92,15 +133,20 @@ export const editPosOrder = async (req, res) => {
     }
 
     // Validate products exist
-    for (const item of value.items) {
-      if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
-      if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+
+    if (value?.items) {
+      for (const item of value?.items) {
+        if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+        if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+      }
     }
 
-    for (const item of value.additionalCharges) {
-      if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
-      if (!(await checkIdExist(accountGroupModel, item.accountGroupId, "Account Group", res))) return;
-      if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+    if (value?.additionalCharges) {
+      for (const item of value.additionalCharges) {
+        if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
+        if (!(await checkIdExist(accountGroupModel, item.accountGroupId, "Account Group", res))) return;
+        if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+      }
     }
 
     // Update hold date if status is being changed to hold
@@ -110,10 +156,55 @@ export const editPosOrder = async (req, res) => {
 
     value.updatedBy = user?._id || null;
 
+    // Handle payment logic for edit
+    const totalAmount = value.totalAmount !== undefined ? value.totalAmount : isExist.totalAmount;
+    const oldPaidAmount = isExist.paidAmount || 0;
+    const newPaidAmount = value.paidAmount !== undefined ? value.paidAmount : oldPaidAmount;
+    const paymentDiff = newPaidAmount - oldPaidAmount;
+
+    if (newPaidAmount >= totalAmount) {
+      value.paymentStatus = POS_PAYMENT_STATUS.PAID;
+      value.status = POS_ORDER_STATUS.COMPLETED;
+    } else if (newPaidAmount > 0 && newPaidAmount < totalAmount) {
+      value.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+    } else {
+      value.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+    }
+
     const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, value, {});
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("POS Order"), {}, {}));
+    }
+
+    // Add payment entry if there's a difference
+    if (paymentDiff > 0) {
+      const paymentData = {
+        companyId: response.companyId,
+        branchId: response.branchId,
+        posOrderId: response._id,
+        amount: paymentDiff,
+        type: POS_PAYMENT_TYPE.RECEIPT,
+        receiptType: POS_RECEIPT_TYPE.AGAINST_BILL,
+        receiptNo: await generateSequenceNumber({ model: PosPaymentModel, prefix: "RCP", fieldName: "receiptNo", companyId: response.companyId }),
+        createdBy: user?._id || null,
+        updatedBy: user?._id || null,
+      };
+      await createOne(PosPaymentModel, paymentData);
+    }
+
+    // Sync with PayLater if exists
+    const payLaterId = value.payLaterId || response.payLaterId;
+    if (payLaterId) {
+      const payLater = await getFirstMatch(PayLaterModel, { _id: payLaterId, isDeleted: false }, {}, {});
+      if (payLater) {
+        payLater.posOrderId = response._id;
+        payLater.totalAmount = response.totalAmount;
+        payLater.paidAmount = response.paidAmount || 0;
+        payLater.dueAmount = Math.max(0, response.totalAmount - (response.paidAmount || 0));
+        payLater.status = payLater.dueAmount <= 0 ? PAYLATER_STATUS.SETTLED : payLater.paidAmount > 0 ? PAYLATER_STATUS.PARTIAL : PAYLATER_STATUS.OPEN;
+        await updateData(PayLaterModel, { _id: payLaterId }, payLater, {});
+      }
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("POS Order"), response, {}));
@@ -280,6 +371,7 @@ export const getAllPosOrder = async (req, res) => {
       populate: [
         { path: "branchId", select: "name" },
         { path: "companyId", select: "name" },
+        { path: "payLaterId", select: "dueAmount status" },
         { path: "customerId", select: "firstName lastName companyName email phoneNo" },
         { path: "items.productId", select: "name itemCode" },
         { path: "invoiceId", select: "documentNo" },
@@ -382,60 +474,6 @@ export const getAllHoldOrders = async (req, res) => {
   }
 };
 
-// Quick add product by name (for POS)
-export const quickAddProduct = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { productName } = req.body;
-
-    if (!productName) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Product name is required", {}, {}));
-    }
-
-    const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
-
-    let criteria: any = { isDeleted: false, isActive: true, name: { $regex: productName, $options: "si" } };
-    if (companyId) {
-      criteria.companyId = companyId;
-    }
-
-    const product = await getFirstMatch(
-      productModel,
-      criteria,
-      {},
-      {
-        populate: [
-          { path: "categoryId", select: "name" },
-          { path: "salesTaxId", select: "name percentage" },
-        ],
-      },
-    );
-
-    if (!product) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "Product not found", {}, {}));
-    }
-
-    // Return product in POS-friendly format
-    const posProduct = {
-      _id: product._id,
-      name: product.name,
-      itemCode: product.itemCode,
-      sellingPrice: product.sellingPrice || 0,
-      mrp: product.mrp || 0,
-      uom: product.uom,
-      taxId: product.taxId?._id || null,
-      taxPercent: product.taxId?.percentage || 0,
-      stock: product.stock || 0,
-    };
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Product found", posProduct, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
-
 export const getPosCashControl = async (req, res) => {
   reqInfo(req);
   try {
@@ -452,10 +490,6 @@ export const getPosCashControl = async (req, res) => {
 
     if (!companyId) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
-
-    if (!branchId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Branch ID is required", {}, {}));
     }
 
     // Validate Branch
@@ -772,6 +806,7 @@ export const getCombinedPayments = async (req, res) => {
   }
 };
 
+// ================================== Not used functions ==================================
 export const convertToInvoice = async (req, res) => {
   reqInfo(req);
   try {
@@ -844,6 +879,60 @@ export const convertToInvoice = async (req, res) => {
     );
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order converted to invoice successfully", { posOrder, invoice }, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+// Quick add product by name (for POS)
+export const quickAddProduct = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { productName } = req.body;
+
+    if (!productName) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Product name is required", {}, {}));
+    }
+
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+
+    let criteria: any = { isDeleted: false, isActive: true, name: { $regex: productName, $options: "si" } };
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    const product = await getFirstMatch(
+      productModel,
+      criteria,
+      {},
+      {
+        populate: [
+          { path: "categoryId", select: "name" },
+          { path: "salesTaxId", select: "name percentage" },
+        ],
+      },
+    );
+
+    if (!product) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "Product not found", {}, {}));
+    }
+
+    // Return product in POS-friendly format
+    const posProduct = {
+      _id: product._id,
+      name: product.name,
+      itemCode: product.itemCode,
+      sellingPrice: product.sellingPrice || 0,
+      mrp: product.mrp || 0,
+      uom: product.uom,
+      taxId: product.taxId?._id || null,
+      taxPercent: product.taxId?.percentage || 0,
+      stock: product.stock || 0,
+    };
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Product found", posProduct, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
