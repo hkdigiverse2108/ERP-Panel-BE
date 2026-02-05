@@ -16,7 +16,7 @@ const purchaseOrderItemSchema = Joi.object({
 export const addPurchaseOrderSchema = Joi.object({
   supplierId: objectId().required(),
   orderDate: Joi.date().required(),
-  orderNo: Joi.string().optional().allow("", null),
+  // orderNo: Joi.string().optional().allow("", null),
 
   shippingDate: Joi.date().optional().allow("", null),
   shippingNote: Joi.string().optional().allow("", null),
@@ -56,7 +56,7 @@ export const editPurchaseOrderSchema = Joi.object({
 
   supplierId: objectId().optional(),
   orderDate: Joi.date().optional(),
-  orderNo: Joi.string().optional().allow("", null),
+  // orderNo: Joi.string().optional().allow("", null),
 
   shippingDate: Joi.date().optional().allow("", null),
   shippingNote: Joi.string().optional().allow("", null),

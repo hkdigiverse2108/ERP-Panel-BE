@@ -1,6 +1,6 @@
-import { PosPaymentModel, PosOrderModel } from "../../database";
-import { apiResponse, HTTP_STATUS } from "../../common";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, deleteSingleRecord, responseMessage, generateSequenceNumber } from "../../helper";
+import { PosPaymentModel, PosOrderModel, contactModel } from "../../database";
+import { apiResponse, HTTP_STATUS, POS_VOUCHER_TYPE } from "../../common";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, generateSequenceNumber } from "../../helper";
 import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema, getAllPosPaymentSchema } from "../../validation";
 
 export const addPosPayment = async (req, res) => {
@@ -16,9 +16,15 @@ export const addPosPayment = async (req, res) => {
     value.companyId = await checkCompany(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    if (!(await checkIdExist(PosOrderModel, value.posOrderId, "POS Order", res))) return;
+    if (value.posOrderId && !(await checkIdExist(PosOrderModel, value.posOrderId, "POS Order", res))) return;
+    if (value.partyId && !(await checkIdExist(contactModel, value.partyId, "Party", res))) return;
 
-    value.receiptNo = await generateSequenceNumber({ model: PosPaymentModel, prefix: "PAY", fieldName: "receiptNo", companyId: value.companyId });
+    let prefix = "PAY";
+    if (value.voucherType === POS_VOUCHER_TYPE.SALES) prefix = "RCP";
+    else if (value.voucherType === POS_VOUCHER_TYPE.PURCHASE) prefix = "PMT";
+    else if (value.voucherType === POS_VOUCHER_TYPE.EXPENSE) prefix = "EXP";
+
+    value.paymentNo = await generateSequenceNumber({ model: PosPaymentModel, prefix, fieldName: "paymentNo", companyId: value.companyId });
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
@@ -55,6 +61,10 @@ export const editPosPayment = async (req, res) => {
       if (!(await checkIdExist(PosOrderModel, value.posOrderId, "POS Order", res))) return;
     }
 
+    if (value.partyId && value.partyId !== isExist.partyId?.toString()) {
+      if (!(await checkIdExist(contactModel, value.partyId, "Party", res))) return;
+    }
+
     value.updatedBy = user?._id || null;
 
     const response = await updateData(PosPaymentModel, { _id: value?.posPaymentId }, value, {});
@@ -81,18 +91,18 @@ export const getAllPosPayment = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    let { page = 1, limit = 10, search, posOrderId, type, receiptType, startDate, endDate } = value;
+    let { page = 1, limit = 10, search, posOrderId, voucherType, paymentType, startDate, endDate } = value;
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
     if (posOrderId) criteria.posOrderId = posOrderId;
-    if (type) criteria.type = type;
-    if (receiptType) criteria.receiptType = receiptType;
+    if (voucherType) criteria.voucherType = voucherType;
+    if (paymentType) criteria.paymentType = paymentType;
 
     if (search) {
-      criteria.receiptNo = { $regex: search, $options: "si" };
+      criteria.paymentNo = { $regex: search, $options: "si" };
     }
 
     if (startDate && endDate) {
@@ -101,7 +111,10 @@ export const getAllPosPayment = async (req, res) => {
 
     const options = {
       sort: { createdAt: -1 },
-      populate: [{ path: "posOrderId", select: "orderNo totalAmount" }],
+      populate: [
+        { path: "posOrderId", select: "orderNo totalAmount" },
+        { path: "partyId", select: "firstName lastName companyName" },
+      ],
       skip: (page - 1) * limit,
       limit,
     };
@@ -129,7 +142,12 @@ export const getOnePosPayment = async (req, res) => {
       { _id: value?.id, isDeleted: false },
       {},
       {
-        populate: [{ path: "posOrderId", select: "orderNo totalAmount items" }],
+        populate: [
+          { path: "posOrderId", select: "orderNo totalAmount items" },
+          { path: "partyId", select: "firstName lastName companyName email phoneNo" },
+          { path: "purchaseBillId", select: "documentNo totalAmount" },
+          { path: "expenseAccountId", select: "name" },
+        ],
       },
     );
 

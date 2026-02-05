@@ -15,7 +15,14 @@ export const generateSequenceNumber = async ({ model, prefix, fieldName = "numbe
 
   prefix = prefix.toUpperCase();
 
-  const latest = await model.findOne(baseQuery).select(fieldName).sort({ createdAt: -1 }).lean();
+  const latest = await model
+    .findOne({
+      ...baseQuery,
+      [fieldName]: { $regex: `^${prefix}-`, $options: "si" },
+    })
+    .select(fieldName)
+    .sort({ createdAt: -1 })
+    .lean();
 
   let nextNumber = 1;
 

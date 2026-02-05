@@ -1,5 +1,5 @@
-import { apiResponse, HTTP_STATUS, PAYLATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_RECEIPT_TYPE, VOUCHAR_TYPE } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PayLaterModel, PosPaymentModel } from "../../database";
+import { apiResponse, HTTP_STATUS, PAYLATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_RECEIPT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE } from "../../common";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PayLaterModel, PosPaymentModel, userModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema } from "../../validation";
 
@@ -22,6 +22,7 @@ export const addPosOrder = async (req, res) => {
 
     if (value.branchId && !(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
     if (value.payLaterId && !(await checkIdExist(PayLaterModel, value.payLaterId, "Pay Later", res))) return;
+    if (value.salesManId && !(await checkIdExist(userModel, value.salesManId, "Sales Man", res))) return;
 
     // Get customer name if customer provided
     if (value.customerId) {
@@ -87,10 +88,11 @@ export const addPosOrder = async (req, res) => {
         companyId: response.companyId,
         branchId: response.branchId,
         posOrderId: response._id,
+        partyId: response.customerId,
         amount: response.paidAmount,
-        type: POS_PAYMENT_TYPE.RECEIPT,
-        receiptType: POS_RECEIPT_TYPE.AGAINST_BILL,
-        receiptNo: await generateSequenceNumber({ model: PosPaymentModel, prefix: "RCP", fieldName: "receiptNo", companyId: response.companyId }),
+        voucherType: POS_VOUCHER_TYPE.SALES,
+        paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
+        paymentNo: await generateSequenceNumber({ model: PosPaymentModel, prefix: "RCP", fieldName: "paymentNo", companyId: response.companyId }),
         createdBy: user?._id || null,
         updatedBy: user?._id || null,
       };
@@ -122,6 +124,7 @@ export const editPosOrder = async (req, res) => {
     }
 
     if (value.payLaterId && !(await checkIdExist(PayLaterModel, value.payLaterId, "Pay Later", res))) return;
+    if (value.salesManId && !(await checkIdExist(userModel, value.salesManId, "Sales Man", res))) return;
 
     // Validate customer if being changed
     if (value.customerId && value.customerId !== isExist.customerId?.toString()) {
@@ -183,10 +186,11 @@ export const editPosOrder = async (req, res) => {
         companyId: response.companyId,
         branchId: response.branchId,
         posOrderId: response._id,
+        partyId: response.customerId,
         amount: paymentDiff,
-        type: POS_PAYMENT_TYPE.RECEIPT,
-        receiptType: POS_RECEIPT_TYPE.AGAINST_BILL,
-        receiptNo: await generateSequenceNumber({ model: PosPaymentModel, prefix: "RCP", fieldName: "receiptNo", companyId: response.companyId }),
+        voucherType: POS_VOUCHER_TYPE.SALES,
+        paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
+        paymentNo: await generateSequenceNumber({ model: PosPaymentModel, prefix: "RCP", fieldName: "paymentNo", companyId: response.companyId }),
         createdBy: user?._id || null,
         updatedBy: user?._id || null,
       };
@@ -372,6 +376,7 @@ export const getAllPosOrder = async (req, res) => {
         { path: "branchId", select: "name" },
         { path: "companyId", select: "name" },
         { path: "payLaterId", select: "dueAmount status" },
+        { path: "salesManId", select: "fullName" },
         { path: "customerId", select: "firstName lastName companyName email phoneNo" },
         { path: "items.productId", select: "name itemCode" },
         { path: "invoiceId", select: "documentNo" },
@@ -418,6 +423,8 @@ export const getOnePosOrder = async (req, res) => {
         populate: [
           { path: "branchId", select: "name" },
           { path: "companyId", select: "name" },
+          { path: "payLaterId", select: "dueAmount status" },
+          { path: "salesManId", select: "fullName" },
           { path: "customerId", select: "firstName lastName companyName email phoneNo" },
           { path: "items.productId", select: "name itemCode" },
           { path: "invoiceId", select: "documentNo" },
@@ -460,6 +467,8 @@ export const getAllHoldOrders = async (req, res) => {
       sort: { holdDate: -1 },
       populate: [
         { path: "branchId", select: "name" },
+        { path: "companyId", select: "name" },
+        { path: "salesManId", select: "fullName" },
         { path: "customerId", select: "firstName lastName companyName" },
       ],
       limit: 100,

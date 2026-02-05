@@ -48,6 +48,15 @@ export const APPROVAL_STATUS = {
   REJECTED: "rejected",
 } as const;
 
+export const PAYMENT_MODE = {
+  PAYMENT: "payment",
+  CASH: "cash",
+  CARD: "card",
+  UPI: "upi",
+  WALLET: "wallet",
+  BANK: "bank",
+} as const;
+
 export const ACCOUNT_TYPE = {
   BANK: "bank",
   CASH: "cash",
@@ -57,6 +66,17 @@ export const ACCOUNT_TYPE = {
 export const ACCOUNT_NATURE = {
   ASSETS: "assets",
   LIABILITIES: "liabilities",
+  INCOME: "income",
+  EXPENSES: "expenses",
+} as const;
+
+export const ACCOUNT_GROUP_TYPE = {
+  SALES: "sales",
+  SALES_RETURN: "sales_return",
+  PURCHASE: "purchase",
+  PURCHASE_RETURN: "purchase_return",
+  LIABILITIES: "liabilities",
+  ASSETS: "assets",
   INCOME: "income",
   EXPENSES: "expenses",
 } as const;
@@ -224,10 +244,15 @@ export const PAYLATER_STATUS = {
   SETTLED: "settled",
 } as const;
 
-export const POS_PAYMENT_TYPE = {
-  RECEIPT: "receipt",
-  PAYMENT: "payment",
+export const POS_VOUCHER_TYPE = {
+  SALES: "sales",
+  PURCHASE: "purchase",
   EXPENSE: "expense",
+} as const;
+
+export const POS_PAYMENT_TYPE = {
+  AGAINST_BILL: "against_bill",
+  ADVANCE: "advance",
 } as const;
 
 export const POS_RECEIPT_TYPE = {

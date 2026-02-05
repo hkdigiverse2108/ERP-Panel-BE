@@ -25,6 +25,7 @@ export const addPosOrderSchema = Joi.object({
   orderType: Joi.string()
     .valid(...Object.values(POS_ORDER_TYPE))
     .default(POS_ORDER_TYPE.WALK_IN),
+  salesManId: objectId().required(),
   items: Joi.array().items(posOrderItemSchema).min(1).required(),
   additionalCharges: Joi.array().items(posAdditionalChargeSchema).default([]).optional(),
   remark: Joi.string().optional().allow("", null),
@@ -56,6 +57,7 @@ export const addPosOrderSchema = Joi.object({
 export const editPosOrderSchema = Joi.object().keys({
   posOrderId: objectId().required(),
   customerId: objectId().optional().allow(null),
+  salesManId: objectId().optional().allow(null),
   orderType: Joi.string()
     .valid(...Object.values(POS_ORDER_TYPE))
     .default(POS_ORDER_TYPE.WALK_IN)

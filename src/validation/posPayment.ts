@@ -1,31 +1,57 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
-import { POS_PAYMENT_TYPE, POS_RECEIPT_TYPE } from "../common";
+import { PAYMENT_MODE, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE } from "../common";
 
 export const addPosPaymentSchema = Joi.object({
-  posOrderId: objectId().required(),
-  amount: Joi.number().min(0).required(),
-  type: Joi.string()
+  voucherType: Joi.string()
+    .valid(...Object.values(POS_VOUCHER_TYPE))
+    .required(),
+  paymentType: Joi.string()
     .valid(...Object.values(POS_PAYMENT_TYPE))
-    .default(POS_PAYMENT_TYPE.RECEIPT)
+    .default(POS_PAYMENT_TYPE.AGAINST_BILL)
     .optional(),
-  receiptType: Joi.string()
-    .valid(...Object.values(POS_RECEIPT_TYPE))
-    .default(POS_RECEIPT_TYPE.AGAINST_BILL)
+  posOrderId: objectId().optional(),
+  partyId: objectId().required(),
+  // salesId: objectId().optional(),
+  paymentMode: Joi.string()
+    .valid(...Object.values(PAYMENT_MODE))
+    .default(PAYMENT_MODE.CASH)
     .optional(),
+  purchaseBillId: objectId().optional(),
+  expenseAccountId: objectId().optional(),
+  totalAmount: Joi.number().min(0).optional(),
+  paidAmount: Joi.number().min(0).optional(),
+  pendingAmount: Joi.number().optional(),
+  roundOff: Joi.number().optional(),
+  amount: Joi.number().min(0).required(),
+  isNonGST: Joi.boolean().default(false).optional(),
+  remark: Joi.string().optional().allow("", null),
   ...baseApiSchema,
 });
 
 export const editPosPaymentSchema = Joi.object({
   posPaymentId: objectId().required(),
-  posOrderId: objectId().optional(),
-  amount: Joi.number().min(0).optional(),
-  type: Joi.string()
+  voucherType: Joi.string()
+    .valid(...Object.values(POS_VOUCHER_TYPE))
+    .optional(),
+  paymentType: Joi.string()
     .valid(...Object.values(POS_PAYMENT_TYPE))
     .optional(),
-  receiptType: Joi.string()
-    .valid(...Object.values(POS_RECEIPT_TYPE))
+  posOrderId: objectId().optional(),
+  partyId: objectId().optional(),
+  // salesId: objectId().optional(),
+  paymentMode: Joi.string()
+    .valid(...Object.values(PAYMENT_MODE))
     .optional(),
+  purchaseBillId: objectId().optional(),
+  expenseAccountId: objectId().optional(),
+  totalAmount: Joi.number().min(0).optional(),
+  paidAmount: Joi.number().min(0).optional(),
+  pendingAmount: Joi.number().optional(),
+  roundOff: Joi.number().optional(),
+  amount: Joi.number().min(0).optional(),
+  isNonGST: Joi.boolean().optional(),
+  remark: Joi.string().optional().allow("", null),
   ...baseApiSchema,
 });
 
@@ -42,11 +68,11 @@ export const getAllPosPaymentSchema = Joi.object({
   limit: Joi.number().min(1).optional(),
   search: Joi.string().optional().allow("", null),
   posOrderId: objectId().optional(),
-  type: Joi.string()
-    .valid(...Object.values(POS_PAYMENT_TYPE))
+  voucherType: Joi.string()
+    .valid(...Object.values(POS_VOUCHER_TYPE))
     .optional(),
-  receiptType: Joi.string()
-    .valid(...Object.values(POS_RECEIPT_TYPE))
+  paymentType: Joi.string()
+    .valid(...Object.values(POS_PAYMENT_TYPE))
     .optional(),
   startDate: Joi.date().optional(),
   endDate: Joi.date().optional(),

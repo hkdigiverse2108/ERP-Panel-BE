@@ -16,9 +16,9 @@ export const addTermsCondition = async (req, res) => {
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // If setting as default, unset other defaults in this company
-    if (value.isDefault) {
-      await termsConditionModel.updateMany({ companyId: value.companyId, isDefault: true, isDeleted: false }, { isDefault: false });
-    }
+    // if (value.isDefault) {
+    //   await termsConditionModel.updateMany({ companyId: value.companyId, isDefault: true, isDeleted: false }, { isDefault: false });
+    // }
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
@@ -47,9 +47,9 @@ export const editTermsCondition = async (req, res) => {
     if (!existingTermsCondition) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Terms & Condition"), {}, {}));
 
     // If setting as default, unset other defaults in this company
-    if (value.isDefault) {
-      await termsConditionModel.updateMany({ companyId: existingTermsCondition.companyId, _id: { $ne: value?.termsConditionId }, isDefault: true, isDeleted: false }, { isDefault: false });
-    }
+    // if (value.isDefault) {
+    //   await termsConditionModel.updateMany({ companyId: existingTermsCondition.companyId, _id: { $ne: value?.termsConditionId }, isDefault: true, isDeleted: false }, { isDefault: false });
+    // }
 
     value.updatedBy = user?._id || null;
 

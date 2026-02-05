@@ -4,58 +4,28 @@ import { POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATU
 
 export const posAdditionalChargeSchema = new Schema(
   {
-    chargeId: {
-      type: Schema.Types.ObjectId,
-      ref: "additional-charge",
-    },
-
-    value: {
-      type: Number,
-      required: true,
-    },
-
-    taxId: {
-      type: Schema.Types.ObjectId,
-      ref: "tax",
-    },
-
-    accountGroupId: {
-      type: Schema.Types.ObjectId,
-      ref: "account-group",
-    },
-
-    totalAmount: {
-      type: Number,
-      required: true,
-    },
+    chargeId: { type: Schema.Types.ObjectId, ref: "additional-charge" },
+    value: { type: Number, required: true },
+    taxId: { type: Schema.Types.ObjectId, ref: "tax" },
+    accountGroupId: { type: Schema.Types.ObjectId, ref: "account-group" },
+    totalAmount: { type: Number, required: true },
   },
   { _id: false },
 );
 
 export const posItemSchema = new Schema(
   {
-    productId: {
-      type: Schema.Types.ObjectId,
-      ref: "product",
-      required: true,
-    },
-
+    productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
     qty: { type: Number },
-
     mrp: { type: Number },
-
     discountAmount: { type: Number, default: 0 },
     additionalDiscountAmount: { type: Number, default: 0 },
-
     unitCost: { type: Number },
     netAmount: { type: Number },
   },
-  {
-    _id: false,
-  },
+  { _id: false },
 );
 
-// POS Order Schema
 const posOrderSchema = new Schema(
   {
     ...baseSchemaFields,
@@ -63,6 +33,7 @@ const posOrderSchema = new Schema(
 
     customerId: { type: Schema.Types.ObjectId, ref: "contact" },
     orderType: { type: String, enum: Object.values(POS_ORDER_TYPE), default: POS_ORDER_TYPE.WALK_IN },
+    salesManId: { type: Schema.Types.ObjectId, ref: "user", default: null },
 
     items: [posItemSchema],
 
@@ -86,8 +57,6 @@ const posOrderSchema = new Schema(
     paidAmount: { type: Number, default: 0 },
 
     payLaterId: { type: Schema.Types.ObjectId, ref: "pay-later" },
-
-    // notes: { type: String },
   },
   baseSchemaOptions,
 );
