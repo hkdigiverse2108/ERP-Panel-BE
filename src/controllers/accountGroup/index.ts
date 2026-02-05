@@ -178,7 +178,7 @@ export const deleteAccountGroup = async (req, res) => {
 export const getAllAccountGroup = async (req, res) => {
   reqInfo(req);
   try {
-    let { page = 1, limit = 100, search, activeFilter } = req.query;
+    let { page = 1, limit = 100, search, activeFilter, groupLevelFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -186,6 +186,10 @@ export const getAllAccountGroup = async (req, res) => {
     let criteria: any = { isDeleted: false, groupLevel: { $ne: 0 } };
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+
+    if (groupLevelFilter) {
+      criteria.groupLevel = groupLevelFilter;
+    }
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }];
@@ -259,7 +263,13 @@ export const getOneAccountGroup = async (req, res) => {
 export const getAccountGroupDropdown = async (req, res) => {
   reqInfo(req);
   try {
+    const { groupLevelFilter } = req.query;
+
     let criteria: any = { isDeleted: false, isActive: true, groupLevel: { $ne: 0 } };
+
+    if (groupLevelFilter) {
+      criteria.groupLevel = groupLevelFilter;
+    }
 
     const response = await getDataWithSorting(
       accountGroupModel,
