@@ -387,6 +387,36 @@ export const getOneProduct = async (req, res) => {
 
     const stockAggregation = await stockModel.aggregate([
       { $match: stockCriteria },
+
+      {
+        $lookup: {
+          from: "taxes",
+          localField: "purchaseTaxId",
+          foreignField: "_id",
+          as: "purchaseTax",
+        },
+      },
+      {
+        $unwind: {
+          path: "$purchaseTax",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      {
+        $lookup: {
+          from: "taxes",
+          localField: "salesTaxId",
+          foreignField: "_id",
+          as: "salesTax",
+        },
+      },
+      {
+        $unwind: {
+          path: "$salesTax",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $group: {
           _id: "$productId",
@@ -397,9 +427,27 @@ export const getOneProduct = async (req, res) => {
           totalLandingCost: { $sum: "$landingCost" },
           totalPurchasePrice: { $sum: "$purchasePrice" },
           totalSellingMargin: { $sum: "$sellingMargin" },
+
+          purchaseTax: {
+            $first: {
+              _id: "$purchaseTax._id",
+              name: "$purchaseTax.name",
+              percentage: "$purchaseTax.percentage",
+            },
+          },
+
+          salesTax: {
+            $first: {
+              _id: "$salesTax._id",
+              name: "$salesTax.name",
+              percentage: "$salesTax.percentage",
+            },
+          },
         },
       },
     ]);
+
+    console.log("stockAggregation", JSON.stringify(stockAggregation, null, 2));
 
     const stock = stockAggregation.length > 0 ? stockAggregation[0] : {};
 
@@ -412,6 +460,8 @@ export const getOneProduct = async (req, res) => {
       purchasePrice: stock.totalPurchasePrice ?? 0,
       sellingMargin: stock.totalSellingMargin ?? 0,
       qty: stock.totalQty ?? 0,
+      purchaseTax: stock.purchaseTax,
+      salesTax: stock.salesTax,
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), productsWithStock, {}));
