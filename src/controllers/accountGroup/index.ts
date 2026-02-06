@@ -178,7 +178,7 @@ export const deleteAccountGroup = async (req, res) => {
 export const getAllAccountGroup = async (req, res) => {
   reqInfo(req);
   try {
-    let { page = 1, limit = 100, search, activeFilter, groupLevelFilter } = req.query;
+    let { page = 1, limit = 100, search, activeFilter, groupLevelFilter, natureFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -189,6 +189,10 @@ export const getAllAccountGroup = async (req, res) => {
 
     if (groupLevelFilter) {
       criteria.groupLevel = groupLevelFilter;
+    }
+
+    if (natureFilter) {
+      criteria.nature = natureFilter;
     }
 
     if (search) {
@@ -263,12 +267,16 @@ export const getOneAccountGroup = async (req, res) => {
 export const getAccountGroupDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    const { groupLevelFilter } = req.query;
+    const { groupLevelFilter, natureFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true, groupLevel: { $ne: 0 } };
 
     if (groupLevelFilter) {
       criteria.groupLevel = groupLevelFilter;
+    }
+
+    if (natureFilter) {
+      criteria.nature = natureFilter;
     }
 
     const response = await getDataWithSorting(

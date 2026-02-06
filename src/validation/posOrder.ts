@@ -1,6 +1,19 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
-import { POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS } from "../common";
+import { PAYMENT_MODE, POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS } from "../common";
+
+const multiplePaymentSchema = Joi.object({
+  amount: Joi.number().min(0).required(),
+  method: Joi.string()
+    .valid(...Object.values(PAYMENT_MODE))
+    .required(),
+  paymentAccountId: objectId().optional().allow(null),
+  cardHolderName: Joi.string().optional().allow("", null),
+  cardTransactionNo: Joi.string().optional().allow("", null),
+  upiId: Joi.string().optional().allow("", null),
+  bankAccountNo: Joi.string().optional().allow("", null),
+  chequeNo: Joi.string().optional().allow("", null),
+});
 
 const posAdditionalChargeSchema = Joi.object({
   chargeId: objectId().optional().allow(null),
@@ -51,6 +64,9 @@ export const addPosOrderSchema = Joi.object({
   invoiceId: objectId().optional().allow(null),
   paidAmount: Joi.number().min(0).default(0).optional(),
   payLaterId: objectId().optional().allow(null),
+
+  multiplePayments: Joi.array().items(multiplePaymentSchema).default([]).optional(),
+
   ...baseApiSchema,
 });
 
@@ -89,6 +105,9 @@ export const editPosOrderSchema = Joi.object().keys({
   invoiceId: objectId().optional().allow(null),
   paidAmount: Joi.number().min(0).optional(),
   payLaterId: objectId().optional().allow(null),
+
+  multiplePayments: Joi.array().items(multiplePaymentSchema).default([]).optional(),
+
   ...baseApiSchema,
 });
 

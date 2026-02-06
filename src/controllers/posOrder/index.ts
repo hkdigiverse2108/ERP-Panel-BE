@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, PAYLATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_RECEIPT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE } from "../../common";
+import { apiResponse, HTTP_STATUS, PAYLATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_RECEIPT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE } from "../../common";
 import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PayLaterModel, PosPaymentModel, userModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema } from "../../validation";
@@ -54,6 +54,11 @@ export const addPosOrder = async (req, res) => {
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
+    // Calculate paid amount from multiple payments if provided
+    if (value.multiplePayments && value.multiplePayments.length > 0) {
+      value.paidAmount = value.multiplePayments.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+    }
+
     // Set payment status based on paid amount
     if (value.paidAmount >= value.totalAmount) {
       value.paymentStatus = POS_PAYMENT_STATUS.PAID;
@@ -70,26 +75,68 @@ export const addPosOrder = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
-    if (response.payLaterId) {
-      const payLater = await getFirstMatch(PayLaterModel, { _id: response.payLaterId, isDeleted: false }, {}, {});
+    // Sync with PayLater or create if balance exists
+    let payLaterId = response.payLaterId;
+    const dueAmount = Math.max(0, response.totalAmount - (response.paidAmount || 0));
+
+    if (!payLaterId && dueAmount > 0) {
+      const payLaterData = {
+        companyId: response.companyId,
+        branchId: response.branchId,
+        customerId: response.customerId,
+        posOrderId: response._id,
+        totalAmount: response.totalAmount,
+        paidAmount: response.paidAmount || 0,
+        dueAmount: dueAmount,
+        status: (response.paidAmount || 0) > 0 ? PAYLATER_STATUS.PARTIAL : PAYLATER_STATUS.OPEN,
+        createdBy: user?._id || null,
+        updatedBy: user?._id || null,
+      };
+      const newPayLater = await createOne(PayLaterModel, payLaterData);
+      if (newPayLater) {
+        payLaterId = newPayLater._id;
+        await updateData(PosOrderModel, { _id: response._id }, { payLaterId: newPayLater._id }, {});
+      }
+    } else if (payLaterId) {
+      const payLater = await getFirstMatch(PayLaterModel, { _id: payLaterId, isDeleted: false }, {}, {});
       if (payLater) {
         payLater.posOrderId = response._id;
         payLater.totalAmount = response.totalAmount;
         payLater.paidAmount = response.paidAmount || 0;
-        payLater.dueAmount = Math.max(0, response.totalAmount - (response.paidAmount || 0));
+        payLater.dueAmount = dueAmount;
         payLater.status = payLater.dueAmount <= 0 ? PAYLATER_STATUS.SETTLED : payLater.paidAmount > 0 ? PAYLATER_STATUS.PARTIAL : PAYLATER_STATUS.OPEN;
-        await updateData(PayLaterModel, { _id: response.payLaterId }, payLater, {});
+        await updateData(PayLaterModel, { _id: payLaterId }, payLater, {});
       }
     }
 
-    // Add payment entry
-    if (response.paidAmount > 0) {
+    // Add payment entry (multiple entries if multiplePayments provided)
+    if (value.multiplePayments && value.multiplePayments.length > 0) {
+      for (const payment of value.multiplePayments) {
+        if (payment.amount > 0) {
+          const paymentData = {
+            companyId: response.companyId,
+            branchId: response.branchId,
+            posOrderId: response._id,
+            partyId: response.customerId,
+            amount: payment.amount,
+            paymentMode: payment.method,
+            voucherType: POS_VOUCHER_TYPE.SALES,
+            paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
+            paymentNo: await generateSequenceNumber({ model: PosPaymentModel, prefix: "RCP", fieldName: "paymentNo", companyId: response.companyId }),
+            createdBy: user?._id || null,
+            updatedBy: user?._id || null,
+          };
+          await createOne(PosPaymentModel, paymentData);
+        }
+      }
+    } else if (response.paidAmount > 0) {
       const paymentData = {
         companyId: response.companyId,
         branchId: response.branchId,
         posOrderId: response._id,
         partyId: response.customerId,
         amount: response.paidAmount,
+        paymentMode: value.paymentMethod || PAYMENT_MODE.CASH,
         voucherType: POS_VOUCHER_TYPE.SALES,
         paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
         paymentNo: await generateSequenceNumber({ model: PosPaymentModel, prefix: "RCP", fieldName: "paymentNo", companyId: response.companyId }),
@@ -162,8 +209,18 @@ export const editPosOrder = async (req, res) => {
     // Handle payment logic for edit
     const totalAmount = value.totalAmount !== undefined ? value.totalAmount : isExist.totalAmount;
     const oldPaidAmount = isExist.paidAmount || 0;
-    const newPaidAmount = value.paidAmount !== undefined ? value.paidAmount : oldPaidAmount;
-    const paymentDiff = newPaidAmount - oldPaidAmount;
+
+    let newPaidAmount = oldPaidAmount;
+    let paymentDiff = 0;
+
+    if (value.multiplePayments && value.multiplePayments.length > 0) {
+      paymentDiff = value.multiplePayments.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+      newPaidAmount = oldPaidAmount + paymentDiff;
+      value.paidAmount = newPaidAmount;
+    } else if (value.paidAmount !== undefined) {
+      newPaidAmount = value.paidAmount;
+      paymentDiff = newPaidAmount - oldPaidAmount;
+    }
 
     if (newPaidAmount >= totalAmount) {
       value.paymentStatus = POS_PAYMENT_STATUS.PAID;
@@ -182,30 +239,72 @@ export const editPosOrder = async (req, res) => {
 
     // Add payment entry if there's a difference
     if (paymentDiff > 0) {
-      const paymentData = {
+      if (value.multiplePayments && value.multiplePayments.length > 0) {
+        for (const payment of value.multiplePayments) {
+          if (payment.amount > 0) {
+            const paymentData = {
+              companyId: response.companyId,
+              branchId: response.branchId,
+              posOrderId: response._id,
+              partyId: response.customerId,
+              amount: payment.amount,
+              paymentMode: payment.method,
+              voucherType: POS_VOUCHER_TYPE.SALES,
+              paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
+              paymentNo: await generateSequenceNumber({ model: PosPaymentModel, prefix: "RCP", fieldName: "paymentNo", companyId: response.companyId }),
+              createdBy: user?._id || null,
+              updatedBy: user?._id || null,
+            };
+            await createOne(PosPaymentModel, paymentData);
+          }
+        }
+      } else {
+        const paymentData = {
+          companyId: response.companyId,
+          branchId: response.branchId,
+          posOrderId: response._id,
+          partyId: response.customerId,
+          amount: paymentDiff,
+          paymentMode: value.paymentMethod || PAYMENT_MODE.CASH,
+          voucherType: POS_VOUCHER_TYPE.SALES,
+          paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
+          paymentNo: await generateSequenceNumber({ model: PosPaymentModel, prefix: "RCP", fieldName: "paymentNo", companyId: response.companyId }),
+          createdBy: user?._id || null,
+          updatedBy: user?._id || null,
+        };
+        await createOne(PosPaymentModel, paymentData);
+      }
+    }
+
+    // Sync with PayLater or create if balance exists
+    let payLaterId = value.payLaterId || response.payLaterId;
+    const dueAmount = Math.max(0, response.totalAmount - (response.paidAmount || 0));
+
+    if (!payLaterId && dueAmount > 0) {
+      const payLaterData = {
         companyId: response.companyId,
         branchId: response.branchId,
+        customerId: response.customerId,
         posOrderId: response._id,
-        partyId: response.customerId,
-        amount: paymentDiff,
-        voucherType: POS_VOUCHER_TYPE.SALES,
-        paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
-        paymentNo: await generateSequenceNumber({ model: PosPaymentModel, prefix: "RCP", fieldName: "paymentNo", companyId: response.companyId }),
+        totalAmount: response.totalAmount,
+        paidAmount: response.paidAmount || 0,
+        dueAmount: dueAmount,
+        status: (response.paidAmount || 0) > 0 ? PAYLATER_STATUS.PARTIAL : PAYLATER_STATUS.OPEN,
         createdBy: user?._id || null,
         updatedBy: user?._id || null,
       };
-      await createOne(PosPaymentModel, paymentData);
-    }
-
-    // Sync with PayLater if exists
-    const payLaterId = value.payLaterId || response.payLaterId;
-    if (payLaterId) {
+      const newPayLater = await createOne(PayLaterModel, payLaterData);
+      if (newPayLater) {
+        payLaterId = newPayLater._id;
+        await updateData(PosOrderModel, { _id: response._id }, { payLaterId: newPayLater._id }, {});
+      }
+    } else if (payLaterId) {
       const payLater = await getFirstMatch(PayLaterModel, { _id: payLaterId, isDeleted: false }, {}, {});
       if (payLater) {
         payLater.posOrderId = response._id;
         payLater.totalAmount = response.totalAmount;
         payLater.paidAmount = response.paidAmount || 0;
-        payLater.dueAmount = Math.max(0, response.totalAmount - (response.paidAmount || 0));
+        payLater.dueAmount = dueAmount;
         payLater.status = payLater.dueAmount <= 0 ? PAYLATER_STATUS.SETTLED : payLater.paidAmount > 0 ? PAYLATER_STATUS.PARTIAL : PAYLATER_STATUS.OPEN;
         await updateData(PayLaterModel, { _id: payLaterId }, payLater, {});
       }

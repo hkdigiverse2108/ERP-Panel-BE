@@ -1,14 +1,28 @@
 import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
-import { POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS } from "../../common";
+import { PAYMENT_MODE, POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS } from "../../common";
+
+export const posMultiplePaymentSchema = new Schema(
+  {
+    amount: { type: Number },
+    method: { type: String, enum: Object.values(PAYMENT_MODE) },
+    paymentAccountId: { type: Schema.Types.ObjectId, ref: "bank", default: null },
+    cardHolderName: { type: String },
+    cardTransactionNo: { type: String },
+    upiId: { type: String },
+    bankAccountNo: { type: String },
+    chequeNo: { type: String },
+  },
+  { _id: false },
+);
 
 export const posAdditionalChargeSchema = new Schema(
   {
     chargeId: { type: Schema.Types.ObjectId, ref: "additional-charge" },
-    value: { type: Number, required: true },
+    value: { type: Number },
     taxId: { type: Schema.Types.ObjectId, ref: "tax" },
     accountGroupId: { type: Schema.Types.ObjectId, ref: "account-group" },
-    totalAmount: { type: Number, required: true },
+    totalAmount: { type: Number },
   },
   { _id: false },
 );
@@ -48,6 +62,8 @@ const posOrderSchema = new Schema(
     totalAmount: { type: Number, default: 0 },
 
     additionalCharges: [posAdditionalChargeSchema],
+
+    multiplePayments: [posMultiplePaymentSchema],
 
     paymentMethod: { type: String, enum: Object.values(POS_PAYMENT_METHOD) },
     paymentStatus: { type: String, enum: Object.values(POS_PAYMENT_STATUS), default: POS_PAYMENT_STATUS.UNPAID },

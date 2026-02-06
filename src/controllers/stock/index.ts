@@ -364,8 +364,6 @@ export const getOneStock = async (req, res) => {
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
-          { path: "purchaseTaxId", select: "name" },
-          { path: "salesTaxId", select: "name" },
         ],
       },
     );
@@ -392,6 +390,8 @@ export const getOneStock = async (req, res) => {
           { path: "productId", select: "name itemCode" },
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
+          { path: "purchaseTaxId", select: "name" },
+          { path: "salesTaxId", select: "name" },
         ],
       },
     );
