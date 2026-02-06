@@ -49,12 +49,13 @@ export const APPROVAL_STATUS = {
 } as const;
 
 export const PAYMENT_MODE = {
-  PAYMENT: "payment",
+  // PAYMENT: "payment",
   CASH: "cash",
   CARD: "card",
   UPI: "upi",
   WALLET: "wallet",
   BANK: "bank",
+  CHEQUE: "cheque",
 } as const;
 
 export const ACCOUNT_TYPE = {
