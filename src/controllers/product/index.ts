@@ -189,8 +189,8 @@ export const getAllProduct = async (req, res) => {
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
         { path: "subBrandId", select: "name" },
-        { path: "purchaseTaxId", select: "name percentage" },
-        { path: "salesTaxId", select: "name percentage" },
+        // { path: "purchaseTaxId", select: "name percentage" },
+        // { path: "salesTaxId", select: "name percentage" },
       ],
     };
 
@@ -368,8 +368,8 @@ export const getOneProduct = async (req, res) => {
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
-          { path: "purchaseTaxId", select: "name percentage" },
-          { path: "salesTaxId", select: "name percentage" },
+          // { path: "purchaseTaxId", select: "name percentage" },
+          // { path: "salesTaxId", select: "name percentage" },
         ],
       },
     );
