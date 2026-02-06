@@ -20,11 +20,11 @@ const productSchema = new Schema<IProduct>(
 
     hsnCode: { type: String },
 
-    purchaseTaxId: { type: Schema.Types.ObjectId, ref: "tax" },
-    salesTaxId: { type: Schema.Types.ObjectId, ref: "tax" },
+    // purchaseTaxId: { type: Schema.Types.ObjectId, ref: "tax" },
+    // salesTaxId: { type: Schema.Types.ObjectId, ref: "tax" },
 
-    isPurchaseTaxIncluding: { type: Boolean, default: false },
-    isSalesTaxIncluding: { type: Boolean, default: false },
+    // isPurchaseTaxIncluding: { type: Boolean, default: false },
+    // isSalesTaxIncluding: { type: Boolean, default: false },
 
     cessPercentage: { type: Number, default: 0 },
     

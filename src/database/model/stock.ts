@@ -13,6 +13,12 @@ export interface IStock extends IBase {
   sellingPrice: number;
   sellingMargin: number;
   uomId: Schema.Types.ObjectId;
+
+  purchaseTaxId: Schema.Types.ObjectId;
+  salesTaxId: Schema.Types.ObjectId;
+
+  isPurchaseTaxIncluding: boolean;
+  isSalesTaxIncluding: boolean;
 }
 
 const stockSchema = new Schema<IStock>(
@@ -28,8 +34,14 @@ const stockSchema = new Schema<IStock>(
     sellingPrice: { type: Number, default: 0 },
     sellingMargin: { type: Number, default: 0 },
     qty: { type: Number, default: 0 },
+
+    purchaseTaxId: { type: Schema.Types.ObjectId, ref: "tax" },
+    salesTaxId: { type: Schema.Types.ObjectId, ref: "tax" },
+
+    isPurchaseTaxIncluding: { type: Boolean, default: false },
+    isSalesTaxIncluding: { type: Boolean, default: false },
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
 export const stockModel = mongoose.model<IStock>("stock", stockSchema);

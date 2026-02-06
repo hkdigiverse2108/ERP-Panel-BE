@@ -14,6 +14,12 @@ export const addStockSchema = Joi.object().keys({
   sellingPrice: Joi.number().min(0).default(0),
   sellingMargin: Joi.number().min(0).default(0),
   uomId: objectId().required(),
+
+  purchaseTaxId: objectId().optional(),
+  salesTaxId: objectId().optional(),
+  isPurchaseTaxIncluding: Joi.boolean().default(false).optional(),
+  isSalesTaxIncluding: Joi.boolean().default(false).optional(),
+
   ...baseApiSchema,
 });
 
@@ -30,6 +36,12 @@ export const editStockSchema = Joi.object().keys({
   sellingPrice: Joi.number().min(0).optional(),
   mrp: Joi.number().min(0).optional(),
   uomId: objectId().optional(),
+
+  purchaseTaxId: objectId().optional().allow("", null),
+  salesTaxId: objectId().optional().allow("", null),
+  isPurchaseTaxIncluding: Joi.boolean().default(false).optional(),
+  isSalesTaxIncluding: Joi.boolean().default(false).optional(),
+
   ...baseApiSchema,
 });
 
@@ -40,8 +52,10 @@ export const bulkStockAdjustmentSchema = Joi.object().keys({
       Joi.object().keys({
         productId: objectId().required(),
         qty: Joi.number().required(),
-      })
-    ).min(1).required(),
+      }),
+    )
+    .min(1)
+    .required(),
 });
 
 export const deleteStockSchema = Joi.object().keys({

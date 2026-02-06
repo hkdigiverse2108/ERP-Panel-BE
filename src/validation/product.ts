@@ -16,7 +16,6 @@ export const addProductSchema = Joi.object().keys({
     .default(PRODUCT_TYPE.FINISHED)
     .optional(),
 
-
   purchasePrice: Joi.number().min(0).default(0).optional(),
   landingCost: Joi.number().min(0).default(0).optional(),
   mrp: Joi.number().min(0).default(0).optional(),
@@ -35,10 +34,10 @@ export const addProductSchema = Joi.object().keys({
   masterQty: Joi.number().min(0).default(0).optional(),
 
   hsnCode: Joi.string().optional(),
-  purchaseTaxId: objectId().optional(),
-  salesTaxId: objectId().optional(),
-  isPurchaseTaxIncluding: Joi.boolean().default(false).optional(),
-  isSalesTaxIncluding: Joi.boolean().default(false).optional(),
+  // purchaseTaxId: objectId().optional(),
+  // salesTaxId: objectId().optional(),
+  // isPurchaseTaxIncluding: Joi.boolean().default(false).optional(),
+  // isSalesTaxIncluding: Joi.boolean().default(false).optional(),
   cessPercentage: Joi.number().min(0).default(0).optional(),
 
   manageMultipleBatch: Joi.boolean().default(false).optional(),
@@ -75,7 +74,7 @@ export const addProductSchema = Joi.object().keys({
       Joi.object({
         name: Joi.string().required(),
         value: Joi.string().required(),
-      })
+      }),
     )
     .optional(),
 
@@ -103,7 +102,6 @@ export const editProductSchema = Joi.object().keys({
     .valid(...Object.values(PRODUCT_TYPE))
     .optional(),
 
-
   purchasePrice: Joi.number().min(0).optional(),
   landingCost: Joi.number().min(0).optional(),
   mrp: Joi.number().min(0).optional(),
@@ -126,10 +124,10 @@ export const editProductSchema = Joi.object().keys({
   masterQty: Joi.number().min(0).optional(),
 
   hsnCode: Joi.string().optional(),
-  purchaseTaxId: objectId().optional(),
-  salesTaxId: objectId().optional(),
-  isPurchaseTaxIncluding: Joi.boolean().optional(),
-  isSalesTaxIncluding: Joi.boolean().optional(),
+  // purchaseTaxId: objectId().optional(),
+  // salesTaxId: objectId().optional(),
+  // isPurchaseTaxIncluding: Joi.boolean().optional(),
+  // isSalesTaxIncluding: Joi.boolean().optional(),
   cessPercentage: Joi.number().min(0).optional(),
 
   manageMultipleBatch: Joi.boolean().optional(),
@@ -154,7 +152,7 @@ export const editProductSchema = Joi.object().keys({
       Joi.object({
         name: Joi.string().required(),
         value: Joi.string().required(),
-      })
+      }),
     )
     .optional(),
 
@@ -162,7 +160,6 @@ export const editProductSchema = Joi.object().keys({
 
   additionalInfo: Joi.string().optional().allow("", null),
   isActive: Joi.boolean().optional(),
-
 });
 
 export const deleteProductSchema = Joi.object().keys({

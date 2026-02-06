@@ -85,21 +85,17 @@ export const getAllPosPayment = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { error, value } = getAllPosPaymentSchema.validate(req.query);
 
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
-
-    let { page = 1, limit = 10, search, posOrderId, voucherType, paymentType, startDate, endDate } = value;
+    let { page, limit, search, posOrderFilter, voucherTypeFilter, paymentTypeFilter, startDate, endDate, companyFilter } = req.query;
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
-    if (posOrderId) criteria.posOrderId = posOrderId;
-    if (voucherType) criteria.voucherType = voucherType;
-    if (paymentType) criteria.paymentType = paymentType;
+    if (posOrderFilter) criteria.posOrderId = posOrderFilter;
+    if (voucherTypeFilter) criteria.voucherType = voucherTypeFilter;
+    if (paymentTypeFilter) criteria.paymentType = paymentTypeFilter;
+    if (companyFilter) criteria.companyId = companyId;
 
     if (search) {
       criteria.paymentNo = { $regex: search, $options: "si" };
