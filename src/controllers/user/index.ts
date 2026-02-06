@@ -56,7 +56,7 @@ export const addUser = async (req, res) => {
 
     if (value?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $push: { userIds: response?._id } }, {});
 
-    if (value?.role) {
+    if (value?.role === USER_ROLES.SUPER_ADMIN) {
       let allModules = await getData(moduleModel, { isActive: true, isDeleted: false, default: true }, {}, {});
       if (allModules && allModules.length > 0) {
         for (let module of allModules) {
