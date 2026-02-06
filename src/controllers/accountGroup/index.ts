@@ -119,6 +119,22 @@ export const editAccountGroup = async (req, res) => {
       }
     }
 
+    if (!value?.parentGroupId) {
+      let primaryParentId = await getFirstMatch(accountGroupModel, { name: "primary", isDeleted: false }, {}, {});
+      if (!primaryParentId) {
+        const payload = {
+          name: "primary",
+          groupLevel: 0,
+          nature: null,
+          createdBy: user?._id || null,
+          updatedBy: user?._id || null,
+        };
+        const response = await createOne(accountGroupModel, payload);
+        primaryParentId = response._id;
+      }
+      value.parentGroupId = primaryParentId;
+    }
+
     // ===== Calculate group level
     if (value?.parentGroupId) {
       let groupLevel = 0;
@@ -200,7 +216,7 @@ export const getAllAccountGroup = async (req, res) => {
     }
 
     const options: any = {
-      sort: { name: 1 },
+      sort: { name: 1, createdAt: -1 },
       populate: [
         {
           path: "parentGroupId",
@@ -314,6 +330,11 @@ export const getAccountGroupTree = async (req, res) => {
           connectFromField: "_id",
           connectToField: "parentGroupId",
           as: "descendants",
+
+          restrictSearchWithMatch: {
+            isDeleted: false,
+            isActive: true,
+          },
         },
       },
       {

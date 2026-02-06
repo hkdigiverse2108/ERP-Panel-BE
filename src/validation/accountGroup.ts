@@ -15,7 +15,7 @@ export const addAccountGroupSchema = Joi.object().keys({
 export const editAccountGroupSchema = Joi.object().keys({
   accountGroupId: objectId().required(),
   name: Joi.string().trim().lowercase().optional(),
-  parentGroupId: objectId().optional(),
+  parentGroupId: objectId().optional().allow(null),
   nature: Joi.string()
     .valid(...Object.values(ACCOUNT_NATURE))
     .default(ACCOUNT_NATURE.ASSETS)
