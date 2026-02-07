@@ -443,11 +443,12 @@ export const getOneProduct = async (req, res) => {
               percentage: "$salesTax.percentage",
             },
           },
+
+          isPurchaseTaxIncluding: { $first: "$isPurchaseTaxIncluding" },
+          isSalesTaxIncluding: { $first: "$isSalesTaxIncluding" },
         },
       },
     ]);
-
-    // console.log("stockAggregation", JSON.stringify(stockAggregation, null, 2));
 
     const stock = stockAggregation.length > 0 ? stockAggregation[0] : {};
 
@@ -462,6 +463,8 @@ export const getOneProduct = async (req, res) => {
       qty: stock.totalQty ?? 0,
       purchaseTaxId: stock.purchaseTaxId,
       salesTaxId: stock.salesTaxId,
+      isPurchaseTaxIncluding: stock.isPurchaseTaxIncluding,
+      isSalesTaxIncluding: stock.isSalesTaxIncluding,
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), productsWithStock, {}));

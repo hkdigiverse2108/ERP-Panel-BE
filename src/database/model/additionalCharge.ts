@@ -26,7 +26,7 @@ const additionalChargeSchema = new mongoose.Schema(
       ref: "tax",
     },
 
-    isTaxInclusive: { type: Boolean, default: false },
+    isTaxIncluding: { type: Boolean, default: false },
 
     accountGroupId: {
       type: mongoose.Schema.Types.ObjectId,
