@@ -203,8 +203,8 @@ export const ORDER_STATUS = {
 } as const;
 
 export const ADDITIONAL_CHARGE_TYPE = {
-  PURCHASE: "Purchase",
-  SALE: "Sale",
+  PURCHASE: "purchase",
+  SALE: "sale",
 } as const;
 
 export const CONSUMPTION_TYPE = {
