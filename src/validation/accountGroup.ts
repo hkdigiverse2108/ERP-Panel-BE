@@ -1,13 +1,13 @@
 import Joi from "joi";
 import { objectId } from "./common";
-import { ACCOUNT_NATURE } from "../common";
+import { ACCOUNT_GROUP_TYPE } from "../common";
 
 export const addAccountGroupSchema = Joi.object().keys({
   name: Joi.string().trim().lowercase().required(),
   parentGroupId: objectId().optional(),
   nature: Joi.string()
-    .valid(...Object.values(ACCOUNT_NATURE))
-    .default(ACCOUNT_NATURE.ASSETS)
+    .valid(...Object.values(ACCOUNT_GROUP_TYPE))
+    .default(ACCOUNT_GROUP_TYPE.ASSETS)
     .optional(),
   isActive: Joi.boolean().optional(),
 });
@@ -17,8 +17,8 @@ export const editAccountGroupSchema = Joi.object().keys({
   name: Joi.string().trim().lowercase().optional(),
   parentGroupId: objectId().optional().allow(null),
   nature: Joi.string()
-    .valid(...Object.values(ACCOUNT_NATURE))
-    .default(ACCOUNT_NATURE.ASSETS)
+    .valid(...Object.values(ACCOUNT_GROUP_TYPE))
+    .default(ACCOUNT_GROUP_TYPE.ASSETS)
     .optional(),
   isActive: Joi.boolean().optional(),
 });

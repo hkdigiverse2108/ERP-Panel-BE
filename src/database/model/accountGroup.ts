@@ -1,14 +1,14 @@
 import mongoose, { Schema } from "mongoose";
 import { baseCommonFields, baseSchemaOptions } from "./base";
 import { IAccountGroup } from "../../types";
-import { ACCOUNT_NATURE } from "../../common";
+import { ACCOUNT_GROUP_TYPE } from "../../common";
 
 const accountGroupSchema = new Schema<IAccountGroup>(
   {
     ...baseCommonFields,
     name: { type: String, required: true },
     parentGroupId: { type: Schema.Types.ObjectId, ref: "account-group" },
-    nature: { type: String, enum: Object.values(ACCOUNT_NATURE), default: ACCOUNT_NATURE.ASSETS },
+    nature: { type: String, enum: Object.values(ACCOUNT_GROUP_TYPE), default: ACCOUNT_GROUP_TYPE.ASSETS },
     groupLevel: { type: Number },
   },
   baseSchemaOptions,

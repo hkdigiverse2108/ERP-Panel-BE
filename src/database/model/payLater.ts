@@ -30,6 +30,7 @@ const payLaterSchema = new Schema(
 
     dueDate: { type: Date },
     note: { type: String },
+    sendReminder: { type: Boolean, default: false },
   },
   baseSchemaOptions,
 );

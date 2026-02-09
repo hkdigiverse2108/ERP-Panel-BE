@@ -265,7 +265,7 @@ export const getProductDropdown = async (req, res) => {
     const { user } = req?.headers;
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
-    const { productType, search, companyFilter, categoryFilter, brandFilter } = req.query; // Optional filter by productType
+    const { productType, search, companyFilter, categoryFilter, brandFilter } = req.query;
 
     let stockCompanyId = null;
     if (userType === USER_TYPES.SUPER_ADMIN) {

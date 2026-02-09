@@ -14,6 +14,7 @@ export const addPayLaterSchema = Joi.object({
     .optional(),
   dueDate: Joi.date().optional().allow(null),
   note: Joi.string().optional().allow("", null),
+  sendReminder: Joi.boolean().default(false).optional(),
   ...baseApiSchema,
 });
 
@@ -29,6 +30,7 @@ export const editPayLaterSchema = Joi.object({
     .optional(),
   dueDate: Joi.date().optional().allow(null),
   note: Joi.string().optional().allow("", null),
+  sendReminder: Joi.boolean().default(false).optional(),
   ...baseApiSchema,
 });
 

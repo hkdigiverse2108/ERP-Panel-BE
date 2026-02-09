@@ -219,6 +219,7 @@ export const POS_PAYMENT_METHOD = {
   CARD: "card",
   UPI: "upi",
   WALLET: "wallet",
+  MULTIPAY: "multipay",
 } as const;
 
 export const POS_PAYMENT_STATUS = {

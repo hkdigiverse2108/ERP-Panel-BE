@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, PAYLATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_RECEIPT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE } from "../../common";
 import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PayLaterModel, PosPaymentModel, userModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema } from "../../validation";
+import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -544,7 +544,6 @@ export const getOnePosOrder = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-
 // Get all hold orders
 export const getAllHoldOrders = async (req, res) => {
   reqInfo(req);
@@ -569,6 +568,7 @@ export const getAllHoldOrders = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "salesManId", select: "fullName" },
         { path: "customerId", select: "firstName lastName companyName" },
+        { path: "items.productId", select: "name productType printName hsnCode purchasePrice landingCost mrp sellingPrice sellingDiscount sellingMargin" },
       ],
       limit: 100,
     };
@@ -908,6 +908,62 @@ export const getCombinedPayments = async (req, res) => {
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payments"), { payments_data: response, state }, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const getCustomerPosDetails = async (req, res) => {
+  try {
+    reqInfo(req);
+
+    const { error, value } = getCustomerPosDetailsSchema.validate(req.params);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+    const { id } = value;
+
+    const select = "firstName lastName  email phoneNo whatsappNo productDetails loyaltyPoints remarks status";
+
+    const customer = await getFirstMatch(contactModel, { _id: id, isDeleted: false }, select, {});
+    if (!customer) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Customer"), {}, {}));
+    }
+
+    const payLater = await getDataWithSorting(PayLaterModel, { customerId: id, isDeleted: false }, {}, { sort: { createdAt: -1 } });
+    const posOrders = await getDataWithSorting(PosOrderModel, { customerId: id, isDeleted: false }, {}, { sort: { createdAt: -1 } });
+
+    const totalDueAmount = payLater.reduce((acc, item) => acc + Number(item.dueAmount || 0), 0);
+    const totalPaidAmount = posOrders.reduce((acc, item) => acc + Number(item.paidAmount || 0), 0);
+    const totalPurchaseAmount = posOrders.reduce((acc, item) => acc + Number(item.totalAmount || 0), 0);
+
+    const { totalAmount = 0, orderNo = "-", _id = "-", paymentMethod = "-" } = posOrders?.[0] ?? {};
+
+    const lastBill = { _id, totalAmount, orderNo, paymentMethod };
+
+    const allPurchasedProduct = posOrders.reduce((acc, item) => {
+      const product = item.items?.[0];
+      if (product) {
+        acc[product.productId] = (acc[product.productId] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    const mostPurchasedProductId = Object.keys(allPurchasedProduct).reduce((maxProductId, productId) => {
+      if (!maxProductId || allPurchasedProduct[productId] > allPurchasedProduct[maxProductId]) {
+        return productId;
+      }
+      return maxProductId;
+    }, null);
+
+    let mostPurchasedProduct;
+    if (mostPurchasedProductId) {
+      mostPurchasedProduct = await getFirstMatch(productModel, { _id: mostPurchasedProductId, isDeleted: false }, "name", {});
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Customer POS Details"), { customer, totalDueAmount, totalPaidAmount, totalPurchaseAmount, lastBill, mostPurchasedProduct }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

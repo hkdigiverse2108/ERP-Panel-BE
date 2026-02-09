@@ -52,8 +52,7 @@ export const addPosOrderSchema = Joi.object({
   totalAmount: Joi.number().min(0).required(),
   paymentMethod: Joi.string()
     .valid(...Object.values(POS_PAYMENT_METHOD))
-    .optional()
-    .allow(null),
+    .required(),
   paymentStatus: Joi.string()
     .valid(...Object.values(POS_PAYMENT_STATUS))
     .default(POS_PAYMENT_STATUS.UNPAID),
@@ -128,6 +127,10 @@ export const deletePosOrderSchema = Joi.object().keys({
 });
 
 export const getPosOrderSchema = Joi.object().keys({
+  id: objectId().required(),
+});
+
+export const getCustomerPosDetailsSchema = Joi.object().keys({
   id: objectId().required(),
 });
 
