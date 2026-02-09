@@ -544,7 +544,7 @@ export const getOnePosOrder = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-// Get all hold orders
+
 export const getAllHoldOrders = async (req, res) => {
   reqInfo(req);
   try {
