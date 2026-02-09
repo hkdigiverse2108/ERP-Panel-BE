@@ -52,7 +52,8 @@ export const addPosOrderSchema = Joi.object({
   totalAmount: Joi.number().min(0).required(),
   paymentMethod: Joi.string()
     .valid(...Object.values(POS_PAYMENT_METHOD))
-    .required(),
+    .optional()
+    .allow(null),
   paymentStatus: Joi.string()
     .valid(...Object.values(POS_PAYMENT_STATUS))
     .default(POS_PAYMENT_STATUS.UNPAID),

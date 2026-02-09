@@ -1,5 +1,5 @@
 import { PayLaterModel, contactModel, PosOrderModel } from "../../database";
-import { apiResponse, HTTP_STATUS, PAYLATER_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, PAYLATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS } from "../../common";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, deleteSingleRecord, responseMessage } from "../../helper";
 import { addPayLaterSchema, editPayLaterSchema, getPayLaterSchema, deletePayLaterSchema, getAllPayLaterSchema } from "../../validation";
 
@@ -68,6 +68,25 @@ export const editPayLater = async (req, res) => {
 
     if (value.posOrderId && value.posOrderId !== isExist.posOrderId?.toString()) {
       if (!(await checkIdExist(PosOrderModel, value.posOrderId, "POS Order", res))) return;
+    }
+
+    const totalAmount = value.totalAmount !== undefined ? value.totalAmount : isExist.totalAmount;
+
+    const paidAmount = value.paidAmount !== undefined ? value.paidAmount : isExist.paidAmount;
+
+    if (value.totalAmount !== undefined || value.paidAmount !== undefined) {
+      value.dueAmount = Math.max(totalAmount - paidAmount, 0);
+
+      if (value.dueAmount === 0) {
+        value.status = PAYLATER_STATUS.SETTLED;
+        await updateData(PosOrderModel, { _id: isExist.posOrderId?._id }, { payLaterId: null, status: POS_ORDER_STATUS.COMPLETED, paymentStatus: POS_PAYMENT_STATUS.PAID, paidAmount: totalAmount }, {});
+      } else if (paidAmount > 0) {
+        value.status = PAYLATER_STATUS.PARTIAL;
+        await updateData(PosOrderModel, { _id: isExist.posOrderId?._id }, { status: POS_ORDER_STATUS.COMPLETED, paymentStatus: POS_PAYMENT_STATUS.PARTIAL, paidAmount: paidAmount }, {});
+      } else {
+        value.status = PAYLATER_STATUS.OPEN;
+        await updateData(PosOrderModel, { _id: isExist.posOrderId?._id }, { status: POS_ORDER_STATUS.PENDING, paymentStatus: POS_PAYMENT_STATUS.UNPAID, paidAmount: 0 }, {});
+      }
     }
 
     value.updatedBy = user?._id || null;
@@ -176,6 +195,11 @@ export const deletePayLater = async (req, res) => {
     const isExist = await getFirstMatch(PayLaterModel, { _id: value?.id, isDeleted: false }, {}, {});
     if (!isExist) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("PayLater"), {}, {}));
+    }
+
+    const payLaterAssigned = await getFirstMatch(PosOrderModel, { payLaterId: value?.id }, {}, {});
+    if (payLaterAssigned) {
+      await updateData(PosOrderModel, { _id: payLaterAssigned?._id }, { payLaterId: null }, {});
     }
 
     // Permanent Delete as requested
