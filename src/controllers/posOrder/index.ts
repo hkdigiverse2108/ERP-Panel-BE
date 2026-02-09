@@ -568,7 +568,7 @@ export const getAllHoldOrders = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "salesManId", select: "fullName" },
         { path: "customerId", select: "firstName lastName companyName" },
-        { path: "items.productId", select: "name productType printName hsnCode purchasePrice landingCost mrp sellingPrice sellingDiscount sellingMargin" },
+        { path: "items.productId", select: "-isDeleted -isActive -createdAt -updatedAt -createdBy -updatedBy -images -nutrition" },
       ],
       limit: 100,
     };

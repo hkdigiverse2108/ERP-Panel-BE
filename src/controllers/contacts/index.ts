@@ -254,13 +254,14 @@ export const getContactDropdown = async (req, res) => {
 
     // Filter by contact type
     if (typeFilter) {
-      if (typeFilter === "supplier") {
-        criteria.$or = [{ contactType: "supplier" }, { contactType: "both" }];
-      } else if (typeFilter === "customer") {
-        criteria.$or = [{ contactType: "customer" }, { contactType: "both" }];
-      } else {
-        criteria.contactType = typeFilter;
-      }
+      // if (typeFilter === "supplier") {
+      //   criteria.$or = [{ contactType: "supplier" }, { contactType: "both" }];
+      // } else if (typeFilter === "customer") {
+      //   criteria.$or = [{ contactType: "customer" }, { contactType: "both" }];
+      // } else {
+      //   criteria.contactType = typeFilter;
+      // }
+      criteria.contactType = typeFilter;
     }
 
     // Search filter

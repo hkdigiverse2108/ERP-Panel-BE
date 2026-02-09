@@ -280,7 +280,20 @@ export const getProductDropdown = async (req, res) => {
     }
 
     // 1. Get productIds that have stock for this company
-    const stockResponse = await getDataWithSorting(stockModel, { isDeleted: false, isActive: true, companyId: stockCompanyId }, { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1 }, { sort: { updatedAt: -1 } });
+    const stockResponse = await getDataWithSorting(
+      stockModel,
+      { isDeleted: false, isActive: true, companyId: stockCompanyId },
+      { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1 },
+      {
+        sort: { updatedAt: -1 },
+        populate: [
+          { path: "purchaseTaxId", select: "name percentage" },
+          { path: "salesTaxId", select: "name percentage" },
+        ],
+      },
+    );
+
+    // console.log("stockResponse", stockResponse);
 
     const productIdsWithStock = [...new Set(stockResponse.map((s: any) => String(s.productId)))];
     if (productIdsWithStock.length === 0) {
@@ -337,6 +350,10 @@ export const getProductDropdown = async (req, res) => {
         sellingPrice: stock?.sellingPrice ?? product.sellingPrice,
         sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
         sellingMargin: stock?.sellingMargin ?? product.sellingMargin,
+        purchaseTaxId: stock?.purchaseTaxId,
+        salesTaxId: stock?.salesTaxId,
+        isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
+        isSalesTaxIncluding: stock?.isSalesTaxIncluding,
       };
     });
 
