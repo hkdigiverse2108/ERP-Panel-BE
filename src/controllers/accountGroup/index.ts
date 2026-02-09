@@ -270,10 +270,10 @@ export const getOneAccountGroup = async (req, res) => {
     );
 
     if (!response) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Account"), {}, {}));
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Account Group"), {}, {}));
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Account"), response, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Account Group"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -298,7 +298,7 @@ export const getAccountGroupDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       accountGroupModel,
       criteria,
-      { _id: 1, name: 1, parentGroupId: 1 },
+      { _id: 1, name: 1, parentGroupId: 1, nature: 1 },
       {
         sort: { name: 1 },
         populate: [{ path: "parentGroupId", select: "name parentGroupId nature groupLevel" }],

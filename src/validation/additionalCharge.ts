@@ -7,10 +7,7 @@ export const addAdditionalChargeSchema = Joi.object({
     .valid(...Object.values(ADDITIONAL_CHARGE_TYPE))
     .required(),
   name: Joi.string().trim().required(),
-  defaultValue: Joi.object({
-    value: Joi.number().required(),
-    type: Joi.string().required(),
-  }).required(),
+  defaultValue: Joi.number().required(),
   taxId: objectId().optional().allow("", null),
   isTaxIncluding: Joi.boolean().optional(),
   accountGroupId: objectId().optional().allow("", null),
@@ -24,10 +21,7 @@ export const editAdditionalChargeSchema = Joi.object({
     .valid(...Object.values(ADDITIONAL_CHARGE_TYPE))
     .optional(),
   name: Joi.string().trim().optional(),
-  defaultValue: Joi.object({
-    value: Joi.number().optional(),
-    type: Joi.string().optional(),
-  }).optional(),
+  defaultValue: Joi.number().optional(),
   taxId: objectId().optional().allow("", null),
   isTaxIncluding: Joi.boolean().optional(),
   accountGroupId: objectId().optional().allow("", null),

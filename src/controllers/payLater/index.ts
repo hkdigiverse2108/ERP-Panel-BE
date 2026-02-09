@@ -1,5 +1,5 @@
 import { PayLaterModel, contactModel, PosOrderModel } from "../../database";
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, PAYLATER_STATUS } from "../../common";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, deleteSingleRecord, responseMessage } from "../../helper";
 import { addPayLaterSchema, editPayLaterSchema, getPayLaterSchema, deletePayLaterSchema, getAllPayLaterSchema } from "../../validation";
 
@@ -20,6 +20,15 @@ export const addPayLater = async (req, res) => {
 
     if (value.posOrderId) {
       if (!(await checkIdExist(PosOrderModel, value.posOrderId, "POS Order", res))) return;
+    }
+
+    value.dueAmount = Math.max(value.totalAmount - value.paidAmount, 0);
+    if (value.dueAmount === 0) {
+      value.status = PAYLATER_STATUS.SETTLED;
+    } else if (value.paidAmount > 0 && value.dueAmount > 0) {
+      value.status = PAYLATER_STATUS.PARTIAL;
+    } else {
+      value.status = PAYLATER_STATUS.OPEN;
     }
 
     value.createdBy = user?._id || null;

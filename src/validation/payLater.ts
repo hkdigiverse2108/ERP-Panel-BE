@@ -7,11 +7,11 @@ export const addPayLaterSchema = Joi.object({
   posOrderId: objectId().optional().allow(null),
   totalAmount: Joi.number().min(0).required(),
   paidAmount: Joi.number().min(0).default(0).optional(),
-  dueAmount: Joi.number().min(0).required(),
-  status: Joi.string()
-    .valid(...Object.values(PAYLATER_STATUS))
-    .default(PAYLATER_STATUS.OPEN)
-    .optional(),
+  // dueAmount: Joi.number().min(0).required(),
+  // status: Joi.string()
+  //   .valid(...Object.values(PAYLATER_STATUS))
+  //   .default(PAYLATER_STATUS.OPEN)
+  //   .optional(),
   dueDate: Joi.date().optional().allow(null),
   note: Joi.string().optional().allow("", null),
   sendReminder: Joi.boolean().default(false).optional(),
@@ -24,10 +24,10 @@ export const editPayLaterSchema = Joi.object({
   posOrderId: objectId().optional().allow(null),
   totalAmount: Joi.number().min(0).optional(),
   paidAmount: Joi.number().min(0).optional(),
-  dueAmount: Joi.number().min(0).optional(),
-  status: Joi.string()
-    .valid(...Object.values(PAYLATER_STATUS))
-    .optional(),
+  // dueAmount: Joi.number().min(0).optional(),
+  // status: Joi.string()
+  //   .valid(...Object.values(PAYLATER_STATUS))
+  //   .optional(),
   dueDate: Joi.date().optional().allow(null),
   note: Joi.string().optional().allow("", null),
   sendReminder: Joi.boolean().default(false).optional(),
