@@ -1,5 +1,5 @@
-import { apiResponse, HTTP_STATUS, PAYLATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_RECEIPT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PayLaterModel, PosPaymentModel, userModel, stockModel } from "../../database";
+import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_RECEIPT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE } from "../../common";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
 
@@ -21,7 +21,6 @@ export const addPosOrder = async (req, res) => {
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     if (value.branchId && !(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
-    if (value.payLaterId && !(await checkIdExist(PayLaterModel, value.payLaterId, "Pay Later", res))) return;
     if (value.salesManId && !(await checkIdExist(userModel, value.salesManId, "Sales Man", res))) return;
 
     // Get customer name if customer provided
@@ -55,58 +54,41 @@ export const addPosOrder = async (req, res) => {
     value.updatedBy = user?._id || null;
 
     // Calculate paid amount from multiple payments if provided
-    if (value.multiplePayments && value.multiplePayments.length > 0) {
+    if (value?.multiplePayments && value?.multiplePayments?.length > 0) {
       value.paidAmount = value.multiplePayments.reduce((acc, curr) => acc + (curr.amount || 0), 0);
     }
 
     // Set payment status based on paid amount
-    if (value.paidAmount >= value.totalAmount) {
+    const totalAmount = value?.totalAmount;
+    const paidAmount = value?.paidAmount || 0;
+    const dueAmount = Math.max(0, totalAmount - paidAmount);
+
+    value.dueAmount = dueAmount;
+
+    if (paidAmount >= totalAmount) {
       value.paymentStatus = POS_PAYMENT_STATUS.PAID;
       value.status = POS_ORDER_STATUS.COMPLETED;
-    } else if (value.paidAmount > 0 && value.paidAmount < value.totalAmount) {
+    } else if (paidAmount > 0 && paidAmount < totalAmount) {
       value.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
     } else {
       value.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+    }
+
+    // Handle Pay Later status
+    if (dueAmount > 0) {
+      value.payLater = value.payLater || {};
+      value.payLater.status = paidAmount > 0 ? PAY_LATER_STATUS.PARTIAL : PAY_LATER_STATUS.OPEN;
+    } else {
+      if (value.payLater) {
+        value.payLater.status = PAY_LATER_STATUS.SETTLED;
+        value.payLater.settledDate = new Date();
+      }
     }
 
     const response = await createOne(PosOrderModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
-    }
-
-    // Sync with PayLater or create if balance exists
-    let payLaterId = response.payLaterId;
-    const dueAmount = Math.max(0, response.totalAmount - (response.paidAmount || 0));
-
-    if (!payLaterId && dueAmount > 0) {
-      const payLaterData = {
-        companyId: response.companyId,
-        branchId: response.branchId,
-        customerId: response.customerId,
-        posOrderId: response._id,
-        totalAmount: response.totalAmount,
-        paidAmount: response.paidAmount || 0,
-        dueAmount: dueAmount,
-        status: (response.paidAmount || 0) > 0 ? PAYLATER_STATUS.PARTIAL : PAYLATER_STATUS.OPEN,
-        createdBy: user?._id || null,
-        updatedBy: user?._id || null,
-      };
-      const newPayLater = await createOne(PayLaterModel, payLaterData);
-      if (newPayLater) {
-        payLaterId = newPayLater._id;
-        await updateData(PosOrderModel, { _id: response._id }, { payLaterId: newPayLater._id }, {});
-      }
-    } else if (payLaterId) {
-      const payLater = await getFirstMatch(PayLaterModel, { _id: payLaterId, isDeleted: false }, {}, {});
-      if (payLater) {
-        payLater.posOrderId = response._id;
-        payLater.totalAmount = response.totalAmount;
-        payLater.paidAmount = response.paidAmount || 0;
-        payLater.dueAmount = dueAmount;
-        payLater.status = payLater.dueAmount <= 0 ? PAYLATER_STATUS.SETTLED : payLater.paidAmount > 0 ? PAYLATER_STATUS.PARTIAL : PAYLATER_STATUS.OPEN;
-        await updateData(PayLaterModel, { _id: payLaterId }, payLater, {});
-      }
     }
 
     // Add payment entry (multiple entries if multiplePayments provided)
@@ -170,7 +152,6 @@ export const editPosOrder = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
 
-    if (value.payLaterId && !(await checkIdExist(PayLaterModel, value.payLaterId, "Pay Later", res))) return;
     if (value.salesManId && !(await checkIdExist(userModel, value.salesManId, "Sales Man", res))) return;
 
     // Validate customer if being changed
@@ -222,6 +203,9 @@ export const editPosOrder = async (req, res) => {
       paymentDiff = newPaidAmount - oldPaidAmount;
     }
 
+    const dueAmount = Math.max(0, totalAmount - newPaidAmount);
+    value.dueAmount = dueAmount;
+
     if (newPaidAmount >= totalAmount) {
       value.paymentStatus = POS_PAYMENT_STATUS.PAID;
       value.status = POS_ORDER_STATUS.COMPLETED;
@@ -229,6 +213,22 @@ export const editPosOrder = async (req, res) => {
       value.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
     } else {
       value.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+    }
+
+    // Handle Pay Later status within posOrder
+    if (dueAmount > 0) {
+      value.payLater = {
+        ...(isExist.payLater || {}),
+        ...(value.payLater || {}),
+        status: newPaidAmount > 0 ? PAY_LATER_STATUS.PARTIAL : PAY_LATER_STATUS.OPEN,
+      };
+    } else {
+      value.payLater = {
+        ...(isExist.payLater || {}),
+        ...(value.payLater || {}),
+        status: PAY_LATER_STATUS.SETTLED,
+        settledDate: new Date(),
+      };
     }
 
     const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, value, {});
@@ -273,40 +273,6 @@ export const editPosOrder = async (req, res) => {
           updatedBy: user?._id || null,
         };
         await createOne(PosPaymentModel, paymentData);
-      }
-    }
-
-    // Sync with PayLater or create if balance exists
-    let payLaterId = value.payLaterId || response.payLaterId;
-    const dueAmount = Math.max(0, response.totalAmount - (response.paidAmount || 0));
-
-    if (!payLaterId && dueAmount > 0) {
-      const payLaterData = {
-        companyId: response.companyId,
-        branchId: response.branchId,
-        customerId: response.customerId,
-        posOrderId: response._id,
-        totalAmount: response.totalAmount,
-        paidAmount: response.paidAmount || 0,
-        dueAmount: dueAmount,
-        status: (response.paidAmount || 0) > 0 ? PAYLATER_STATUS.PARTIAL : PAYLATER_STATUS.OPEN,
-        createdBy: user?._id || null,
-        updatedBy: user?._id || null,
-      };
-      const newPayLater = await createOne(PayLaterModel, payLaterData);
-      if (newPayLater) {
-        payLaterId = newPayLater._id;
-        await updateData(PosOrderModel, { _id: response._id }, { payLaterId: newPayLater._id }, {});
-      }
-    } else if (payLaterId) {
-      const payLater = await getFirstMatch(PayLaterModel, { _id: payLaterId, isDeleted: false }, {}, {});
-      if (payLater) {
-        payLater.posOrderId = response._id;
-        payLater.totalAmount = response.totalAmount;
-        payLater.paidAmount = response.paidAmount || 0;
-        payLater.dueAmount = dueAmount;
-        payLater.status = payLater.dueAmount <= 0 ? PAYLATER_STATUS.SETTLED : payLater.paidAmount > 0 ? PAYLATER_STATUS.PARTIAL : PAYLATER_STATUS.OPEN;
-        await updateData(PayLaterModel, { _id: payLaterId }, payLater, {});
       }
     }
 
@@ -474,7 +440,6 @@ export const getAllPosOrder = async (req, res) => {
       populate: [
         { path: "branchId", select: "name" },
         { path: "companyId", select: "name" },
-        { path: "payLaterId", select: "dueAmount status" },
         { path: "salesManId", select: "fullName" },
         { path: "customerId", select: "firstName lastName companyName email phoneNo" },
         { path: "items.productId", select: "name itemCode" },
@@ -522,7 +487,6 @@ export const getOnePosOrder = async (req, res) => {
         populate: [
           { path: "branchId", select: "name" },
           { path: "companyId", select: "name" },
-          { path: "payLaterId", select: "dueAmount status" },
           { path: "salesManId", select: "fullName" },
           { path: "customerId", select: "firstName lastName companyName email phoneNo" },
           { path: "items.productId", select: "name itemCode" },
@@ -978,10 +942,9 @@ export const getCustomerPosDetails = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Customer"), {}, {}));
     }
 
-    const payLater = await getDataWithSorting(PayLaterModel, { customerId: id, isDeleted: false }, {}, { sort: { createdAt: -1 } });
     const posOrders = await getDataWithSorting(PosOrderModel, { customerId: id, isDeleted: false }, {}, { sort: { createdAt: -1 } });
 
-    const totalDueAmount = payLater.reduce((acc, item) => acc + Number(item.dueAmount || 0), 0);
+    const totalDueAmount = posOrders.reduce((acc, item) => acc + Number(item.dueAmount || 0), 0);
     const totalPaidAmount = posOrders.reduce((acc, item) => acc + Number(item.paidAmount || 0), 0);
     const totalPurchaseAmount = posOrders.reduce((acc, item) => acc + Number(item.totalAmount || 0), 0);
 
@@ -1033,14 +996,7 @@ export const convertToInvoice = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
 
-    // Create invoice from POS order
-    // Note: Invoice requires customerId, so we need to handle walk-in customers
-    // Option 1: Create a default "Walk-in Customer" contact
-    // Option 2: Make customerId optional in invoice (but model requires it)
-    // For now, we'll require customerId or use a default walk-in customer ID
-
     if (!posOrder.customerId) {
-      // Try to find or create a default walk-in customer
       const walkInCustomer = await getFirstMatch(contactModel, { companyName: "Walk-in Customer", companyId: posOrder.companyId, isDeleted: false }, {}, {});
       if (!walkInCustomer) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Please create a default 'Walk-in Customer' contact for POS orders", {}, {}));
@@ -1050,7 +1006,7 @@ export const convertToInvoice = async (req, res) => {
     }
 
     const invoiceData = {
-      documentNo: posOrder.orderNo.replace("POS", "INV"), // Convert order number to invoice number
+      documentNo: posOrder.orderNo.replace("POS", "INV"),
       date: posOrder.date,
       customerId: posOrder.customerId,
       customerName: posOrder.customerName || "Walk-in Customer",

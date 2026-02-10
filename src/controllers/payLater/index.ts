@@ -1,5 +1,5 @@
 import { PayLaterModel, contactModel, PosOrderModel } from "../../database";
-import { apiResponse, HTTP_STATUS, PAYLATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS } from "../../common";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, deleteSingleRecord, responseMessage } from "../../helper";
 import { addPayLaterSchema, editPayLaterSchema, getPayLaterSchema, deletePayLaterSchema, getAllPayLaterSchema } from "../../validation";
 
@@ -24,11 +24,11 @@ export const addPayLater = async (req, res) => {
 
     value.dueAmount = Math.max(value.totalAmount - value.paidAmount, 0);
     if (value.dueAmount === 0) {
-      value.status = PAYLATER_STATUS.SETTLED;
+      value.status = PAY_LATER_STATUS.SETTLED;
     } else if (value.paidAmount > 0 && value.dueAmount > 0) {
-      value.status = PAYLATER_STATUS.PARTIAL;
+      value.status = PAY_LATER_STATUS.PARTIAL;
     } else {
-      value.status = PAYLATER_STATUS.OPEN;
+      value.status = PAY_LATER_STATUS.OPEN;
     }
 
     value.createdBy = user?._id || null;
@@ -78,13 +78,13 @@ export const editPayLater = async (req, res) => {
       value.dueAmount = Math.max(totalAmount - paidAmount, 0);
 
       if (value.dueAmount === 0) {
-        value.status = PAYLATER_STATUS.SETTLED;
+        value.status = PAY_LATER_STATUS.SETTLED;
         await updateData(PosOrderModel, { _id: isExist.posOrderId?._id }, { payLaterId: null, status: POS_ORDER_STATUS.COMPLETED, paymentStatus: POS_PAYMENT_STATUS.PAID, paidAmount: totalAmount }, {});
       } else if (paidAmount > 0) {
-        value.status = PAYLATER_STATUS.PARTIAL;
+        value.status = PAY_LATER_STATUS.PARTIAL;
         await updateData(PosOrderModel, { _id: isExist.posOrderId?._id }, { status: POS_ORDER_STATUS.COMPLETED, paymentStatus: POS_PAYMENT_STATUS.PARTIAL, paidAmount: paidAmount }, {});
       } else {
-        value.status = PAYLATER_STATUS.OPEN;
+        value.status = PAY_LATER_STATUS.OPEN;
         await updateData(PosOrderModel, { _id: isExist.posOrderId?._id }, { status: POS_ORDER_STATUS.PENDING, paymentStatus: POS_PAYMENT_STATUS.UNPAID, paidAmount: 0 }, {});
       }
     }

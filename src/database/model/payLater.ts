@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
-import { PAYLATER_STATUS } from "../../common";
+import { PAY_LATER_STATUS } from "../../common";
 
 const payLaterSchema = new Schema(
   {
@@ -10,7 +10,7 @@ const payLaterSchema = new Schema(
     totalAmount: { type: Number },
     paidAmount: { type: Number, default: 0 },
     dueAmount: { type: Number },
-    status: { type: String, enum: Object.values(PAYLATER_STATUS), default: PAYLATER_STATUS.OPEN },
+    status: { type: String, enum: Object.values(PAY_LATER_STATUS), default: PAY_LATER_STATUS.OPEN },
     dueDate: { type: Date },
     note: { type: String },
     sendReminder: { type: Boolean, default: false },

@@ -63,7 +63,14 @@ export const addPosOrderSchema = Joi.object({
   holdDate: Joi.date().optional().allow(null),
   invoiceId: objectId().optional().allow(null),
   paidAmount: Joi.number().min(0).default(0).optional(),
-  payLaterId: objectId().optional().allow(null),
+
+  payLater: Joi.object({
+    dueDate: Joi.date().optional().allow(null),
+    paymentTerm: Joi.string().optional().allow("", null),
+    sendReminder: Joi.boolean().default(false).optional(),
+  })
+    .optional()
+    .allow(null),
 
   multiplePayments: Joi.array().items(multiplePaymentSchema).default([]).optional(),
 
@@ -104,7 +111,14 @@ export const editPosOrderSchema = Joi.object().keys({
   holdDate: Joi.date().optional().allow(null),
   invoiceId: objectId().optional().allow(null),
   paidAmount: Joi.number().min(0).optional(),
-  payLaterId: objectId().optional().allow(null),
+
+  payLater: Joi.object({
+    dueDate: Joi.date().optional().allow(null),
+    paymentTerm: Joi.string().optional().allow("", null),
+    sendReminder: Joi.boolean().optional(),
+  })
+    .optional()
+    .allow(null),
 
   multiplePayments: Joi.array().items(multiplePaymentSchema).default([]).optional(),
 

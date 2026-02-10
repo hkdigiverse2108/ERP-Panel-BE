@@ -49,7 +49,7 @@ import { termsConditionRouter } from "./termsCondition";
 import { additionalChargeRouter } from "./additionalCharge";
 import { salesCreditNoteRouter } from "./salesCreditNote";
 import { salesDebitNoteRouter } from "./salesDebitNote";
-import { payLaterRouter } from "./payLater";
+// import { payLaterRouter } from "./payLater";
 import { posPaymentRouter } from "./posPayment";
 
 const router = Router();
@@ -100,7 +100,7 @@ router.use("/feedback", feedbackRouter);
 router.use("/loyalty", loyaltyRouter);
 router.use("/prefix", prefixRouter);
 router.use("/pos-order", posOrderRouter);
-router.use("/pay-later", payLaterRouter);
+// router.use("/pay-later", payLaterRouter);
 router.use("/pos-payment", posPaymentRouter);
 router.use("/recipe", recipeRouter);
 router.use("/material", materialRouter);

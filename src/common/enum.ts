@@ -220,6 +220,7 @@ export const POS_PAYMENT_METHOD = {
   UPI: "upi",
   WALLET: "wallet",
   MULTIPAY: "multipay",
+  PAY_LATER: "pay_later",
 } as const;
 
 export const POS_PAYMENT_STATUS = {
@@ -240,7 +241,7 @@ export const POS_ORDER_TYPE = {
   DELIVERY: "delivery",
 } as const;
 
-export const PAYLATER_STATUS = {
+export const PAY_LATER_STATUS = {
   OPEN: "open",
   PARTIAL: "partial",
   SETTLED: "settled",

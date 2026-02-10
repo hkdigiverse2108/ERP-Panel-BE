@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
-import { PAYLATER_STATUS } from "../common";
+import { PAY_LATER_STATUS } from "../common";
 
 export const addPayLaterSchema = Joi.object({
   customerId: objectId().required(),
@@ -9,8 +9,8 @@ export const addPayLaterSchema = Joi.object({
   paidAmount: Joi.number().min(0).default(0).optional(),
   // dueAmount: Joi.number().min(0).required(),
   // status: Joi.string()
-  //   .valid(...Object.values(PAYLATER_STATUS))
-  //   .default(PAYLATER_STATUS.OPEN)
+  //   .valid(...Object.values(PAY_LATER_STATUS))
+  //   .default(PAY_LATER_STATUS.OPEN)
   //   .optional(),
   dueDate: Joi.date().optional().allow(null),
   note: Joi.string().optional().allow("", null),
@@ -26,7 +26,7 @@ export const editPayLaterSchema = Joi.object({
   paidAmount: Joi.number().min(0).optional(),
   // dueAmount: Joi.number().min(0).optional(),
   // status: Joi.string()
-  //   .valid(...Object.values(PAYLATER_STATUS))
+  //   .valid(...Object.values(PAY_LATER_STATUS))
   //   .optional(),
   dueDate: Joi.date().optional().allow(null),
   note: Joi.string().optional().allow("", null),
@@ -48,7 +48,7 @@ export const getAllPayLaterSchema = Joi.object({
   search: Joi.string().optional().allow("", null),
   customerId: objectId().optional(),
   status: Joi.string()
-    .valid(...Object.values(PAYLATER_STATUS))
+    .valid(...Object.values(PAY_LATER_STATUS))
     .optional(),
   startDate: Joi.date().optional(),
   endDate: Joi.date().optional(),
