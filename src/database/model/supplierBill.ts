@@ -94,6 +94,7 @@ const supplierBillSchema = new Schema(
       flatDiscount: { type: Number, default: 0, min: 0 },
       grossAmount: Number,
       itemDiscount: Number,
+      taxableAmount: { type: Number, default: 0 },
       itemTax: Number,
       additionalChargeAmount: Number,
       additionalChargeTax: Number,
