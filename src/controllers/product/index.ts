@@ -293,8 +293,6 @@ export const getProductDropdown = async (req, res) => {
       },
     );
 
-    // console.log("stockResponse", stockResponse);
-
     const productIdsWithStock = [...new Set(stockResponse.map((s: any) => String(s.productId)))];
     if (productIdsWithStock.length === 0) {
       return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [], {}));

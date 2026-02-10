@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, PAYLATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_RECEIPT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PayLaterModel, PosPaymentModel, userModel } from "../../database";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PayLaterModel, PosPaymentModel, userModel, stockModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
 
@@ -572,10 +572,56 @@ export const getAllHoldOrders = async (req, res) => {
       ],
       limit: 100,
     };
-
     const response = await getDataWithSorting(PosOrderModel, criteria, {}, options);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Hold Orders"), response, {}));
+    const productIds = response?.map((order) => order?.items?.map((item) => item?.productId?._id)).flat();
+
+    const stockResponse = await getDataWithSorting(
+      stockModel,
+      { isDeleted: false, isActive: true, companyId: companyId, productId: { $in: productIds } },
+      { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1 },
+      {
+        sort: { updatedAt: -1 },
+        populate: [
+          { path: "purchaseTaxId", select: "name percentage" },
+          { path: "salesTaxId", select: "name percentage" },
+        ],
+      },
+    );
+
+    const stockMap = stockResponse.reduce((acc, stock) => {
+      acc[stock.productId.toString()] = stock;
+      return acc;
+    }, {});
+
+    const updatedResponse = response.map((order) => {
+      if (order.items) {
+        order.items = order.items.map((item) => {
+          const product = item.productId;
+          if (product && product._id) {
+            const stock = stockMap[product._id.toString()];
+            item.productId = {
+              ...product,
+              qty: stock?.qty ?? 0,
+              purchasePrice: stock?.purchasePrice ?? product.purchasePrice,
+              landingCost: stock?.landingCost ?? product.landingCost,
+              mrp: stock?.mrp ?? product.mrp,
+              sellingPrice: stock?.sellingPrice ?? product.sellingPrice,
+              sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
+              sellingMargin: stock?.sellingMargin ?? product.sellingMargin,
+              purchaseTaxId: stock?.purchaseTaxId,
+              salesTaxId: stock?.salesTaxId,
+              isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
+              isSalesTaxIncluding: stock?.isSalesTaxIncluding,
+            };
+          }
+          return item;
+        });
+      }
+      return order;
+    });
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Hold Orders"), updatedResponse, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
