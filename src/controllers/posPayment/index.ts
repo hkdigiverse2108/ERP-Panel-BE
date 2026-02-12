@@ -1,5 +1,5 @@
 import { PosPaymentModel, PosOrderModel, contactModel } from "../../database";
-import { apiResponse, HTTP_STATUS, POS_VOUCHER_TYPE } from "../../common";
+import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_VOUCHER_TYPE } from "../../common";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, generateSequenceNumber } from "../../helper";
 import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema, getAllPosPaymentSchema } from "../../validation";
 
@@ -25,6 +25,40 @@ export const addPosPayment = async (req, res) => {
     else if (value.voucherType === POS_VOUCHER_TYPE.EXPENSE) prefix = "EXP";
 
     value.paymentNo = await generateSequenceNumber({ model: PosPaymentModel, prefix, fieldName: "paymentNo", companyId: value.companyId });
+
+    if (value.voucherType === POS_VOUCHER_TYPE.SALES) {
+      const posOrder = await getFirstMatch(PosOrderModel, { _id: value.posOrderId, isDeleted: false }, {}, {});
+      if (!posOrder) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+      }
+
+      posOrder.multiplePayments.push({
+        amount: value.amount,
+        method: value.paymentMode,
+        accountId: value.accountId,
+      });
+
+      posOrder.paidAmount = (posOrder.paidAmount || 0) + value.amount;
+      if (posOrder.paidAmount >= posOrder.totalAmount) {
+        posOrder.paymentStatus = POS_PAYMENT_STATUS.PAID;
+        posOrder.status = POS_ORDER_STATUS.COMPLETED;
+        posOrder.payLater.status = PAY_LATER_STATUS.SETTLED;
+        posOrder.payLater.settledDate = new Date();
+        posOrder.payLater.sendReminder = false;
+        posOrder.dueAmount = 0;
+      } else if (posOrder.paidAmount < posOrder.totalAmount) {
+        posOrder.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+        posOrder.status = POS_ORDER_STATUS.PENDING;
+        posOrder.payLater.status = PAY_LATER_STATUS.PARTIAL;
+        posOrder.dueAmount = posOrder.totalAmount - posOrder.paidAmount;
+      } else {
+        posOrder.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+        posOrder.status = POS_ORDER_STATUS.PENDING;
+        posOrder.payLater.status = PAY_LATER_STATUS.OPEN;
+        posOrder.dueAmount = posOrder.totalAmount;
+      }
+      await updateData(PosOrderModel, { _id: value.posOrderId }, posOrder, {});
+    }
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
@@ -63,6 +97,40 @@ export const editPosPayment = async (req, res) => {
 
     if (value.partyId && value.partyId !== isExist.partyId?.toString()) {
       if (!(await checkIdExist(contactModel, value.partyId, "Party", res))) return;
+    }
+
+    if (value.voucherType === POS_VOUCHER_TYPE.SALES) {
+      const posOrder = await getFirstMatch(PosOrderModel, { _id: value.posOrderId, isDeleted: false }, {}, {});
+      if (!posOrder) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+      }
+
+      posOrder.multiplePayments.push({
+        amount: value.amount,
+        method: value.paymentMode,
+        accountId: value.accountId,
+      });
+
+      posOrder.paidAmount = (posOrder.paidAmount || 0) + value.amount;
+      if (posOrder.paidAmount >= posOrder.totalAmount) {
+        posOrder.paymentStatus = POS_PAYMENT_STATUS.PAID;
+        posOrder.status = POS_ORDER_STATUS.COMPLETED;
+        posOrder.payLater.status = PAY_LATER_STATUS.SETTLED;
+        posOrder.payLater.settledDate = new Date();
+        posOrder.payLater.sendReminder = false;
+        posOrder.dueAmount = 0;
+      } else if (posOrder.paidAmount < posOrder.totalAmount) {
+        posOrder.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+        posOrder.status = POS_ORDER_STATUS.PENDING;
+        posOrder.payLater.status = PAY_LATER_STATUS.PARTIAL;
+        posOrder.dueAmount = posOrder.totalAmount - posOrder.paidAmount;
+      } else {
+        posOrder.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+        posOrder.status = POS_ORDER_STATUS.PENDING;
+        posOrder.payLater.status = PAY_LATER_STATUS.OPEN;
+        posOrder.dueAmount = posOrder.totalAmount;
+      }
+      await updateData(PosOrderModel, { _id: value.posOrderId }, posOrder, {});
     }
 
     value.updatedBy = user?._id || null;
@@ -142,7 +210,7 @@ export const getOnePosPayment = async (req, res) => {
           { path: "posOrderId", select: "orderNo totalAmount items" },
           { path: "partyId", select: "firstName lastName companyName email phoneNo" },
           { path: "purchaseBillId", select: "documentNo totalAmount" },
-          { path: "expenseAccountId", select: "name" },
+          { path: "accountId", select: "name" },
         ],
       },
     );

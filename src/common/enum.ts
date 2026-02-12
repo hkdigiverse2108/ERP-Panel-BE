@@ -116,6 +116,7 @@ export const COUPON_DISCOUNT_TYPE = {
 export const COUPON_STATUS = {
   ACTIVE: "active",
   INACTIVE: "inactive",
+  EXPIRED: "expired",
 } as const;
 
 export const VALUE_TYPE = {

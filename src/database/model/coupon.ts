@@ -6,19 +6,31 @@ import { baseSchemaFields, baseSchemaOptions } from "./base";
 const couponSchema = new Schema<ICoupon>(
   {
     ...baseSchemaFields,
-    code: { type: String, required: true, unique: true, index: true },
-    description: { type: String },
-    discountType: { type: String, enum: Object.values(COUPON_DISCOUNT_TYPE), required: true },
-    discountValue: { type: Number, required: true },
-    minOrderValue: { type: Number },
-    maxDiscountAmount: { type: Number },
-    validFrom: { type: Date, required: true },
-    validTo: { type: Date, required: true },
+
+    name: { type: String },
+    couponPrice: {
+      type: Number,
+    },
+    redemptionType: {
+      type: String,
+      enum: Object.values(COUPON_DISCOUNT_TYPE),
+    },
+    redeemValue: {
+      type: Number,
+    },
+    singleTimeUse: { type: Boolean, default: false },
     usageLimit: { type: Number },
     usedCount: { type: Number, default: 0 },
-    status: { type: String, enum: Object.values(COUPON_STATUS), default: COUPON_STATUS.ACTIVE },
+    expiryDays: { type: Number },
+    startDate: { type: Date },
+    endDate: { type: Date },
+    status: {
+      type: String,
+      enum: Object.values(COUPON_STATUS),
+      default: COUPON_STATUS.ACTIVE,
+    },
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
 export const couponModel = mongoose.model<ICoupon>("coupon", couponSchema);
