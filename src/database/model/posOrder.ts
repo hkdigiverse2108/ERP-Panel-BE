@@ -80,8 +80,8 @@ const posOrderSchema = new Schema(
       sendReminder: { type: Boolean, default: false },
       settledDate: { type: Date },
     },
-
-    // payLaterId: { type: Schema.Types.ObjectId, ref: "pay-later" },
+    couponId: { type: Schema.Types.ObjectId, ref: "coupon", default: null },
+    couponDiscount: { type: Number, default: 0 },
   },
   baseSchemaOptions,
 );

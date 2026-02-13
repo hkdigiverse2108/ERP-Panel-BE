@@ -19,6 +19,7 @@ export const addPosPaymentSchema = Joi.object({
     .optional(),
   purchaseBillId: objectId().optional(),
   accountId: objectId().optional(),
+  bankId: objectId().optional(),
   totalAmount: Joi.number().min(0).optional(),
   paidAmount: Joi.number().min(0).optional(),
   pendingAmount: Joi.number().optional(),
@@ -39,12 +40,12 @@ export const editPosPaymentSchema = Joi.object({
     .optional(),
   posOrderId: objectId().optional(),
   partyId: objectId().optional(),
-  // salesId: objectId().optional(),
   paymentMode: Joi.string()
     .valid(...Object.values(PAYMENT_MODE))
     .optional(),
   purchaseBillId: objectId().optional(),
   accountId: objectId().optional(),
+  bankId: objectId().optional(),
   totalAmount: Joi.number().min(0).optional(),
   paidAmount: Joi.number().min(0).optional(),
   pendingAmount: Joi.number().optional(),

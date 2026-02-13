@@ -73,6 +73,8 @@ export const addPosOrderSchema = Joi.object({
     .allow(null),
 
   multiplePayments: Joi.array().items(multiplePaymentSchema).default([]).optional(),
+  couponId: objectId().optional().allow(null),
+  couponDiscount: Joi.number().min(0).optional().default(0),
 
   ...baseApiSchema,
 });
@@ -121,6 +123,8 @@ export const editPosOrderSchema = Joi.object().keys({
     .allow(null),
 
   multiplePayments: Joi.array().items(multiplePaymentSchema).default([]).optional(),
+  couponId: objectId().optional().allow(null),
+  couponDiscount: Joi.number().min(0).optional(),
 
   ...baseApiSchema,
 });

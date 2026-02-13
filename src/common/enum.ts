@@ -146,8 +146,8 @@ export const LOYALTY_STATUS = {
 } as const;
 
 export const LOYALTY_TYPE = {
-  POINTS: "points",
-  CASHBACK: "cashback",
+  DISCOUNT: "discount",
+  FREE_PRODUCT: "free_product",
 } as const;
 
 export const PRODUCT_EXPIRY_TYPE = {
@@ -262,4 +262,10 @@ export const POS_PAYMENT_TYPE = {
 export const POS_RECEIPT_TYPE = {
   AGAINST_BILL: "against_bill",
   ADVANCE: "advance",
+} as const;
+
+
+export const LOYALTY_REDEMPTION_TYPE = {
+  SINGLE: "single",
+  MULTIPLE: "multiple",
 } as const;

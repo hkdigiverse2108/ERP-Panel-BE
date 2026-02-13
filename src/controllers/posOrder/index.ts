@@ -1,5 +1,5 @@
-import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_RECEIPT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel } from "../../database";
+import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE } from "../../common";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel, couponModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
 
@@ -22,6 +22,7 @@ export const addPosOrder = async (req, res) => {
 
     if (value.branchId && !(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
     if (value.salesManId && !(await checkIdExist(userModel, value.salesManId, "Sales Man", res))) return;
+    if (value.couponId && !(await checkIdExist(couponModel, value.couponId, "Coupon", res))) return;
 
     // Get customer name if customer provided
     if (value.customerId) {
@@ -151,6 +152,8 @@ export const editPosOrder = async (req, res) => {
     if (!isExist) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
+
+    if (value.couponId && !(await checkIdExist(couponModel, value.couponId, "Coupon", res))) return;
 
     if (value.salesManId && !(await checkIdExist(userModel, value.salesManId, "Sales Man", res))) return;
 
@@ -392,7 +395,7 @@ export const getAllPosOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, activeFilter, companyFilter, statusFilter, paymentStatusFilter, methodFilter, branchFilter, tableNoFilter, orderTypeFilter, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, activeFilter, companyFilter, statusFilter, customerFilter, payLaterFilter, paymentStatusFilter, methodFilter, branchFilter, tableNoFilter, orderTypeFilter, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -402,15 +405,23 @@ export const getAllPosOrder = async (req, res) => {
     if (companyId) {
       criteria.companyId = companyId;
     }
-    
+
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (customerFilter) {
+      criteria.customerId = new ObjectId(customerFilter);
+    }
+
+    if (payLaterFilter === "true") {
+      criteria.dueAmount = { $gt: 0 };
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }, { tableNo: { $regex: search, $options: "si" } }];
+      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { tableNo: { $regex: search, $options: "si" } }];
     }
 
     if (statusFilter) {
@@ -958,9 +969,9 @@ export const getCustomerPosDetails = async (req, res) => {
     const totalPaidAmount = posOrders.reduce((acc, item) => acc + Number(item.paidAmount || 0), 0);
     const totalPurchaseAmount = posOrders.reduce((acc, item) => acc + Number(item.totalAmount || 0), 0);
 
-    const { totalAmount = 0, orderNo = "-", _id = "-", paymentMethod = "-" } = posOrders?.[0] ?? {};
+    const { totalAmount = 0, orderNo = "-", _id = "-", paymentMethod = "-", createdAt = "-" } = posOrders?.[0] ?? {};
 
-    const lastBill = { _id, totalAmount, orderNo, paymentMethod };
+    const lastBill = { _id, totalAmount, orderNo, paymentMethod, createdAt };
 
     const allPurchasedProduct = posOrders.reduce((acc, item) => {
       const product = item.items?.[0];

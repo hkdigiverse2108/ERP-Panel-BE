@@ -20,7 +20,7 @@ export const addPosPayment = async (req, res) => {
     if (value.partyId && !(await checkIdExist(contactModel, value.partyId, "Party", res))) return;
 
     let prefix = "PAY";
-    if (value.voucherType === POS_VOUCHER_TYPE.SALES) prefix = "RCP";
+    if (value.voucherType === POS_VOUCHER_TYPE.SALES) prefix = "SAL";
     else if (value.voucherType === POS_VOUCHER_TYPE.PURCHASE) prefix = "PMT";
     else if (value.voucherType === POS_VOUCHER_TYPE.EXPENSE) prefix = "EXP";
 
