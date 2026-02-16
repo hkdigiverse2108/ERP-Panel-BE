@@ -20,7 +20,7 @@ const posPaymentSchema = new mongoose.Schema(
     totalAmount: { type: Number, default: 0 },
     paidAmount: { type: Number, default: 0 },
     pendingAmount: { type: Number, default: 0 },
-    kasturbaa: { type: Number, default: 0 },
+    kasar: { type: Number, default: 0 },
     amount: { type: Number },
 
     isNonGST: { type: Boolean, default: false },
