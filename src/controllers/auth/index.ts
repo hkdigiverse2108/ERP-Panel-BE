@@ -99,22 +99,22 @@ export const login = async (req, res) => {
       token,
     };
 
-    let criteria: any = {
-      isActive: true,
-      isDeleted: false,
-    };
+    // let criteria: any = {
+    //   isActive: true,
+    //   isDeleted: false,
+    // };
 
-    let populateModel = [
-      { path: "parentId", model: "module" }
-    ];
+    // let populateModel = [
+    //   { path: "parentId", model: "module" }
+    // ];
 
-    let moduleData = await findAllAndPopulateWithSorting(
-      moduleModel,
-      criteria,
-      {},
-      { sort: { number: 1 } },
-      populateModel
-    );
+    // let moduleData = await findAllAndPopulateWithSorting(
+    //   moduleModel,
+    //   criteria,
+    //   {},
+    //   { sort: { number: 1 } },
+    //   populateModel
+    // );
 
     // let userPermissionData = await getData(permissionModel, { userId: response?._id }, {}, {});
 
@@ -177,7 +177,7 @@ export const login = async (req, res) => {
 
     // newUserPermissionData.sort((a, b) => a.number - b.number);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.loginSuccess, { response }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.loginSuccess, response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
