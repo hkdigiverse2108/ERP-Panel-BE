@@ -8,6 +8,7 @@ const supplierBillItemSchema = Joi.object({
   freeQty: Joi.number().min(0).default(0),
   mrp: Joi.number().min(0).optional(),
   sellingPrice: Joi.number().min(0).optional(),
+  unitCost: Joi.number().min(0).optional(),
   discount1: Joi.number().min(0).default(0),
   discount2: Joi.number().min(0).default(0),
   taxAmount: Joi.number().min(0).optional(),
@@ -19,6 +20,7 @@ const supplierBillItemSchema = Joi.object({
 const supplierBillReturnItemSchema = Joi.object({
   productId: objectId().required(),
   qty: Joi.number().min(0).required(),
+  unitCost: Joi.number().min(0).optional(),
   discount1: Joi.number().min(0).default(0),
   discount2: Joi.number().min(0).default(0),
   tax: Joi.number().min(0).optional(),
