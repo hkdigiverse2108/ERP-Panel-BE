@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE } from "../../common";
 import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel, couponModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
+import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema, posOrderDropDownSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -360,6 +360,54 @@ export const releasePosOrder = async (req, res) => {
   }
 };
 
+export const posOrderDropDown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+
+    const { error, value } = posOrderDropDownSchema.validate(req.query);
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const { customerFilter, branchFilter, companyFilter, duePaymentFilter, search } = value;
+
+    let criteria: any = { isDeleted: false };
+
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (customerFilter) {
+      criteria.customerId = new ObjectId(customerFilter);
+    }
+
+    if (branchFilter) {
+      criteria.branchId = new ObjectId(branchFilter);
+    }
+
+    if (companyFilter) {
+      criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (duePaymentFilter === true || duePaymentFilter === "true") {
+      criteria.dueAmount = { $gt: 0 };
+    }
+
+    if (search) {
+      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }];
+    }
+
+    const response = await PosOrderModel.find(criteria, { orderNo: 1, totalAmount: 1, dueAmount: 1, paidAmount: 1, customerId: 1 }).sort({ createdAt: -1 }).limit(100);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Order Dropdown"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
 export const deletePosOrder = async (req, res) => {
   reqInfo(req);
   try {
@@ -395,7 +443,7 @@ export const getAllPosOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, activeFilter, companyFilter, statusFilter, customerFilter, payLaterFilter, paymentStatusFilter, methodFilter, branchFilter, tableNoFilter, orderTypeFilter, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, activeFilter, companyFilter, statusFilter, customerFilter, duePaymentFilter, paymentStatusFilter, methodFilter, branchFilter, tableNoFilter, orderTypeFilter, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -414,7 +462,7 @@ export const getAllPosOrder = async (req, res) => {
       criteria.customerId = new ObjectId(customerFilter);
     }
 
-    if (payLaterFilter === "true") {
+    if (duePaymentFilter === "true") {
       criteria.dueAmount = { $gt: 0 };
     }
 

@@ -15,3 +15,8 @@ export interface ILoyaltyCampaign extends IBase {
   usedCount?: number;
   usageLimit?: number;
 }
+
+export interface ILoyaltyPoints extends IBase {
+  amount: number;
+  points: number;
+}

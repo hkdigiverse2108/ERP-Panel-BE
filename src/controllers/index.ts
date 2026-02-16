@@ -49,3 +49,4 @@ export * as salesCreditNoteController from "./salesCreditNote";
 export * as salesDebitNoteController from "./salesDebitNote";
 export * as payLaterController from "./payLater";
 export * as posPaymentController from "./posPayment";
+export * as loyaltyPointsController from "./loyaltyPoints";

@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
 import { ILoyaltyCampaign } from "../../types";
-import { LOYALTY_REDEMPTION_TYPE, LOYALTY_STATUS, LOYALTY_TYPE } from "../../common";
+import { LOYALTY_REDEMPTION_TYPE, LOYALTY_TYPE } from "../../common";
 
 const loyaltySchema = new Schema<ILoyaltyCampaign>(
   {

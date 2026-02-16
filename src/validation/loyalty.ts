@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
-import { LOYALTY_TYPE, LOYALTY_STATUS, LOYALTY_REDEMPTION_TYPE } from "../common";
+import { LOYALTY_TYPE, LOYALTY_REDEMPTION_TYPE } from "../common";
 
 export const addLoyaltySchema = Joi.object().keys({
   ...baseApiSchema,
@@ -58,4 +58,16 @@ export const redeemLoyaltySchema = Joi.object().keys({
 export const removeLoyaltySchema = Joi.object().keys({
   loyaltyId: objectId().required(),
   customerId: objectId().required(),
+});
+
+export const addLoyaltyPointsSchema = Joi.object().keys({
+  companyId: objectId().optional(),
+  branchId: objectId().optional(),
+  amount: Joi.number().min(0).required(),
+  points: Joi.number().min(0).required(),
+});
+
+export const getLoyaltyPointsSchema = Joi.object().keys({
+  companyId: objectId().optional(),
+  branchId: objectId().optional(),
 });
