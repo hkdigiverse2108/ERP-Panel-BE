@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel, couponModel } from "../../database";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema, posOrderDropDownSchema } from "../../validation";
 
@@ -91,6 +91,26 @@ export const addPosOrder = async (req, res) => {
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
+
+    // --- Stock Management Logic ---
+    if (response.status !== POS_ORDER_STATUS.HOLD && response.status !== POS_ORDER_STATUS.CANCELLED) {
+      for (const item of response.items) {
+        await stockModel.findOneAndUpdate({ productId: item.productId, companyId: response.companyId, isDeleted: false }, { $inc: { qty: -item.qty } });
+      }
+    }
+    // -------------------------------
+
+    // --- Loyalty Points Logic ---
+    if (response.status !== POS_ORDER_STATUS.HOLD && response.status !== POS_ORDER_STATUS.CANCELLED && response.customerId) {
+      const loyaltyConfig = await getFirstMatch(loyaltyPointsModel, { companyId: response.companyId }, {}, {});
+      if (loyaltyConfig && loyaltyConfig.amount > 0 && loyaltyConfig.points > 0) {
+        const pointsToEarn = Math.floor(response.totalAmount / loyaltyConfig.amount) * loyaltyConfig.points;
+        if (pointsToEarn > 0) {
+          await contactModel.findByIdAndUpdate(response.customerId, { $inc: { loyaltyPoints: pointsToEarn } });
+        }
+      }
+    }
+    // ----------------------------
 
     // Add payment entry (multiple entries if multiplePayments provided)
     if (value.multiplePayments && value.multiplePayments.length > 0) {
@@ -240,6 +260,48 @@ export const editPosOrder = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("POS Order"), {}, {}));
     }
 
+    // --- Stock Management Logic ---
+    const oldStatus = isExist.status;
+    const newStatus = response.status;
+    const wasActive = oldStatus !== POS_ORDER_STATUS.HOLD && oldStatus !== POS_ORDER_STATUS.CANCELLED;
+    const isActive = newStatus !== POS_ORDER_STATUS.HOLD && newStatus !== POS_ORDER_STATUS.CANCELLED;
+
+    // 1. Revert the old quantities back to stock if it was active
+    if (wasActive) {
+      for (const item of isExist.items) {
+        await stockModel.findOneAndUpdate({ productId: item.productId, companyId: isExist.companyId, isDeleted: false }, { $inc: { qty: item.qty } });
+      }
+    }
+
+    // 2. Deduct the new quantities from stock if it is now active
+    if (isActive) {
+      for (const item of response.items) {
+        await stockModel.findOneAndUpdate({ productId: item.productId, companyId: response.companyId, isDeleted: false }, { $inc: { qty: -item.qty } });
+      }
+    }
+    // -------------------------------
+
+    // --- Loyalty Points Logic ---
+    const loyaltyConfig = await getFirstMatch(loyaltyPointsModel, { companyId: response.companyId, isActive: true }, {}, {});
+    if (loyaltyConfig && loyaltyConfig.amount > 0 && loyaltyConfig.points > 0) {
+      // 1. Revert old points if it was active
+      if (wasActive && isExist.customerId) {
+        const oldPoints = Math.floor(isExist.totalAmount / loyaltyConfig.amount) * loyaltyConfig.points;
+        if (oldPoints > 0) {
+          await contactModel.findByIdAndUpdate(isExist.customerId, { $inc: { loyaltyPoints: -oldPoints } });
+        }
+      }
+
+      // 2. Apply new points if it is now active
+      if (isActive && response.customerId) {
+        const newPoints = Math.floor(response.totalAmount / loyaltyConfig.amount) * loyaltyConfig.points;
+        if (newPoints > 0) {
+          await contactModel.findByIdAndUpdate(response.customerId, { $inc: { loyaltyPoints: newPoints } });
+        }
+      }
+    }
+    // ----------------------------
+
     // Add payment entry if there's a difference
     if (paymentDiff > 0) {
       if (value.multiplePayments && value.multiplePayments.length > 0) {
@@ -315,6 +377,19 @@ export const holdPosOrder = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Hold POS Order"), {}, {}));
 
+    // --- Loyalty Points Logic ---
+    // Revert points since the order is now on hold
+    const loyaltyConfig = await getFirstMatch(loyaltyPointsModel, { companyId: response.companyId, isActive: true }, {}, {});
+    if (loyaltyConfig && loyaltyConfig.amount > 0 && loyaltyConfig.points > 0 && response.customerId) {
+      if (isExist.status !== POS_ORDER_STATUS.CANCELLED) {
+        const pointsToRevert = Math.floor(response.totalAmount / loyaltyConfig.amount) * loyaltyConfig.points;
+        if (pointsToRevert > 0) {
+          await contactModel.findByIdAndUpdate(response.customerId, { $inc: { loyaltyPoints: -pointsToRevert } });
+        }
+      }
+    }
+    // ----------------------------
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order put on hold successfully", response, {}));
   } catch (error) {
     console.error(error);
@@ -352,6 +427,17 @@ export const releasePosOrder = async (req, res) => {
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("POS Order"), {}, {}));
     }
+
+    // --- Loyalty Points Logic ---
+    // Apply points since the order is released from hold
+    const loyaltyConfig = await getFirstMatch(loyaltyPointsModel, { companyId: response.companyId, isActive: true }, {}, {});
+    if (loyaltyConfig && loyaltyConfig.amount > 0 && loyaltyConfig.points > 0 && response.customerId) {
+      const pointsToEarn = Math.floor(response.totalAmount / loyaltyConfig.amount) * loyaltyConfig.points;
+      if (pointsToEarn > 0) {
+        await contactModel.findByIdAndUpdate(response.customerId, { $inc: { loyaltyPoints: pointsToEarn } });
+      }
+    }
+    // ----------------------------
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order released from hold successfully", response, {}));
   } catch (error) {
@@ -418,7 +504,10 @@ export const deletePosOrder = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!(await checkIdExist(PosOrderModel, value?.id, "POS Order", res))) return;
+    const isExist = await getFirstMatch(PosOrderModel, { _id: value?.id, isDeleted: false }, {}, {});
+    if (!isExist) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+    }
 
     const payload = {
       isDeleted: true,
@@ -430,6 +519,19 @@ export const deletePosOrder = async (req, res) => {
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("POS Order"), {}, {}));
     }
+
+    // --- Loyalty Points Logic ---
+    // Revert points if the deleted order was active
+    const loyaltyConfig = await getFirstMatch(loyaltyPointsModel, { companyId: isExist.companyId, isActive: true }, {}, {});
+    if (loyaltyConfig && loyaltyConfig.amount > 0 && loyaltyConfig.points > 0 && isExist.customerId) {
+      if (isExist.status !== POS_ORDER_STATUS.HOLD && isExist.status !== POS_ORDER_STATUS.CANCELLED) {
+        const pointsToRevert = Math.floor(isExist.totalAmount / loyaltyConfig.amount) * loyaltyConfig.points;
+        if (pointsToRevert > 0) {
+          await contactModel.findByIdAndUpdate(isExist.customerId, { $inc: { loyaltyPoints: -pointsToRevert } });
+        }
+      }
+    }
+    // ----------------------------
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Order"), response, {}));
   } catch (error) {
