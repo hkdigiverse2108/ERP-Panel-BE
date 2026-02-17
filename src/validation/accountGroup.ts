@@ -3,7 +3,7 @@ import { objectId } from "./common";
 import { ACCOUNT_GROUP_TYPE } from "../common";
 
 export const addAccountGroupSchema = Joi.object().keys({
-  name: Joi.string().trim().lowercase().required(),
+  name: Joi.string().trim().required(),
   parentGroupId: objectId().optional(),
   nature: Joi.string()
     .valid(...Object.values(ACCOUNT_GROUP_TYPE))
@@ -14,7 +14,7 @@ export const addAccountGroupSchema = Joi.object().keys({
 
 export const editAccountGroupSchema = Joi.object().keys({
   accountGroupId: objectId().required(),
-  name: Joi.string().trim().lowercase().optional(),
+  name: Joi.string().trim().optional(),
   parentGroupId: objectId().optional().allow(null),
   nature: Joi.string()
     .valid(...Object.values(ACCOUNT_GROUP_TYPE))

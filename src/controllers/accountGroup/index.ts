@@ -216,7 +216,7 @@ export const getAllAccountGroup = async (req, res) => {
     }
 
     const options: any = {
-      sort: { name: 1, createdAt: -1 },
+      sort: { createdAt: -1 },
       populate: [
         {
           path: "parentGroupId",
