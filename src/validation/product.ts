@@ -34,6 +34,7 @@ export const addProductSchema = Joi.object().keys({
   masterQty: Joi.number().min(0).default(0).optional(),
 
   hsnCode: Joi.string().optional(),
+  sku: Joi.string().optional(),
   // purchaseTaxId: objectId().optional(),
   // salesTaxId: objectId().optional(),
   // isPurchaseTaxIncluding: Joi.boolean().default(false).optional(),
@@ -124,6 +125,7 @@ export const editProductSchema = Joi.object().keys({
   masterQty: Joi.number().min(0).optional(),
 
   hsnCode: Joi.string().optional(),
+  sku: Joi.string().optional(),
   // purchaseTaxId: objectId().optional(),
   // salesTaxId: objectId().optional(),
   // isPurchaseTaxIncluding: Joi.boolean().optional(),
