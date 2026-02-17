@@ -62,6 +62,11 @@ export const ACCOUNT_TYPE = {
   BANK: "bank",
   CASH: "cash",
   OTHER: "other",
+  ADDITIONAL_CHARGE: "additional_charge",
+  TRANSPORT: "transport",
+  CUSTOMER: "customers",
+  SUPPLIER: "suppliers",
+  ACCOUNT_CUSTOM: "account_custom",
 } as const;
 
 export const ACCOUNT_NATURE = {
@@ -268,4 +273,10 @@ export const POS_RECEIPT_TYPE = {
 export const LOYALTY_REDEMPTION_TYPE = {
   SINGLE: "single",
   MULTIPLE: "multiple",
+} as const;
+
+export const CASH_CONTROL_TYPE = {
+  OPENING: "opening",
+  ADD: "add",
+  CLOSE: "close",
 } as const;
