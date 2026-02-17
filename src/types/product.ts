@@ -40,6 +40,7 @@ export interface IProduct extends IBase {
 
   // Tax
   hsnCode?: string;
+  sku?: string;
   purchaseTaxId?: Schema.Types.ObjectId;
   salesTaxId?: Schema.Types.ObjectId;
   isPurchaseTaxIncluding: boolean;
