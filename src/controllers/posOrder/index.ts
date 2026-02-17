@@ -446,6 +446,52 @@ export const releasePosOrder = async (req, res) => {
   }
 };
 
+export const deletePosOrder = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = deletePosOrderSchema.validate(req.params);
+
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const isExist = await getFirstMatch(PosOrderModel, { _id: value?.id, isDeleted: false }, {}, {});
+    if (!isExist) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+    }
+
+    const payload = {
+      isDeleted: true,
+      updatedBy: user?._id || null,
+    };
+
+    const response = await updateData(PosOrderModel, { _id: new ObjectId(value?.id) }, payload, {});
+
+    if (!response) {
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("POS Order"), {}, {}));
+    }
+
+    // --- Loyalty Points Logic ---
+    // Revert points if the deleted order was active
+    const loyaltyConfig = await getFirstMatch(loyaltyPointsModel, { companyId: isExist.companyId, isActive: true }, {}, {});
+    if (loyaltyConfig && loyaltyConfig.amount > 0 && loyaltyConfig.points > 0 && isExist.customerId) {
+      if (isExist.status !== POS_ORDER_STATUS.HOLD && isExist.status !== POS_ORDER_STATUS.CANCELLED) {
+        const pointsToRevert = Math.floor(isExist.totalAmount / loyaltyConfig.amount) * loyaltyConfig.points;
+        if (pointsToRevert > 0) {
+          await contactModel.findByIdAndUpdate(isExist.customerId, { $inc: { loyaltyPoints: -pointsToRevert } });
+        }
+      }
+    }
+    // ----------------------------
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Order"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
 export const posOrderDropDown = async (req, res) => {
   reqInfo(req);
   try {
@@ -494,58 +540,12 @@ export const posOrderDropDown = async (req, res) => {
   }
 };
 
-export const deletePosOrder = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { user } = req?.headers;
-    const { error, value } = deletePosOrderSchema.validate(req.params);
-
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
-
-    const isExist = await getFirstMatch(PosOrderModel, { _id: value?.id, isDeleted: false }, {}, {});
-    if (!isExist) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
-    }
-
-    const payload = {
-      isDeleted: true,
-      updatedBy: user?._id || null,
-    };
-
-    const response = await updateData(PosOrderModel, { _id: new ObjectId(value?.id) }, payload, {});
-
-    if (!response) {
-      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("POS Order"), {}, {}));
-    }
-
-    // --- Loyalty Points Logic ---
-    // Revert points if the deleted order was active
-    const loyaltyConfig = await getFirstMatch(loyaltyPointsModel, { companyId: isExist.companyId, isActive: true }, {}, {});
-    if (loyaltyConfig && loyaltyConfig.amount > 0 && loyaltyConfig.points > 0 && isExist.customerId) {
-      if (isExist.status !== POS_ORDER_STATUS.HOLD && isExist.status !== POS_ORDER_STATUS.CANCELLED) {
-        const pointsToRevert = Math.floor(isExist.totalAmount / loyaltyConfig.amount) * loyaltyConfig.points;
-        if (pointsToRevert > 0) {
-          await contactModel.findByIdAndUpdate(isExist.customerId, { $inc: { loyaltyPoints: -pointsToRevert } });
-        }
-      }
-    }
-    // ----------------------------
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Order"), response, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
-
 export const getAllPosOrder = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, activeFilter, companyFilter, statusFilter, customerFilter, duePaymentFilter, paymentStatusFilter, methodFilter, branchFilter, tableNoFilter, orderTypeFilter, startDate, endDate } = req.query;
+    let { page = 1, limit = 10, search, activeFilter, companyFilter, statusFilter, customerFilter, duePaymentFilter, paymentStatusFilter, methodFilter, branchFilter, tableNoFilter, orderTypeFilter, startDate, endDate, lastBillFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -564,7 +564,7 @@ export const getAllPosOrder = async (req, res) => {
       criteria.customerId = new ObjectId(customerFilter);
     }
 
-    if (duePaymentFilter === "true") {
+    if (duePaymentFilter == "true") {
       criteria.dueAmount = { $gt: 0 };
     }
 
@@ -608,6 +608,7 @@ export const getAllPosOrder = async (req, res) => {
 
     const options = {
       sort: { createdAt: -1 },
+      ...(lastBillFilter === "true" && { limit: 1, skip: 0 }),
       populate: [
         { path: "branchId", select: "name" },
         { path: "companyId", select: "name" },
@@ -619,8 +620,7 @@ export const getAllPosOrder = async (req, res) => {
         { path: "additionalCharges.chargeId", select: "name" },
         { path: "additionalCharges.accountGroupId", select: "name" },
       ],
-      skip: (page - 1) * limit,
-      limit,
+      ...(lastBillFilter !== "true" && { skip: (page - 1) * limit, limit }),
     };
 
     const response = await getDataWithSorting(PosOrderModel, criteria, {}, options);

@@ -41,10 +41,10 @@ export interface IProduct extends IBase {
   // Tax
   hsnCode?: string;
   sku?: string;
-  purchaseTaxId?: Schema.Types.ObjectId;
-  salesTaxId?: Schema.Types.ObjectId;
-  isPurchaseTaxIncluding: boolean;
-  isSalesTaxIncluding: boolean;
+  // purchaseTaxId?: Schema.Types.ObjectId;
+  // salesTaxId?: Schema.Types.ObjectId;
+  // isPurchaseTaxIncluding: boolean;
+  // isSalesTaxIncluding: boolean;
   cessPercentage?: number;
 
   // Inventory & Batch Control

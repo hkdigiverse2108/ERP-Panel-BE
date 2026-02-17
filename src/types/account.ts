@@ -7,6 +7,7 @@ export interface IAccount extends IBase {
   openingBalance: number;
   currentBalance: number;
   type: "bank" | "cash" | "other";
+  nature: "assets" | "liabilities" | "income" | "expenses";
 }
 
 export interface IAccountGroup extends IBase {
