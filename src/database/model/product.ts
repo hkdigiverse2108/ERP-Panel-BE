@@ -19,6 +19,7 @@ const productSchema = new Schema<IProduct>(
     subBrandId: { type: Schema.Types.ObjectId, ref: "brand" },
 
     hsnCode: { type: String },
+    sku: { type: String },
 
     // purchaseTaxId: { type: Schema.Types.ObjectId, ref: "tax" },
     // salesTaxId: { type: Schema.Types.ObjectId, ref: "tax" },
