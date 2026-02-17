@@ -128,7 +128,7 @@ export const getAllCoupon = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page) || 1;
     limit = Number(limit) || 10;
@@ -143,12 +143,16 @@ export const getAllCoupon = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
+    if (activeFilter) {
+      criteria.isActive = activeFilter === "true";
+    }
+
     if (search) {
       criteria.name = { $regex: search, $options: "si" };
     }
 
-    if (status) {
-      criteria.status = status;
+    if (statusFilter) {
+      criteria.status = statusFilter;
     }
 
     if (startDate && endDate) {
@@ -341,6 +345,68 @@ export const removeCoupon = async (req, res) => {
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Coupon removed successfully", {}, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const getCouponDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+    const { expiredFilter, limitReachedFilter, search } = req.query;
+
+    let criteria: any = { isDeleted: false, status: COUPON_STATUS.ACTIVE };
+
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (search) {
+      criteria.name = { $regex: search, $options: "si" };
+    }
+
+    const coupons = await couponModel
+      .find(criteria)
+      .select("name couponPrice redeemValue usageLimit expiryDays usedCount startDate endDate createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const now = new Date();
+    let response = coupons;
+
+    if (expiredFilter === "true") {
+      response = response.filter((coupon) => {
+        if (coupon.startDate && now < new Date(coupon.startDate)) return false;
+
+        if (coupon.endDate && now > new Date(coupon.endDate)) return false;
+
+        if (coupon.expiryDays) {
+          const expiryDate = new Date(coupon.createdAt);
+          expiryDate.setDate(expiryDate.getDate() + coupon.expiryDays);
+          if (now > expiryDate) return false;
+        }
+
+        return true;
+      });
+    }
+
+    if (limitReachedFilter === "true") {
+      response = response.filter((coupon) => {
+        if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) return false;
+        return true;
+      });
+    }
+
+    const finalResponse = response.map((coupon) => ({
+      _id: coupon._id,
+      name: coupon.name,
+      couponPrice: coupon.couponPrice,
+    }));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Coupon"), finalResponse, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
