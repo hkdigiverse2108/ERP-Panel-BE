@@ -142,7 +142,7 @@ export const getAllPurchaseOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
+    let { page = 1, limit = 10, search, statusFilter, startDate, endDate, activeFilter, companyFilter, supplierFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -157,14 +157,18 @@ export const getAllPurchaseOrder = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
+    if (supplierFilter) {
+      criteria.supplierId = supplierFilter;
+    }
+
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
       criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { supplierName: { $regex: search, $options: "si" } }];
     }
 
-    if (status) {
-      criteria.status = status;
+    if (statusFilter) {
+      criteria.status = statusFilter;
     }
 
     if (startDate && endDate) {

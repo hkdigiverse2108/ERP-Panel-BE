@@ -5,7 +5,7 @@ import { CASH_CONTROL_TYPE } from "../../common";
 const cashControlSchema = new Schema(
   {
     ...baseSchemaFields,
-    type: { type: String, enum: Object.values(CASH_CONTROL_TYPE) },
+    type: { type: String, enum: Object.values(CASH_CONTROL_TYPE) , default: CASH_CONTROL_TYPE.ADD},
     amount: { type: Number, min: 0 },
     remark: { type: String },
   },
