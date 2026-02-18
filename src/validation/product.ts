@@ -73,8 +73,8 @@ export const addProductSchema = Joi.object().keys({
   nutrition: Joi.array()
     .items(
       Joi.object({
-        name: Joi.string().optional(),
-        value: Joi.string().optional(),
+        name: Joi.string().optional().allow("", null),
+        value: Joi.string().optional().allow("", null),
       }),
     )
     .optional(),
