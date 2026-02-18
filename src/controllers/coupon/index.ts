@@ -358,7 +358,7 @@ export const getCouponDropdown = async (req, res) => {
     const companyId = user?.companyId?._id;
     const { expiredFilter, limitReachedFilter, search } = req.query;
 
-    let criteria: any = { isDeleted: false, status: COUPON_STATUS.ACTIVE };
+    let criteria: any = { isDeleted: false, status: COUPON_STATUS.ACTIVE, isActive: true };
 
     if (companyId) {
       criteria.companyId = companyId;

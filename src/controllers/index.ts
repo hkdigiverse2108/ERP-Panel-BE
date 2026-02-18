@@ -50,3 +50,5 @@ export * as salesDebitNoteController from "./salesDebitNote";
 export * as payLaterController from "./payLater";
 export * as posPaymentController from "./posPayment";
 export * as loyaltyPointsController from "./loyaltyPoints";
+export * as cashControlController from "./cashControl";
+export * as posCashRegisterController from "./posCashRegister";

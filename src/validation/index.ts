@@ -49,3 +49,5 @@ export * from "./stock";
 export * from "./employee";
 export * from "./payLater";
 export * from "./posPayment";
+export * from "./cashControl";
+export * from "./posCashRegister";

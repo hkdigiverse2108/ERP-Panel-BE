@@ -280,3 +280,9 @@ export const CASH_CONTROL_TYPE = {
   ADD: "add",
   CLOSE: "close",
 } as const;
+
+
+export const CASH_REGISTER_STATUS = {
+  OPEN: "open",
+  CLOSED: "closed",
+} as const;

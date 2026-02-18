@@ -52,6 +52,8 @@ import { salesCreditNoteRouter } from "./salesCreditNote";
 import { salesDebitNoteRouter } from "./salesDebitNote";
 // import { payLaterRouter } from "./payLater";
 import { posPaymentRouter } from "./posPayment";
+import cashControlRouter from "./cashControl";
+import posCashRegisterRouter from "./posCashRegister";
 
 const router = Router();
 
@@ -104,6 +106,8 @@ router.use("/prefix", prefixRouter);
 router.use("/pos-order", posOrderRouter);
 // router.use("/pay-later", payLaterRouter);
 router.use("/pos-payment", posPaymentRouter);
+router.use("/cash-control", cashControlRouter);
+router.use("/pos-cash-register", posCashRegisterRouter);
 router.use("/recipe", recipeRouter);
 router.use("/material", materialRouter);
 router.use("/material-consumption", materialConsumptionRouter);

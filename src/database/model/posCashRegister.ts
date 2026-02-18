@@ -1,11 +1,10 @@
 import { Schema, model } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { CASH_REGISTER_STATUS } from "../../common";
 
 const posCashRegisterSchema = new Schema(
     {
         ...baseSchemaFields,
-        registerId: { type: Schema.Types.ObjectId, ref: "cash_registers" },
-
         openingCash: { type: Number },
 
         cashPayment: { type: Number, default: 0 },
@@ -25,13 +24,14 @@ const posCashRegisterSchema = new Schema(
         expense: { type: Number, default: 0 },
         purchasePayment: { type: Number, default: 0 },
 
-        totalSales: { type: Number },
+        totalSales: { type: Number, default: 0 },
 
         denominations: [
             {
                 currency: { type: Number },
                 count: { type: Number },
                 amount: { type: Number },
+                _id: false
             },
         ],
 
@@ -41,7 +41,7 @@ const posCashRegisterSchema = new Schema(
 
         bankAccountId: {
             type: Schema.Types.ObjectId,
-            ref: "bank_accounts",
+            ref: "bank",
         },
 
         bankTransferAmount: {
@@ -66,6 +66,8 @@ const posCashRegisterSchema = new Schema(
             type: String,
             trim: true,
         },
+
+        status: { type: String, enum: Object.values(CASH_REGISTER_STATUS), default: CASH_REGISTER_STATUS.OPEN }
 
     },
     baseSchemaOptions
