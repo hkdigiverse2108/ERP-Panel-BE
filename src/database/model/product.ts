@@ -28,27 +28,27 @@ const productSchema = new Schema<IProduct>(
     // isSalesTaxIncluding: { type: Boolean, default: false },
 
     cessPercentage: { type: Number, default: 0 },
-    
+
     manageMultipleBatch: { type: Boolean, default: false },
     isExpiryProductSaleable: { type: Boolean, default: true },
     hasExpiry: { type: Boolean, default: false },
-    
+
     expiryDays: { type: Number },
     calculateExpiryOn: { type: String, enum: PRODUCT_EXPIRY_TYPE },
     expiryReferenceDate: { type: Date },
     calculatedExpiryDate: { type: Date },
-    
-    ingredients: { type: String },
+
+    ingredients: [{ type: String }],
     description: { type: String },
     shortDescription: { type: String },
 
     netWeight: { type: Number },
     nutrition: [{ name: String, value: String }],
-    
+
     masterQty: { type: Number, default: 0 },
 
     companyId: [{ type: Schema.Types.ObjectId, ref: "company" }],
-    
+
     // Pricing Details
     purchasePrice: { type: Number, default: 0 },
     landingCost: { type: Number, default: 0 },
@@ -64,7 +64,7 @@ const productSchema = new Schema<IProduct>(
     wholesalerMargin: { type: Number, default: 0 },
     minimumQty: { type: Number, default: 0 },
     openingQty: { type: Number, default: 0 },
-    
+
     onlinePrice: { type: Number, default: 0 },
     additionalInfo: { type: String },
   },

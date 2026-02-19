@@ -65,7 +65,7 @@ export const addProductSchema = Joi.object().keys({
     otherwise: Joi.optional(),
   }),
 
-  ingredients: Joi.string().optional(),
+  ingredients: Joi.array().items(Joi.string()).optional(),
   description: Joi.string().optional(),
   shortDescription: Joi.string().optional(),
   netWeight: Joi.number().min(0).optional(),
@@ -144,7 +144,7 @@ export const editProductSchema = Joi.object().keys({
 
   expiryReferenceDate: Joi.date().optional(),
 
-  ingredients: Joi.string().optional(),
+  ingredients: Joi.array().items(Joi.string()).optional(),
   description: Joi.string().optional(),
   shortDescription: Joi.string().optional(),
   netWeight: Joi.number().min(0).optional(),
