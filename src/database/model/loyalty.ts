@@ -19,11 +19,7 @@ const loyaltySchema = new Schema<ILoyaltyCampaign>(
     discountValue: { type: Number },
     redemptionPoints: { type: Number },
 
-    redemptionPerCustomer: {
-      type: String,
-      enum: Object.values(LOYALTY_REDEMPTION_TYPE),
-      default: LOYALTY_REDEMPTION_TYPE.MULTIPLE,
-    },
+    singleTimeUse: { type: Boolean, default: false },
 
     campaignLaunchDate: { type: Date },
     campaignExpiryDate: { type: Date },

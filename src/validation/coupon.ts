@@ -4,7 +4,6 @@ import { COUPON_DISCOUNT_TYPE, COUPON_STATUS } from "../common";
 
 export const addCouponSchema = Joi.object().keys({
   name: Joi.string().trim().required(),
-  // customerIds: Joi.array().optional().default([]),
   couponPrice: Joi.number().min(0).required(),
   redemptionType: Joi.string()
     .valid(...Object.values(COUPON_DISCOUNT_TYPE))
@@ -25,7 +24,6 @@ export const addCouponSchema = Joi.object().keys({
 export const editCouponSchema = Joi.object().keys({
   couponId: objectId().required(),
   name: Joi.string().trim().optional(),
-  // customerIds: Joi.array().optional(),
   couponPrice: Joi.number().min(0).optional(),
   redemptionType: Joi.string()
     .valid(...Object.values(COUPON_DISCOUNT_TYPE))
@@ -50,7 +48,7 @@ export const getCouponSchema = Joi.object().keys({
   id: objectId().required(),
 });
 
-export const applyCouponSchema = Joi.object().keys({
+export const verifyCouponSchema = Joi.object().keys({
   couponId: objectId().required(),
   totalAmount: Joi.number().min(0).required(),
   customerId: objectId().required(),

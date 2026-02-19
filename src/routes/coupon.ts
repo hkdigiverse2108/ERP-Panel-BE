@@ -6,7 +6,7 @@ const router = express.Router();
 router.get("/all", couponController.getAllCoupon);
 router.get("/dropdown", couponController.getCouponDropdown);
 router.post("/add", couponController.addCoupon);
-router.post("/apply", couponController.applyCoupon);
+router.post("/verify", couponController.verifyCoupon);
 router.post("/remove", couponController.removeCoupon);
 router.put("/edit", couponController.editCoupon);
 router.delete("/:id", couponController.deleteCoupon);

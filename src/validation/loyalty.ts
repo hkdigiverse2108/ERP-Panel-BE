@@ -12,10 +12,7 @@ export const addLoyaltySchema = Joi.object().keys({
     .required(),
   discountValue: Joi.number().min(0).optional().allow("", null),
   redemptionPoints: Joi.number().min(0).optional().allow("", null),
-  redemptionPerCustomer: Joi.string()
-    .valid(...Object.values(LOYALTY_REDEMPTION_TYPE))
-    .default(LOYALTY_REDEMPTION_TYPE.MULTIPLE)
-    .optional(),
+  singleTimeUse: Joi.boolean().optional(),
   campaignLaunchDate: Joi.date().optional().allow("", null),
   campaignExpiryDate: Joi.date().optional().allow("", null),
   minimumPurchaseAmount: Joi.number().min(0).optional().allow("", null),
@@ -31,9 +28,7 @@ export const editLoyaltySchema = Joi.object().keys({
     .optional(),
   discountValue: Joi.number().min(0).optional().allow("", null),
   redemptionPoints: Joi.number().min(0).optional().allow("", null),
-  redemptionPerCustomer: Joi.string()
-    .valid(...Object.values(LOYALTY_REDEMPTION_TYPE))
-    .optional(),
+  singleTimeUse: Joi.boolean().optional(),
   campaignLaunchDate: Joi.date().optional(),
   campaignExpiryDate: Joi.date().optional().allow("", null),
   minimumPurchaseAmount: Joi.number().min(0).optional(),

@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { contactModel, couponModel, PosOrderModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addCouponSchema, applyCouponSchema, deleteCouponSchema, editCouponSchema, getCouponSchema, removeCouponSchema } from "../../validation";
+import { addCouponSchema, verifyCouponSchema, deleteCouponSchema, editCouponSchema, getCouponSchema, removeCouponSchema } from "../../validation";
 import { COUPON_DISCOUNT_TYPE, COUPON_STATUS } from "../../common";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -168,6 +168,11 @@ export const getAllCoupon = async (req, res) => {
       sort: { createdAt: -1 },
       skip: (page - 1) * limit,
       limit,
+      populate: [
+        { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
+        { path: "customerIds.id", select: "firstName lastName" },
+      ],
     };
 
     const response = await getDataWithSorting(couponModel, criteria, {}, options);
@@ -197,7 +202,7 @@ export const getOneCoupon = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const response = await getFirstMatch(couponModel, { _id: value?.id, isDeleted: false }, {}, {});
+    const response = await getFirstMatch(couponModel, { _id: value?.id, isDeleted: false }, {}, { populate: [{ path: "companyId", select: "name" }, { path: "branchId", select: "name" }, { path: "customerIds.id", select: "firstName lastName" }] });
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Coupon"), {}, {}));
@@ -210,11 +215,11 @@ export const getOneCoupon = async (req, res) => {
   }
 };
 
-export const applyCoupon = async (req, res) => {
+export const verifyCoupon = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { error, value } = applyCouponSchema.validate(req.body);
+    const { error, value } = verifyCouponSchema.validate(req.body);
 
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -295,13 +300,13 @@ export const applyCoupon = async (req, res) => {
     };
 
     // Update Coupon usage
-    const customerEntry = coupon.customerIds ? coupon.customerIds.find((item: any) => item.id.toString() === customerId.toString()) : null;
+    // const customerEntry = coupon.customerIds ? coupon.customerIds.find((item: any) => item.id.toString() === customerId.toString()) : null;
 
-    if (customerEntry) {
-      await couponModel.updateOne({ _id: couponId, "customerIds.id": customerId }, { $inc: { "customerIds.$.count": 1, usedCount: 1 } });
-    } else {
-      await couponModel.updateOne({ _id: couponId }, { $push: { customerIds: { id: customerId, count: 1 } }, $inc: { usedCount: 1 } });
-    }
+    // if (customerEntry) {
+    //   await couponModel.updateOne({ _id: couponId, "customerIds.id": customerId }, { $inc: { "customerIds.$.count": 1, usedCount: 1 } });
+    // } else {
+    //   await couponModel.updateOne({ _id: couponId }, { $push: { customerIds: { id: customerId, count: 1 } }, $inc: { usedCount: 1 } });
+    // }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Coupon applied successfully", result, {}));
   } catch (error) {

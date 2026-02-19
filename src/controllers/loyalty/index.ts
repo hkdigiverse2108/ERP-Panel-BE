@@ -151,6 +151,7 @@ export const getAllLoyalty = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
+        { path: "customerIds.id", select: "firstName lastName" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -191,6 +192,7 @@ export const getOneLoyalty = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
+          { path: "customerIds.id", select: "firstName lastName" },
         ],
       },
     );
@@ -254,7 +256,7 @@ export const redeemLoyalty = async (req, res) => {
     }
 
     // Check Single Time Use (Per Customer)
-    if (loyalty.redemptionPerCustomer === LOYALTY_REDEMPTION_TYPE.SINGLE) {
+    if (loyalty.singleTim) {
       const hasUsed = loyalty.customerIds && loyalty.customerIds.some((item: any) => item.id.toString() === customerId.toString());
       if (hasUsed) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "You have already used this loyalty campaign", {}, {}));
@@ -275,13 +277,13 @@ export const redeemLoyalty = async (req, res) => {
     }
 
     // Update Loyalty usage
-    const customerEntry = loyalty.customerIds ? loyalty.customerIds.find((item: any) => item.id.toString() === customerId.toString()) : null;
+    // const customerEntry = loyalty.customerIds ? loyalty.customerIds.find((item: any) => item.id.toString() === customerId.toString()) : null;
 
-    if (customerEntry) {
-      await loyaltyModel.updateOne({ _id: loyaltyId, "customerIds.id": customerId }, { $inc: { "customerIds.$.count": 1, usedCount: 1 } });
-    } else {
-      await loyaltyModel.updateOne({ _id: loyaltyId }, { $push: { customerIds: { id: customerId, count: 1 } }, $inc: { usedCount: 1 } });
-    }
+    // if (customerEntry) {
+    //   await loyaltyModel.updateOne({ _id: loyaltyId, "customerIds.id": customerId }, { $inc: { "customerIds.$.count": 1, usedCount: 1 } });
+    // } else {
+    //   await loyaltyModel.updateOne({ _id: loyaltyId }, { $push: { customerIds: { id: customerId, count: 1 } }, $inc: { usedCount: 1 } });
+    // }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Loyalty campaign redeemed successfully", benefit, {}));
   } catch (error) {
@@ -316,13 +318,13 @@ export const removeLoyalty = async (req, res) => {
     }
 
     // Update Loyalty: decrement usedCount and remove/decrement customerId count
-    if (customerEntry.count > 1) {
-      await loyaltyModel.updateOne({ _id: loyaltyId, usedCount: { $gt: 0 } }, { $inc: { usedCount: -1 } });
-      await loyaltyModel.updateOne({ _id: loyaltyId, "customerIds.id": customerId }, { $inc: { "customerIds.$.count": -1 } });
-    } else {
-      await loyaltyModel.updateOne({ _id: loyaltyId, usedCount: { $gt: 0 } }, { $inc: { usedCount: -1 } });
-      await loyaltyModel.updateOne({ _id: loyaltyId }, { $pull: { customerIds: { id: customerId } } });
-    }
+    // if (customerEntry.count > 1) {
+    //   await loyaltyModel.updateOne({ _id: loyaltyId, usedCount: { $gt: 0 } }, { $inc: { usedCount: -1 } });
+    //   await loyaltyModel.updateOne({ _id: loyaltyId, "customerIds.id": customerId }, { $inc: { "customerIds.$.count": -1 } });
+    // } else {
+    //   await loyaltyModel.updateOne({ _id: loyaltyId, usedCount: { $gt: 0 } }, { $inc: { usedCount: -1 } });
+    //   await loyaltyModel.updateOne({ _id: loyaltyId }, { $pull: { customerIds: { id: customerId } } });
+    // }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Loyalty campaign removed successfully", {}, {}));
   } catch (error) {
