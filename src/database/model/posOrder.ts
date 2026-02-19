@@ -82,6 +82,10 @@ const posOrderSchema = new Schema(
     },
     couponId: { type: Schema.Types.ObjectId, ref: "coupon", default: null },
     couponDiscount: { type: Number, default: 0 },
+
+    loyaltyId: { type: Schema.Types.ObjectId, ref: "loyalty", default: null },
+    loyaltyDiscount: { type: Number, default: 0 },
+
   },
   baseSchemaOptions,
 );

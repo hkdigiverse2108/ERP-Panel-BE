@@ -72,7 +72,7 @@ export const editContactById = async (req, res) => {
     let isExist = await getFirstMatch(contactModel, { _id: value?.contactId, isDeleted: false }, {}, {});
 
     if (!isExist) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Bill Of Live Product"), {}, {}));
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Contact"), {}, {}));
     }
 
     const phoneNo = value?.phoneNo?.phoneNo;

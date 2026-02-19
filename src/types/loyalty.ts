@@ -7,7 +7,7 @@ export interface ILoyaltyCampaign extends IBase {
   type: "points" | "cashback";
   discountValue?: number;
   redemptionPoints?: number;
-  redemptionPerCustomer: "single" | "multiple";
+  singleTimeUse: boolean;
   campaignLaunchDate: Date;
   campaignExpiryDate?: Date;
   minimumPurchaseAmount: number;

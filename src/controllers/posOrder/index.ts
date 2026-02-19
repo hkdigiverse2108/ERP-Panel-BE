@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STA
 import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema, posOrderDropDownSchema } from "../../validation";
+import { applyCoupon, applyLoyalty } from "./helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -83,6 +84,20 @@ export const addPosOrder = async (req, res) => {
       if (value.payLater) {
         value.payLater.status = PAY_LATER_STATUS.SETTLED;
         value.payLater.settledDate = new Date();
+      }
+    }
+
+    if (value.couponId) {
+      const couponResponse = await applyCoupon(value.couponId, value.customerId, value.totalAmount);
+      if (couponResponse !== "Coupon applied successfully") {
+        return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, couponResponse, {}, {}));
+      }
+    }
+
+    if (value.loyaltyId) {
+      const loyaltyResponse = await applyLoyalty(value.loyaltyId, value.customerId, value.totalAmount);
+      if (loyaltyResponse !== "Loyalty redeemed successfully") {
+        return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, loyaltyResponse, {}, {}));
       }
     }
 
