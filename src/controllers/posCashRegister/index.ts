@@ -9,7 +9,8 @@ import {
     reqInfo,
     countData,
     getDataWithSorting,
-    responseMessage
+    responseMessage,
+    generateSequenceNumber
 } from "../../helper";
 import {
     addPosCashRegisterSchema,
@@ -48,6 +49,7 @@ export const addPosCashRegister = async (req, res) => {
 
         value.createdBy = user?._id || null;
         value.updatedBy = user?._id || null;
+        value.registerNo = await generateSequenceNumber({ model: PosCashRegisterModel, prefix: "REG", companyId: value.companyId });
 
         const response = await createOne(PosCashRegisterModel, value);
         if (!response) {

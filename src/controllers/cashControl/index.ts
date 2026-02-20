@@ -133,7 +133,7 @@ export const getAllCashControl = async (req, res) => {
             skip: (page - 1) * limit,
             limit,
             populate: [
-                { path: "registerId" },
+                { path: "registerId", select: "registerNo" },
                 { path: "companyId", select: "name" },
                 { path: "branchId", select: "name" },
             ]
@@ -141,7 +141,13 @@ export const getAllCashControl = async (req, res) => {
 
         const response = await getDataWithSorting(CashControlModel, criteria, {}, options);
         const totalData = await countData(CashControlModel, criteria);
-        const totalAmount = response?.reduce((acc, item) => acc + item.amount, 0);
+
+        const totalAmountAggregate = await CashControlModel.aggregate([
+            { $match: criteria },
+            { $group: { _id: null, totalAmount: { $sum: "$amount" } } }
+        ])
+
+        const totalAmount = totalAmountAggregate[0]?.totalAmount || 0;
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Cash Control"), {
             cashControl_data: response,

@@ -5,6 +5,7 @@ import { CASH_REGISTER_STATUS } from "../../common";
 const posCashRegisterSchema = new Schema(
     {
         ...baseSchemaFields,
+        registerNo: { type: String, trim: true },
         openingCash: { type: Number },
 
         cashPayment: { type: Number, default: 0 },

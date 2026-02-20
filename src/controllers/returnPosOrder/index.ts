@@ -144,7 +144,7 @@ export const getAllReturnPosOrder = async (req, res) => {
             skip: (page - 1) * limit,
             limit,
             populate: [
-                { path: "customerId", select: "firstName lastName companyName" },
+                { path: "customerId", select: "firstName lastName " },
                 { path: "posOrderId", select: "orderNo" },
                 { path: "items.productId", select: "name" },
                 { path: "bankAccountId", select: "name" },
@@ -171,7 +171,7 @@ export const getOneReturnPosOrder = async (req, res) => {
 
         const response = await getFirstMatch(returnPosOrderModel, { _id: value.id, isDeleted: false }, {}, {
             populate: [
-                { path: "customerId", select: "firstName lastName companyName" },
+                { path: "customerId", select: "firstName lastName " },
                 { path: "posOrderId", select: "orderNo" },
                 { path: "items.productId", select: "name" },
                 { path: "bankAccountId", select: "name" },
@@ -272,7 +272,7 @@ export const getCreditNotes = async (req, res) => {
             skip: (page - 1) * limit,
             limit,
             populate: [
-                { path: "customerId", select: "firstName lastName companyName" },
+                { path: "customerId", select: "firstName lastName " },
                 { path: "posOrderId", select: "orderNo" },
                 { path: "items.productId", select: "name" }
             ]
