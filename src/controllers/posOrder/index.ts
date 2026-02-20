@@ -735,6 +735,7 @@ export const getAllHoldOrders = async (req, res) => {
         populate: [
           { path: "purchaseTaxId", select: "name percentage" },
           { path: "salesTaxId", select: "name percentage" },
+          { path: "uomId", select: "name code" },
         ],
       },
     );
@@ -763,6 +764,7 @@ export const getAllHoldOrders = async (req, res) => {
               salesTaxId: stock?.salesTaxId,
               isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
               isSalesTaxIncluding: stock?.isSalesTaxIncluding,
+              uomId: stock?.uomId,
             };
           }
           return item;

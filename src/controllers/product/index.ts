@@ -225,8 +225,42 @@ export const getAllProduct = async (req, res) => {
               totalLandingCost: { $sum: "$landingCost" },
               totalPurchasePrice: { $sum: "$purchasePrice" },
               totalSellingMargin: { $sum: "$sellingMargin" },
+              uomId: { $first: "$uomId" },
             },
           },
+          {
+            $lookup: {
+              from: "uoms",
+              localField: "uomId",
+              foreignField: "_id",
+              as: "uomData"
+            }
+          },
+          {
+            $unwind: {
+              path: "$uomData",
+              preserveNullAndEmptyArrays: true
+            }
+          },
+          // 🎯 Shape the final output
+          {
+            $project: {
+              uomId: 1,
+              uomData: {
+                _id: "$uomData._id",
+                name: "$uomData.name",
+                code: "$uomData.code",
+              },
+              totalQty: 1,
+              totalMrp: 1,
+              totalSellingPrice: 1,
+              totalSellingDiscount: 1,
+              totalLandingCost: 1,
+              totalPurchasePrice: 1,
+              totalSellingMargin: 1,
+            },
+          },
+
         ]);
 
         const qty = stockAggregation.length > 0 ? stockAggregation[0].totalQty : 0;
@@ -240,6 +274,7 @@ export const getAllProduct = async (req, res) => {
           purchasePrice: stockAggregation.length > 0 ? stockAggregation[0].totalPurchasePrice : 0,
           sellingMargin: stockAggregation.length > 0 ? stockAggregation[0].totalSellingMargin : 0,
           qty,
+          uomId: stockAggregation.length > 0 ? stockAggregation[0].uomData : null,
         };
       }),
     );
@@ -283,12 +318,13 @@ export const getProductDropdown = async (req, res) => {
     const stockResponse = await getDataWithSorting(
       stockModel,
       { isDeleted: false, isActive: true, companyId: stockCompanyId },
-      { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1 },
+      { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1, uomId: 1 },
       {
         sort: { updatedAt: -1 },
         populate: [
           { path: "purchaseTaxId", select: "name percentage" },
           { path: "salesTaxId", select: "name percentage" },
+          { path: "uomId", select: "name code" },
         ],
       },
     );
@@ -352,6 +388,7 @@ export const getProductDropdown = async (req, res) => {
         salesTaxId: stock?.salesTaxId,
         isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
         isSalesTaxIncluding: stock?.isSalesTaxIncluding,
+        uomId: stock?.uomId,
       };
     });
 
@@ -411,11 +448,13 @@ export const getOneProduct = async (req, res) => {
           as: "purchaseTax",
         },
       },
+
       {
         $unwind: {
           path: "$purchaseTax",
           preserveNullAndEmptyArrays: true,
         },
+
       },
 
       {
@@ -429,6 +468,20 @@ export const getOneProduct = async (req, res) => {
       {
         $unwind: {
           path: "$salesTax",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "uoms",
+          localField: "uomId",
+          foreignField: "_id",
+          as: "uomData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$uomData",
           preserveNullAndEmptyArrays: true,
         },
       },
@@ -461,10 +514,35 @@ export const getOneProduct = async (req, res) => {
 
           isPurchaseTaxIncluding: { $first: "$isPurchaseTaxIncluding" },
           isSalesTaxIncluding: { $first: "$isSalesTaxIncluding" },
+          uomData: { $first: "$uomData" },
+        },
+      },
+
+      {
+        $project: {
+          uomId: 1,
+          uomData: {
+            _id: "$uomData._id",
+            name: "$uomData.name",
+            code: "$uomData.code",
+          },
+          totalQty: 1,
+          totalMrp: 1,
+          totalSellingPrice: 1,
+          totalSellingDiscount: 1,
+          totalLandingCost: 1,
+          totalPurchasePrice: 1,
+          totalSellingMargin: 1,
+          purchaseTaxId: 1,
+          salesTaxId: 1,
+          isPurchaseTaxIncluding: 1,
+          isSalesTaxIncluding: 1,
+
         },
       },
     ]);
 
+    console.log("stockAggregation", stockAggregation);
     const stock = stockAggregation.length > 0 ? stockAggregation[0] : {};
 
     const productsWithStock = {
@@ -480,6 +558,7 @@ export const getOneProduct = async (req, res) => {
       salesTaxId: stock.salesTaxId,
       isPurchaseTaxIncluding: stock.isPurchaseTaxIncluding,
       isSalesTaxIncluding: stock.isSalesTaxIncluding,
+      uomId: stock.uomData,
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), productsWithStock, {}));

@@ -52,3 +52,5 @@ export * as posPaymentController from "./posPayment";
 export * as loyaltyPointsController from "./loyaltyPoints";
 export * as cashControlController from "./cashControl";
 export * as posCashRegisterController from "./posCashRegister";
+export * as returnPosOrderController from "./returnPosOrder";
+

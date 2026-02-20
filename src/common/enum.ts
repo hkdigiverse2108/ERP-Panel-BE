@@ -270,6 +270,12 @@ export const POS_RECEIPT_TYPE = {
 } as const;
 
 
+export const RETURN_POS_ORDER_TYPE = {
+  REFUND: "refund",
+  SALES_RETURN: "sales_return",
+} as const;
+
+
 export const LOYALTY_REDEMPTION_TYPE = {
   SINGLE: "single",
   MULTIPLE: "multiple",

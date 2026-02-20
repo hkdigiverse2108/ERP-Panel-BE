@@ -54,6 +54,7 @@ import { salesDebitNoteRouter } from "./salesDebitNote";
 import { posPaymentRouter } from "./posPayment";
 import cashControlRouter from "./cashControl";
 import posCashRegisterRouter from "./posCashRegister";
+import { returnPosOrderRouter } from "./returnPosOrder";
 
 const router = Router();
 
@@ -108,6 +109,7 @@ router.use("/pos-order", posOrderRouter);
 router.use("/pos-payment", posPaymentRouter);
 router.use("/cash-control", cashControlRouter);
 router.use("/pos-cash-register", posCashRegisterRouter);
+router.use("/return-pos-order", returnPosOrderRouter);
 router.use("/recipe", recipeRouter);
 router.use("/material", materialRouter);
 router.use("/material-consumption", materialConsumptionRouter);
