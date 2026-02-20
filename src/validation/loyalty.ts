@@ -66,3 +66,4 @@ export const getLoyaltyPointsSchema = Joi.object().keys({
   companyId: objectId().optional(),
   branchId: objectId().optional(),
 });
+
