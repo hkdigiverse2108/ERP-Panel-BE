@@ -629,7 +629,7 @@ export const getAllPosOrder = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "salesManId", select: "fullName" },
         { path: "customerId", select: "firstName lastName companyName email phoneNo" },
-        { path: "items.productId", select: "name itemCode" },
+        { path: "items.productId", select: "name " },
         { path: "invoiceId", select: "documentNo" },
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "additionalCharges.chargeId", select: "name" },
@@ -638,7 +638,38 @@ export const getAllPosOrder = async (req, res) => {
       ...(lastBillFilter !== "true" && { skip: (page - 1) * limit, limit }),
     };
 
+
     const response = await getDataWithSorting(PosOrderModel, criteria, {}, options);
+
+    const productIds: any = [
+      ...new Set(
+        response.flatMap(order => order?.items?.map(i => i.productId?._id?.toString()))
+      )
+    ]
+
+
+    const stockData = await stockModel.find(
+      {
+        productId: { $in: productIds },
+        companyId: criteria.companyId,
+        isDeleted: false,
+      },
+      { productId: 1, salesTaxId: 1 }
+    ).populate("salesTaxId", "name percentage");
+
+
+    const taxMap = {};
+    for (const s of stockData) {
+      taxMap[s.productId.toString()] = s.salesTaxId;
+    }
+
+
+    response.forEach(order => {
+      order.items.forEach(item => {
+        item.productId.salesTaxId = taxMap[item.productId?._id?.toString()] || null;
+      });
+    });
+
     const totalData = await countData(PosOrderModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
