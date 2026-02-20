@@ -122,7 +122,7 @@ export const getAllProduct = async (req, res) => {
     const userType = user?.userType;
 
     const companyId = user?.companyId?._id;
-    const { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
+    const { page, limit, search, startDate, endDate, activeFilter, companyFilter, categoryFilter, subCategoryFilter , brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -134,6 +134,22 @@ export const getAllProduct = async (req, res) => {
         criteria.$or = searchCriteria;
       }
     }
+
+    if (categoryFilter) criteria.categoryId = categoryFilter;
+
+    if (subCategoryFilter) criteria.subCategoryId = subCategoryFilter;
+
+    if (brandFilter) criteria.brandId = brandFilter;
+
+    if (subBrandFilter) criteria.subBrandId = subBrandFilter;
+
+    if (hsnCodeFilter) criteria.hsnCode = hsnCodeFilter;
+
+    if (purchaseTaxFilter) criteria.purchaseTaxId = purchaseTaxFilter;
+
+    if (salesTaxIdFilter) criteria.salesTaxId = salesTaxIdFilter;
+
+    if (productTypeFilter) criteria.productType = productTypeFilter;
 
     if(user.userType !== USER_TYPES.SUPER_ADMIN ) {
       const stockCriteria: any = {
