@@ -125,11 +125,6 @@ export const getAllProduct = async (req, res) => {
     const { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
-    let productIds: any[] = [];
-
-    if (companyFilter) {
-      criteria.companyId = companyFilter;
-    }
 
     if (search) {
       const searchCriteria = [{ name: { $regex: search, $options: "si" } }];
@@ -140,30 +135,32 @@ export const getAllProduct = async (req, res) => {
       }
     }
 
-    if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+    if(user.userType !== USER_TYPES.SUPER_ADMIN ) {
       const stockCriteria: any = {
         isDeleted: false,
-        companyId: companyId,
+        companyId: user.companyId,
       };
 
       const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
 
-      const uniqueProductIds = new Set<string>();
-      stockEntries.forEach((stock: any) => {
-        if (stock.productId) {
-          uniqueProductIds.add(stock.productId.toString());
-        }
-      });
-      productIds = Array.from(uniqueProductIds).map((id: string) => new ObjectId(id));
+      const productIds = (stockEntries || [])
+        .filter((s: any) => s.productId)
+        .map((s: any) => new ObjectId(s.productId.toString()));
 
-      if (productIds.length === 0) {
-        const stateObj = {
-          page: parseInt(page) || 1,
-          limit: parseInt(limit) || 10,
-          totalPages: 0,
-        };
-        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), { product_data: [], totalData: 0, state: stateObj }, {}));
-      }
+      criteria._id = { $in: productIds };
+    }
+
+    if (companyFilter) {
+      const stockCriteria: any = {
+        isDeleted: false,
+        companyId: companyFilter,
+      };
+
+      const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
+
+      const productIds = (stockEntries || [])
+        .filter((s: any) => s.productId)
+        .map((s: any) => new ObjectId(s.productId.toString()));
 
       criteria._id = { $in: productIds };
     }
@@ -198,19 +195,26 @@ export const getAllProduct = async (req, res) => {
       options.skip = (parseInt(page) - 1) * parseInt(limit);
       options.limit = parseInt(limit);
     }
-
     const response = await getDataWithSorting(productModel, criteria, { password: 0 }, options);
     const totalData = await countData(productModel, criteria);
 
     const productsWithStock = await Promise.all(
       response.map(async (product: any) => {
-        const stockCriteria: any = {
-          productId: product._id,
-          isDeleted: false,
-        };
+        const productObj = product.toObject ? product.toObject() : product;
+        const linkedStockIds = (productObj.stockIds || []).filter((id: any) => id);
 
-        if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
-          stockCriteria.companyId = companyId;
+        let stockCriteria: any = { isDeleted: false };
+
+        if (linkedStockIds.length > 0) {
+          stockCriteria._id = { $in: linkedStockIds.map((id: any) => new ObjectId(id.toString())) };
+          if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+            stockCriteria.companyId = companyId;
+          }
+        } else {
+          stockCriteria.productId = product._id;
+          if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+            stockCriteria.companyId = companyId;
+          }
         }
 
         const stockAggregation = await stockModel.aggregate([
@@ -232,7 +236,7 @@ export const getAllProduct = async (req, res) => {
         const qty = stockAggregation.length > 0 ? stockAggregation[0].totalQty : 0;
 
         return {
-          ...(product.toObject ? product.toObject() : product),
+          ...productObj,
           mrp: stockAggregation.length > 0 ? stockAggregation[0].totalMrp : 0,
           sellingPrice: stockAggregation.length > 0 ? stockAggregation[0].totalSellingPrice : 0,
           sellingDiscount: stockAggregation.length > 0 ? stockAggregation[0].totalSellingDiscount : 0,

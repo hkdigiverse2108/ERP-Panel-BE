@@ -42,7 +42,7 @@ export const addStock = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
-    await updateData(productModel, { _id: value?.productId }, { companyIds: { $in: [value?.companyId] } }, {});
+    await updateData(productModel, { _id: value?.productId }, { stockIds: { $in: [response?._id] } }, {});
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock"), response, {}));
   } catch (error) {
     console.error(error);
@@ -205,6 +205,7 @@ export const deleteStock = async (req, res) => {
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Stock"), {}, {}));
     }
+    await updateData(productModel, { _id: isExist?.productId }, { $pull: { stockIds: isExist?._id } }, {});
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Stock"), response, {}));
   } catch (error) {
