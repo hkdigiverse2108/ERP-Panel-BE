@@ -9,14 +9,14 @@ import {
     reqInfo,
     countData,
     getDataWithSorting,
-    responseMessage
+    responseMessage,
+    getData
 } from "../../helper";
 import {
     addCashControlSchema,
     editCashControlSchema,
     getCashControlSchema,
     deleteCashControlSchema,
-    cashControlDropDownSchema
 } from "../../validation";
 
 export const addCashControl = async (req, res) => {
@@ -97,7 +97,7 @@ export const getAllCashControl = async (req, res) => {
         const { user } = req?.headers;
         const companyId = user?.companyId?._id;
 
-        let { page, limit, search, registerId, typeFilter, startDate, endDate, companyFilter, branchFilter } = req?.query;
+        let { page, limit, search, registerFilter, typeFilter, startDate, endDate, companyFilter, branchFilter } = req?.query;
         page = Number(page);
         limit = Number(limit);
 
@@ -105,8 +105,20 @@ export const getAllCashControl = async (req, res) => {
         if (companyId) criteria.companyId = companyId;
         if (companyFilter) criteria.companyId = companyFilter;
         if (branchFilter) criteria.branchId = branchFilter;
-        if (registerId) criteria.registerId = registerId;
         if (typeFilter) criteria.type = typeFilter;
+
+
+        if (registerFilter == "true") {
+            const openRegister = await getFirstMatch(PosCashRegisterModel, {
+                companyId: companyId,
+                status: CASH_REGISTER_STATUS.OPEN,
+                isDeleted: false
+            }, { _id: 1 }, {});
+
+            if (openRegister) {
+                criteria.registerId = openRegister?._id;
+            }
+        }
 
         if (startDate && endDate) {
             criteria.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
@@ -129,10 +141,12 @@ export const getAllCashControl = async (req, res) => {
 
         const response = await getDataWithSorting(CashControlModel, criteria, {}, options);
         const totalData = await countData(CashControlModel, criteria);
+        const totalAmount = response?.reduce((acc, item) => acc + item.amount, 0);
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Cash Control"), {
             cashControl_data: response,
             totalData,
+            totalAmount,
             state: { page, limit, totalPages: Math.ceil(totalData / limit) || 1 }
         }, {}));
     } catch (error) {
@@ -200,16 +214,23 @@ export const cashControlDropDown = async (req, res) => {
         const { user } = req?.headers;
         const companyId = user?.companyId?._id;
 
-        const { error, value } = cashControlDropDownSchema.validate(req.query);
-        if (error) {
-            return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-        }
-
-        const { search, branchId, companyFilter } = value;
+        const { search, branchId, companyFilter, registerFilter } = req.query;
         let criteria: any = { isDeleted: false };
         if (companyId) criteria.companyId = companyId;
         if (branchId) criteria.branchId = branchId;
         if (companyFilter) criteria.companyId = companyFilter;
+
+        if (registerFilter) {
+            const openRegister = await getFirstMatch(PosCashRegisterModel, {
+                companyId: companyId,
+                status: CASH_REGISTER_STATUS.OPEN,
+                isDeleted: false
+            }, { _id: 1 }, {});
+
+            if (openRegister) {
+                criteria.registerId = openRegister?._id;
+            }
+        }
 
         if (search) {
             criteria.remark = { $regex: search, $options: "si" };
@@ -223,3 +244,4 @@ export const cashControlDropDown = async (req, res) => {
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
     }
 };
+
