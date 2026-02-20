@@ -4,6 +4,8 @@ import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, g
 import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation";
 import { generateConsumptionNo } from "../materialConsumption";
 
+const ObjectId = require("mongoose").Types.ObjectId;
+
 export const addStock = async (req, res) => {
   reqInfo(req);
   try {
@@ -42,7 +44,7 @@ export const addStock = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
-    await updateData(productModel, { _id: value?.productId }, { companyIds: { $in: [value?.companyId] } }, {});
+    await updateData(productModel, { _id: value?.productId }, { $push: { stockIds: response?._id } }, {});
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock"), response, {}));
   } catch (error) {
     console.error(error);
@@ -205,6 +207,7 @@ export const deleteStock = async (req, res) => {
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Stock"), {}, {}));
     }
+    await updateData(productModel, { _id: isExist?.productId }, { $pull: { stockIds: isExist?._id } }, {});
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Stock"), response, {}));
   } catch (error) {
@@ -221,6 +224,8 @@ export const getAllStock = async (req, res) => {
     const stockMatchCriteria: any = { isDeleted: false };
     if (branchFilter) stockMatchCriteria.branchId = branchFilter;
     if (companyFilter) stockMatchCriteria.companyId = companyFilter;
+    if (activeFilter !== undefined) stockMatchCriteria.isActive = activeFilter == "true";
+
 
     const stockAggregationPipeline: any[] = [
       { $match: stockMatchCriteria },
@@ -243,12 +248,13 @@ export const getAllStock = async (req, res) => {
     }
 
     const stockByProduct = await stockModel.aggregate(stockAggregationPipeline);
+    console.log('stockByProduct => ',stockByProduct);
     const productIdsWithStock = stockByProduct.map((s: any) => s._id);
     const qtyByProductId: Record<string, number> = {};
     stockByProduct.forEach((s: any) => {
       qtyByProductId[s._id.toString()] = s.totalQty;
     });
-
+    console.log('productIdsWithStock => ',productIdsWithStock);
     if (productIdsWithStock.length === 0) {
       const stateObj = {
         page: parseInt(page as string),
@@ -312,8 +318,9 @@ export const getAllStock = async (req, res) => {
         { path: "subBrandId", select: "name" },
       ],
     };
-
+    console.log("criteria => ",criteria);
     const products = await getDataWithSorting(productModel, criteria, {}, options);
+    console.log("products => ",products.length);
     const totalData = await countData(productModel, criteria);
 
     const stockData = products.map((product: any) => ({

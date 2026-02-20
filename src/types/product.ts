@@ -63,6 +63,7 @@ export interface IProduct extends IBase {
   shortDescription?: string;
   ingredients?: string;
   nutrition?: { name: string; value: string }[];
+  stockIds?: { name: string; value: string }[];
 
   // Media
   images?: string[];

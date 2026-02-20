@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { PRODUCT_EXPIRY_TYPE, PRODUCT_TYPE } from "../../common";
-import { IProduct } from "../../types/product";
+import { IProduct } from "../../types";
 import { baseCommonFields, baseSchemaOptions } from "./base";
 
 const productSchema = new Schema<IProduct>(
@@ -47,7 +47,7 @@ const productSchema = new Schema<IProduct>(
 
     masterQty: { type: Number, default: 0 },
 
-    companyId: [{ type: Schema.Types.ObjectId, ref: "company" }],
+    stockIds: [{ type: Schema.Types.ObjectId, ref: "stock", default: null }],
 
     // Pricing Details
     purchasePrice: { type: Number, default: 0 },

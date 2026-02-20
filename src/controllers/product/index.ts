@@ -122,14 +122,9 @@ export const getAllProduct = async (req, res) => {
     const userType = user?.userType;
 
     const companyId = user?.companyId?._id;
-    const { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
+    const { page, limit, search, startDate, endDate, activeFilter, companyFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
-    let productIds: any[] = [];
-
-    if (companyFilter) {
-      criteria.companyId = companyFilter;
-    }
 
     if (search) {
       const searchCriteria = [{ name: { $regex: search, $options: "si" } }];
@@ -140,30 +135,48 @@ export const getAllProduct = async (req, res) => {
       }
     }
 
-    if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+    if (categoryFilter) criteria.categoryId = categoryFilter;
+
+    if (subCategoryFilter) criteria.subCategoryId = subCategoryFilter;
+
+    if (brandFilter) criteria.brandId = brandFilter;
+
+    if (subBrandFilter) criteria.subBrandId = subBrandFilter;
+
+    if (hsnCodeFilter) criteria.hsnCode = hsnCodeFilter;
+
+    if (purchaseTaxFilter) criteria.purchaseTaxId = purchaseTaxFilter;
+
+    if (salesTaxIdFilter) criteria.salesTaxId = salesTaxIdFilter;
+
+    if (productTypeFilter) criteria.productType = productTypeFilter;
+
+    if (user.userType !== USER_TYPES.SUPER_ADMIN) {
       const stockCriteria: any = {
         isDeleted: false,
-        companyId: companyId,
+        companyId: user?.companyId?._id,
       };
 
       const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
 
-      const uniqueProductIds = new Set<string>();
-      stockEntries.forEach((stock: any) => {
-        if (stock.productId) {
-          uniqueProductIds.add(stock.productId.toString());
-        }
-      });
-      productIds = Array.from(uniqueProductIds).map((id: string) => new ObjectId(id));
+      const productIds = (stockEntries || [])
+        .filter((s: any) => s.productId)
+        .map((s: any) => new ObjectId(s.productId.toString()));
 
-      if (productIds.length === 0) {
-        const stateObj = {
-          page: parseInt(page) || 1,
-          limit: parseInt(limit) || 10,
-          totalPages: 0,
-        };
-        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), { product_data: [], totalData: 0, state: stateObj }, {}));
-      }
+      criteria._id = { $in: productIds };
+    }
+
+    if (companyFilter) {
+      const stockCriteria: any = {
+        isDeleted: false,
+        companyId: companyFilter,
+      };
+
+      const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
+
+      const productIds = (stockEntries || [])
+        .filter((s: any) => s.productId)
+        .map((s: any) => new ObjectId(s.productId.toString()));
 
       criteria._id = { $in: productIds };
     }
@@ -198,19 +211,26 @@ export const getAllProduct = async (req, res) => {
       options.skip = (parseInt(page) - 1) * parseInt(limit);
       options.limit = parseInt(limit);
     }
-
     const response = await getDataWithSorting(productModel, criteria, { password: 0 }, options);
     const totalData = await countData(productModel, criteria);
 
     const productsWithStock = await Promise.all(
       response.map(async (product: any) => {
-        const stockCriteria: any = {
-          productId: product._id,
-          isDeleted: false,
-        };
+        const productObj = product.toObject ? product.toObject() : product;
+        const linkedStockIds = (productObj.stockIds || []).filter((id: any) => id);
 
-        if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
-          stockCriteria.companyId = companyId;
+        let stockCriteria: any = { isDeleted: false };
+
+        if (linkedStockIds.length > 0) {
+          stockCriteria._id = { $in: linkedStockIds.map((id: any) => new ObjectId(id.toString())) };
+          if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+            stockCriteria.companyId = companyId;
+          }
+        } else {
+          stockCriteria.productId = product._id;
+          if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+            stockCriteria.companyId = companyId;
+          }
         }
 
         const stockAggregation = await stockModel.aggregate([
@@ -266,7 +286,7 @@ export const getAllProduct = async (req, res) => {
         const qty = stockAggregation.length > 0 ? stockAggregation[0].totalQty : 0;
 
         return {
-          ...(product.toObject ? product.toObject() : product),
+          ...productObj,
           mrp: stockAggregation.length > 0 ? stockAggregation[0].totalMrp : 0,
           sellingPrice: stockAggregation.length > 0 ? stockAggregation[0].totalSellingPrice : 0,
           sellingDiscount: stockAggregation.length > 0 ? stockAggregation[0].totalSellingDiscount : 0,
@@ -297,54 +317,56 @@ export const getAllProduct = async (req, res) => {
 export const getProductDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    const { user } = req?.headers;
+    let { user } = req?.headers, stockCriteria: any = { isDeleted: false, isActive: true };
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
-    const { productType, search, companyFilter, categoryFilter, brandFilter } = req.query;
+    const { productType, search, companyFilter, categoryFilter, brandFilter, isNewProduct } = req.query;
 
     let stockCompanyId = null;
     if (userType === USER_TYPES.SUPER_ADMIN) {
       if (companyFilter) stockCompanyId = new ObjectId(companyFilter);
     } else if (companyId) {
       stockCompanyId = companyId;
+      stockCriteria.companyId = new ObjectId(companyId)
     }
 
-    // Only show products that have stock (stock-wise dropdown)
-    if (!stockCompanyId) {
-      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [], {}));
-    }
-
-    // 1. Get productIds that have stock for this company
-    const stockResponse = await getDataWithSorting(
-      stockModel,
-      { isDeleted: false, isActive: true, companyId: stockCompanyId },
-      { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1, uomId: 1 },
-      {
-        sort: { updatedAt: -1 },
-        populate: [
-          { path: "purchaseTaxId", select: "name percentage" },
-          { path: "salesTaxId", select: "name percentage" },
-          { path: "uomId", select: "name code" },
-        ],
-      },
-    );
-
-    const productIdsWithStock = [...new Set(stockResponse.map((s: any) => String(s.productId)))];
-    if (productIdsWithStock.length === 0) {
-      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [], {}));
-    }
-
+    let productIdsWithStock: string[] = [];
     const stockByProductId = new Map<string, any>();
-    stockResponse.forEach((stock) => {
-      const key = String(stock.productId);
-      if (!stockByProductId.has(key)) stockByProductId.set(key, stock);
-    });
+
+    if (!isNewProduct) {
+      const stockResponse = await getDataWithSorting(
+        stockModel,
+        stockCriteria,
+        { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1, uomId: 1 },
+        {
+          sort: { updatedAt: -1 },
+          populate: [
+            { path: "purchaseTaxId", select: "name percentage" },
+            { path: "salesTaxId", select: "name percentage" },
+            { path: "uomId", select: "name code" },
+          ],
+        },
+      );
+
+      productIdsWithStock = Array.from(new Set(stockResponse.map((s: any) => String(s.productId))));
+      if (productIdsWithStock.length === 0) {
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [], {}));
+      }
+
+      stockResponse.forEach((stock: any) => {
+        const key = String(stock.productId);
+        if (!stockByProductId.has(key)) stockByProductId.set(key, stock);
+      });
+    }
 
     let criteria: any = {
       isDeleted: false,
       isActive: true,
-      _id: { $in: productIdsWithStock },
     };
+
+    if (!isNewProduct && productIdsWithStock.length > 0) {
+      criteria._id = { $in: productIdsWithStock };
+    }
 
     if (productType) {
       criteria.productType = productType;
