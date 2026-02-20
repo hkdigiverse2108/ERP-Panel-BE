@@ -154,7 +154,7 @@ export const getAllProduct = async (req, res) => {
     if(user.userType !== USER_TYPES.SUPER_ADMIN ) {
       const stockCriteria: any = {
         isDeleted: false,
-        companyId: user.companyId,
+        companyId: user?.companyId?._id,
       };
 
       const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
@@ -282,53 +282,55 @@ export const getAllProduct = async (req, res) => {
 export const getProductDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    const { user } = req?.headers;
+    let { user } = req?.headers, stockCriteria: any = { isDeleted: false, isActive: true };
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
-    const { productType, search, companyFilter, categoryFilter, brandFilter } = req.query;
+    const { productType, search, companyFilter, categoryFilter, brandFilter, isNewProduct } = req.query;
 
     let stockCompanyId = null;
     if (userType === USER_TYPES.SUPER_ADMIN) {
       if (companyFilter) stockCompanyId = new ObjectId(companyFilter);
     } else if (companyId) {
       stockCompanyId = companyId;
+      stockCriteria.companyId = new ObjectId(companyId)
     }
 
-    // Only show products that have stock (stock-wise dropdown)
-    if (!stockCompanyId) {
-      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [], {}));
-    }
-
-    // 1. Get productIds that have stock for this company
-    const stockResponse = await getDataWithSorting(
-      stockModel,
-      { isDeleted: false, isActive: true, companyId: stockCompanyId },
-      { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1 },
-      {
-        sort: { updatedAt: -1 },
-        populate: [
-          { path: "purchaseTaxId", select: "name percentage" },
-          { path: "salesTaxId", select: "name percentage" },
-        ],
-      },
-    );
-
-    const productIdsWithStock = [...new Set(stockResponse.map((s: any) => String(s.productId)))];
-    if (productIdsWithStock.length === 0) {
-      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [], {}));
-    }
-
+    let productIdsWithStock: string[] = [];
     const stockByProductId = new Map<string, any>();
-    stockResponse.forEach((stock) => {
-      const key = String(stock.productId);
-      if (!stockByProductId.has(key)) stockByProductId.set(key, stock);
-    });
+
+    if (!isNewProduct) {
+      const stockResponse = await getDataWithSorting(
+        stockModel,
+        stockCriteria,
+        { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1 },
+        {
+          sort: { updatedAt: -1 },
+          populate: [
+            { path: "purchaseTaxId", select: "name percentage" },
+            { path: "salesTaxId", select: "name percentage" },
+          ],
+        },
+      );
+
+      productIdsWithStock = Array.from(new Set(stockResponse.map((s: any) => String(s.productId))));
+      if (productIdsWithStock.length === 0) {
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [], {}));
+      }
+
+      stockResponse.forEach((stock: any) => {
+        const key = String(stock.productId);
+        if (!stockByProductId.has(key)) stockByProductId.set(key, stock);
+      });
+    }
 
     let criteria: any = {
       isDeleted: false,
       isActive: true,
-      _id: { $in: productIdsWithStock },
     };
+
+    if (!isNewProduct && productIdsWithStock.length > 0) {
+      criteria._id = { $in: productIdsWithStock };
+    }
 
     if (productType) {
       criteria.productType = productType;

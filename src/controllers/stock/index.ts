@@ -4,6 +4,8 @@ import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, g
 import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation";
 import { generateConsumptionNo } from "../materialConsumption";
 
+const ObjectId = require("mongoose").Types.ObjectId;
+
 export const addStock = async (req, res) => {
   reqInfo(req);
   try {
