@@ -3,6 +3,7 @@ import { contactModel, loyaltyModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addLoyaltySchema, deleteLoyaltySchema, editLoyaltySchema, getLoyaltySchema, redeemLoyaltySchema, removeLoyaltySchema } from "../../validation";
 
+
 const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addLoyalty = async (req, res) => {
@@ -256,7 +257,7 @@ export const redeemLoyalty = async (req, res) => {
     }
 
     // Check Single Time Use (Per Customer)
-    if (loyalty.singleTim) {
+    if (loyalty.singleTimeUse) {
       const hasUsed = loyalty.customerIds && loyalty.customerIds.some((item: any) => item.id.toString() === customerId.toString());
       if (hasUsed) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "You have already used this loyalty campaign", {}, {}));
@@ -332,3 +333,52 @@ export const removeLoyalty = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+export const loyaltyDropDown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+
+    const { search, customerId, totalAmount, companyFilter } = req.query;
+
+    let criteria: any = { isDeleted: false, isActive: true };
+
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
+    if (search) {
+      criteria.name = { $regex: search, $options: "si" };
+    }
+
+    const now = new Date();
+    criteria.$and = [
+      { $or: [{ campaignExpiryDate: { $exists: false } }, { campaignExpiryDate: null }, { campaignExpiryDate: { $gte: now } }] },
+      { $or: [{ usageLimit: { $exists: false } }, { usageLimit: null }, { $expr: { $lt: ["$usedCount", "$usageLimit"] } }] },
+    ];
+
+    if (totalAmount) {
+      criteria.$and.push({ $or: [{ minimumPurchaseAmount: { $exists: false } }, { minimumPurchaseAmount: null }, { minimumPurchaseAmount: { $lte: totalAmount } }] });
+    }
+
+    if (customerId) {
+      // filter out if singleTimeUse and already used by this customer
+      criteria.$and.push({
+        $or: [{ singleTimeUse: false }, { "customerIds.id": { $ne: new ObjectId(customerId) } }],
+      });
+    }
+
+    const response = await loyaltyModel.find(criteria, { name: 1, type: 1, minimumPurchaseAmount: 1, }).sort({ name: 1 }).limit(100);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Loyalty Dropdown"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
