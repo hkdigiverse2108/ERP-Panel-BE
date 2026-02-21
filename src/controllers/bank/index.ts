@@ -3,6 +3,8 @@ import { bankModel, branchModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBankSchema, deleteBankSchema, editBankSchema, getBankSchema } from "../../validation";
 
+const ObjectId = require("mongoose").Types.ObjectId;
+
 export const addBank = async (req, res) => {
   reqInfo(req);
   try {
@@ -96,12 +98,12 @@ export const getAllBank = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, startDate, endDate, activeFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
     if (companyId) criteria.companyId = companyId;
-
+    if(companyFilter) criteria.companyId = new ObjectId(companyFilter)
     if (search) criteria.$or = [{ accountHolderName: { $regex: search, $options: "si" }, bankAccountNumber: { $regex: search, $options: "si" } }];
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter === "true";
