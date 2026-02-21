@@ -1,5 +1,6 @@
 import mongoose from "mongoose"
 import { baseSchemaFields, baseSchemaOptions } from "./base"
+import { POS_CREDIT_NOTE_STATUS } from "../../common"
 
 const posCreditNoteSchema = new mongoose.Schema(
     {
@@ -12,6 +13,7 @@ const posCreditNoteSchema = new mongoose.Schema(
         creditsRemaining: { type: Number, },
 
         notes: { type: String },
+        status: { type: String, enum: POS_CREDIT_NOTE_STATUS, default: POS_CREDIT_NOTE_STATUS.AVAILABLE },
 
         ...baseSchemaFields
     },

@@ -1,5 +1,5 @@
-import { COUPON_DISCOUNT_TYPE, COUPON_STATUS, LOYALTY_REDEMPTION_TYPE, LOYALTY_STATUS, LOYALTY_TYPE } from "../../common";
-import { couponModel, loyaltyModel } from "../../database";
+import { COUPON_DISCOUNT_TYPE, COUPON_STATUS, LOYALTY_TYPE, REDEEM_CREDIT_TYPE, POS_CREDIT_NOTE_STATUS, POS_PAYMENT_TYPE } from "../../common";
+import { couponModel, loyaltyModel, posCreditNoteModel, PosPaymentModel } from "../../database";
 import { getFirstMatch } from "../../helper";
 
 
@@ -90,6 +90,57 @@ export const applyCoupon = async (couponId: string, customerId: string, totalAmo
     }
 }
 
+export const applyRedeemCredit = async (redeemCreditId: string, redeemCreditType: string, redeemCreditAmount: number, customerId: string) => {
+    try {
+        if (redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
+            const creditNote = await getFirstMatch(posCreditNoteModel, { _id: redeemCreditId, isDeleted: false }, {}, {});
+            if (!creditNote) {
+                return `Credit Note not found`;
+            }
+            if (customerId && creditNote.customerId?.toString() !== customerId.toString()) {
+                return `Credit Note does not belong to this customer`;
+            }
+            if (creditNote.creditsRemaining < redeemCreditAmount) {
+                return `Insufficient credits in Credit Note`;
+            }
+
+            const updatedCreditNote = await posCreditNoteModel.findOneAndUpdate(
+                { _id: redeemCreditId },
+                { $inc: { creditsUsed: redeemCreditAmount, creditsRemaining: -redeemCreditAmount } },
+                { new: true }
+            );
+
+            if (updatedCreditNote && updatedCreditNote.creditsRemaining <= 0) {
+                await posCreditNoteModel.updateOne({ _id: redeemCreditId }, { status: POS_CREDIT_NOTE_STATUS.USED });
+            }
+
+        } else if (redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
+            const advancePayment = await getFirstMatch(PosPaymentModel, { _id: redeemCreditId, isDeleted: false, paymentType: POS_PAYMENT_TYPE.ADVANCE }, {}, {});
+            if (!advancePayment) {
+                return `Advance Payment not found`;
+            }
+            if (customerId && advancePayment.partyId?.toString() !== customerId.toString()) {
+                return `Advance Payment does not belong to this customer`;
+            }
+            if ((advancePayment.amount || 0) < redeemCreditAmount) {
+                return `Insufficient amount in Advance Payment`;
+            }
+
+            await PosPaymentModel.updateOne(
+                { _id: redeemCreditId },
+                { $inc: { amount: -redeemCreditAmount } }
+            );
+        } else {
+            return `Invalid redemption type`;
+        }
+
+        return "Redeem credit applied successfully";
+    } catch (error) {
+        console.error(error);
+        return error;
+    }
+}
+
 export const applyLoyalty = async (loyaltyId: string, customerId: string, totalAmount: number) => {
     try {
 
@@ -157,84 +208,7 @@ export const applyLoyalty = async (loyaltyId: string, customerId: string, totalA
 
         return "Loyalty redeemed successfully";
 
-        // const loyalty = await getFirstMatch(loyaltyModel, { _id: loyaltyId, isDeleted: false }, {}, {});
-        // if (!loyalty) {
-        //     return `Loyalty not found`;
-        // }
 
-        // if (loyalty.status !== LOYALTY_STATUS.ACTIVE) {
-        //     return `Loyalty is ${loyalty.status}`;
-        // }
-
-        // const now = new Date();
-
-        // // Check Start Date
-        // if (loyalty.startDate && now < new Date(loyalty.startDate)) {
-        //     return `Loyalty is not yet active`;
-        // }
-
-        // // Check End Date
-        // if (loyalty.endDate && now > new Date(loyalty.endDate)) {
-        //     return `Loyalty has expired`;
-        // }
-
-        // // Check Expiry Days (from createdAt)
-        // if (loyalty.expiryDays) {
-        //     const expiryDate = new Date(loyalty.createdAt);
-        //     expiryDate.setDate(expiryDate.getDate() + loyalty.expiryDays);
-        //     if (now > expiryDate) {
-        //         return `Loyalty has expired based on expiry days`;
-        //     }
-        // }
-
-        // // Check Global Usage Limit
-        // if (loyalty.usageLimit && loyalty.usedCount >= loyalty.usageLimit) {
-        //     return `Loyalty usage limit reached`;
-        // }
-
-        // // Check Single Time Use (Per Customer)
-        // if (loyalty.singleTimeUse) {
-        //     const hasUsed = loyalty.customerIds && loyalty.customerIds.some((item: any) => item.id.toString() === customerId.toString());
-        //     if (hasUsed) {
-        //         return `You have already used this loyalty`;
-        //     }
-        // }
-
-        // // Check Minimum Amount (loyaltyPrice)
-        // if (loyalty.loyaltyPrice && totalAmount < loyalty.loyaltyPrice) {
-        //     return `Minimum amount required to use this loyalty is ${loyalty.loyaltyPrice}`;
-        // }
-
-        // // Calculate Discount
-        // let discountAmount = 0;
-        // if (loyalty.redemptionType === LOYALTY_DISCOUNT_TYPE.PERCENTAGE) {
-        //     discountAmount = (totalAmount * loyalty.redeemValue) / 100;
-        // } else if (loyalty.redemptionType === LOYALTY_DISCOUNT_TYPE.FLAT) {
-        //     discountAmount = loyalty.redeemValue;
-        // }
-
-        // // Ensure discount doesn't exceed total amount
-        // discountAmount = Math.min(discountAmount, totalAmount);
-
-        // const result = {
-        //     loyaltyId: loyalty._id,
-        //     name: loyalty.name,
-        //     discountAmount,
-        //     finalAmount: totalAmount - discountAmount,
-        //     redemptionType: loyalty.redemptionType,
-        //     redeemValue: loyalty.redeemValue,
-        // };
-
-        // // Update Loyalty usage
-        // const customerEntry = loyalty.customerIds ? loyalty.customerIds.find((item: any) => item.id.toString() === customerId.toString()) : null;
-
-        // if (customerEntry) {
-        //     await loyaltyModel.updateOne({ _id: loyalty._id, "customerIds.id": customerId as any }, { $inc: { "customerIds.$.count": 1, usedCount: 1 } });
-        // } else {
-        //     await loyaltyModel.updateOne({ _id: loyalty._id }, { $push: { customerIds: { id: customerId, count: 1 } }, $inc: { usedCount: 1 } });
-        // }
-
-        // return "Loyalty applied successfully";
     } catch (error) {
         console.error(error);
         return error;

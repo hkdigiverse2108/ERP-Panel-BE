@@ -1,8 +1,8 @@
-import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel } from "../../database";
+import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL } from "../../common";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, posCreditNoteModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema, posOrderDropDownSchema } from "../../validation";
-import { applyCoupon, applyLoyalty } from "./helper";
+import { applyCoupon, applyLoyalty, applyRedeemCredit } from "./helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -58,6 +58,18 @@ export const addPosOrder = async (req, res) => {
     // Calculate paid amount from multiple payments if provided
     if (value?.multiplePayments && value?.multiplePayments?.length > 0) {
       value.paidAmount = value.multiplePayments.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+    }
+
+    if (value.redeemCreditId && value.redeemCreditAmount > 0) {
+      const redeemResponse = await applyRedeemCredit(value.redeemCreditId, value.redeemCreditType, value.redeemCreditAmount, value.customerId);
+      if (redeemResponse !== "Redeem credit applied successfully") {
+        return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, redeemResponse, {}, {}));
+      }
+
+      // Map to model name for refPath
+      if (value.redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE) value.redeemCreditType = REDEEM_CREDIT_MODEL.CREDIT_NOTE;
+      else if (value.redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) value.redeemCreditType = REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT;
+
     }
 
     // Set payment status based on paid amount
@@ -125,7 +137,6 @@ export const addPosOrder = async (req, res) => {
         }
       }
     }
-    // ----------------------------
 
     // Add payment entry (multiple entries if multiplePayments provided)
     if (value.multiplePayments && value.multiplePayments.length > 0) {
@@ -147,21 +158,24 @@ export const addPosOrder = async (req, res) => {
           await createOne(PosPaymentModel, paymentData);
         }
       }
-    } else if (response.paidAmount > 0) {
-      const paymentData = {
-        companyId: response.companyId,
-        branchId: response.branchId,
-        posOrderId: response._id,
-        partyId: response.customerId,
-        amount: response.paidAmount,
-        paymentMode: value.paymentMethod || PAYMENT_MODE.CASH,
-        voucherType: POS_VOUCHER_TYPE.SALES,
-        paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
-        paymentNo: await generateSequenceNumber({ model: PosPaymentModel, prefix: "RCP", fieldName: "paymentNo", companyId: response.companyId }),
-        createdBy: user?._id || null,
-        updatedBy: user?._id || null,
-      };
-      await createOne(PosPaymentModel, paymentData);
+    } else {
+      const otherPaidAmount = (response.paidAmount || 0) - (value.redeemCreditAmount || 0);
+      if (otherPaidAmount > 0) {
+        const paymentData = {
+          companyId: response.companyId,
+          branchId: response.branchId,
+          posOrderId: response._id,
+          partyId: response.customerId,
+          amount: otherPaidAmount,
+          paymentMode: value.paymentMethod || PAYMENT_MODE.CASH,
+          voucherType: POS_VOUCHER_TYPE.SALES,
+          paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
+          paymentNo: await generateSequenceNumber({ model: PosPaymentModel, prefix: "RCP", fieldName: "paymentNo", companyId: response.companyId }),
+          createdBy: user?._id || null,
+          updatedBy: user?._id || null,
+        };
+        await createOne(PosPaymentModel, paymentData);
+      }
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("POS Order"), response, {}));
@@ -1075,6 +1089,7 @@ export const redeemLoyaltyPoints = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
 
 export const getCombinedPayments = async (req, res) => {
   reqInfo(req);

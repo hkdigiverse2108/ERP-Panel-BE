@@ -1,5 +1,5 @@
 import { PosPaymentModel, PosOrderModel, contactModel } from "../../database";
-import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_VOUCHER_TYPE } from "../../common";
+import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE } from "../../common";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, generateSequenceNumber } from "../../helper";
 import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema, getAllPosPaymentSchema } from "../../validation";
 
@@ -12,6 +12,8 @@ export const addPosPayment = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    console.log("value", value);
 
     value.companyId = await checkCompany(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
@@ -26,7 +28,7 @@ export const addPosPayment = async (req, res) => {
 
     value.paymentNo = await generateSequenceNumber({ model: PosPaymentModel, prefix, fieldName: "paymentNo", companyId: value.companyId });
 
-    if (value.voucherType === POS_VOUCHER_TYPE.SALES) {
+    if (value.voucherType === POS_VOUCHER_TYPE.SALES && value.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL) {
       const posOrder = await getFirstMatch(PosOrderModel, { _id: value.posOrderId, isDeleted: false }, {}, {});
       if (!posOrder) {
         return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
@@ -59,6 +61,8 @@ export const addPosPayment = async (req, res) => {
       }
       await updateData(PosOrderModel, { _id: value.posOrderId }, posOrder, {});
     }
+
+    
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;

@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
-import { PAYMENT_MODE, POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS } from "../common";
+import { PAYMENT_MODE, POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS, REDEEM_CREDIT_TYPE } from "../common";
 
 const multiplePaymentSchema = Joi.object({
   amount: Joi.number().min(0).required(),
@@ -78,6 +78,10 @@ export const addPosOrderSchema = Joi.object({
 
   loyaltyId: objectId().optional().allow(null),
   loyaltyDiscount: Joi.number().min(0).optional().default(0),
+
+  redeemCreditId: objectId().optional().allow(null),
+  redeemCreditAmount: Joi.number().min(0).optional().default(0),
+  redeemCreditType: Joi.string().valid(...Object.values(REDEEM_CREDIT_TYPE)).optional().allow(null),
 
   ...baseApiSchema,
 });

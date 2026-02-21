@@ -1,8 +1,15 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
+import { REDEEM_CREDIT_TYPE } from "../common";
 
 export const deletePosCreditNoteSchema = Joi.object({
     id: objectId().required(),
+});
+
+export const checkRedeemCreditSchema = Joi.object().keys({
+    code: Joi.string().required(),
+    type: Joi.string().valid(...Object.values(REDEEM_CREDIT_TYPE)).required(),
+    customerId: objectId().optional().allow(null),
 });
 
 export const getPosCreditNoteSchema = Joi.object({

@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
-import { PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS } from "../../common";
+import { PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS, REDEEM_CREDIT_MODEL, REDEEM_CREDIT_TYPE } from "../../common";
 
 export const posMultiplePaymentSchema = new Schema(
   {
@@ -86,6 +86,9 @@ const posOrderSchema = new Schema(
     loyaltyId: { type: Schema.Types.ObjectId, ref: "loyalty", default: null },
     loyaltyDiscount: { type: Number, default: 0 },
 
+    redeemCreditId: { type: Schema.Types.ObjectId, refPath: "redeemCreditType", default: null },
+    redeemCreditAmount: { type: Number, default: 0 },
+    redeemCreditType: { type: String, enum: Object.values(REDEEM_CREDIT_MODEL), default: null },
   },
   baseSchemaOptions,
 );

@@ -285,8 +285,23 @@ export const CASH_CONTROL_TYPE = {
   CLOSE: "close",
 } as const;
 
+export const REDEEM_CREDIT_TYPE = {
+  CREDIT_NOTE: "credit_note",
+  ADVANCE_PAYMENT: "advance_payment",
+} as const;
+
+export const REDEEM_CREDIT_MODEL = {
+  CREDIT_NOTE: "pos-credit-note",
+  ADVANCE_PAYMENT: "pos-payment",
+} as const;   
+
 
 export const CASH_REGISTER_STATUS = {
   OPEN: "open",
   CLOSED: "closed",
+} as const;
+
+export const POS_CREDIT_NOTE_STATUS = {
+  USED: "used",
+  AVAILABLE: "available",
 } as const;
