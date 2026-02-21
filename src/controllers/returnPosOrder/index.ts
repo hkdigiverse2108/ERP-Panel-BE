@@ -1,6 +1,6 @@
 
 import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE } from "../../common";
-import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel } from "../../database";
+import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addReturnPosOrderSchema, editReturnPosOrderSchema, getReturnPosOrderSchema, deleteReturnPosOrderSchema, returnPosOrderDropDownSchema } from "../../validation";
 
@@ -47,6 +47,22 @@ export const addReturnPosOrder = async (req, res) => {
             );
         }
         // ----------------------------
+
+        // --- Create POS Credit Note if type is sales_return ---
+        if (response.type === RETURN_POS_ORDER_TYPE.SALES_RETURN) {
+            const creditNoteData = {
+                companyId: response.companyId,
+                customerId: response.customerId,
+                returnPosOrderId: response._id,
+                totalAmount: response.total,
+                creditsRemaining: response.total,
+                creditNoteNo: await generateSequenceNumber({ model: posCreditNoteModel, prefix: "POSCN", fieldName: "creditNoteNo", companyId: response.companyId }),
+                createdBy: user?._id || null,
+                updatedBy: user?._id || null,
+            };
+            await createOne(posCreditNoteModel, creditNoteData);
+        }
+        // ------------------------------------------------------
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Return POS Order"), response, {}));
     } catch (error) {

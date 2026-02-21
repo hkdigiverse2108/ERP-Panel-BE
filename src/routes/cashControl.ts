@@ -10,4 +10,4 @@ router.get("/dropdown", cashControlController.cashControlDropDown);
 router.get("/:id", cashControlController.getOneCashControl);
 router.delete("/:id", cashControlController.deleteCashControl);
 
-export default router;
+export const cashControlRouter = router;

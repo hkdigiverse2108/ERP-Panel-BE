@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { adminJwt, superAdminJwt, userJwt } from "../helper";
+import { adminJwt } from "../helper";
 import { announcementRouter } from "./announcement";
 import { authRoute } from "./auth";
 import { branchRouter } from "./branch";
@@ -52,9 +52,10 @@ import { salesCreditNoteRouter } from "./salesCreditNote";
 import { salesDebitNoteRouter } from "./salesDebitNote";
 // import { payLaterRouter } from "./payLater";
 import { posPaymentRouter } from "./posPayment";
-import cashControlRouter from "./cashControl";
-import posCashRegisterRouter from "./posCashRegister";
+import { cashControlRouter } from "./cashControl";
+import { posCashRegisterRouter } from "./posCashRegister";
 import { returnPosOrderRouter } from "./returnPosOrder";
+import { posCreditNoteRouter } from "./posCreditNote";
 
 const router = Router();
 
@@ -110,6 +111,7 @@ router.use("/pos-payment", posPaymentRouter);
 router.use("/cash-control", cashControlRouter);
 router.use("/pos-cash-register", posCashRegisterRouter);
 router.use("/return-pos-order", returnPosOrderRouter);
+router.use("/pos-credit-note", posCreditNoteRouter);
 router.use("/recipe", recipeRouter);
 router.use("/material", materialRouter);
 router.use("/material-consumption", materialConsumptionRouter);

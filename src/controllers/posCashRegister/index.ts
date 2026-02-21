@@ -1,5 +1,6 @@
-import { PosCashRegisterModel, bankModel, branchModel } from "../../database";
-import { apiResponse, HTTP_STATUS, CASH_REGISTER_STATUS } from "../../common";
+import { PosCashRegisterModel, bankModel, branchModel, CashControlModel, PosOrderModel, returnPosOrderModel, PosPaymentModel } from "../../database";
+import { apiResponse, HTTP_STATUS, CASH_REGISTER_STATUS, CASH_CONTROL_TYPE, POS_VOUCHER_TYPE, PAYMENT_MODE, POS_ORDER_STATUS } from "../../common";
+import mongoose from "mongoose";
 import {
     checkCompany,
     checkIdExist,
@@ -227,3 +228,160 @@ export const posCashRegisterDropDown = async (req, res) => {
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
     }
 };
+
+export const getCashRegisterDetails = async (req, res) => {
+    reqInfo(req);
+    try {
+        const { user } = req?.headers;
+        const companyId = user?.companyId?._id;
+
+        const openRegister = await getFirstMatch(PosCashRegisterModel, {
+            companyId: companyId,
+            status: CASH_REGISTER_STATUS.OPEN,
+            isDeleted: false
+        }, { status: 1, openingCash: 1, createdAt: 1, creditAdvanceRedeemed: 1, registerNo: 1 }, {});
+
+
+        if (!openRegister) {
+            return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "No open cash register found", {}, {}));
+        }
+
+        const registerId = openRegister._id;
+        const startTime = openRegister.createdAt;
+        const companyObjectId = new mongoose.Types.ObjectId(companyId);
+
+        // 1. Opening Cash from cashControl
+        const openingCashData = await CashControlModel.findOne({
+            registerId: registerId,
+            type: CASH_CONTROL_TYPE.OPENING,
+            isDeleted: false
+        });
+        const openingCash = openingCashData?.amount || 0;
+
+        // 2. Payments from posPayment
+        const paymentsData = await PosPaymentModel.aggregate([
+            {
+                $match: {
+                    companyId: companyObjectId,
+                    voucherType: POS_VOUCHER_TYPE.SALES,
+                    createdAt: { $gte: startTime },
+                    isDeleted: false
+                }
+            },
+            {
+                $group: {
+                    _id: "$paymentMode",
+                    total: { $sum: "$amount" }
+                }
+            }
+        ]);
+
+
+        const payments = {
+            cashPayment: 0,
+            chequePayment: 0,
+            cardPayment: 0,
+            bankPayment: 0,
+            upiPayment: 0,
+        };
+        paymentsData.forEach(p => {
+            if (p._id === PAYMENT_MODE.CASH) payments.cashPayment = p.total;
+            if (p._id === PAYMENT_MODE.CHEQUE) payments.chequePayment = p.total;
+            if (p._id === PAYMENT_MODE.CARD) payments.cardPayment = p.total;
+            if (p._id === PAYMENT_MODE.BANK) payments.bankPayment = p.total;
+            if (p._id === PAYMENT_MODE.UPI) payments.upiPayment = p.total;
+        });
+
+        // 3. Refunds from returnPosOrder
+        const refundsData = await returnPosOrderModel.aggregate([
+            {
+                $match: {
+                    companyId: companyObjectId,
+                    createdAt: { $gte: startTime },
+                    isDeleted: false
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalReturn: { $sum: "$total" },
+                    cashRefund: { $sum: "$refundViaCash" },
+                    bankRefund: { $sum: "$refundViaBank" }
+                }
+            }
+        ]);
+
+        const refunds = {
+            salesReturn: refundsData[0]?.totalReturn || 0,
+            cashRefund: refundsData[0]?.cashRefund || 0,
+            bankRefund: refundsData[0]?.bankRefund || 0
+        };
+
+        // 4. Pos Order Summary (Total Sales & Pay Later)
+        const posOrdersSummary = await PosOrderModel.aggregate([
+            {
+                $match: {
+                    companyId: companyObjectId,
+                    createdAt: { $gte: startTime },
+                    isDeleted: false,
+                    status: { $ne: POS_ORDER_STATUS.CANCELLED }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalSales: { $sum: "$totalAmount" },
+                    totalPayLater: { $sum: "$dueAmount" }
+                }
+            }
+        ]);
+
+        // 5. Other Expenses and Purchase Payments from posPayment
+        const otherPayments = await PosPaymentModel.aggregate([
+            {
+                $match: {
+                    companyId: companyObjectId,
+                    createdAt: { $gte: startTime },
+                    isDeleted: false,
+                    voucherType: { $in: [POS_VOUCHER_TYPE.EXPENSE, POS_VOUCHER_TYPE.PURCHASE] }
+                }
+            },
+            {
+                $group: {
+                    _id: "$voucherType",
+                    total: { $sum: "$amount" }
+                }
+            }
+        ]);
+
+        let expense = 0;
+        let purchasePayment = 0;
+        otherPayments.forEach(p => {
+            if (p._id === POS_VOUCHER_TYPE.EXPENSE) expense = p.total;
+            if (p._id === POS_VOUCHER_TYPE.PURCHASE) purchasePayment = p.total;
+        });
+
+        const result = {
+            registerId: openRegister._id,
+            registerNo: openRegister.registerNo,
+            status: openRegister.status,
+            createdAt: openRegister.createdAt,
+            summary: {
+                openingCash: openingCash,
+                ...payments,
+                ...refunds,
+                creditAdvanceRedeemed: openRegister.creditAdvanceRedeemed || 0,
+                payLater: posOrdersSummary[0]?.totalPayLater || 0,
+                expense: expense,
+                purchasePayment: purchasePayment,
+                totalSales: posOrdersSummary[0]?.totalSales || 0
+            }
+        };
+
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Cash Register Details"), result, {}));
+    } catch (error) {
+        console.error(error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
+    }
+};
+
