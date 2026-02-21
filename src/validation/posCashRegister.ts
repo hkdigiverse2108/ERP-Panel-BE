@@ -21,7 +21,6 @@ export const editPosCashRegisterSchema = Joi.object({
     cardPayment: Joi.number().min(0).optional(),
     bankPayment: Joi.number().min(0).optional(),
     upiPayment: Joi.number().min(0).optional(),
-    walletPayment: Joi.number().min(0).optional(),
     salesReturn: Joi.number().min(0).optional(),
     cashRefund: Joi.number().min(0).optional(),
     bankRefund: Joi.number().min(0).optional(),

@@ -13,7 +13,6 @@ const posCashRegisterSchema = new Schema(
         cardPayment: { type: Number, default: 0 },
         bankPayment: { type: Number, default: 0 },
         upiPayment: { type: Number, default: 0 },
-        walletPayment: { type: Number, default: 0 },
 
         salesReturn: { type: Number, default: 0 },
         cashRefund: { type: Number, default: 0 },

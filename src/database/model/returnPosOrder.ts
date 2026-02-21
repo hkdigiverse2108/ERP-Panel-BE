@@ -12,7 +12,8 @@ const returnPosOrderSchema = new mongoose.Schema({
         productId: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
         quantity: { type: Number },
         price: { type: Number },
-        total: { type: Number }
+        total: { type: Number },
+        _id: false  
     }],
     total: { type: Number },
     type: { type: String, enum: Object.values(RETURN_POS_ORDER_TYPE), default: RETURN_POS_ORDER_TYPE.SALES_RETURN },

@@ -67,4 +67,5 @@ export * from "./loyaltyPoints";
 export * from "./cashControl";
 export * from "./posCashRegister";
 export * from "./returnPosOrder";
+export * from "./posCreditNote";
 

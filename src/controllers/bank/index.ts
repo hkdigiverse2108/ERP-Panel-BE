@@ -103,7 +103,9 @@ export const getAllBank = async (req, res) => {
     let criteria: any = { isDeleted: false };
 
     if (companyId) criteria.companyId = companyId;
-    if(companyFilter) criteria.companyId = new ObjectId(companyFilter)
+    if (companyFilter) criteria.companyId = new ObjectId(companyFilter)
+
+
     if (search) criteria.$or = [{ accountHolderName: { $regex: search, $options: "si" }, bankAccountNumber: { $regex: search, $options: "si" } }];
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter === "true";
