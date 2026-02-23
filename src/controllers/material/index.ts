@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { materialModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addMaterialSchema, deleteMaterialSchema, editMaterialSchema, getMaterialSchema } from "../../validation";
 
 export const addMaterial = async (req, res) => {
@@ -136,12 +136,7 @@ export const getAllMaterial = async (req, res) => {
       criteria.$or = [{ materialNo: { $regex: search, $options: "si" } }, { description: { $regex: search, $options: "si" } }];
     }
 
-    if (startDate && endDate) {
-      criteria.materialDate = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
-      };
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string, "materialDate");
 
     const options = {
       sort: { createdAt: -1 },

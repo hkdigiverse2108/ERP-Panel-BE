@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { contactModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addContactSchema, deleteContactSchema, editContactSchema, getContactSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -163,14 +163,7 @@ export const getAllContact = async (req, res) => {
     if (typeFilter) criteria.contactType = typeFilter;
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      if (!isNaN(start.getTime()) && isNaN(end.getTime())) {
-        criteria.createdAt = { $gte: start, $lte: end };
-      }
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options: any = {
       sort: { createdAt: -1 },
@@ -240,7 +233,7 @@ export const getContactDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { typeFilter, search, companyFilter } = req.query; // typeFilter: 'supplier', 'customer', 'both'
+    const { typeFilter, search, companyFilter, startDate, endDate } = req.query; // typeFilter: 'supplier', 'customer', 'both'
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -263,6 +256,8 @@ export const getContactDropdown = async (req, res) => {
       // }
       criteria.contactType = typeFilter;
     }
+
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     // Search filter
     if (search) {

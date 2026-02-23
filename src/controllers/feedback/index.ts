@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { feedbackModel, InvoiceModel, contactModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addFeedbackSchema, deleteFeedbackSchema, editFeedbackSchema, getFeedbackSchema } from "../../validation/feedback";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -119,7 +119,7 @@ export const getAllFeedback = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit , search, customerId, rating, startDate, endDate, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, customerId, rating, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -147,13 +147,7 @@ export const getAllFeedback = async (req, res) => {
       criteria.rating = Number(rating);
     }
 
-    if (startDate && endDate) {
-      const start = new Date(startDate as string);
-      const end = new Date(endDate as string);
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.createdAt = { $gte: start, $lte: end };
-      }
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options = {
       sort: { createdAt: -1 },

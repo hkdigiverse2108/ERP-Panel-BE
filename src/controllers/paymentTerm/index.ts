@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { paymentTermModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addPaymentTermSchema, deletePaymentTermSchema, editPaymentTermSchema, getPaymentTermSchema } from "../../validation";
 
 export const addPaymentTerm = async (req, res) => {
@@ -98,7 +98,7 @@ export const getAllPaymentTerm = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, activeFilter, companyFilter, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -118,6 +118,8 @@ export const getAllPaymentTerm = async (req, res) => {
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }];
     }
+
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options: any = {
       sort: { name: 1 },

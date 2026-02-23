@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, LOCATION_TYPE } from "../../common";
 import { locationModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addLocationSchema, deleteLocationSchema, editLocationSchema, getCityByStateSchema, getLocationSchema, getStateByCountrySchema } from "../../validation";
 
 export const addLocation = async (req, res) => {
@@ -248,17 +248,7 @@ export const getAllLocation = async (req, res) => {
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.createdAt = {
-          $gte: start,
-          $lte: end,
-        };
-      }
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options: any = {
       sort: { createdAt: -1 },

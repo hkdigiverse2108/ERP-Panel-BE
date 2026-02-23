@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { categoryModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addCategorySchema, deleteCategorySchema, editCategorySchema, getCategorySchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -59,17 +59,7 @@ export const getAllCategory = async (req, res) => {
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      if (!isNaN(start.getTime()) && isNaN(end.getTime())) {
-        criteria.createdAt = {
-          $gte: start,
-          $lte: end,
-        };
-      }
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options: any = {
       sort: { createdAt: -1 },
@@ -193,7 +183,7 @@ export const getCategoryDropdown = async (req, res) => {
     let { parentCategoryFilter, onlyCategoryFilter } = req.query;
     let criteria: any = { isDeleted: false, isActive: true };
 
-    if(Boolean(onlyCategoryFilter) === true) {
+    if (Boolean(onlyCategoryFilter) === true) {
       criteria.parentCategoryId = null;
     }
 
