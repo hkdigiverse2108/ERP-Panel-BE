@@ -57,8 +57,7 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-console.log("adminJwt 223");
-
+  console.log("req => ",req);
   reqInfo(req);
   try {
     const { error, value } = loginSchema.validate(req.body);
