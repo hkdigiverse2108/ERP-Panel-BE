@@ -4,30 +4,6 @@ import permissionsSchema from "./permissions";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
 import { IUser } from "../../types/user";
 
-// const userSchema = new mongoose.Schema(
-//   {
-//     fullName: { type: String },
-//     email: { type: String },
-//     phoneNo: { type: String },
-//     password: { type: String },
-//     companyId: { type: mongoose.Types.ObjectId, ref: 'company', required: false, default: null },
-//     profileImage: { type: String },
-//     permissions: {
-//       dashboard: { "read": true, "create": false, "update": false, "delete": false },
-//       profile: { "read": true, "create": true, "update": false, "delete": false }
-//     },
-//     role: {
-//       type: String,
-//       enum: Object.values(),
-//       default: .ADMIN,
-//     },
-//     ...baseSchemaFields,
-//   },
-//   baseSchemaOptions
-// );
-
-// export const userModel = mongoose.model("user", userSchema);
-
 const userSchema = new mongoose.Schema<IUser>(
   {
     fullName: { type: String },
@@ -72,6 +48,10 @@ const userSchema = new mongoose.Schema<IUser>(
     commission: { type: Number },
     extraWages: { type: Number },
     target: { type: Number },
+
+    otp: { type: Number, default: null },
+    otpExpireTime: { type: Date, default: null },
+
 
     ...baseSchemaFields,
   },
