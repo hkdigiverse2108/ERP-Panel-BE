@@ -56,6 +56,7 @@ import { cashControlRouter } from "./cashControl";
 import { posCashRegisterRouter } from "./posCashRegister";
 import { returnPosOrderRouter } from "./returnPosOrder";
 import { posCreditNoteRouter } from "./posCreditNote";
+import { loginLogRouter } from "./loginLog";
 
 const router = Router();
 
@@ -126,6 +127,7 @@ router.use("/announcement", announcementRouter);
 router.use("/brand", brandRouter);
 router.use("/category", categoryRouter);
 router.use("/additional-charge", additionalChargeRouter);
+router.use("/login-log", loginLogRouter);
 // router.use("/employee", employeeRouter);
 
 export { router };

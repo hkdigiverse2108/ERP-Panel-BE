@@ -1,9 +1,10 @@
-import { apiResponse, generateHash, generateToken, HTTP_STATUS, LOGIN_SOURCES, USER_TYPES } from "../../common";
+import { apiResponse, generateHash, generateToken, HTTP_STATUS, LOGIN_SOURCES, USER_ROLES, USER_TYPES } from "../../common";
 import { moduleModel, permissionModel, roleModel, userModel } from "../../database";
 import { checkIdExist, createOne, findAllAndPopulateWithSorting, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { loginSchema, registerSchema, resetPasswordSchema } from "../../validation";
 
 import bcryptjs from "bcryptjs";
+import { createLoginLogEntry } from "../loginLog";
 
 export const register = async (req, res) => {
   reqInfo(req);
@@ -174,7 +175,10 @@ export const login = async (req, res) => {
     // });
 
     // newUserPermissionData.sort((a, b) => a.number - b.number);
-
+    if(response?.userType !== USER_ROLES.SUPER_ADMIN) {
+      createLoginLogEntry(req, response, "LOGIN", `${response?.companyId?.name || "Company"} Logged In`);
+    }
+    
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.loginSuccess, response, {}));
   } catch (error) {
     console.error(error);

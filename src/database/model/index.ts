@@ -68,4 +68,4 @@ export * from "./cashControl";
 export * from "./posCashRegister";
 export * from "./returnPosOrder";
 export * from "./posCreditNote";
-
+export * from "./loginLog"
