@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { accountGroupModel, additionalChargeModel, taxModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addAdditionalChargeSchema, deleteAdditionalChargeSchema, editAdditionalChargeSchema, getAdditionalChargeSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -113,17 +113,7 @@ export const getAllAdditionalCharge = async (req, res) => {
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.createdAt = {
-          $gte: start,
-          $lte: end,
-        };
-      }
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options: any = {
       sort: { createdAt: -1 },

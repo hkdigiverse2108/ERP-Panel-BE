@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { accountModel, accountGroupModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addAccountSchema, deleteAccountSchema, editAccountSchema, getAccountSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -122,7 +122,7 @@ export const deleteAccount = async (req, res) => {
 export const getAllAccount = async (req, res) => {
   reqInfo(req);
   try {
-    let { page , limit, search, type, groupId, activeFilter } = req.query;
+    let { page, limit, search, type, groupId, activeFilter, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -142,6 +142,8 @@ export const getAllAccount = async (req, res) => {
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options = {
       sort: { name: 1 },
@@ -201,7 +203,7 @@ export const getOneAccount = async (req, res) => {
 export const getAccountDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    const { type, groupId, search } = req.query;
+    const { type, groupId, search, startDate, endDate } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -216,6 +218,8 @@ export const getAccountDropdown = async (req, res) => {
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }];
     }
+
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const response = await getDataWithSorting(
       accountModel,
