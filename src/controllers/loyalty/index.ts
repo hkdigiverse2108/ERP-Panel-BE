@@ -120,10 +120,7 @@ export const getAllLoyalty = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, type, status, activeFilter, companyFilter } = req.query;
-
-    page = Number(page);
-    limit = Number(limit);
+    let { page, limit, search, type, status, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
