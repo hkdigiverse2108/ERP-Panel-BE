@@ -55,4 +55,4 @@ export * as posCashRegisterController from "./posCashRegister";
 export * as returnPosOrderController from "./returnPosOrder";
 export * as posCreditNoteController from "./posCreditNote";
 export * as loginLogController from "./loginLog";
-export * as socialMediaController from "./socialMedia";
+export * as settingsController from "./settings";
