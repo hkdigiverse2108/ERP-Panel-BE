@@ -4,7 +4,7 @@ import { superAdminJwt } from "../helper";
 
 const router = Router();
 
-router.get("/get", settingsController.getSettings);
+router.get("/all", settingsController.getSettings);
 router.use(superAdminJwt);
 router.put("/update", settingsController.updateSettings);
 
