@@ -122,6 +122,9 @@ export const getAllLoyalty = async (req, res) => {
     const companyId = user?.companyId?._id;
     let { page, limit, search, type, status, activeFilter, companyFilter } = req.query;
 
+    page = Number(page);
+    limit = Number(limit);
+
     let criteria: any = { isDeleted: false };
     if (companyId) {
       criteria.companyId = companyId;
