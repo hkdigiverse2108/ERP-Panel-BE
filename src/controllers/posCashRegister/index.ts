@@ -11,7 +11,8 @@ import {
     countData,
     getDataWithSorting,
     responseMessage,
-    generateSequenceNumber
+    generateSequenceNumber,
+    applyDateFilter
 } from "../../helper";
 import {
     addPosCashRegisterSchema,
@@ -117,9 +118,7 @@ export const getAllPosCashRegister = async (req, res) => {
         if (branchFilter) criteria.branchId = branchFilter;
         if (statusFilter) criteria.status = statusFilter;
 
-        if (startDate && endDate) {
-            criteria.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
-        }
+        applyDateFilter(criteria, startDate as string, endDate as string);
 
 
         const options = {

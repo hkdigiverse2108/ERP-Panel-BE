@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel, employeeModel, roleModel, userModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addEmployeeSchema, deleteEmployeeSchema, editEmployeeSchema, getEmployeeSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -169,14 +169,7 @@ export const getAllEmployee = async (req, res) => {
     }
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      if (!isNaN(start.getTime()) && isNaN(end.getTime())) {
-        criteria.createdAt = { $gte: start, $lte: end };
-      }
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options: any = {
       sort: { createdAt: -1 },

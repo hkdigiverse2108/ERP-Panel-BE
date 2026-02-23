@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { branchModel, materialConsumptionModel, productModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addMaterialConsumptionSchema, deleteMaterialConsumptionSchema, editMaterialConsumptionSchema, getMaterialConsumptionSchema } from "../../validation";
 
 export const generateConsumptionNo = async (companyId?: string | null) => {
@@ -79,7 +79,7 @@ export const addMaterialConsumption = async (req, res) => {
     }
 
     value.number = await generateSequenceNumber({ model: materialConsumptionModel, prefix: "CON", fieldName: "number", companyId: value.companyId });
-   
+
     const isExist = await getFirstMatch(materialConsumptionModel, { companyId: value.companyId, number: value?.number, isDeleted: false }, {}, {});
 
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Number"), {}, {}));
@@ -237,12 +237,7 @@ export const getAllMaterialConsumption = async (req, res) => {
       criteria.$or = [{ number: { $regex: search, $options: "si" } }, { remark: { $regex: search, $options: "si" } }];
     }
 
-    if (startDate && endDate) {
-      criteria.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
-      };
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string, "date");
 
     const options = {
       sort: { createdAt: -1 },

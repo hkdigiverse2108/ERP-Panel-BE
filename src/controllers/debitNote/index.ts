@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { debitNoteModel, accountModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addDebitNoteSchema, deleteDebitNoteSchema, editDebitNoteSchema, getDebitNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -154,7 +154,7 @@ export const getAllDebitNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page , limit, search, startDate, endDate, companyFilter, activeFilter } = req.query;
+    let { page, limit, search, startDate, endDate, companyFilter, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -173,13 +173,7 @@ export const getAllDebitNote = async (req, res) => {
       criteria.$or = [{ voucherNumber: { $regex: search, $options: "si" } }, { description: { $regex: search, $options: "si" } }];
     }
 
-    if (startDate && endDate) {
-      const start = new Date(startDate as string);
-      const end = new Date(endDate as string);
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.date = { $gte: start, $lte: end };
-      }
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string, "date");
 
     const options = {
       sort: { createdAt: -1 },

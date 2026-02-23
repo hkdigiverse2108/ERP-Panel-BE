@@ -6,7 +6,8 @@ import {
     getFirstMatch,
     reqInfo,
     responseMessage,
-    updateData
+    updateData,
+    applyDateFilter
 } from "../../helper";
 import {
     getAllPosCreditNoteSchema,
@@ -87,9 +88,7 @@ export const getAllPosCreditNote = async (req, res) => {
             ];
         }
 
-        if (startDate && endDate) {
-            criteria.createdAt = { $gte: new Date(startDate as string), $lte: new Date(endDate as string) };
-        }
+        applyDateFilter(criteria, startDate as string, endDate as string);
 
         const options = {
             sort: { createdAt: -1 },

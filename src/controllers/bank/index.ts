@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { bankModel, branchModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addBankSchema, deleteBankSchema, editBankSchema, getBankSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -110,17 +110,7 @@ export const getAllBank = async (req, res) => {
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter === "true";
 
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      if (!isNaN(start.getTime()) && isNaN(end.getTime())) {
-        criteria.createdAt = {
-          $gte: start,
-          $lte: end,
-        };
-      }
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options: any = {
       sort: { createdAt: -1 },
@@ -193,7 +183,7 @@ export const getBankDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { search } = req.query;
+    const { search, startDate, endDate } = req.query;
 
     const userType = user?.userType;
     let companyId = user?.companyId?._id;
@@ -208,6 +198,8 @@ export const getBankDropdown = async (req, res) => {
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { accountHolderName: { $regex: search, $options: "si" } }, { bankAccountNumber: { $regex: search, $options: "si" } }];
     }
+
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const response = await getDataWithSorting(
       bankModel,

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { contactModel, deliveryChallanModel, InvoiceModel, productModel, taxModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addDeliveryChallanSchema, deleteDeliveryChallanSchema, editDeliveryChallanSchema, getDeliveryChallanSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -180,13 +180,7 @@ export const getAllDeliveryChallan = async (req, res) => {
       criteria.status = status;
     }
 
-    if (startDate && endDate) {
-      const start = new Date(startDate as string);
-      const end = new Date(endDate as string);
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.date = { $gte: start, $lte: end };
-      }
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string, "date");
 
     const options = {
       sort: { createdAt: -1 },

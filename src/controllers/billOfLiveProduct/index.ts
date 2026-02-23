@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { billOfLiveProductModel, productModel, recipeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addBillOfLiveProductSchema, deleteBillOfLiveProductSchema, editBillOfLiveProductSchema, getBillOfLiveProductSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -174,17 +174,7 @@ export const getAllBillOfLiveProduct = async (req, res) => {
       criteria.isActive = activeFilter === "true";
     }
 
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.createdAt = {
-          $gte: start,
-          $lte: end,
-        };
-      }
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options: any = {
       sort: { createdAt: -1 },
