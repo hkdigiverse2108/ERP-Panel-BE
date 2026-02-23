@@ -1,9 +1,9 @@
 import Joi from "joi";
 
 export const settingsLinkSchema = Joi.object({
-    title: Joi.string().required(),
-    link: Joi.string().uri().required(),
-    icon: Joi.string().required(),
+    title: Joi.string(),
+    link: Joi.string().uri(),
+    icon: Joi.string(),
     isActive: Joi.boolean().default(true)
 });
 
