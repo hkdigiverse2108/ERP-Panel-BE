@@ -54,4 +54,4 @@ export * as cashControlController from "./cashControl";
 export * as posCashRegisterController from "./posCashRegister";
 export * as returnPosOrderController from "./returnPosOrder";
 export * as posCreditNoteController from "./posCreditNote";
-
+export * as socialMediaController from "./socialMedia";
