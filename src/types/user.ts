@@ -39,4 +39,7 @@ export interface IUser extends IBase {
   commission: number;
   extraWages: number;
   target: number;
+
+  otp?: number;
+  otpExpireTime?: Date;
 }
