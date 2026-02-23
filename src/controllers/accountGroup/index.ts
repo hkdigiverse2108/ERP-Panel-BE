@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { accountGroupModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addAccountGroupSchema, deleteAccountGroupSchema, editAccountGroupSchema, getAccountGroupSchema } from "../../validation";
 
 const MAX_GROUP_LEVEL = 3;
@@ -194,7 +194,7 @@ export const deleteAccountGroup = async (req, res) => {
 export const getAllAccountGroup = async (req, res) => {
   reqInfo(req);
   try {
-    let { page , limit, search, activeFilter, groupLevelFilter, natureFilter } = req.query;
+    let { page, limit, search, activeFilter, groupLevelFilter, natureFilter, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -214,6 +214,8 @@ export const getAllAccountGroup = async (req, res) => {
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }];
     }
+
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options: any = {
       sort: { createdAt: -1 },
@@ -283,7 +285,7 @@ export const getOneAccountGroup = async (req, res) => {
 export const getAccountGroupDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    const { groupLevelFilter, natureFilter } = req.query;
+    const { groupLevelFilter, natureFilter, startDate, endDate } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true, groupLevel: { $ne: 0 } };
 
@@ -294,6 +296,8 @@ export const getAccountGroupDropdown = async (req, res) => {
     if (natureFilter) {
       criteria.nature = natureFilter;
     }
+
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const response = await getDataWithSorting(
       accountGroupModel,
