@@ -36,6 +36,10 @@ export const getUniqueOtp = async () => {
   throw new Error("Failed To Generate Otp");
 };
 
+export const getOtpExpireTime = () => {
+  return new Date(Date.now() + 10 * 60 * 1000);
+};
+
 export const generateHash = async (password = "") => {
   const salt = await bcryptjs.genSalt(10);
   const hashPassword = bcryptjs.hash(password, salt);

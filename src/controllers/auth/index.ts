@@ -1,7 +1,7 @@
-import { apiResponse, generateHash, generateToken, HTTP_STATUS, LOGIN_SOURCES, USER_ROLES, USER_TYPES } from "../../common";
+import { apiResponse, generateHash, generateToken, getOtpExpireTime, getUniqueOtp, HTTP_STATUS, LOGIN_SOURCES, USER_ROLES, USER_TYPES } from "../../common";
 import { moduleModel, permissionModel, roleModel, userModel } from "../../database";
-import { checkIdExist, createOne, findAllAndPopulateWithSorting, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { loginSchema, registerSchema, resetPasswordSchema } from "../../validation";
+import { checkIdExist, createOne, emailVerificationMail, findAllAndPopulateWithSorting, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { loginSchema, registerSchema, resendOtpSchema, resetPasswordSchema, verifyOtpSchema } from "../../validation";
 
 import bcryptjs from "bcryptjs";
 import { createLoginLogEntry } from "../loginLog";
@@ -89,9 +89,24 @@ export const login = async (req, res) => {
 
     if (response.isActive === false) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
 
+    // OTP Generation For Super Admin
+    const isSuperAdmin = value.loginSource === LOGIN_SOURCES.SUPER_ADMIN_PANEL && response?.userType === USER_TYPES.SUPER_ADMIN;
+    if (isSuperAdmin) {
+
+      const otp = await getUniqueOtp();
+
+      if (response?.email) {
+        emailVerificationMail(response, otp)
+      }
+
+      const otpExpireTime = getOtpExpireTime();
+
+      await userModel.findOneAndUpdate({ _id: response?._id }, { otp, otpExpireTime }, { new: true })
+    }
+
     const token = await generateToken({ _id: response?._id, status: "Login", generatedOn: new Date().getTime() }, { expiresIn: "24h" });
 
-    const { password, ...rest } = response;
+    const { password, otp, ...rest } = response;
 
     response = {
       ...rest,
@@ -179,10 +194,10 @@ export const login = async (req, res) => {
       createLoginLogEntry(req, response, "LOGIN", `${response?.companyId?.name || "Company"} Logged In`);
     }
     
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.loginSuccess, response, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, isSuperAdmin ? responseMessage?.otpSendSuccess : responseMessage?.loginSuccess, response, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -239,3 +254,60 @@ export const resetPassword = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
   }
 };
+
+export const verifyOtp = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { error, value } = verifyOtpSchema.validate(req.body);
+
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    let response = await getFirstMatch(userModel, { email: value?.email, isDeleted: false }, {}, {});
+
+    if (!response) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("User"), {}, {}));
+
+
+    if (Number(response?.otp) !== Number(value?.otp)) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidOTP, {}, {}));
+
+    if (response?.otpExpireTime < new Date()) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.expireOTP, {}, {}));
+
+    // response = await updateData(userModel, { _id: response?._id }, { otp: null, otpExpireTime: null }, {});
+    const { password, otp, otpExpireTime, ...rest } = response;
+
+    response = rest;
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.OTPVerified, {}, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
+  }
+};
+
+export const resendOtp = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { error, value } = resendOtpSchema.validate(req.body);
+
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    let response = await getFirstMatch(userModel, { email: value?.email, isDeleted: false }, {}, {});
+
+    if (!response) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("User"), {}, {}));
+
+    if (response?.isActive === false) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
+
+    const otp = await getUniqueOtp();
+    const otpExpireTime = getOtpExpireTime();
+
+    if (response?.email) {
+      emailVerificationMail(response, otp)
+    }
+
+    response = await updateData(userModel, { _id: response?._id }, { otp, otpExpireTime }, {});
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.resendOtpSuccess, {}, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
+  }
+};  
