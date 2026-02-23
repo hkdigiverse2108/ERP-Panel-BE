@@ -62,8 +62,6 @@ export const editLoyalty = async (req, res) => {
 
     // Check if loyalty campaign name already exists (if being changed)
     if (value.name && value.name !== isExist.name) {
-      console.log("value.name", value.name);
-      console.log("isExist.name", isExist.name);
       const nameExist = await getFirstMatch(loyaltyModel, { name: value.name, companyId: isExist.companyId, isDeleted: false, _id: { $ne: value.loyaltyId } }, {}, {});
       if (nameExist) {
         return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Loyalty Campaign Name"), {}, {}));

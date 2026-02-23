@@ -21,3 +21,12 @@ export const loginSchema = Joi.object().keys({
     .valid(...Object.values(LOGIN_SOURCES))
     .required(),
 });
+
+export const resetPasswordSchema = Joi.object().keys({
+  email: Joi.string().email().lowercase().required(),
+  loginSource: Joi.string()
+    .valid(...Object.values(LOGIN_SOURCES))
+    .required(),
+  oldPassword: Joi.string().required(),
+  newPassword: Joi.string().required(),
+});

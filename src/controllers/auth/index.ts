@@ -1,7 +1,7 @@
 import { apiResponse, generateHash, generateToken, HTTP_STATUS, LOGIN_SOURCES, USER_TYPES } from "../../common";
 import { moduleModel, permissionModel, roleModel, userModel } from "../../database";
-import { checkIdExist, createOne, findAllAndPopulateWithSorting, getData, getFirstMatch, reqInfo, responseMessage } from "../../helper";
-import { loginSchema, registerSchema } from "../../validation";
+import { checkIdExist, createOne, findAllAndPopulateWithSorting, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { loginSchema, registerSchema, resetPasswordSchema } from "../../validation";
 
 import bcryptjs from "bcryptjs";
 
@@ -76,9 +76,7 @@ export const login = async (req, res) => {
     );
 
     if (!response) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
-
     const comparePassword = await bcryptjs.compare(value?.password, response?.password);
-
     if (!comparePassword) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
 
     // ========================  Check For Login Sources ========================
@@ -178,6 +176,60 @@ export const login = async (req, res) => {
     // newUserPermissionData.sort((a, b) => a.number - b.number);
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.loginSuccess, response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
+  }
+};
+
+
+export const resetPassword = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { error, value } = resetPasswordSchema.validate(req.body);
+
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    let response = await getFirstMatch(
+      userModel,
+      { email: value?.email, isDeleted: false },
+      {},
+      {
+        populate: [
+          { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
+          { path: "role", select: "name" },
+        ],
+      },
+    );
+
+    if (!response) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("User"), {}, {}));
+
+    if (response.isActive === false) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
+
+    if (value?.oldPassword === value?.newPassword) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.passwordSameError, {}, {}));
+
+    const comparePassword = await bcryptjs.compare(value?.oldPassword, response?.password);
+    if (!comparePassword) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.oldPasswordError, {}, {}));
+
+    // ========================  Check For Login Sources ========================
+    if (value.loginSource === LOGIN_SOURCES.SUPER_ADMIN_PANEL && response.userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
+
+    if (value.loginSource === LOGIN_SOURCES.ADMIN_PANEL && response.userType !== USER_TYPES.ADMIN) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
+
+    if (value.loginSource === LOGIN_SOURCES.WEBSITE && response.userType !== USER_TYPES.USER) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
+
+
+    const hashedPassword = await generateHash(value?.newPassword);
+
+    response = await updateData(userModel, { _id: response?._id }, { password: hashedPassword }, {});
+    const { password, ...rest } = response;
+
+    response = {
+      ...rest,
+    };
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.resetPasswordSuccess, response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));

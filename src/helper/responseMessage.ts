@@ -20,6 +20,7 @@ export const responseMessage = {
   oldPasswordError: "You have entered the old password wrong!",
   passwordChangeSuccess: "Password has been changed!",
   passwordChangeError: "During password changing error in database!",
+  passwordSameError: "New password cannot be same as old password!",
   invalidOldTokenReFreshToken: "You have entered an invalid old token or refresh token!",
   refreshTokenNotFound: "Refresh token not found!",
   tokenNotExpire: "Token has been not expired!",

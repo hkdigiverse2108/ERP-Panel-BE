@@ -46,7 +46,6 @@ export const checkRedeemCredit = async (req, res) => {
             if (customerId && data.partyId?.toString() !== customerId) {
                 return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Advance Payment does not belong to this customer", {}, {}));
             }
-            console.log(data, "data");
             redeemableAmount = data.amount || 0;
         }
 

@@ -248,13 +248,11 @@ export const getAllStock = async (req, res) => {
     }
 
     const stockByProduct = await stockModel.aggregate(stockAggregationPipeline);
-    console.log('stockByProduct => ',stockByProduct);
     const productIdsWithStock = stockByProduct.map((s: any) => s._id);
     const qtyByProductId: Record<string, number> = {};
     stockByProduct.forEach((s: any) => {
       qtyByProductId[s._id.toString()] = s.totalQty;
     });
-    console.log('productIdsWithStock => ',productIdsWithStock);
     if (productIdsWithStock.length === 0) {
       const stateObj = {
         page: parseInt(page as string),
@@ -318,9 +316,7 @@ export const getAllStock = async (req, res) => {
         { path: "subBrandId", select: "name" },
       ],
     };
-    console.log("criteria => ",criteria);
     const products = await getDataWithSorting(productModel, criteria, {}, options);
-    console.log("products => ",products.length);
     const totalData = await countData(productModel, criteria);
 
     const stockData = products.map((product: any) => ({

@@ -564,7 +564,6 @@ export const getOneProduct = async (req, res) => {
       },
     ]);
 
-    console.log("stockAggregation", stockAggregation);
     const stock = stockAggregation.length > 0 ? stockAggregation[0] : {};
 
     const productsWithStock = {

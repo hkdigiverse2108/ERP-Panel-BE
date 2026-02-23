@@ -13,7 +13,6 @@ export const addPosPayment = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    console.log("value", value);
 
     value.companyId = await checkCompany(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
