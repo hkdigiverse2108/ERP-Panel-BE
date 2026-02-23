@@ -154,7 +154,7 @@ export const getAllCreditNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, startDate, endDate, companyFilter, activeFilter } = req.query;
+    let { page , limit, search, startDate, endDate, companyFilter, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);

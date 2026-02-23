@@ -4,11 +4,11 @@ import { returnPosOrderController } from "../controllers";
 const router = Router();
 
 router.post("/add", returnPosOrderController.addReturnPosOrder);
-router.post("/edit", returnPosOrderController.editReturnPosOrder);
-router.delete("/delete/:id", returnPosOrderController.deleteReturnPosOrder);
+router.put("/edit", returnPosOrderController.editReturnPosOrder);
 router.get("/all", returnPosOrderController.getAllReturnPosOrder);
-router.get("/:id", returnPosOrderController.getOneReturnPosOrder);
 router.get("/dropdown", returnPosOrderController.returnPosOrderDropDown);
-router.get("/credit-notes", returnPosOrderController.getCreditNotes);
+// router.get("/credit-notes", returnPosOrderController.getCreditNotes);
+router.delete("/:id", returnPosOrderController.deleteReturnPosOrder);
+router.get("/:id", returnPosOrderController.getOneReturnPosOrder);
 
 export { router as returnPosOrderRouter };

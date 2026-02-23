@@ -136,7 +136,7 @@ export const getAllStockVerification = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { page = 1, limit = 10, search, startDate, endDate, status, branchId, activeFilter, companyFilter } = req.query;
+    const { page , limit, search, startDate, endDate, status, branchId, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 

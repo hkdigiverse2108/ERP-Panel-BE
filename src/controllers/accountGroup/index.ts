@@ -194,7 +194,7 @@ export const deleteAccountGroup = async (req, res) => {
 export const getAllAccountGroup = async (req, res) => {
   reqInfo(req);
   try {
-    let { page = 1, limit = 100, search, activeFilter, groupLevelFilter, natureFilter } = req.query;
+    let { page , limit, search, activeFilter, groupLevelFilter, natureFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);

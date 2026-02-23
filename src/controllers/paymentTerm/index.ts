@@ -98,7 +98,7 @@ export const getAllPaymentTerm = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page = 1, limit = 100, search, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);

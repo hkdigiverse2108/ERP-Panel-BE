@@ -115,7 +115,7 @@ export const getAllPayLater = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    let { page = 1, limit = 10, search, customerId, status, startDate, endDate } = value;
+    let { page , limit, search, customerId, status, startDate, endDate } = value;
     page = Number(page);
     limit = Number(limit);
 

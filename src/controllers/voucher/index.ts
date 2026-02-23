@@ -159,7 +159,7 @@ export const getAllVoucher = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page = 1, limit = 10, search, type, startDate, endDate, activeFilter } = req.query;
+    let { page, limit, search, type, startDate, endDate, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
