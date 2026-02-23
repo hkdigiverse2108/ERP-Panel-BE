@@ -26,4 +26,4 @@ export * from "./termsCondition";
 export * from "./materialConsumption";
 export * from "./product";
 export * from "./loginLog"
-export * from "./socialMedia";
+export * from "./settings";

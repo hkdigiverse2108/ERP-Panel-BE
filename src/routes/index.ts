@@ -50,14 +50,13 @@ import { termsConditionRouter } from "./termsCondition";
 import { additionalChargeRouter } from "./additionalCharge";
 import { salesCreditNoteRouter } from "./salesCreditNote";
 import { salesDebitNoteRouter } from "./salesDebitNote";
-// import { payLaterRouter } from "./payLater";
 import { posPaymentRouter } from "./posPayment";
 import { cashControlRouter } from "./cashControl";
 import { posCashRegisterRouter } from "./posCashRegister";
 import { returnPosOrderRouter } from "./returnPosOrder";
 import { posCreditNoteRouter } from "./posCreditNote";
 import { loginLogRouter } from "./loginLog";
-import { socialMediaRoute } from "./socialMedia";
+import { settingsRoute } from "./settings";
 
 const router = Router();
 
@@ -108,7 +107,6 @@ router.use("/loyalty", loyaltyRouter);
 router.use("/loyalty-points", loyaltyPointsRouter);
 router.use("/prefix", prefixRouter);
 router.use("/pos-order", posOrderRouter);
-// router.use("/pay-later", payLaterRouter);
 router.use("/pos-payment", posPaymentRouter);
 router.use("/cash-control", cashControlRouter);
 router.use("/pos-cash-register", posCashRegisterRouter);
@@ -130,6 +128,6 @@ router.use("/category", categoryRouter);
 router.use("/additional-charge", additionalChargeRouter);
 router.use("/login-log", loginLogRouter);
 // router.use("/employee", employeeRouter);
-router.use("/social-media", socialMediaRoute);
+router.use("/settings", settingsRoute);
 
 export { router };
