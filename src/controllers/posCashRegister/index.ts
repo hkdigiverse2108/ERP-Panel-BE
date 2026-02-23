@@ -243,7 +243,9 @@ export const getCashRegisterDetails = async (req, res) => {
 
 
         if (!openRegister) {
-            return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "No open cash register found", {}, {}));
+            return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "No open cash register found", {
+                status: CASH_REGISTER_STATUS.CLOSED,
+            }, {}));
         }
 
         const registerId = openRegister._id;
