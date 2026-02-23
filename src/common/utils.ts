@@ -1,4 +1,5 @@
 import bcryptjs from "bcryptjs";
+import os from "os";
 import { getFirstMatch, responseMessage } from "../helper";
 import { userModel } from "../database/model";
 import jwt from "jsonwebtoken";
@@ -53,4 +54,21 @@ export const generateToken = async (data = {}, expiresIn = {}) => {
 
 export const isValidObjectId = (id = "") => {
   return Types.ObjectId.isValid(id);
+};
+
+export const getServerIPv4 = (): string => {
+  const interfaces = os.networkInterfaces();
+
+  for (const name of Object.keys(interfaces)) {
+    const ifaceList = interfaces[name];
+    if (!ifaceList) continue;
+
+    for (const iface of ifaceList) {
+      if (iface.family === "IPv4" && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+
+  return "127.0.0.1";
 };
