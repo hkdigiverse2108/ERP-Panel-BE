@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { apiResponse, CUSTOMER_CATEGORY_ENUM, HTTP_STATUS, POS_ORDER_STATUS, VOUCHAR_TYPE, ACCOUNT_TYPE, POS_VOUCHER_TYPE, RETURN_POS_ORDER_TYPE } from "../../common";
+import { apiResponse, CUSTOMER_CATEGORY_ENUM, HTTP_STATUS, POS_ORDER_STATUS, VOUCHAR_TYPE, ACCOUNT_TYPE, POS_VOUCHER_TYPE, RETURN_POS_ORDER_TYPE, PAYMENT_MODE } from "../../common";
 import { accountModel, debitNoteModel, InvoiceModel, PosOrderModel, PosPaymentModel, productModel, returnPosOrderModel, salesCreditNoteModel, stockModel, supplierBillModel, voucherModel } from "../../database";
 import { applyDateFilter, responseMessage } from "../../helper";
 import { getCategoryWiseCustomersSchema, } from "../../validation";
@@ -1058,6 +1058,148 @@ export const salesAndPurchaseGraph = async (req, res) => {
         graphData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales and Purchase Graph"), graphData, {}));
+    } catch (error) {
+        console.error(error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    }
+};
+
+export const transactionGraph = async (req, res) => {
+    try {
+        const { user } = req.headers;
+        let { startDate, endDate, companyFilter, companyId, typeFilter } = req.query;
+
+        if (!companyId && user?.companyId?._id) {
+            companyId = user.companyId._id;
+        }
+
+        const criteria: any = { isDeleted: false };
+        if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+        if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+
+        let start = startDate ? new Date(startDate as string) : new Date(new Date().setDate(new Date().getDate() - 30));
+        let end = endDate ? new Date(endDate as string) : new Date();
+
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+
+        criteria.createdAt = { $gte: start, $lte: end };
+
+        let posVoucherTypes: string[] = [POS_VOUCHER_TYPE.SALES];
+        let voucherTypes: string[] = [VOUCHAR_TYPE.RECEIPT];
+
+        if (typeFilter && typeFilter.toLowerCase() === "purchase") {
+            posVoucherTypes = [POS_VOUCHER_TYPE.PURCHASE, POS_VOUCHER_TYPE.EXPENSE];
+            voucherTypes = [VOUCHAR_TYPE.PAYMENT, VOUCHAR_TYPE.EXPENSE];
+        }
+
+        const posCriteria = { ...criteria, voucherType: { $in: posVoucherTypes } };
+
+        let vCriteria: any = { isDeleted: false, type: { $in: voucherTypes } };
+        if (companyId) vCriteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+        if (companyFilter) vCriteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+        vCriteria.date = { $gte: start, $lte: end };
+
+        const groupByDateStr = (dateField) => ({
+            $dateToString: { format: "%Y-%m-%d", date: `$${dateField}` }
+        });
+
+        const [posPayments, vouchers] = await Promise.all([
+            PosPaymentModel.aggregate([
+                { $match: posCriteria },
+                {
+                    $group: {
+                        _id: { date: groupByDateStr("createdAt"), method: "$paymentMode" },
+                        total: { $sum: "$amount" }
+                    }
+                }
+            ]),
+            voucherModel.aggregate([
+                { $match: vCriteria },
+                {
+                    $lookup: {
+                        from: "accounts",
+                        localField: "bankAccountId",
+                        foreignField: "_id",
+                        as: "account"
+                    }
+                },
+                { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+                {
+                    $group: {
+                        _id: {
+                            date: groupByDateStr("date"),
+                            method: {
+                                $cond: {
+                                    if: { $eq: ["$account.type", ACCOUNT_TYPE.CASH] },
+                                    then: PAYMENT_MODE.CASH,
+                                    else: {
+                                        $cond: {
+                                            if: { $eq: ["$account.type", ACCOUNT_TYPE.BANK] },
+                                            then: PAYMENT_MODE.BANK,
+                                            else: "other"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        total: { $sum: "$amount" }
+                    }
+                }
+            ])
+        ]);
+
+        const mergedData: Record<string, any> = {};
+
+        const getDatesInRange = (startDate: Date, endDate: Date) => {
+            const date = new Date(startDate.getTime());
+            const dates: string[] = [];
+            while (date <= endDate) {
+                dates.push(date.toISOString().split('T')[0]);
+                date.setDate(date.getDate() + 1);
+            }
+            return dates;
+        };
+
+        const allDates = getDatesInRange(start, end);
+
+        // Pre-fill empty dates
+        allDates.forEach(date => {
+            mergedData[date] = {
+                cash: 0, bank: 0, upi: 0, card: 0, cheque: 0, wallet: 0,
+                other: 0
+            };
+        });
+
+        const addValue = (date: string, method: string, value: number) => {
+            if (!date || !method) return;
+            const m = method.toLowerCase();
+
+            if (!mergedData[date]) {
+                mergedData[date] = {
+                    cash: 0, bank: 0, upi: 0, card: 0, cheque: 0, wallet: 0,
+                    other: 0
+                };
+            }
+
+            if (mergedData[date][m] !== undefined) {
+                mergedData[date][m] += (value || 0);
+            } else {
+                mergedData[date]["other"] += (value || 0);
+            }
+        };
+
+        posPayments.forEach(item => addValue(item._id.date, item._id.method, item.total));
+        vouchers.forEach(item => addValue(item._id.date, item._id.method, item.total));
+
+        const graphData = Object.keys(mergedData).map(date => ({
+            date,
+            ...mergedData[date]
+        }));
+
+        graphData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Transaction Graph"), graphData, {}));
     } catch (error) {
         console.error(error);
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

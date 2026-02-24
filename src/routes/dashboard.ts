@@ -14,5 +14,6 @@ router.get("/top-coupons", dashboardController.topCoupons);
 router.get("/receivable", dashboardController.receivable);
 router.get("/payable", dashboardController.payable);
 router.get("/sales-and-purchase-graph", dashboardController.salesAndPurchaseGraph);
+router.get("/transaction-graph", dashboardController.transactionGraph);
 
 export const dashboardRouter = router;
