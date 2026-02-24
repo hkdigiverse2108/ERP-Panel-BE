@@ -5,7 +5,7 @@ import { CASH_CONTROL_TYPE } from "../common";
 export const addCashControlSchema = Joi.object({
     type: Joi.string()
         .valid(...Object.values(CASH_CONTROL_TYPE)),
-    amount: Joi.number().min(0).required(),
+    amount: Joi.number().min(1).required(),
     remark: Joi.string().optional().allow("", null),
     ...baseApiSchema,
 });
@@ -15,7 +15,7 @@ export const editCashControlSchema = Joi.object({
     type: Joi.string()
         .valid(...Object.values(CASH_CONTROL_TYPE))
         .optional(),
-    amount: Joi.number().min(0).optional(),
+    amount: Joi.number().min(1).optional(),
     remark: Joi.string().optional().allow("", null),
     ...baseApiSchema,
 });

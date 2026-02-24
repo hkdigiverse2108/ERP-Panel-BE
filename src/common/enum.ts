@@ -293,7 +293,7 @@ export const REDEEM_CREDIT_TYPE = {
 export const REDEEM_CREDIT_MODEL = {
   CREDIT_NOTE: "pos-credit-note",
   ADVANCE_PAYMENT: "pos-payment",
-} as const;   
+} as const;
 
 
 export const CASH_REGISTER_STATUS = {
@@ -310,3 +310,11 @@ export const JOURNAL_VOUCHER_STATUS = {
   DRAFT: "draft",
   POSTED: "posted",
 } as const;
+
+export const CUSTOMER_CATEGORY_ENUM = {
+  VIP: "VIP_Customer",
+  REGULAR: "Regular_Customer",
+  RISK: "Risk_Customer",
+  LOST: "Lost_Customer",
+} as const;
+
