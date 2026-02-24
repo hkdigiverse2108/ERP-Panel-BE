@@ -57,6 +57,7 @@ import { returnPosOrderRouter } from "./returnPosOrder";
 import { posCreditNoteRouter } from "./posCreditNote";
 import { loginLogRouter } from "./loginLog";
 import { settingsRoute } from "./settings";
+import { journalVoucherRouter } from "./journalVoucher";
 
 const router = Router();
 
@@ -116,6 +117,7 @@ router.use("/recipe", recipeRouter);
 router.use("/material", materialRouter);
 router.use("/material-consumption", materialConsumptionRouter);
 router.use("/bill-of-live-product", billOfLiveProductRouter);
+router.use("/journal-voucher", journalVoucherRouter);
 
 // === For Super Admin
 router.use("/account-group", accountGroupRouter);

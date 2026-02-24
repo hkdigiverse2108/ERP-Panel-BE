@@ -305,3 +305,8 @@ export const POS_CREDIT_NOTE_STATUS = {
   USED: "used",
   AVAILABLE: "available",
 } as const;
+
+export const JOURNAL_VOUCHER_STATUS = {
+  DRAFT: "draft",
+  POSTED: "posted",
+} as const;

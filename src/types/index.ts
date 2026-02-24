@@ -27,3 +27,4 @@ export * from "./materialConsumption";
 export * from "./product";
 export * from "./loginLog"
 export * from "./settings";
+export * from "./journalVoucher";

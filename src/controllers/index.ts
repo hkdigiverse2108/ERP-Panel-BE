@@ -56,3 +56,4 @@ export * as returnPosOrderController from "./returnPosOrder";
 export * as posCreditNoteController from "./posCreditNote";
 export * as loginLogController from "./loginLog";
 export * as settingsController from "./settings";
+export * as journalVoucherController from "./journalVoucher";
