@@ -8,5 +8,10 @@ router.get("/top-customers", dashboardController.topCustomers);
 router.get("/category-wise-customers", dashboardController.categoryWiseCustomers);
 router.get("/best-selling-products", dashboardController.bestSellingProducts);
 router.get("/least-selling-products", dashboardController.leastSellingProducts);
+router.get("/top-expenses", dashboardController.topExpenses);
+router.get("/top-coupons", dashboardController.topCoupons);
+router.get("/receivable", dashboardController.receivable);
+router.get("/payable", dashboardController.payable);
+router.get("/sales-and-purchase-graph", dashboardController.salesAndPurchaseGraph);
 
 export const dashboardRouter = router;
