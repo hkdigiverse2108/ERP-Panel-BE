@@ -194,7 +194,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"shakil786@gmail.com\",\r\n    \"password\": \"Admin@123\",\r\n    \"loginSource\": \"super-admin-panel\"\r\n} /// super-Admin\r\n// {\r\n//     \"email\": \"krish@gmail.com\",\r\n//     \"password\": \"Admin@123\",\r\n//         \"loginSource\": \"admin-panel\"\r\n// } // Hk-Digiverse Company\r\n// {\r\n//     \"email\": \"password@gmail.com\",\r\n//     \"password\": \"Admin@123\",\r\n//         \"loginSource\": \"admin-panel\"\r\n// } // Duo Fusiom Company\r\n// \r\n// {\r\n//     \"email\": \"raj@gmail.com\",\r\n//     \"password\": \"Admin@123\",\r\n//     \"loginSource\": \"admin-panel\"\r\n// } // Duo Fusiom Company\r\n// {\r\n//     \"email\": \"pramitmangukiya602@gmail.com\",\r\n//     \"password\": \"Admin@123\"\r\n// }",
+              "raw": "// {\r\n//     \"email\": \"shakilhkdigiverse@gmail.com\",\r\n//     \"password\": \"Admin@123\",\r\n//     \"loginSource\": \"super-admin-panel\"\r\n// } /// super-Admin\r\n{\r\n    \"email\": \"krish@gmail.com\",\r\n    \"password\": \"Admin@123\",\r\n        \"loginSource\": \"admin-panel\"\r\n} // Hk-Digiverse Company\r\n// {\r\n//     \"email\": \"password@gmail.com\",\r\n//     \"password\": \"Admin@123\",\r\n//         \"loginSource\": \"admin-panel\"\r\n// } // Duo Fusiom Company\r\n// \r\n// {\r\n//     \"email\": \"raj@gmail.com\",\r\n//     \"password\": \"Admin@123\",\r\n//     \"loginSource\": \"admin-panel\"\r\n// } // Duo Fusiom Company\r\n// {\r\n//     \"email\": \"pramitmangukiya602@gmail.com\",\r\n//     \"password\": \"Admin@123\"\r\n// }",
               "options": {
                 "raw": {
                   "language": "json"
@@ -215,6 +215,72 @@
           "response": []
         },
         {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"shakilhkdigiverse@gmail.com\",\r\n    \"otp\": \"431098\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/auth/verify-otp",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resend OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{Token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"shakilhkdigiverse@gmail.com\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/auth/resend-otp",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "auth",
+                "resend-otp"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Reset Password",
           "request": {
             "method": "POST",
@@ -227,7 +293,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "// {\r\n//     \"email\": \"shakil786@gmail.com\",\r\n//     \"password\": \"Admin@123\",\r\n//     \"loginSource\": \"super-admin-panel\"\r\n// } /// super-Admin\r\n{\r\n    \"email\": \"krish@gmail.com\",\r\n    \"password\": \"Admin@123\",\r\n        \"loginSource\": \"admin-panel\"\r\n} // Hk-Digiverse Company\r\n// {\r\n//     \"email\": \"yash@gmail.com\",\r\n//     \"password\": \"Admin@123\"\r\n// } // Duo Fusiom Company\r\n// \r\n// {\r\n// \"email\": \"raj@gmail.com\",\r\n// \"password\": \"Admin@123\"\r\n// } // Duo Fusiom Company\r\n// {\r\n//     \"email\": \"pramitmangukiya602@gmail.com\",\r\n//     \"password\": \"Admin@123\"\r\n// }",
+              "raw": "{\r\n    \"email\": \"raj@gmail.com\",\r\n    \"loginSource\": \"admin-panel\",\r\n    \"oldPassword\": \"Admin@1234\",\r\n    \"newPassword\": \"Admin@123\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -235,13 +301,13 @@
               }
             },
             "url": {
-              "raw": "{{BASE_URL}}/auth/login",
+              "raw": "{{BASE_URL}}/auth/reset-password",
               "host": [
                 "{{BASE_URL}}"
               ],
               "path": [
                 "auth",
-                "login"
+                "reset-password"
               ]
             }
           },
@@ -331,7 +397,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"fullName\": \"Sandeep Shah\",\r\n    \"username\": \"sandeep.shah\",\r\n    \"email\": \"sandeep.shah@example.com\",\r\n    \"phoneNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"9988776655\"\r\n    },\r\n    \"password\": \"Safe@789\",\r\n    \"role\": \"6970a3da5201d15672b319fa\",\r\n    \"userType\": \"admin\",\r\n    \"address\": {\r\n        \"address\": \"A-1104, Pearl Heights, Prahlad Nagar\",\r\n        \"country\": \"6970b5d93fb438e3e47085ca\",\r\n        \"state\": \"6970c04c8e1002cefa6f5c46\",\r\n        \"city\": \"6970c06a8e1002cefa6f5c61\",\r\n        \"pinCode\": 380015\r\n    },\r\n    \"bankDetails\": {\r\n        \"bankHolderName\": \"Sandeep Shah\",\r\n        \"name\": \"ICICI Bank\",\r\n        \"branchName\": \"Prahlad Nagar\",\r\n        \"accountNumber\": 1122334455,\r\n        \"IFSCCode\": \"ICIC0001234\",\r\n        \"swiftCode\": \"ICICINBB\"\r\n    },\r\n    \"panNumber\": \"LMNOP4321Q\",\r\n    \"wages\": 42000,\r\n    \"commission\": 15,\r\n    \"extraWages\": 8000,\r\n    \"target\": 1100000,\r\n    \"permissions\": {\r\n        \"dashboard\": {\r\n            \"view\": true\r\n        },\r\n        \"profile\": {\r\n            \"view\": true,\r\n            \"update\": true\r\n        },\r\n        \"employee\": {\r\n            \"add\": true,\r\n            \"update\": false,\r\n            \"deleted\": false,\r\n            \"view\": true\r\n        },\r\n        \"purchase\": {\r\n            \"view\": false\r\n        },\r\n        \"sales\": {\r\n            \"add\": true,\r\n            \"view\": true\r\n        }\r\n    },\r\n    \"designation\": \"Regional Sales Manager\"\r\n}",
+              "raw": "{\r\n    \"fullName\": \"Shakil Gaha\",\r\n    \"username\": \"Shakil Gaha\",\r\n    \"email\": \"shakilhkdigiverse@gmail.com\",\r\n    \"phoneNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": \"7284038047\"\r\n    },\r\n    \"password\": \"Admin@123\",\r\n    \"role\": \"694cfd6aa5ab7f8c49e8f381\",\r\n    \"userType\": \"super-admin\",\r\n    // \"address\": {\r\n    //     \"address\": \"A-1104, Pearl Heights, Prahlad Nagar\",\r\n    //     \"country\": \"6970b5d93fb438e3e47085ca\",\r\n    //     \"state\": \"6970c04c8e1002cefa6f5c46\",\r\n    //     \"city\": \"6970c06a8e1002cefa6f5c61\",\r\n    //     \"pinCode\": 380015\r\n    // },\r\n    // \"bankDetails\": {\r\n    //     \"bankHolderName\": \"Sandeep Shah\",\r\n    //     \"name\": \"ICICI Bank\",\r\n    //     \"branchName\": \"Prahlad Nagar\",\r\n    //     \"accountNumber\": 1122334455,\r\n    //     \"IFSCCode\": \"ICIC0001234\",\r\n    //     \"swiftCode\": \"ICICINBB\"\r\n    // },\r\n    // \"panNumber\": \"LMNOP4321Q\",\r\n    // \"wages\": 42000,\r\n    // \"commission\": 15,\r\n    // \"extraWages\": 8000,\r\n    // \"target\": 1100000,\r\n    // \"permissions\": {\r\n    //     \"dashboard\": {\r\n    //         \"view\": true\r\n    //     },\r\n    //     \"profile\": {\r\n    //         \"view\": true,\r\n    //         \"update\": true\r\n    //     },\r\n    //     \"employee\": {\r\n    //         \"add\": true,\r\n    //         \"update\": false,\r\n    //         \"deleted\": false,\r\n    //         \"view\": true\r\n    //     },\r\n    //     \"purchase\": {\r\n    //         \"view\": false\r\n    //     },\r\n    //     \"sales\": {\r\n    //         \"add\": true,\r\n    //         \"view\": true\r\n    //     }\r\n    // },\r\n    \"designation\": \"Super Admin\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2699,7 +2765,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "// {\r\n//     \"companyId\": \"6940d7d3f5973ae81cfaa664\",\r\n//     \"name\": \"Taqdeer1\",\r\n//     \"displayName\": \"Taqdeer1\",\r\n//     \"contactName\": \"Shakil S Gaha\",\r\n//     \"ownerNo\": {\r\n//         \"countryCode\": \"+91\",\r\n//         \"phoneNo\": \"1234567894\"\r\n//     },\r\n//     \"email\": \"shakil1@gmail.com\",\r\n//     \"supportEmail\": \"shakil1@gmail.com\",\r\n//     \"phoneNo\": {\r\n//         \"countryCode\": \"+91\",\r\n//         \"phoneNo\": \"1234567891\"\r\n//     },\r\n//     \"customerCareNumber\": \"1800-200-1234\",\r\n//     \"address\": \"123 Business Park, Sector 21\",\r\n//     \"city\": \"Surat\",\r\n//     \"state\": \"Gujrat\",\r\n//     \"country\": \"India\",\r\n//     \"pinCode\": 400001,\r\n//     \"timeZone\": \"Asia/Kolkata\",\r\n//     \"webSite\": \"https://www.abctech.com\",\r\n//     \"bankId\": \"693ba2e3c6e9cf6248ea6a73\",\r\n//     \"userName\": \"pramit@abctech\",\r\n//     \"panNo\": \"ABCDE1234F\",\r\n//     \"gstRegistrationType\": \"Regular\",\r\n//     \"gstIdentificationNumber\": \"27ABCDE1234F1Z5\",\r\n//     \"financialMonthInterval\": \"April-March\",\r\n//     \"defaultFinancialYear\": \"2024-2025\",\r\n//     \"corporateIdentificationNumber\": \"U12345MH2024PTC567890\",\r\n//     \"letterOfUndertaking\": \"Available\",\r\n//     \"taxDeductionAndCollectionAccountNumber\": \"MUMT12345A\",\r\n//     \"importerExporterCode\": \"0987654321\",\r\n//     \"outletSize\": \"Medium\",\r\n//     \"enableFeedbackModule\": true,\r\n//     \"allowRoundOff\": true,\r\n//     \"financialYear\": \"2024-2025\",\r\n//     \"printDateFormat\": \"DD-MM-YYYY\",\r\n//     \"decimalPoint\": \"2\",\r\n//     \"logo\": \"https://cdn.abctech.com/logo.png\",\r\n//     \"waterMark\": \"CONFIDENTIAL\",\r\n//     \"reportFormatLogo\": \"https://cdn.abctech.com/report-logo.png\",\r\n//     \"authorizedSignature\": \"https://cdn.abctech.com/signature.png\"\r\n//     // \"userIds\": [],\r\n//     // \"roles\": [],\r\n//     // \"employees\": []\r\n// }\r\n{\r\n    \"companyId\": \"6940d7d3f5973ae81cfaa664\",\r\n    \"accountingType\": \"Centralized\",\r\n    \"name\": \"HK LLP\",\r\n    \"displayName\": \"HK LLP\",\r\n    \"contactName\": \"HET R\",\r\n    \"ownerNo\": {\r\n        \"countryCode\": \"91\",\r\n        \"phoneNo\": \"1122334455\"\r\n    },\r\n    \"email\": \"hk@gmail.com\",\r\n    \"supportEmail\": \"hk@gmail.com\",\r\n    \"phoneNo\": {\r\n        \"countryCode\": \"91\",\r\n        \"phoneNo\": \"1234567890\"\r\n    },\r\n    \"customerCareNumber\": \"1800-200-1234\",\r\n    \"address\": {\r\n        \"address\": \"123 Business Park, Sector 21\",\r\n        \"city\": \"696e1d264cbd5d934a961908\",\r\n        \"state\": \"696e1d0c4cbd5d934a961901\",\r\n        \"country\": \"696e1bd14cbd5d934a9618e5\",\r\n        \"pinCode\": 400001\r\n    },\r\n    \"webSite\": \"https://www.abctech.com\",\r\n    \"bankId\": \"6940d7d3f5973ae81cfaa664\",\r\n    // \"bankName\": \"HDFC Bank\",\r\n    // \"bankIFSC\": \"HDFC0001234\",\r\n    // \"upiId\": \"abctech@hdfc\",\r\n    // \"branch\": \"6937f148c72d3625eb8adc3e\",\r\n    // \"accountHolderName\": \"ABC Technologies Pvt Ltd\",\r\n    // \"bankAccountNumber\": \"12345678901234\",\r\n    \"userName\": \"admin@abctech\",\r\n    \"panNo\": \"ABCDE1234F\",\r\n    \"gstRegistrationType\": \"Regular\",\r\n    \"gstIdentificationNumber\": \"27ABCDE1234F1Z5\",\r\n    \"financialMonthInterval\": \"April-March\",\r\n    // \"defaultFinancialYear\": \"2024-2025\",\r\n    \"corporateIdentificationNumber\": \"U12345MH2024PTC567890\",\r\n    \"letterOfUndertaking\": \"Available\",\r\n    \"taxDeductionAndCollectionAccountNumber\": \"MUMT12345A\",\r\n    \"importerExporterCode\": \"0987654321\",\r\n    \"outletSize\": \"Medium\",\r\n    \"enableFeedbackModule\": \"true\",\r\n    \"allowRoundOff\": \"false\",\r\n    \"financialYear\": \"2024-2025\",\r\n    \"printDateFormat\": \"DD-MM-YYYY\",\r\n    \"decimalPoint\": \"2\",\r\n    \"logo\": \"http://localhost:4001/public/images/6940d7d3f5973ae81cfaa664/1766379069446_thermal_80mm-offline.jpg\",\r\n    \"waterMark\": \"http://localhost:4444/public/images/6940d7d3f5973ae81cfaa664/1765884662686_wallpaper6.jpg\",\r\n    \"reportFormatLogo\": null,\r\n    \"authorizedSignature\": \"http://localhost:4444/public/images/6940d7d3f5973ae81cfaa664/1765884662686_wallpape2.jpg\",\r\n    \"fssaiNo\": null\r\n}",
+              "raw": "{\r\n    \"companyId\": \"694a6ccf473cedf2701a6386\",\r\n    \"address\": {\r\n        \"address\": \"a\",\r\n        \"country\": \"696e1bd14cbd5d934a9618e5\",\r\n        \"state\": \"696e1ce64cbd5d934a9618ed\",\r\n        \"city\": \"696f1735f7033f6945f5afbf\",\r\n        \"pinCode\": 123456\r\n    },\r\n    \"bankId\": \"696e25950ab06ff02220ba68\",\r\n    \"financialYear\": \"2024-202\",\r\n    \"enableFeedbackModule\": true,\r\n    \"allowRoundOff\": true\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2827,13 +2893,13 @@
               }
             ],
             "url": {
-              "raw": "{{BASE_URL}}/company/6940d7d3f5973ae81cfaa664",
+              "raw": "{{BASE_URL}}/company/694a6ccf473cedf2701a6386",
               "host": [
                 "{{BASE_URL}}"
               ],
               "path": [
                 "company",
-                "6940d7d3f5973ae81cfaa664"
+                "694a6ccf473cedf2701a6386"
               ]
             }
           },
@@ -5749,7 +5815,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"openingCash\": 2000\r\n}",
+              "raw": "{\r\n    \"openingCash\": 2000\r\n}\r\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5782,7 +5848,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"posCashRegisterId\": \"6995ae5f7fa575e721ad91b1\",\r\n  \"openingCash\": 2000,\r\n  \"cashPayment\": 3500,\r\n  \"chequePayment\": 500,\r\n  \"cardPayment\": 4200,\r\n  \"bankPayment\": 1800,\r\n  \"upiPayment\": 2600,\r\n  \"walletPayment\": 900,\r\n  \"salesReturn\": 300,\r\n  \"cashRefund\": 150,\r\n  \"bankRefund\": 200,\r\n  \"creditAdvanceRedeemed\": 400,\r\n  \"payLater\": 600,\r\n  \"expense\": 250,\r\n  \"purchasePayment\": 1200,\r\n  \"totalSales\": 13500,\r\n  \"denominations\": [\r\n    {\r\n      \"currency\": 2000,\r\n      \"count\": 3,\r\n      \"amount\": 6000\r\n    },\r\n    {\r\n      \"currency\": 1000,\r\n      \"count\": 3,\r\n      \"amount\": 3000\r\n    }\r\n  ],\r\n  \"totalDenominationAmount\": 9000,\r\n//   \"bankAccountId\": \"64f1c2a9e8b4c987654321cd\",\r\n  \"bankTransferAmount\": 1800,\r\n  \"cashFlow\": 650,\r\n  \"totalCashLeftInDrawer\": 9000,\r\n  \"physicalDrawerCash\": 8150,\r\n  \"closingNote\": \"Cash verified and register closed\",\r\n  \"status\": \"closed\"\r\n}",
+              "raw": "{\r\n  \"posCashRegisterId\": \"699c2989ae06c45be295bafe\",\r\n  \"openingCash\": 2000,\r\n  \"cashPayment\": 3500,\r\n  \"chequePayment\": 500,\r\n  \"cardPayment\": 4200,\r\n  \"bankPayment\": 1800,\r\n  \"upiPayment\": 2600,\r\n  \"salesReturn\": 300,\r\n  \"cashRefund\": 150,\r\n  \"bankRefund\": 200,\r\n  \"creditAdvanceRedeemed\": 400,\r\n  \"payLater\": 600,\r\n  \"expense\": 250,\r\n  \"purchasePayment\": 1200,\r\n  \"totalSales\": 13500,\r\n  \"denominations\": [\r\n    {\r\n      \"currency\": 2000,\r\n      \"count\": 3,\r\n      \"amount\": 6000\r\n    },\r\n    {\r\n      \"currency\": 1000,\r\n      \"count\": 3,\r\n      \"amount\": 3000\r\n    }\r\n  ],\r\n  \"totalDenominationAmount\": 9000,\r\n//   \"bankAccountId\": \"64f1c2a9e8b4c987654321cd\",\r\n  \"bankTransferAmount\": 1800,\r\n  \"cashFlow\": 650,\r\n  \"totalCashLeftInDrawer\": 9000,\r\n  \"physicalDrawerCash\": 8150,\r\n  \"closingNote\": \"Cash verified and register closed\",\r\n  \"status\": \"closed\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6274,7 +6340,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"payLaterId\": \"6989b8f823a8ae4ac7b31127\",\r\n    // \"companyId\": \"6940d7d3f5973ae81cfaa664\",\r\n    // \"customerId\": \"6954b8457f13f4fa10bd6417\",\r\n    // \"posOrderId\": \"65c1a8b9e4b0f8c2a7654321\",\r\n    // \"totalAmount\": 1500,\r\n    \"paidAmount\": 1500\r\n    // \"dueDate\": \"2026-02-15\",\r\n    // \"note\": \"Pay later - 15 days credit\"\r\n}",
+              "raw": "{\r\n    \"returnPosOrderId\": \"699bc9f8bd4cb8b31edd1e35\",\r\n    \"posOrderId\": \"6987158728a1fb305fb90223\",\r\n    \"customerId\": \"6987152828a1fb305fb90214\",\r\n    \"salesManId\": \"694d017b7cb4009f97a30854\",\r\n    \"items\": [\r\n        {\r\n            \"productId\": \"6982c76c8d96adcd3e5c7d42\",\r\n            \"quantity\": 200,\r\n            \"price\": 500,\r\n            \"total\": 1000\r\n        }\r\n    ],\r\n    \"total\": 1000,\r\n    \"type\": \"sales_return\",\r\n    \"reason\": \"Damaged product\",\r\n    \"refundViaCash\": 1000,\r\n    \"refundViaBank\": 0,\r\n    \"bankAccountId\": null,\r\n    \"refundDescription\": \"Cash refunded at counter\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6306,13 +6372,13 @@
               }
             ],
             "url": {
-              "raw": "{{BASE_URL}}/return-pos-order/69994daf583b81d26a5d143f",
+              "raw": "{{BASE_URL}}/return-pos-order/699bc9f8bd4cb8b31edd1e35",
               "host": [
                 "{{BASE_URL}}"
               ],
               "path": [
                 "return-pos-order",
-                "69994daf583b81d26a5d143f"
+                "699bc9f8bd4cb8b31edd1e35"
               ]
             }
           },
@@ -6330,13 +6396,13 @@
               }
             ],
             "url": {
-              "raw": "{{BASE_URL}}/return-pos-order/69994daf583b81d26a5d143f",
+              "raw": "{{BASE_URL}}/return-pos-order/699bc9f8bd4cb8b31edd1e35",
               "host": [
                 "{{BASE_URL}}"
               ],
               "path": [
                 "return-pos-order",
-                "69994daf583b81d26a5d143f"
+                "699bc9f8bd4cb8b31edd1e35"
               ]
             }
           },
@@ -9984,6 +10050,107 @@
       ]
     },
     {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "Add Settings",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"logo\": \"https://cdn.example.com/logo.png\",\r\n    \"favicon\": \"https://cdn.example.com/favicon.ico\",\r\n    \"themeImage\": \"https://cdn.example.com/theme.jpg\",\r\n    \"phoneNo\": {\r\n        \"countryCode\": \"+91\",\r\n        \"phoneNo\": 8000877644\r\n    },\r\n    \"email\": \"support@vasyerp.com\",\r\n    \"address\": \"Surat, Gujarat, India\",\r\n    \"workingHours\": {\r\n        \"startTime\": \"09:00\",\r\n        \"endTime\": \"21:00\",\r\n        \"timezone\": \"IST\"\r\n    },\r\n    \"links\": [\r\n        {\r\n            \"title\": \"Facebook\",\r\n            \"link\": \"https://facebook.com/vasyerp\",\r\n            \"icon\": \"facebook\",\r\n            \"isActive\": true\r\n        }\r\n        // {\r\n        //     \"title\": \"Instagram\",\r\n        //     \"link\": \"https://instagram.com/vasyerp\",\r\n        //     \"icon\": \"instagram\"\r\n        // }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/settings/update",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "settings",
+                "update"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Settings",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/settings/all",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "settings",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "apikey",
+        "apikey": [
+          {
+            "key": "value",
+            "value": "{{Token}}",
+            "type": "string"
+          },
+          {
+            "key": "key",
+            "value": "authorization",
+            "type": "string"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {},
+            "exec": [
+              ""
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {},
+            "exec": [
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "Coupon",
       "item": [
         {
@@ -11327,7 +11494,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"userId\": \"6985c7e35849cd963f15d239\",\r\n    \"modules\": [\r\n        {\r\n            \"_id\": \"69730154b9280e3879f4bab9\",\r\n            \"view\": true,\r\n            \"add\": false,\r\n            \"edit\": false,\r\n            \"delete\": false\r\n        },\r\n        {\r\n            \"_id\": \"69733b9d01a5b8ff2b2648f4\",\r\n            \"view\": false,\r\n            \"add\": false,\r\n            \"edit\": false,\r\n            \"delete\": false\r\n        },\r\n        {\r\n            \"_id\": \"697855f476fe41a7087f97d7\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        }\r\n    ]\r\n}",
+              "raw": "{\r\n    \"userId\": \"699c32109f9e8a56822e8638\",\r\n    \"modules\": [\r\n        {\r\n            \"_id\": \"69730154b9280e3879f4bab9\",\r\n            \"view\": true,\r\n            \"add\": false,\r\n            \"edit\": false,\r\n            \"delete\": false\r\n        },\r\n        {\r\n            \"_id\": \"69733b9d01a5b8ff2b2648f4\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"697760abe715ba9043679037\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69783514a52995568baea0f0\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"697855f476fe41a7087f97d7\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69785b9f76fe41a7087f9a80\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69785c5376fe41a7087f9b2b\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"6993ef4b3e1ff5aaeb7123cb\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69733b7701a5b8ff2b2648e2\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"697369da6e13395902e7b57b\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69775e4be715ba9043678e69\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"6979a72c119d6e4c7a7be2c1\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"699408b43e1ff5aaeb712e28\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"6994092805bd5a05cafea909\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"6999962b106443135eea327e\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"697449c16f35179fa065ec69\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69775e87e715ba9043678e81\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"697afcd60c946545255895be\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69999e38106443135eea33d9\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"699bdf3b37eb64f2dd222d8b\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"697450836f35179fa065edb1\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69775eace715ba9043678e99\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"697b1ec7466d7615a198c8c9\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"699c5568de1bf4e85e57c947\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69746b8b6f35179fa065f2c1\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69775ec9e715ba9043678eab\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"6977424173d9ab1dcfa71f00\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69776583e715ba90436791e9\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"697754b0e715ba90436786b6\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69784b93a52995568baeab88\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69775b5be715ba9043678be9\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"697851e9a52995568baeb125\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69775c6ee715ba9043678cd9\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"697991be119d6e4c7a7bdad5\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"697b2619466d7615a198cbba\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"6978572b76fe41a7087f9a6e\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"697834e6a52995568baea0d8\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"6993ef273e1ff5aaeb7123b9\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"699be1b2c7726b82cdffc9d8\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"699c12f83cf70c1ddefe5999\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69785c1176fe41a7087f9b19\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"69784879a52995568baea78a\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        },\r\n        {\r\n            \"_id\": \"6978555074583cc738a9325d\",\r\n            \"view\": true,\r\n            \"add\": true,\r\n            \"edit\": true,\r\n            \"delete\": true\r\n        }\r\n    ]\r\n}",
               "options": {
                 "raw": {
                   "language": "json"

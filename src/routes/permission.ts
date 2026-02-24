@@ -7,4 +7,4 @@ router.put("/edit", permissionController.edit_permission_by_id)
 router.get("/details", permissionController.get_permission_by_userId)
 router.get("/child/details", permissionController.get_permission_by_userId_child)
 
-export const permissionRoute = router
+export const permissionRouter = router

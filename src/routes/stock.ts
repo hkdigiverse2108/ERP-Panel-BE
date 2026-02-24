@@ -10,4 +10,4 @@ router.delete("/:id", stockController.deleteStock);
 router.get("/all", stockController.getAllStock);
 router.get("/:id", stockController.getOneStock);
 
-export const stockRoute = router;
+export const stockRouter = router;

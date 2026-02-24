@@ -212,7 +212,7 @@ export const getCompanyById = async (req, res) => {
       {},
       {
         populate: [
-          { path: "bankId", select: "name" },
+          { path: "bankId", select: "name ifscCode branchName accountHolderName bankAccountNumber swiftCode upiId" },
           { path: "userIds", select: "fullName" },
           { path: "roles", select: "name" },
           { path: "address.country", select: "name code" },

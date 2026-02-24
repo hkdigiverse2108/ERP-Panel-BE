@@ -8,4 +8,4 @@ router.get("/all", settingsController.getSettings);
 router.use(superAdminJwt);
 router.put("/update", settingsController.updateSettings);
 
-export const settingsRoute = router;
+export const settingsRouter = router;
