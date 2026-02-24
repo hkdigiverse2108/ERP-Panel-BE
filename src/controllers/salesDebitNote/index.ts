@@ -1,7 +1,7 @@
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
 import { contactModel, salesDebitNoteModel, InvoiceModel, productModel, taxModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addSalesDebitNoteSchema, deleteSalesDebitNoteSchema, editSalesDebitNoteSchema, getSalesDebitNoteSchema } from "../../validation/salesDebitNote";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -169,7 +169,7 @@ export const getAllSalesDebitNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit , search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -193,13 +193,7 @@ export const getAllSalesDebitNote = async (req, res) => {
       criteria.status = status;
     }
 
-    if (startDate && endDate) {
-      const start = new Date(startDate as string);
-      const end = new Date(endDate as string);
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.date = { $gte: start, $lte: end };
-      }
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string, "date");
 
     const options = {
       sort: { createdAt: -1 },

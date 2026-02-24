@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, LOYALTY_REDEMPTION_TYPE, LOYALTY_STATUS, LOYALTY_TYPE } from "../../common";
 import { contactModel, loyaltyModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addLoyaltySchema, deleteLoyaltySchema, editLoyaltySchema, getLoyaltySchema, redeemLoyaltySchema, removeLoyaltySchema } from "../../validation";
 
 
@@ -118,7 +118,7 @@ export const getAllLoyalty = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, type, status, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, type, status, activeFilter, companyFilter, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -144,6 +144,8 @@ export const getAllLoyalty = async (req, res) => {
     if (status) {
       criteria.status = status;
     }
+
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options = {
       sort: { createdAt: -1 },

@@ -3,9 +3,9 @@ import { baseCommonFields, baseSchemaOptions } from "./base";
 import { ISettings } from "../../types/settings";
 
 const settingsLinkSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    link: { type: String, required: true },
-    icon: { type: String, required: true },
+    title: { type: String },
+    link: { type: String },
+    icon: { type: String },
     isActive: { type: Boolean, default: true }
 });
 

@@ -1,6 +1,6 @@
 import { PayLaterModel, contactModel, PosOrderModel } from "../../database";
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS } from "../../common";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, deleteSingleRecord, responseMessage } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, deleteSingleRecord, responseMessage, applyDateFilter } from "../../helper";
 import { addPayLaterSchema, editPayLaterSchema, getPayLaterSchema, deletePayLaterSchema, getAllPayLaterSchema } from "../../validation";
 
 export const addPayLater = async (req, res) => {
@@ -115,7 +115,7 @@ export const getAllPayLater = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    let { page , limit, search, customerId, status, startDate, endDate } = value;
+    let { page, limit, search, customerId, status, startDate, endDate } = value;
     page = Number(page);
     limit = Number(limit);
 
@@ -129,9 +129,7 @@ export const getAllPayLater = async (req, res) => {
       criteria.note = { $regex: search, $options: "si" };
     }
 
-    if (startDate && endDate) {
-      criteria.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options = {
       sort: { createdAt: -1 },

@@ -43,18 +43,10 @@ export const register = async (req, res) => {
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     const token = await generateToken({ _id: response?._id, status: "Register", generatedOn: new Date().getTime() }, { expiresIn: "24h" });
 
-    const xForwardedFor = (req.headers["x-forwarded-for"] as string) || "";
-    const clientIp =
-      xForwardedFor.split(",")[0].trim() ||
-      (req.ip as string) ||
-      (req.socket && (req.socket.remoteAddress as string)) ||
-      "";
-
     const { password, ...rest } = response?._doc || {};
     response = {
       ...rest,
       token,
-      clientIp,
     };
 
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.signupSuccess, response, {}));

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { stockVerificationModel, productModel, categoryModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addStockVerificationSchema, deleteStockVerificationSchema, editStockVerificationSchema, getStockVerificationSchema } from "../../validation";
 
 // Generate unique stock verification number
@@ -136,7 +136,7 @@ export const getAllStockVerification = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { page , limit, search, startDate, endDate, status, branchId, activeFilter, companyFilter } = req.query;
+    const { page, limit, search, startDate, endDate, status, branchId, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -163,16 +163,10 @@ export const getAllStockVerification = async (req, res) => {
     }
 
     if (startDate && endDate) {
-      const start = new Date(startDate as string);
-      const end = new Date(endDate as string);
-      end.setHours(23, 59, 59, 999); // Include the entire end date
-
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.verificationDate = {
-          $gte: start,
-          $lte: end,
-        };
-      }
+      let start = new Date(startDate as string);
+      let end = new Date(endDate as string);
+      end.setHours(23, 59, 59, 999);
+      applyDateFilter(criteria, start.toISOString(), end.toISOString(), "verificationDate");
     }
 
     const options: any = {

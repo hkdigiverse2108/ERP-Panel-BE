@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { contactModel, InvoiceModel, SalesOrderModel, productModel, taxModel, employeeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -204,7 +204,7 @@ export const getAllInvoice = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit , search, activeFilter, companyFilter, status, paymentStatus, startDate, endDate } = req.query;
+    let { page, limit, search, activeFilter, companyFilter, status, paymentStatus, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -232,13 +232,7 @@ export const getAllInvoice = async (req, res) => {
       criteria.paymentStatus = paymentStatus;
     }
 
-    if (startDate && endDate) {
-      const start = new Date(startDate as string);
-      const end = new Date(endDate as string);
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.date = { $gte: start, $lte: end };
-      }
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string, "date");
 
     const options = {
       sort: { createdAt: -1 },

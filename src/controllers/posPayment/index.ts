@@ -1,6 +1,6 @@
 import { PosPaymentModel, PosOrderModel, contactModel } from "../../database";
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE } from "../../common";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, generateSequenceNumber } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, generateSequenceNumber, applyDateFilter } from "../../helper";
 import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema, getAllPosPaymentSchema } from "../../validation";
 
 export const addPosPayment = async (req, res) => {
@@ -61,7 +61,7 @@ export const addPosPayment = async (req, res) => {
       await updateData(PosOrderModel, { _id: value.posOrderId }, posOrder, {});
     }
 
-    
+
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
@@ -172,9 +172,7 @@ export const getAllPosPayment = async (req, res) => {
       criteria.paymentNo = { $regex: search, $options: "si" };
     }
 
-    if (startDate && endDate) {
-      criteria.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options = {
       sort: { createdAt: -1 },

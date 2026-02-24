@@ -1,7 +1,7 @@
 
 import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE } from "../../common";
 import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addReturnPosOrderSchema, editReturnPosOrderSchema, getReturnPosOrderSchema, deleteReturnPosOrderSchema, returnPosOrderDropDownSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -151,9 +151,7 @@ export const getAllReturnPosOrder = async (req, res) => {
             ];
         }
 
-        if (startDate && endDate) {
-            criteria.createdAt = { $gte: new Date(startDate as string), $lte: new Date(endDate as string) };
-        }
+        applyDateFilter(criteria, startDate as string, endDate as string);
 
         const options = {
             sort: { createdAt: -1 },

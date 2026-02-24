@@ -10,6 +10,7 @@ import {
     countData,
     getDataWithSorting,
     responseMessage,
+    applyDateFilter,
     getData
 } from "../../helper";
 import {
@@ -120,9 +121,7 @@ export const getAllCashControl = async (req, res) => {
             }
         }
 
-        if (startDate && endDate) {
-            criteria.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
-        }
+        applyDateFilter(criteria, startDate as string, endDate as string);
 
         if (search) {
             criteria.remark = { $regex: search, $options: "si" };
@@ -220,8 +219,8 @@ export const cashControlDropDown = async (req, res) => {
         const { user } = req?.headers;
         const companyId = user?.companyId?._id;
 
-        const { search, branchId, companyFilter, registerFilter } = req.query;
-        let criteria: any = { isDeleted: false, isActive: true };
+        const { search, branchId, companyFilter, registerFilter, startDate, endDate } = req.query;
+        let criteria: any = { isDeleted: false };
         if (companyId) criteria.companyId = companyId;
         if (branchId) criteria.branchId = branchId;
         if (companyFilter) criteria.companyId = companyFilter;
@@ -237,6 +236,8 @@ export const cashControlDropDown = async (req, res) => {
                 criteria.registerId = openRegister?._id;
             }
         }
+
+        applyDateFilter(criteria, startDate as string, endDate as string);
 
         if (search) {
             criteria.remark = { $regex: search, $options: "si" };

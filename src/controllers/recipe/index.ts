@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
 import { companyModel, productModel, recipeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addRecipeSchema, deleteRecipeSchema, editRecipeSchema, getRecipeSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -112,12 +112,7 @@ export const getAllRecipe = async (req, res) => {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { number: { $regex: search, $options: "si" } }, { type: { $regex: search, $options: "si" } }];
     }
 
-    if (startDate && endDate) {
-      criteria.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
-      };
-    }
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options: any = {
       sort: { createdAt: -1 },
