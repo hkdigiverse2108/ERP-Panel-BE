@@ -16,7 +16,7 @@ export const getSettings = async (req: Request | any, res: Response | any) => {
 
         if (!response) {
             // It's not an error if it doesn't exist yet, just return empty list or default structure
-            return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Settings"), { links: [] }, {}));
+            return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Settings"), {}, {}));
         }
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Settings"), response, {}));

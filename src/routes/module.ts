@@ -11,4 +11,4 @@ router.get("/:id", moduleController.get_by_id_module)
 router.put("/bulk/edit", moduleController.bulk_edit_permissions_by_module)
 router.get("/user/permissions", moduleController.get_users_permissions_by_moduleId)
 
-export const moduleRoute = router;
+export const moduleRouter = router;

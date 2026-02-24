@@ -9,5 +9,5 @@ router.put("/edit", stockVerificationController.editStockVerification);
 router.delete("/:id", stockVerificationController.deleteStockVerification);
 router.get("/:id", stockVerificationController.getOneStockVerification);
 
-export const stockVerificationRoute = router;
+export const stockVerificationRouter = router;
 

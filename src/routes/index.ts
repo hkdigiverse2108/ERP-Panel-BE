@@ -9,11 +9,11 @@ import { contactRouter } from "./contacts";
 // import { employeeRouter } from "./employee";
 import { productRouter } from "./product";
 import { employeeRouter } from "./employee";
-import { stockRoute } from "./stock";
-import { stockVerificationRoute } from "./stockVerification";
-import { roleRoute } from "./role";
-import { uploadRoute } from "./upload";
-import { userRoute } from "./user";
+import { stockRouter } from "./stock";
+import { stockVerificationRouter } from "./stockVerification";
+import { roleRouter } from "./role";
+import { uploadRouter } from "./upload";
+import { userRouter } from "./user";
 import { recipeRouter } from "./recipe";
 import { brandRouter } from "./brand";
 import { categoryRouter } from "./category";
@@ -44,8 +44,8 @@ import { prefixRouter } from "./prefix";
 import { posOrderRouter } from "./posOrder";
 import { productRequestRouter } from "./productRequest";
 import { billOfLiveProductRouter } from "./billOfLiveProduct";
-import { moduleRoute } from "./module";
-import { permissionRoute } from "./permission";
+import { moduleRouter } from "./module";
+import { permissionRouter } from "./permission";
 import { termsConditionRouter } from "./termsCondition";
 import { additionalChargeRouter } from "./additionalCharge";
 import { salesCreditNoteRouter } from "./salesCreditNote";
@@ -56,7 +56,8 @@ import { posCashRegisterRouter } from "./posCashRegister";
 import { returnPosOrderRouter } from "./returnPosOrder";
 import { posCreditNoteRouter } from "./posCreditNote";
 import { loginLogRouter } from "./loginLog";
-import { settingsRoute } from "./settings";
+import { settingsRouter } from "./settings";
+import { dashboardRouter } from "./dashboard";
 
 const router = Router();
 
@@ -64,20 +65,20 @@ router.use("/auth", authRoute);
 // router.use(userJwt);
 router.use(adminJwt);
 
-router.use("/module", moduleRoute);
-router.use("/permission", permissionRoute);
-router.use("/upload", uploadRoute);
+router.use("/module", moduleRouter);
+router.use("/permission", permissionRouter);
+router.use("/upload", uploadRouter);
 
-router.use("/user", userRoute);
+router.use("/user", userRouter);
 
-router.use("/role", roleRoute);
+router.use("/role", roleRouter);
 
 router.use("/product", productRouter);
 router.use("/product-request", productRequestRouter);
 router.use("/employee", employeeRouter);
 router.use("/call-request", callRequestRouter);
-router.use("/stock", stockRoute);
-router.use("/stock-verification", stockVerificationRoute);
+router.use("/stock", stockRouter);
+router.use("/stock-verification", stockVerificationRouter);
 
 router.use("/contacts", contactRouter);
 router.use("/bank", bankRouter);
@@ -116,6 +117,7 @@ router.use("/recipe", recipeRouter);
 router.use("/material", materialRouter);
 router.use("/material-consumption", materialConsumptionRouter);
 router.use("/bill-of-live-product", billOfLiveProductRouter);
+router.use("/settings", settingsRouter);
 
 // === For Super Admin
 router.use("/account-group", accountGroupRouter);
@@ -128,6 +130,6 @@ router.use("/category", categoryRouter);
 router.use("/additional-charge", additionalChargeRouter);
 router.use("/login-log", loginLogRouter);
 // router.use("/employee", employeeRouter);
-router.use("/settings", settingsRoute);
+router.use("/dashboard", dashboardRouter);
 
 export { router };

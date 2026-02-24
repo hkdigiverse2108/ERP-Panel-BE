@@ -15,4 +15,4 @@ router.get("/:id", userController.getUserById);
 
 // super admin can modify the admin permission
 router.put("/:id/permission", userController.superAdminOverridePermissions);
-export const userRoute = router;
+export const userRouter = router;

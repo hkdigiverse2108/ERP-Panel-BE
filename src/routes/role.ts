@@ -12,4 +12,4 @@ router.put("/edit", roleController.editRole);
 router.get("/:id", roleController.getRoleById);
 router.delete("/:id", roleController.deleteRole);
 
-export const roleRoute = router;
+export const roleRouter = router;
