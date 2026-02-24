@@ -318,17 +318,13 @@ export const getProductDropdown = async (req, res) => {
   reqInfo(req);
   try {
     let { user } = req?.headers, stockCriteria: any = { isDeleted: false, isActive: true };
-    const userType = user?.userType;
+
     const companyId = user?.companyId?._id;
+
     const { productType, search, companyFilter, categoryFilter, brandFilter, isNewProduct } = req.query;
 
-    let stockCompanyId = null;
-    if (userType === USER_TYPES.SUPER_ADMIN) {
-      if (companyFilter) stockCompanyId = new ObjectId(companyFilter);
-    } else if (companyId) {
-      stockCompanyId = companyId;
-      stockCriteria.companyId = new ObjectId(companyId)
-    }
+    if (companyId) stockCriteria.companyId = companyId;
+    if (companyFilter) stockCriteria.companyId = companyFilter;
 
     let productIdsWithStock: string[] = [];
     const stockByProductId = new Map<string, any>();

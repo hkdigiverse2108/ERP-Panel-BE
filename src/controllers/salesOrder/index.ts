@@ -160,7 +160,7 @@ export const getAllSalesOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page , limit, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -262,11 +262,14 @@ export const getSalesOrderDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { customerId, status, search } = req.query; // Optional filters
+    const { customerId, status, search, companyFilter } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
       criteria.companyId = companyId;
+    }
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (customerId) {

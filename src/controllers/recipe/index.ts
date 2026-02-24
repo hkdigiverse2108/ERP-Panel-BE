@@ -245,17 +245,14 @@ export const getRecipeDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { search } = req.query;
+    const { search, companyFilter } = req.query;
 
-    const userType = user?.userType;
     let companyId = user?.companyId?._id;
-
-    const queryCompanyId = req.query?.companyFilter;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
-    if (queryCompanyId && userType === USER_ROLES.SUPER_ADMIN) criteria.companyId = queryCompanyId;
-    else if (companyId) criteria.companyId = companyId;
+    if (companyId) criteria.companyId = companyId;
+    if (companyFilter) criteria.companyId = companyFilter;
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { name: { $regex: search, $options: "si" } }, { number: { $regex: search, $options: "si" } }];

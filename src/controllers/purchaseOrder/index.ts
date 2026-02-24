@@ -142,7 +142,7 @@ export const getAllPurchaseOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit , search, statusFilter, startDate, endDate, activeFilter, companyFilter, supplierFilter } = req.query;
+    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, supplierFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -249,11 +249,15 @@ export const getPurchaseOrderDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { supplierId, status, search } = req.query; // Optional filters
+    const { supplierId, status, search ,companyFilter } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (supplierId) {

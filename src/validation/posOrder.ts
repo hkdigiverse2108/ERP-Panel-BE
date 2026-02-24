@@ -196,10 +196,3 @@ export const getCombinedPaymentsSchema = Joi.object().keys({
   locationId: objectId().optional().allow("", null),
 });
 
-export const posOrderDropDownSchema = Joi.object().keys({
-  customerFilter: objectId().optional().allow("", null),
-  branchFilter: objectId().optional().allow("", null),
-  companyFilter: objectId().optional().allow("", null),
-  duePaymentFilter: Joi.boolean().optional(),
-  search: Joi.string().optional().allow("", null),
-});

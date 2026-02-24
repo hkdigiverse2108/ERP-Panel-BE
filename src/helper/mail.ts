@@ -112,14 +112,14 @@ export const emailVerificationMail = async (user: any, otp: number) => {
             };
             await transporter.sendMail(mailOptions, function (err, data) {
                 if (err) {
-                    console.log(err)
+                    console.error(err)
                     reject(err)
                 } else {
                     resolve(`Email has been sent to ${user.email}, kindly follow the instructions`)
                 }
             })
         } catch (error) {
-            console.log(error)
+            console.error(error)
             reject(error)
         }
     });

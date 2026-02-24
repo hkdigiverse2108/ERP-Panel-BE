@@ -65,7 +65,6 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  console.log("req => ",req);
   reqInfo(req);
   try {
     const { error, value } = loginSchema.validate(req.body);
@@ -199,10 +198,10 @@ export const login = async (req, res) => {
     // });
 
     // newUserPermissionData.sort((a, b) => a.number - b.number);
-    if(response?.userType !== USER_ROLES.SUPER_ADMIN) {
+    if (response?.userType !== USER_ROLES.SUPER_ADMIN) {
       createLoginLogEntry(req, response, "LOGIN", `${response?.companyId?.name || "Company"} Logged In`);
     }
-    
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, isSuperAdmin ? responseMessage?.otpSendSuccess : responseMessage?.loginSuccess, response, {}));
   } catch (error) {
     console.error(error);

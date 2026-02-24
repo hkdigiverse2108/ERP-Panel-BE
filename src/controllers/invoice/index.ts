@@ -318,7 +318,7 @@ export const getInvoiceDropdown = async (req, res) => {
     const companyId = user?.companyId?._id;
     const { customerId, status, paymentStatus, search } = req.query; // Optional filters
 
-    let criteria: any = { isDeleted: false };
+    let criteria: any = { isDeleted: false, isActive: true };
     if (companyId) {
       criteria.companyId = companyId;
     }

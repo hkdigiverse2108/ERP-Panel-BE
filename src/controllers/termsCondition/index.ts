@@ -180,12 +180,16 @@ export const getTermsConditionDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { search, isDefault } = req.query;
+    const { search, isDefault, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
     }
 
     if (isDefault !== undefined) {

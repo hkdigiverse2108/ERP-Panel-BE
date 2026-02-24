@@ -242,15 +242,19 @@ export const getRoleDropdown = async (req, res) => {
   try {
     let { user } = req?.headers;
 
-    const userType = user?.userType;
     let companyId = user?.companyId?._id;
 
-    const queryCompanyId = req.query?.companyFilter;
+    const { companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
-    if (queryCompanyId && userType === USER_TYPES.SUPER_ADMIN) criteria.companyId = queryCompanyId;
-    else if (companyId) criteria.companyId = companyId;
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
 
     const response = await getDataWithSorting(roleModel, criteria, { _id: 1, name: 1 }, { sort: { name: 1 } });
 

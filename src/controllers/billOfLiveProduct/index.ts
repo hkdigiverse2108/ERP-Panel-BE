@@ -279,9 +279,12 @@ export const getBillOfLiveProductDropdown = async (req, res) => {
     let { user } = req?.headers,
       companyId = user?.companyId?._id;
 
+    const { companyFilter } = req.query;
+
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (companyId) criteria.companyId = companyId;
+    if (companyFilter) criteria.companyId = companyFilter;
 
     const response = await getDataWithSorting(
       billOfLiveProductModel,

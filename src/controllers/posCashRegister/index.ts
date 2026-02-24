@@ -212,7 +212,7 @@ export const posCashRegisterDropDown = async (req, res) => {
         }
 
         const { branchId, status } = value;
-        let criteria: any = { isDeleted: false };
+        let criteria: any = { isDeleted: false, isActive: true };
         if (companyId) criteria.companyId = companyId;
         if (branchId) criteria.branchId = branchId;
         if (status) criteria.status = status;

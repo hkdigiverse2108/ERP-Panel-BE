@@ -221,7 +221,7 @@ export const cashControlDropDown = async (req, res) => {
         const companyId = user?.companyId?._id;
 
         const { search, branchId, companyFilter, registerFilter } = req.query;
-        let criteria: any = { isDeleted: false };
+        let criteria: any = { isDeleted: false, isActive: true };
         if (companyId) criteria.companyId = companyId;
         if (branchId) criteria.branchId = branchId;
         if (companyFilter) criteria.companyId = companyFilter;

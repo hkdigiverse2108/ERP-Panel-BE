@@ -160,7 +160,6 @@ export const getAllUOM = async (req, res) => {
 export const getUOMDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    const { user } = req?.headers;
 
     let criteria: any = { isDeleted: false, isActive: true };
 

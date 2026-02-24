@@ -245,7 +245,7 @@ export const returnPosOrderDropDown = async (req, res) => {
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
         const { search, customerId, type } = value;
-        let criteria: any = { isDeleted: false };
+        let criteria: any = { isDeleted: false, isActive: true };
         if (companyId) criteria.companyId = companyId;
         if (customerId) criteria.customerId = new ObjectId(customerId);
         if (type) criteria.type = type;

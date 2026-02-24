@@ -193,17 +193,16 @@ export const getBankDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { search } = req.query;
-
-    const userType = user?.userType;
     let companyId = user?.companyId?._id;
-
-    const queryCompanyId = req.query?.companyFilter;
+    const { search, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
-    if (queryCompanyId && userType === USER_TYPES.SUPER_ADMIN) criteria.companyId = queryCompanyId;
-    else if (companyId) criteria.companyId = companyId;
+    if (companyId) criteria.companyId = companyId;
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { accountHolderName: { $regex: search, $options: "si" } }, { bankAccountNumber: { $regex: search, $options: "si" } }];
