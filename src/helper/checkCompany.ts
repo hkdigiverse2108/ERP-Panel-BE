@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, USER_TYPES } from "../common";
+import { USER_TYPES } from "../common";
 import { companyModel } from "../database";
 import { getFirstMatch } from "./databaseServices";
 import { responseMessage } from "./responseMessage";
