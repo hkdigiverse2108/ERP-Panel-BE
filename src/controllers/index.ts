@@ -58,3 +58,4 @@ export * as loginLogController from "./loginLog";
 export * as settingsController from "./settings";
 export * as journalVoucherController from "./journalVoucher";
 export * as dashboardController from "./dashboard";
+export * as bankTransactionController from "./bankTransaction";

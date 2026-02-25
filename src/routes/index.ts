@@ -59,6 +59,7 @@ import { loginLogRouter } from "./loginLog";
 import { settingsRouter } from "./settings";
 import { journalVoucherRouter } from "./journalVoucher";
 import { dashboardRouter } from "./dashboard";
+import { bankTransactionRouter } from "./bankTransaction";
 
 const router = Router();
 
@@ -131,5 +132,6 @@ router.use("/additional-charge", additionalChargeRouter);
 router.use("/login-log", loginLogRouter);
 // router.use("/employee", employeeRouter);
 router.use("/dashboard", dashboardRouter);
+router.use("/bank-transaction", bankTransactionRouter);
 
 export { router };

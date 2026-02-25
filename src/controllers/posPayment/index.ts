@@ -157,7 +157,7 @@ export const getAllPosPayment = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, posOrderFilter, voucherTypeFilter, paymentTypeFilter, startDate, endDate, companyFilter } = req.query;
+    let { page, limit, search, posOrderFilter, voucherTypeFilter, paymentTypeFilter, startDate, endDate, companyFilter, partyFilter } = req.query;
     page = Number(page);
     limit = Number(limit);
 
@@ -166,7 +166,9 @@ export const getAllPosPayment = async (req, res) => {
     if (posOrderFilter) criteria.posOrderId = posOrderFilter;
     if (voucherTypeFilter) criteria.voucherType = voucherTypeFilter;
     if (paymentTypeFilter) criteria.paymentType = paymentTypeFilter;
+    if (partyFilter) criteria.partyId = partyFilter;
     if (companyFilter) criteria.companyId = companyId;
+
 
     if (search) {
       criteria.paymentNo = { $regex: search, $options: "si" };

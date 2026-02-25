@@ -753,10 +753,7 @@ export const receivable = async (req, res) => {
     try {
         const { user } = req.headers;
         const { startDate, endDate, companyFilter } = req.query;
-        let { companyId, limit = 10, page = 1 } = req.query;
-
-        page = Number(page);
-        limit = Number(limit);
+        let { companyId } = req.query;
 
         if (!companyId && user?.companyId?._id) {
             companyId = user.companyId._id;
@@ -827,17 +824,15 @@ export const receivable = async (req, res) => {
             ])
         ]);
 
-        let combined = [...posOrders, ...invoiceData];
+        const combined = [...posOrders, ...invoiceData];
         // Sort by date descending (latest first)
         combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
         const totalData = combined.length;
-        combined = combined.slice((page - 1) * limit, page * limit);
 
         const data = {
             receivableList: combined,
-            totalData,
-            state: { page, limit, totalPages: Math.ceil(totalData / limit) || 1 }
+            totalData
         };
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Receivable Data"), data, {}));
@@ -851,10 +846,7 @@ export const payable = async (req, res) => {
     try {
         const { user } = req.headers;
         const { startDate, endDate, companyFilter } = req.query;
-        let { companyId, limit = 10, page = 1 } = req.query;
-
-        page = Number(page);
-        limit = Number(limit);
+        let { companyId } = req.query;
 
         if (!companyId && user?.companyId?._id) {
             companyId = user.companyId._id;
@@ -890,21 +882,14 @@ export const payable = async (req, res) => {
                     date: "$supplierBillDate"
                 }
             },
-            { $sort: { date: -1 } },
-            { $skip: (page - 1) * limit },
-            { $limit: limit }
+            { $sort: { date: -1 } }
         ]);
 
-        const totalDataResult = await supplierBillModel.aggregate([
-            { $match: supplierCriteria },
-            { $count: "count" }
-        ]);
-        const totalData = totalDataResult.length > 0 ? totalDataResult[0].count : 0;
+        const totalData = data.length;
 
         const result = {
             payableList: data,
-            totalData,
-            state: { page, limit, totalPages: Math.ceil(totalData / limit) || 1 }
+            totalData
         };
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payable Data"), result, {}));
@@ -1166,7 +1151,7 @@ export const transactionGraph = async (req, res) => {
         // Pre-fill empty dates
         allDates.forEach(date => {
             mergedData[date] = {
-                cash: 0, bank: 0, upi: 0, card: 0, cheque: 0, wallet: 0,
+                cash: 0, bank: 0, upi: 0, card: 0, cheque: 0,
                 other: 0
             };
         });
@@ -1177,7 +1162,7 @@ export const transactionGraph = async (req, res) => {
 
             if (!mergedData[date]) {
                 mergedData[date] = {
-                    cash: 0, bank: 0, upi: 0, card: 0, cheque: 0, wallet: 0,
+                    cash: 0, bank: 0, upi: 0, card: 0, cheque: 0,
                     other: 0
                 };
             }

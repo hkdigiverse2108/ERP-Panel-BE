@@ -318,3 +318,8 @@ export const CUSTOMER_CATEGORY_ENUM = {
   LOST: "Lost_Customer",
 } as const;
 
+export const BANK_TRANSACTION_TYPE = {
+  DEPOSIT: "deposit",
+  WITHDRAWAL: "withdrawal",
+  TRANSFER: "transfer",
+} as const;
