@@ -60,6 +60,7 @@ import { settingsRouter } from "./settings";
 import { journalVoucherRouter } from "./journalVoucher";
 import { dashboardRouter } from "./dashboard";
 import { bankTransactionRouter } from "./bankTransaction";
+import { companyDriveRouter } from "./companyDrive";
 
 const router = Router();
 
@@ -133,5 +134,6 @@ router.use("/login-log", loginLogRouter);
 // router.use("/employee", employeeRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/bank-transaction", bankTransactionRouter);
+router.use("/company-drive", companyDriveRouter);
 
 export { router };
