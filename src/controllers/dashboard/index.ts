@@ -828,12 +828,7 @@ export const receivable = async (req, res) => {
         // Sort by date descending (latest first)
         combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        const totalData = combined.length;
-
-        const data = {
-            receivableList: combined,
-            totalData
-        };
+        const data = combined;
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Receivable Data"), data, {}));
     } catch (error) {
@@ -885,12 +880,7 @@ export const payable = async (req, res) => {
             { $sort: { date: -1 } }
         ]);
 
-        const totalData = data.length;
-
-        const result = {
-            payableList: data,
-            totalData
-        };
+        const result = data;
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payable Data"), result, {}));
     } catch (error) {
