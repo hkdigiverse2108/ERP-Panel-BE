@@ -72,3 +72,4 @@ export * from "./posCreditNote";
 export * from "./loginLog"
 export * from "./journalVoucher"
 export * from "./bankTransaction"
+export * from "./companyDrive"
