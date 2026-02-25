@@ -71,3 +71,4 @@ export * from "./returnPosOrder";
 export * from "./posCreditNote";
 export * from "./loginLog"
 export * from "./journalVoucher"
+export * from "./bankTransaction"

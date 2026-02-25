@@ -56,4 +56,5 @@ export * from "./posCreditNote";
 export * from "./settings";
 export * from "./journalVoucher";
 export * from "./dashboard";
+export * from "./bankTransaction";
 
