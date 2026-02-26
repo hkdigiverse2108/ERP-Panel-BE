@@ -38,7 +38,7 @@ export const commonShippingSchema = {
 export const commonAdditionalChargeSchema = {
   chargeId: {
     type: Schema.Types.ObjectId,
-    ref: "additionalCharge",
+    ref: "additional-charge",
   },
   taxId: {
     type: Schema.Types.ObjectId,
