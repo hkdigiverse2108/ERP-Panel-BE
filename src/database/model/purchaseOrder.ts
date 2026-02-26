@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { baseSchemaFields, baseSchemaOptions, transactionSummarySchema } from "./base";
 import { IPurchaseOrder } from "../../types";
 import { ORDER_STATUS, TAX_TYPE } from "../../common";
 
@@ -36,13 +36,7 @@ const purchaseOrderSchema = new Schema<IPurchaseOrder>(
     totalTax: { type: String },
     total: { type: String },
 
-    flatDiscount: { type: Number, default: 0 },
-    grossAmount: { type: Number, default: 0 },
-    discountAmount: { type: Number, default: 0 },
-    taxableAmount: { type: Number, default: 0 },
-    tax: { type: Number, default: 0 },
-    roundOff: { type: Number, default: 0 },
-    netAmount: { type: Number, default: 0 },
+    summary: transactionSummarySchema,
 
     status: { type: String, enum: Object.values(ORDER_STATUS), default: ORDER_STATUS.IN_PROGRESS },
   },

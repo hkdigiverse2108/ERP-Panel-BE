@@ -48,13 +48,12 @@ export const commonAdditionalChargeSchema = {
   totalAmount: { type: Number },
 };
 
-export const transectionSummarySchema = {
+export const transactionSummarySchema = {
   flatDiscount: { type: Number },
   grossAmount: { type: Number },
   discountAmount: { type: Number },
   taxableAmount: { type: Number },
   taxAmount: { type: Number },
-  totalAmount: { type: Number },
   roundOff: { type: Number },
   netAmount: { type: Number },
 };

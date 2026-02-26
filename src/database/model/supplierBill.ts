@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS } from "../../common";
-import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema } from "./base";
+import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema, transactionSummarySchema } from "./base";
+import { ISupplierBill } from "../../types";
 
 export const supplierBillItemSchema = new Schema(
   {
@@ -20,16 +21,6 @@ export const supplierBillItemSchema = new Schema(
   { _id: false },
 );
 
-// const additionalChargeSchema = new Schema(
-//   {
-//     chargeId: { type: Schema.Types.ObjectId, ref: "additional-charge", required: true },
-//     value: { type: Number, default: 0, min: 0 },
-//     taxRate: { type: Number },
-//     total: { type: Number },
-//   },
-//   { _id: false },
-// );
-
 export const supplierBillReturnItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
@@ -44,7 +35,7 @@ export const supplierBillReturnItemSchema = new Schema(
   { _id: false },
 );
 
-const supplierBillSchema = new Schema(
+const supplierBillSchema = new Schema<ISupplierBill>(
   {
     ...baseSchemaFields,
 
@@ -92,18 +83,7 @@ const supplierBillSchema = new Schema(
     termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
     notes: { type: String },
 
-    summary: {
-      flatDiscount: { type: Number, default: 0, min: 0 },
-      grossAmount: Number,
-      itemDiscount: Number,
-      taxableAmount: { type: Number, default: 0 },
-      itemTax: Number,
-      additionalChargeAmount: Number,
-      additionalChargeTax: Number,
-      billDiscount: Number,
-      roundOff: Number,
-      netAmount: Number,
-    },
+    summary: transactionSummarySchema,
 
     paidAmount: { type: Number, default: 0 },
     balanceAmount: { type: Number, default: 0 },
@@ -123,4 +103,4 @@ const supplierBillSchema = new Schema(
   baseSchemaOptions,
 );
 
-export const supplierBillModel = mongoose.model("supplier-bill", supplierBillSchema);
+export const supplierBillModel = mongoose.model<ISupplierBill>("supplier-bill", supplierBillSchema);

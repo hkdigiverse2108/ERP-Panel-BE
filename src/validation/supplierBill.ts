@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { baseApiSchema, objectId, transactionSummarySchema, commonAdditionalChargeSchema } from "./common";
 import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS } from "../common";
 
 const supplierBillItemSchema = Joi.object({
@@ -28,12 +28,7 @@ const supplierBillReturnItemSchema = Joi.object({
   total: Joi.number().min(0).optional(),
 });
 
-const additionalChargeSchema = Joi.object({
-  chargeId: objectId().required(),
-  value: Joi.number().min(0).default(0),
-  taxRate: Joi.number().min(0).optional(),
-  total: Joi.number().min(0).optional(),
-});
+// Removed local commonAdditionalChargeSchema as it is now imported from common
 
 export const addSupplierBillSchema = Joi.object({
   supplierId: objectId().required(),
@@ -64,34 +59,18 @@ export const addSupplierBillSchema = Joi.object({
     item: Joi.array().items(supplierBillReturnItemSchema).optional(),
     totalQty: Joi.number().optional(),
     total: Joi.number().optional(),
-    summary: Joi.object({
-      grossAmount: Joi.number().optional(),
-      taxAmount: Joi.number().optional(),
-      roundOff: Joi.number().optional(),
-      netAmount: Joi.number().optional(),
-    }).optional(),
+    summary: transactionSummarySchema.optional(),
   }).optional(),
 
   additionalCharges: Joi.object({
-    item: Joi.array().items(additionalChargeSchema).optional(),
+    item: Joi.array().items(commonAdditionalChargeSchema).optional(),
     total: Joi.number().optional(),
   }).optional(),
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().allow("").optional(),
 
-  summary: Joi.object({
-    flatDiscount: Joi.number().min(0).default(0),
-    grossAmount: Joi.number().optional(),
-    itemDiscount: Joi.number().optional(),
-    taxableAmount: Joi.number().optional(),
-    itemTax: Joi.number().optional(),
-    additionalChargeAmount: Joi.number().optional(),
-    additionalChargeTax: Joi.number().optional(),
-    billDiscount: Joi.number().optional(),
-    roundOff: Joi.number().optional(),
-    netAmount: Joi.number().optional(),
-  }).optional(),
+  summary: transactionSummarySchema.optional(),
 
   paidAmount: Joi.number().min(0).default(0),
   balanceAmount: Joi.number().min(0).default(0),
@@ -136,34 +115,18 @@ export const editSupplierBillSchema = Joi.object({
     item: Joi.array().items(supplierBillReturnItemSchema).optional(),
     totalQty: Joi.number().optional(),
     total: Joi.number().optional(),
-    summary: Joi.object({
-      grossAmount: Joi.number().optional(),
-      taxAmount: Joi.number().optional(),
-      roundOff: Joi.number().optional(),
-      netAmount: Joi.number().optional(),
-    }).optional(),
+    summary: transactionSummarySchema.optional(),
   }).optional(),
 
   additionalCharges: Joi.object({
-    item: Joi.array().items(additionalChargeSchema).optional(),
+    item: Joi.array().items(commonAdditionalChargeSchema).optional(),
     total: Joi.number().optional(),
   }).optional(),
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().allow("").optional(),
 
-  summary: Joi.object({
-    flatDiscount: Joi.number().min(0).optional(),
-    grossAmount: Joi.number().optional(),
-    itemDiscount: Joi.number().optional(),
-    taxableAmount: Joi.number().optional(),
-    itemTax: Joi.number().optional(),
-    additionalChargeAmount: Joi.number().optional(),
-    additionalChargeTax: Joi.number().optional(),
-    billDiscount: Joi.number().optional(),
-    roundOff: Joi.number().optional(),
-    netAmount: Joi.number().optional(),
-  }).optional(),
+  summary: transactionSummarySchema.optional(),
 
   paidAmount: Joi.number().min(0).optional(),
   balanceAmount: Joi.number().min(0).optional(),

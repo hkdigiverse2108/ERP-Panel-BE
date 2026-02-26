@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { baseApiSchema, objectId, transactionSummarySchema } from "./common";
 import { ORDER_STATUS, TAX_TYPE } from "../common";
 
 const purchaseOrderItemSchema = Joi.object({
@@ -16,7 +16,6 @@ const purchaseOrderItemSchema = Joi.object({
 export const addPurchaseOrderSchema = Joi.object({
   supplierId: objectId().required(),
   orderDate: Joi.date().required(),
-  // orderNo: Joi.string().optional().allow("", null),
 
   shippingDate: Joi.date().optional().allow("", null),
   shippingNote: Joi.string().optional().allow("", null),
@@ -35,13 +34,7 @@ export const addPurchaseOrderSchema = Joi.object({
   totalTax: Joi.string().optional().allow("", null),
   total: Joi.string().optional().allow("", null),
 
-  flatDiscount: Joi.number().min(0).default(0).optional(),
-  grossAmount: Joi.number().min(0).default(0).optional(),
-  discountAmount: Joi.number().min(0).default(0).optional(),
-  taxableAmount: Joi.number().min(0).default(0).optional(),
-  tax: Joi.number().min(0).default(0).optional(),
-  roundOff: Joi.number().default(0).optional(),
-  netAmount: Joi.number().min(0).default(0).optional(),
+  summary: transactionSummarySchema.optional(),
 
   status: Joi.string()
     .valid(...Object.values(ORDER_STATUS))
@@ -75,13 +68,7 @@ export const editPurchaseOrderSchema = Joi.object({
   totalTax: Joi.string().optional().allow("", null),
   total: Joi.string().optional().allow("", null),
 
-  flatDiscount: Joi.number().min(0).optional(),
-  grossAmount: Joi.number().min(0).optional(),
-  discountAmount: Joi.number().min(0).optional(),
-  taxableAmount: Joi.number().min(0).optional(),
-  tax: Joi.number().min(0).optional(),
-  roundOff: Joi.number().optional(),
-  netAmount: Joi.number().min(0).optional(),
+  summary: transactionSummarySchema.optional(),
 
   status: Joi.string()
     .valid(...Object.values(ORDER_STATUS))

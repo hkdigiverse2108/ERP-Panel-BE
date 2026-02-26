@@ -1,17 +1,9 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, ORDER_STATUS } from "../../common";
 import { contactModel, purchaseOrderModel, productModel, companyModel, termsConditionModel, uomModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addPurchaseOrderSchema, deletePurchaseOrderSchema, editPurchaseOrderSchema, getPurchaseOrderSchema } from "../../validation/purchaseOrder";
 
 const ObjectId = require("mongoose").Types.ObjectId;
-
-// Generate unique purchase order number
-const generatePurchaseOrderNo = async (companyId): Promise<string> => {
-  const count = await purchaseOrderModel.countDocuments({ companyId, isDeleted: false });
-  const prefix = "PO";
-  const number = String(count + 1).padStart(6, "0");
-  return `${prefix}${number}`;
-};
 
 export const addPurchaseOrder = async (req, res) => {
   reqInfo(req);
@@ -35,7 +27,6 @@ export const addPurchaseOrder = async (req, res) => {
     // Validate products exist
     for (const item of value.items) {
       if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
-      // if (!(await checkIdExist(uomModel, item?.uomId, "UOM", res))) return;
     }
 
     for (const item of value.termsAndConditionIds) {
@@ -43,7 +34,7 @@ export const addPurchaseOrder = async (req, res) => {
     }
 
     if (!value.orderNo) {
-      value.orderNo = await generatePurchaseOrderNo(value.companyId);
+      value.orderNo = await generateSequenceNumber({ model: purchaseOrderModel, prefix: "PO", fieldName: "orderNo", companyId: value.companyId });
     }
 
     value.createdBy = user?._id || null;
@@ -164,14 +155,14 @@ export const getAllPurchaseOrder = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { supplierName: { $regex: search, $options: "si" } }];
+      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }];
     }
 
     if (statusFilter) {
       criteria.status = statusFilter;
     }
 
-    applyDateFilter(criteria, startDate as string, endDate as string, "date");
+    applyDateFilter(criteria, startDate as string, endDate as string, "orderDate");
 
     const options = {
       sort: { createdAt: -1 },
@@ -243,7 +234,7 @@ export const getPurchaseOrderDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { supplierId, status, search ,companyFilter } = req.query; // Optional filters
+    let { supplierId, supplierFilter, status, statusFilter, search, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -254,18 +245,20 @@ export const getPurchaseOrderDropdown = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
-    if (supplierId) {
-      criteria.supplierId = supplierId;
+    const sId = supplierId || supplierFilter;
+    if (sId) {
+      criteria.supplierId = sId;
     }
 
-    if (status) {
-      criteria.status = status;
+    const st = status || statusFilter;
+    if (st) {
+      criteria.status = st;
     } else {
-      criteria.status = { $in: ["pending", "partially_delivered"] };
+      criteria.status = { $in: [ORDER_STATUS.IN_PROGRESS, ORDER_STATUS.PARTIALLY_DELIVERED] };
     }
 
     if (search) {
-      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { supplierName: { $regex: search, $options: "si" } }];
+      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }];
     }
 
     const options: any = {
@@ -274,14 +267,14 @@ export const getPurchaseOrderDropdown = async (req, res) => {
       populate: [{ path: "supplierId", select: "firstName lastName companyName" }],
     };
 
-    const response = await getDataWithSorting(purchaseOrderModel, criteria, { orderNo: 1, supplierName: 1, date: 1, netAmount: 1 }, options);
+    const response = await getDataWithSorting(purchaseOrderModel, criteria, {}, options);
 
-    const dropdownData = response.map((item) => ({
+    const dropdownData = response.map((item: any) => ({
       _id: item._id,
       orderNo: item.orderNo,
-      supplierName: item.supplierName,
-      date: item.date,
-      netAmount: item.netAmount,
+      supplierName: item.supplierId?.companyName || `${item.supplierId?.firstName || ""} ${item.supplierId?.lastName || ""}`.trim(),
+      date: item.orderDate,
+      netAmount: item.summary?.netAmount,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Order Dropdown"), dropdownData, {}));

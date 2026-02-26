@@ -25,7 +25,8 @@ export * from "./location";
 export * from "./termsCondition";
 export * from "./materialConsumption";
 export * from "./product";
-export * from "./loginLog"
+export * from "./loginLog";
 export * from "./settings";
 export * from "./journalVoucher";
 export * from "./bankTransaction";
+export * from "./supplierBill";
