@@ -18,7 +18,7 @@ const salesDebitNoteItemSchema = Joi.object().keys({
   totalAmount: Joi.number().min(0).required(),
 });
 
-export const addSalesDebitNoteSchema = Joi.object().keys({
+export const addpurchaseDebitNoteSchema = Joi.object().keys({
   documentNo: Joi.string().optional(),
   date: Joi.date().required(),
   supplierId: objectId().required(),
@@ -34,7 +34,7 @@ export const addSalesDebitNoteSchema = Joi.object().keys({
   status: Joi.string().valid("active", "draft", "cancelled").default("active").optional(),
 });
 
-export const editSalesDebitNoteSchema = Joi.object().keys({
+export const editpurchaseDebitNoteSchema = Joi.object().keys({
   salesDebitNoteId: objectId().required(),
   documentNo: Joi.string().optional(),
   date: Joi.date().optional(),
@@ -51,10 +51,10 @@ export const editSalesDebitNoteSchema = Joi.object().keys({
   status: Joi.string().valid("active", "draft", "cancelled").optional(),
 });
 
-export const deleteSalesDebitNoteSchema = Joi.object().keys({
+export const deletepurchaseDebitNoteSchema = Joi.object().keys({
   id: objectId().required(),
 });
 
-export const getSalesDebitNoteSchema = Joi.object().keys({
+export const getpurchaseDebitNoteSchema = Joi.object().keys({
   id: objectId().required(),
 });

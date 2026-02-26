@@ -60,7 +60,7 @@ export * from "./termsCondition";
 export * from "./settings";
 export * from "./additionalCharge";
 export * from "./salesCreditNote";
-export * from "./salesDebitNote";
+export * from "./purchaseDebitNote";
 export * from "./bank";
 export * from "./posPayment";
 export * from "./payLater";

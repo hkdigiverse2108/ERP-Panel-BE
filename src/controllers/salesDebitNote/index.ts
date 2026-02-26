@@ -1,14 +1,14 @@
 import { HTTP_STATUS } from "../../common";
 import { apiResponse } from "../../common/utils";
-import { contactModel, salesDebitNoteModel, InvoiceModel, productModel, taxModel } from "../../database";
+import { contactModel, purchaseDebitNoteModel, InvoiceModel, productModel, taxModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
-import { addSalesDebitNoteSchema, deleteSalesDebitNoteSchema, editSalesDebitNoteSchema, getSalesDebitNoteSchema } from "../../validation/salesDebitNote";
+import { addpurchaseDebitNoteSchema, deletepurchaseDebitNoteSchema, editpurchaseDebitNoteSchema, getpurchaseDebitNoteSchema } from "../../validation/salesDebitNote";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
 // Generate unique sales debit note number
 const generateSalesDebitNoteNo = async (companyId): Promise<string> => {
-  const count = await salesDebitNoteModel.countDocuments({ companyId, isDeleted: false });
+  const count = await purchaseDebitNoteModel.countDocuments({ companyId, isDeleted: false });
   const prefix = "SDN";
   const number = String(count + 1).padStart(6, "0");
   return `${prefix}${number}`;
@@ -19,7 +19,7 @@ export const addSalesDebitNote = async (req, res) => {
   try {
     const { user } = req?.headers;
 
-    const { error, value } = addSalesDebitNoteSchema.validate(req.body);
+    const { error, value } = addpurchaseDebitNoteSchema.validate(req.body);
 
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -63,7 +63,7 @@ export const addSalesDebitNote = async (req, res) => {
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
-    const response = await createOne(salesDebitNoteModel, value);
+    const response = await createOne(purchaseDebitNoteModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -81,13 +81,13 @@ export const editSalesDebitNote = async (req, res) => {
   try {
     const { user } = req?.headers;
 
-    const { error, value } = editSalesDebitNoteSchema.validate(req.body);
+    const { error, value } = editpurchaseDebitNoteSchema.validate(req.body);
 
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const isExist = await getFirstMatch(salesDebitNoteModel, { _id: value?.salesDebitNoteId, isDeleted: false }, {}, {});
+    const isExist = await getFirstMatch(purchaseDebitNoteModel, { _id: value?.salesDebitNoteId, isDeleted: false }, {}, {});
 
     if (!isExist) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Sales Debit Note"), {}, {}));
@@ -121,7 +121,7 @@ export const editSalesDebitNote = async (req, res) => {
 
     value.updatedBy = user?._id || null;
 
-    const response = await updateData(salesDebitNoteModel, { _id: value?.salesDebitNoteId }, value, {});
+    const response = await updateData(purchaseDebitNoteModel, { _id: value?.salesDebitNoteId }, value, {});
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Sales Debit Note"), {}, {}));
@@ -138,20 +138,20 @@ export const deleteSalesDebitNote = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { error, value } = deleteSalesDebitNoteSchema.validate(req.params);
+    const { error, value } = deletepurchaseDebitNoteSchema.validate(req.params);
 
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!(await checkIdExist(salesDebitNoteModel, value?.id, "Sales Debit Note", res))) return;
+    if (!(await checkIdExist(purchaseDebitNoteModel, value?.id, "Sales Debit Note", res))) return;
 
     const payload = {
       isDeleted: true,
       updatedBy: user?._id || null,
     };
 
-    const response = await updateData(salesDebitNoteModel, { _id: new ObjectId(value?.id) }, payload, {});
+    const response = await updateData(purchaseDebitNoteModel, { _id: new ObjectId(value?.id) }, payload, {});
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Sales Debit Note"), {}, {}));
@@ -209,8 +209,8 @@ export const getAllSalesDebitNote = async (req, res) => {
       limit,
     };
 
-    const response = await getDataWithSorting(salesDebitNoteModel, criteria, {}, options);
-    const totalData = await countData(salesDebitNoteModel, criteria);
+    const response = await getDataWithSorting(purchaseDebitNoteModel, criteria, {}, options);
+    const totalData = await countData(purchaseDebitNoteModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
 
@@ -230,14 +230,14 @@ export const getAllSalesDebitNote = async (req, res) => {
 export const getOneSalesDebitNote = async (req, res) => {
   reqInfo(req);
   try {
-    const { error, value } = getSalesDebitNoteSchema.validate(req.params);
+    const { error, value } = getpurchaseDebitNoteSchema.validate(req.params);
 
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     const response = await getFirstMatch(
-      salesDebitNoteModel,
+      purchaseDebitNoteModel,
       { _id: value?.id, isDeleted: false },
       {},
       {

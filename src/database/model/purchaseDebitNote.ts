@@ -25,7 +25,7 @@ export interface ISalesDebitNote {
   updatedBy?: Schema.Types.ObjectId;
 }
 
-const salesDebitNoteSchema = new Schema(
+const purchaseDebitNoteSchema = new Schema(
   {
     ...baseSchemaFields,
     documentNo: { type: String, required: true, index: true },
@@ -45,4 +45,4 @@ const salesDebitNoteSchema = new Schema(
   baseSchemaOptions,
 );
 
-export const salesDebitNoteModel = mongoose.model("sales-debit-note", salesDebitNoteSchema);
+export const  purchaseDebitNoteModel = mongoose.model("purchase-debit-note", purchaseDebitNoteSchema);
