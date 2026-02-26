@@ -1,7 +1,7 @@
 import { posCreditNoteModel, PosPaymentModel } from "../../database";
 import { apiResponse, HTTP_STATUS, REDEEM_CREDIT_TYPE, POS_PAYMENT_TYPE } from "../../common";
 import { countData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkIdExist } from "../../helper";
-import { getAllPosCreditNoteSchema, getPosCreditNoteSchema, deletePosCreditNoteSchema, checkRedeemCreditSchema, refundPosCreditSchema, getCreditNoteDropdownSchema } from "../../validation";
+import { getPosCreditNoteSchema, deletePosCreditNoteSchema, checkRedeemCreditSchema, refundPosCreditSchema, getCreditNoteDropdownSchema } from "../../validation";
 import { returnPosOrderModel, PosCashRegisterModel, bankModel } from "../../database";
 import { CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS } from "../../common";
 
@@ -148,18 +148,15 @@ export const getAllPosCreditNote = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    const { error, value } = getAllPosCreditNoteSchema.validate(req.query);
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
+    let { page, limit, search, customerFilter, startDate, endDate, companyFilter } = req.query;
 
-    let { page, limit, search, customerId, startDate, endDate } = value;
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
-    if (customerId) criteria.customerId = new ObjectId(customerId);
+    if (customerFilter) criteria.customerId = new ObjectId(customerFilter);
+    if (companyFilter) criteria.companyId = new ObjectId(companyFilter);
 
     if (search) {
       criteria.$or = [{ creditNoteNo: { $regex: search, $options: "si" } }, { notes: { $regex: search, $options: "si" } }];
