@@ -622,7 +622,7 @@ export const getAllPosOrder = async (req, res) => {
       criteria.tableNo = tableNoFilter;
     }
 
-    applyDateFilter(criteria, startDate as string, endDate as string, "date");
+    applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options = {
       sort: { createdAt: -1 },
