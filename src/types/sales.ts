@@ -6,19 +6,24 @@ export interface ISalesDocument extends IBase {
     date: Date;
     dueDate?: Date;
     customerId: Schema.Types.ObjectId;
-    customerName: string; // Snapshot
 
     items: any[];
 
-    grossAmount: number;
-    discountAmount: number;
-    taxAmount: number;
-    roundOff: number;
-    netAmount: number;
+    transectionSummary: any;
+    additionalCharges: any[];
 
-    notes?: string;
+    notes?: string[];
     status: string;
+    reverseCharge: boolean;
+    paymentTerms?: Schema.Types.ObjectId[];
+    taxType?: string;
+    sez?: string;
+    placeOfSupply: string;
+    billingAddress: Schema.Types.ObjectId;
+    shippingAddress: Schema.Types.ObjectId;
 }
 
-export interface IEstimate extends ISalesDocument { }
+export interface IEstimate extends ISalesDocument {
+    estimateNo: string;
+}
 export interface ISalesOrder extends ISalesDocument { }

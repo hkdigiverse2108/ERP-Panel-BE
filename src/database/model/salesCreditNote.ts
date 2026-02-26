@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { baseSchemaFields, baseSchemaOptions, transectionSummarySchema, commonAdditionalChargeSchema } from "./base";
 import { salesItemSchema } from "./salesOrder";
 import { ISalesDocument } from "../../types";
 
@@ -14,14 +14,10 @@ const salesCreditNoteSchema = new Schema<ISalesCreditNote>(
     documentNo: { type: String, required: true, index: true },
     date: { type: Date, required: true },
     customerId: { type: Schema.Types.ObjectId, ref: "contact", required: true },
-    customerName: { type: String },
     invoiceId: { type: Schema.Types.ObjectId, ref: "invoice" },
     items: [salesItemSchema],
-    grossAmount: { type: Number, default: 0 },
-    discountAmount: { type: Number, default: 0 },
-    taxAmount: { type: Number, default: 0 },
-    roundOff: { type: Number, default: 0 },
-    netAmount: { type: Number, default: 0 },
+    transectionSummary: { type: transectionSummarySchema },
+    additionalCharges: { type: [commonAdditionalChargeSchema] },
     reason: { type: String },
     status: { type: String, default: "active" },
   },

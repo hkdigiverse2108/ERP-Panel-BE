@@ -1,17 +1,10 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { contactModel, EstimateModel, productModel, taxModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { generateSequenceNumber } from "../../helper/generateSequenceNumber";
 import { addEstimateSchema, deleteEstimateSchema, editEstimateSchema, getEstimateSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
-
-// Generate unique estimate number
-const generateEstimateNo = async (companyId): Promise<string> => {
-  const count = await EstimateModel.countDocuments({ companyId, isDeleted: false });
-  const prefix = "EST";
-  const number = String(count + 1).padStart(6, "0");
-  return `${prefix}${number}`;
-};
 
 export const addEstimate = async (req, res) => {
   reqInfo(req);
@@ -38,22 +31,8 @@ export const addEstimate = async (req, res) => {
     }
 
     // Generate document number if not provided
-    if (!value.documentNo) {
-      value.documentNo = await generateEstimateNo(value.companyId);
-    }
-
-    // Get customer name
-    const customer = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
-    if (customer) {
-      value.customerName = customer.companyName || `${customer.firstName} ${customer.lastName || ""}`.trim();
-    }
-
-    // Calculate totals if not provided
-    if (!value.grossAmount) {
-      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
-    }
-    if (value.netAmount === undefined || value.netAmount === null) {
-      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
+    if (!value.estimateNo) {
+      value.estimateNo = await generateSequenceNumber({ model: EstimateModel, prefix: "EST", fieldName: "estimateNo", companyId: value.companyId });
     }
 
     value.createdBy = user?._id || null;
@@ -92,10 +71,6 @@ export const editEstimate = async (req, res) => {
     // Validate customer if being changed
     if (value.customerId && value.customerId !== isExist.customerId.toString()) {
       if (!(await checkIdExist(contactModel, value.customerId, "Customer", res))) return;
-      const customer = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
-      if (customer) {
-        value.customerName = customer.companyName || `${customer.firstName} ${customer.lastName || ""}`.trim();
-      }
     }
 
     // Validate products if items are being updated
@@ -104,10 +79,6 @@ export const editEstimate = async (req, res) => {
         if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
         if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
       }
-
-      // Recalculate totals
-      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
-      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
     }
 
     value.updatedBy = user?._id || null;
@@ -175,7 +146,7 @@ export const getAllEstimate = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }];
+      criteria.$or = [{ estimateNo: { $regex: search, $options: "si" } }];
     }
 
     if (status) {
@@ -244,6 +215,43 @@ export const getOneEstimate = async (req, res) => {
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Estimate"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const getEstimateDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+    const { search, customerId } = req.query;
+
+    let criteria: any = { isDeleted: false, status: "pending" }; // Usually dropdowns only show pending estimates
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (customerId) {
+      criteria.customerId = customerId;
+    }
+
+    if (search) {
+      criteria.$or = [{ estimateNo: { $regex: search, $options: "si" } }];
+    }
+
+    const options = {
+      sort: { createdAt: -1 },
+      select: "estimateNo date netAmount transectionSummary status",
+      populate: [
+        { path: "customerId", select: "firstName lastName companyName" },
+      ],
+    };
+
+    const response = await getDataWithSorting(EstimateModel, criteria, {}, options);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Estimate Dropdown"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

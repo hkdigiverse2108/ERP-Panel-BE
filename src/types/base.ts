@@ -17,7 +17,6 @@ export interface ITransectionSummary {
   discountAmount: number;
   taxableAmount: number;
   taxAmount: number;
-  totalAmount: number;
   roundOff: number;
   netAmount: number;
 }

@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { IEstimate, ISalesOrder } from "../../types/sales";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema, transectionSummarySchema } from "./base";
 
 // Shared Item Schema for Sales Documents
 export const salesItemSchema = new Schema(
@@ -32,14 +32,10 @@ const SalesOrderSchema = new Schema<ISalesOrder>(
     date: { type: Date },
     dueDate: { type: Date },
     customerId: { type: Schema.Types.ObjectId, ref: "contact" },
-    customerName: { type: String },
     items: [salesItemSchema],
-    grossAmount: { type: Number, default: 0 },
-    discountAmount: { type: Number, default: 0 },
-    taxAmount: { type: Number, default: 0 },
-    roundOff: { type: Number, default: 0 },
-    netAmount: { type: Number, default: 0 },
-    notes: { type: String },
+    transectionSummary: { type: transectionSummarySchema },
+    additionalCharges: { type: [commonAdditionalChargeSchema] },
+    notes: [{ type: String }],
     status: { type: String, default: "pending" }, // Pending, Completed, Cancelled
   },
   baseSchemaOptions,
