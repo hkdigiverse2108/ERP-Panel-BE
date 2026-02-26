@@ -31,7 +31,6 @@ const contactSchema = new Schema<IContact>(
       debitBalance: { type: String },
       creditBalance: { type: String },
     },
-
     address: [
       {
         gstType: { type: String },

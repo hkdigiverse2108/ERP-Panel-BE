@@ -11,12 +11,12 @@ export interface IBase extends Document {
   updatedAt: Date;
 }
 
-export interface ITransactionSummary {
-  flatDiscount?: number;
-  grossAmount?: number;
-  discountAmount?: number;
-  taxableAmount?: number;
-  taxAmount?: number;
-  roundOff?: number;
-  netAmount?: number;
+export interface ITransectionSummary {
+  flatDiscount: number;
+  grossAmount: number;
+  discountAmount: number;
+  taxableAmount: number;
+  taxAmount: number;
+  roundOff: number;
+  netAmount: number;
 }

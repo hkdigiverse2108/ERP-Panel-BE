@@ -24,19 +24,19 @@ export const commonContactSchema = Joi.object().keys({
     .optional(),
 });
 
-export const transactionSummarySchema = Joi.object({
-  flatDiscount: Joi.number().min(0).optional(),
-  grossAmount: Joi.number().min(0).optional(),
-  discountAmount: Joi.number().min(0).optional(),
-  taxableAmount: Joi.number().min(0).optional(),
-  taxAmount: Joi.number().min(0).optional(),
+export const transectionSummarySchema = Joi.object().keys({
+  flatDiscount: Joi.number().optional(),
+  grossAmount: Joi.number().optional(),
+  discountAmount: Joi.number().optional(),
+  taxableAmount: Joi.number().optional(),
+  taxAmount: Joi.number().optional(),
   roundOff: Joi.number().optional(),
-  netAmount: Joi.number().min(0).optional(),
+  netAmount: Joi.number().optional(),
 });
 
-export const commonAdditionalChargeSchema = Joi.object({
+export const commonAdditionalChargeSchema = Joi.object().keys({
   chargeId: objectId().required(),
-  taxId: objectId().optional(),
-  amount: Joi.number().min(0).optional(),
-  totalAmount: Joi.number().min(0).optional(),
+  taxId: objectId().required(),
+  amount: Joi.number().required(),
+  totalAmount: Joi.number().required(),
 });
