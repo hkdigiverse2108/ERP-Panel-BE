@@ -1182,7 +1182,7 @@ export const transactionGraph = async (req, res) => {
     }
 };
 
-export const getCategorySeles = async (req, res) => {
+export const getCategorySales = async (req, res) => {
     reqInfo(req);
     try {
         const { user } = req.headers;
