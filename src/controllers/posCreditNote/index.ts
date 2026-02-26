@@ -43,7 +43,7 @@ export const checkRedeemCredit = async (req, res) => {
       return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "No redeemable credit available", { redeemableAmount: 0 }, {}));
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Redeem credit verified successfully", { id: data._id, code: code, type: type, redeemableAmount: redeemableAmount }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Redeem credit verified successfully", { id: data._id, code: code, type: type, redeemableAmount: redeemableAmount, date: data.createdAt }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
