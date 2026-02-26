@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { apiResponse, CUSTOMER_CATEGORY_ENUM, HTTP_STATUS, POS_ORDER_STATUS, VOUCHAR_TYPE, ACCOUNT_TYPE, POS_VOUCHER_TYPE, RETURN_POS_ORDER_TYPE, PAYMENT_MODE } from "../../common";
 import { accountModel, debitNoteModel, InvoiceModel, PosOrderModel, PosPaymentModel, productModel, returnPosOrderModel, salesCreditNoteModel, stockModel, supplierBillModel, voucherModel } from "../../database";
-import { applyDateFilter, responseMessage } from "../../helper";
+import { applyDateFilter, reqInfo, responseMessage } from "../../helper";
 import { getCategoryWiseCustomersSchema, } from "../../validation";
 
 // Frequency-based thresholds for customer categorization
@@ -1040,6 +1040,7 @@ export const salesAndPurchaseGraph = async (req, res) => {
 };
 
 export const transactionGraph = async (req, res) => {
+    reqInfo(req);
     try {
         const { user } = req.headers;
         let { startDate, endDate, companyFilter, companyId, typeFilter } = req.query;
@@ -1175,6 +1176,101 @@ export const transactionGraph = async (req, res) => {
         graphData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Transaction Graph"), graphData, {}));
+    } catch (error) {
+        console.error(error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    }
+};
+
+export const getCategorySeles = async (req, res) => {
+    reqInfo(req);
+    try {
+        const { user } = req.headers;
+
+        let { startDate, endDate, companyFilter, companyId } = req.query;
+
+        if (!companyId && user?.companyId?._id) {
+            companyId = user.companyId._id;
+        }
+
+        const criteria: any = { isDeleted: false, status: POS_ORDER_STATUS.COMPLETED };
+
+        if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+        if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+
+        applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
+
+        const data = await PosOrderModel.aggregate([
+            { $match: criteria },
+            { $unwind: "$items" },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "items.productId",
+                    foreignField: "_id",
+                    as: "product"
+                }
+            },
+            { $unwind: "$product" },
+            {
+                $group: {
+                    _id: "$product.categoryId",
+                    uniqueOrders: { $addToSet: "$_id" },
+                    totalSalesQty: { $sum: "$items.qty" },
+                    totalSalesValue: { $sum: "$items.netAmount" },
+                    totalCostValue: { $sum: { $multiply: ["$items.qty", { $ifNull: ["$items.unitCost", 0] }] } }
+                }
+            },
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "category"
+                }
+            },
+            { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+            {
+                $project: {
+                    _id: 1,
+                    categoryName: { $ifNull: ["$category.name", "Uncategorized"] },
+                    noOfBills: { $size: "$uniqueOrders" },
+                    totalSalesQty: 1,
+                    totalSalesValue: 1,
+                    totalProfit: { $subtract: ["$totalSalesValue", "$totalCostValue"] }
+                }
+            },
+            {
+                $setWindowFields: {
+                    output: {
+                        grandTotalSales: {
+                            $sum: "$totalSalesValue",
+                            window: { documents: ["unbounded", "unbounded"] }
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    categoryName: 1,
+                    noOfBills: 1,
+                    totalSalesQty: { $round: ["$totalSalesQty", 2] },
+                    totalSalesValue: { $round: ["$totalSalesValue", 2] },
+                    totalProfit: { $round: ["$totalProfit", 2] },
+                    salesPercentage: {
+                        $cond: {
+                            if: { $eq: ["$grandTotalSales", 0] },
+                            then: 0,
+                            else: { $round: [{ $multiply: [{ $divide: ["$totalSalesValue", "$grandTotalSales"] }, 100] }, 2] }
+                        }
+                    }
+                }
+            },
+            { $sort: { totalSalesQty: -1 } }
+        ]);
+
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Category Sales"), data, {}));
     } catch (error) {
         console.error(error);
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
