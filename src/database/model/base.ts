@@ -1,5 +1,7 @@
 import { Schema } from "mongoose";
 import { SchemaOptions } from "mongoose";
+import { SHIPPING_TYPE } from "../../common";
+import { transport } from "winston";
 
 export const baseCommonFields = {
   isDeleted: { type: Boolean, default: false },
@@ -18,3 +20,20 @@ export const baseSchemaOptions: SchemaOptions<any> = {
   timestamps: true,
   versionKey: false,
 };
+
+export const commonShippingSchema = new Schema(
+  {
+    shippingType: { type: String, enum: Object.values(SHIPPING_TYPE) },
+    shippingDate: { type: Date },
+    referenceNo: { type: String },
+    transportDate: { type: Date },
+    modeOfTransport: { type: String },
+    transporterId: {
+      type: Schema.Types.ObjectId,
+      ref: "contact",
+    },
+    vehicleNo: { type: String },
+    weight: { type: Number },
+  },
+  { _id: false },
+);

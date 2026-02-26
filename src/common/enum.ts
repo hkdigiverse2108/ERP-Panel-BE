@@ -323,3 +323,14 @@ export const BANK_TRANSACTION_TYPE = {
   WITHDRAWAL: "withdrawal",
   TRANSFER: "transfer",
 } as const;
+
+export const DELIVERY_CHALLAN_STATUS = {
+  INVOICE_CREATED: "invoice_created",
+  DELIVERED: "delivered",
+  CANCELLED: "cancelled",
+} as const;
+
+export const SHIPPING_TYPE = {
+  DELIVERY: "delivery",
+  PICKUP: "pickup",
+} as const;
