@@ -7,14 +7,23 @@ import {
     reqInfo,
     responseMessage,
     updateData,
-    applyDateFilter
+    applyDateFilter,
+    checkIdExist
 } from "../../helper";
 import {
     getAllPosCreditNoteSchema,
     getPosCreditNoteSchema,
     deletePosCreditNoteSchema,
-    checkRedeemCreditSchema
+    checkRedeemCreditSchema,
+    redundPosCreditSchema
 } from "../../validation";
+import {
+    returnPosOrderModel,
+    PosCashRegisterModel,
+    PosOrderModel,
+    bankModel
+} from "../../database";
+import { CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS } from "../../common";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -61,6 +70,98 @@ export const checkRedeemCredit = async (req, res) => {
     }
 };
 
+export const redundPosCredit = async (req, res) => {
+    reqInfo(req);
+    try {
+        const { user } = req?.headers;
+        const { error, value } = redundPosCreditSchema.validate(req.body);
+        if (error) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+        }
+
+        const { posCreditNoteId, refundViaCash, refundViaBank, bankAccountId, refundDescription } = value;
+        const totalRefund = (refundViaCash || 0) + (refundViaBank || 0);
+
+        if (totalRefund <= 0) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Refund amount must be greater than zero", {}, {}));
+        }
+
+        const creditNote = await getFirstMatch(posCreditNoteModel, { _id: posCreditNoteId, isDeleted: false }, {}, {});
+        if (!creditNote) {
+            return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Credit Note"), {}, {}));
+        }
+
+        if (creditNote.creditsRemaining !== totalRefund) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Credit Note amount and refund amount must be equal`, {}, {}));
+        }
+
+        if (creditNote.creditsRemaining < totalRefund) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Insufficient credits. Available: ${creditNote.creditsRemaining}`, {}, {}));
+        }
+
+        if (refundViaBank > 0 && !bankAccountId) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Bank Account Id is required for bank refund", {}, {}));
+        }
+
+        if (bankAccountId && !(await checkIdExist(bankModel, bankAccountId, "Bank Account", res))) return;
+
+        // Update Credit Note
+        const updatedCreditNote = await posCreditNoteModel.findOneAndUpdate(
+            { _id: posCreditNoteId },
+            {
+                $inc: { creditsUsed: totalRefund, creditsRemaining: -totalRefund },
+                $set: { updatedBy: user?._id || null }
+            },
+            { new: true }
+        );
+
+        if (updatedCreditNote && updatedCreditNote.creditsRemaining <= 0) {
+            await posCreditNoteModel.updateOne({ _id: posCreditNoteId }, { status: POS_CREDIT_NOTE_STATUS.USED });
+        }
+
+        // Update Return POS Order
+        if (creditNote.returnPosOrderId) {
+            const returnUpdate: any = {
+                $inc: { refundViaCash: refundViaCash || 0, refundViaBank: refundViaBank || 0 },
+                $set: { updatedBy: user?._id || null }
+            };
+            if (bankAccountId) returnUpdate.$set.bankAccountId = bankAccountId;
+            if (refundDescription) returnUpdate.$set.refundDescription = refundDescription;
+
+            await returnPosOrderModel.findOneAndUpdate(
+                { _id: creditNote.returnPosOrderId },
+                returnUpdate,
+                { new: true }
+            );
+
+        }
+
+        // Update Cash Register
+        const cashRegister = await getFirstMatch(PosCashRegisterModel, {
+            createdBy: user?._id,
+            status: CASH_REGISTER_STATUS.OPEN,
+            isDeleted: false
+        }, {}, {});
+
+        if (cashRegister) {
+            await PosCashRegisterModel.updateOne(
+                { _id: cashRegister._id },
+                {
+                    $inc: {
+                        cashRefund: refundViaCash || 0,
+                        bankRefund: refundViaBank || 0
+                    }
+                }
+            );
+        }
+
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Credit Note refunded successfully", updatedCreditNote, {}));
+
+    } catch (error) {
+        console.error(error);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
+    }
+};
 
 export const getAllPosCreditNote = async (req, res) => {
     reqInfo(req);

@@ -261,44 +261,4 @@ export const returnPosOrderDropDown = async (req, res) => {
     }
 };
 
-// export const getCreditNotes = async (req, res) => {
-//     reqInfo(req);
-//     try {
-//         const { user } = req?.headers;
-//         const companyId = user?.companyId?._id;
-//         let { page, limit, search, companyFilter } = req.query;
 
-//         page = Number(page);
-//         limit = Number(limit);
-
-//         let criteria: any = { isDeleted: false, type: RETURN_POS_ORDER_TYPE.SALES_RETURN };
-//         if (companyId) criteria.companyId = companyId;
-//         if (companyFilter) criteria.companyId = new ObjectId(companyFilter);
-
-//         if (search) {
-//             criteria.$or = [
-//                 { returnOrderNo: { $regex: search, $options: "si" } },
-//                 { reason: { $regex: search, $options: "si" } }
-//             ];
-//         }
-
-//         const options = {
-//             sort: { createdAt: -1 },
-//             skip: (page - 1) * limit,
-//             limit,
-//             populate: [
-//                 { path: "customerId", select: "firstName lastName " },
-//                 { path: "posOrderId", select: "orderNo" },
-//                 { path: "items.productId", select: "name" }
-//             ]
-//         };
-
-//         const response = await getDataWithSorting(returnPosOrderModel, criteria, {}, options);
-//         const totalData = await countData(returnPosOrderModel, criteria);
-
-//         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Return Credit Notes"), { data: response, totalData, state: { page, limit, totalPages: Math.ceil(totalData / limit) } }, {}));
-//     } catch (error) {
-//         console.error(error);
-//         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
-//     }
-// };

@@ -5538,7 +5538,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"type\": \"opening\",\r\n    \"amount\": 1500,\r\n    \"remark\": \"Initial cash in register\"\r\n}",
+              "raw": "{\r\n    \"type\": \"opening\",\r\n    \"amount\": 0,\r\n    \"remark\": \"Initial cash in register\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5815,7 +5815,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"openingCash\": 2000\r\n}\r\n",
+              "raw": "{\r\n    \"openingCash\": 0\r\n}\r\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10103,6 +10103,201 @@
               ],
               "path": [
                 "settings",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "apikey",
+        "apikey": [
+          {
+            "key": "value",
+            "value": "{{Token}}",
+            "type": "string"
+          },
+          {
+            "key": "key",
+            "value": "authorization",
+            "type": "string"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {},
+            "exec": [
+              ""
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {},
+            "exec": [
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Category wise customer",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/dashboard/category-wise-customers?typeFilter=VIP_Customer",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "dashboard",
+                "category-wise-customers"
+              ],
+              "query": [
+                {
+                  "key": "typeFilter",
+                  "value": "VIP_Customer"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get  top Customer",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/dashboard/top-customers",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "dashboard",
+                "top-customers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get  Transaction Details",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/dashboard/all",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "dashboard",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category wise customer Count",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/dashboard/category-wise-customers-count",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "dashboard",
+                "category-wise-customers-count"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login Log",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/login-log/all",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "login-log",
                 "all"
               ]
             }

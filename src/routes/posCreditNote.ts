@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { posCreditNoteController } from "../controllers";
-import { adminJwt } from "../helper";
 
 const router = Router();
 
-router.get("/all", adminJwt, posCreditNoteController.getAllPosCreditNote);
-router.get("/:id", adminJwt, posCreditNoteController.getOnePosCreditNote);
-router.post("/redeem", adminJwt, posCreditNoteController.checkRedeemCredit);
-router.delete("/:id", adminJwt, posCreditNoteController.deletePosCreditNote);
+router.get("/all", posCreditNoteController.getAllPosCreditNote);
+router.post("/redeem", posCreditNoteController.checkRedeemCredit);
+router.post("/refund", posCreditNoteController.redundPosCredit)
+router.delete("/:id", posCreditNoteController.deletePosCreditNote);
+router.get("/:id", posCreditNoteController.getOnePosCreditNote);
 
 export const posCreditNoteRouter = router;

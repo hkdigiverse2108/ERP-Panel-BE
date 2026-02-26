@@ -24,3 +24,11 @@ export const getAllPosCreditNoteSchema = Joi.object({
     startDate: Joi.date().optional(),
     endDate: Joi.date().optional(),
 });
+
+export const redundPosCreditSchema = Joi.object({
+    posCreditNoteId: objectId().required(),
+    refundViaCash: Joi.number().min(0).default(0).optional(),
+    refundViaBank: Joi.number().min(0).default(0).optional(),
+    bankAccountId: objectId().optional().allow(null),
+    refundDescription: Joi.string().optional().allow("", null),
+});

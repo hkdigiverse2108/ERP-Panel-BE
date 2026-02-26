@@ -7,7 +7,6 @@ router.post("/add", returnPosOrderController.addReturnPosOrder);
 router.put("/edit", returnPosOrderController.editReturnPosOrder);
 router.get("/all", returnPosOrderController.getAllReturnPosOrder);
 router.get("/dropdown", returnPosOrderController.returnPosOrderDropDown);
-// router.get("/credit-notes", returnPosOrderController.getCreditNotes);
 router.delete("/:id", returnPosOrderController.deleteReturnPosOrder);
 router.get("/:id", returnPosOrderController.getOneReturnPosOrder);
 
