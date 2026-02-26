@@ -57,4 +57,4 @@ export const transectionSummarySchema = {
   totalAmount: { type: Number },
   roundOff: { type: Number },
   netAmount: { type: Number },
-}
+};
