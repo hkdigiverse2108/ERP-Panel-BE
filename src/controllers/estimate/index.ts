@@ -30,6 +30,13 @@ export const addEstimate = async (req, res) => {
       if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
     }
 
+    // Validate additional charge taxes exist
+    if (value.additionalCharges) {
+      for (const charge of value.additionalCharges) {
+        if (charge.taxId && !(await checkIdExist(taxModel, charge.taxId, "Additional Charge Tax", res))) return;
+      }
+    }
+
     // Generate document number if not provided
     if (!value.estimateNo) {
       value.estimateNo = await generateSequenceNumber({ model: EstimateModel, prefix: "EST", fieldName: "estimateNo", companyId: value.companyId });
@@ -78,6 +85,13 @@ export const editEstimate = async (req, res) => {
       for (const item of value.items) {
         if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
         if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+      }
+    }
+
+    // Validate additional charge taxes exist
+    if (value.additionalCharges && value.additionalCharges.length > 0) {
+      for (const charge of value.additionalCharges) {
+        if (charge.taxId && !(await checkIdExist(taxModel, charge.taxId, "Additional Charge Tax", res))) return;
       }
     }
 
@@ -158,7 +172,7 @@ export const getAllEstimate = async (req, res) => {
     const options = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "customerId", select: "firstName lastName companyName email phoneNo" },
+        { path: "customerId", select: "firstName lastName companyName email phoneNo address" },
         { path: "items.productId", select: "name itemCode" },
         { path: "items.taxId", select: "name percentage" },
         { path: "companyId", select: "name " },
@@ -168,7 +182,28 @@ export const getAllEstimate = async (req, res) => {
       limit,
     };
 
-    const response = await getDataWithSorting(EstimateModel, criteria, {}, options);
+    let response = await getDataWithSorting(EstimateModel, criteria, {}, options);
+
+    // Manually extract billing and shipping addresses from the populated customer object
+    response = response.map((est: any) => {
+      let estObj = est.toObject ? est.toObject() : est;
+
+      if (estObj.customerId && estObj.customerId.address) {
+        if (estObj.billingAddress) {
+          const billingStr = estObj.billingAddress.toString();
+          estObj.billingAddress = estObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr) || estObj.billingAddress;
+        }
+        if (estObj.shippingAddress) {
+          const shippingStr = estObj.shippingAddress.toString();
+          estObj.shippingAddress = estObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr) || estObj.shippingAddress;
+        }
+
+        // Optionally remove the full address array from customerId if it's too large to send
+        // delete estObj.customerId.address; 
+      }
+      return estObj;
+    });
+
     const totalData = await countData(EstimateModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -214,7 +249,20 @@ export const getOneEstimate = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Estimate"), {}, {}));
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Estimate"), response, {}));
+    let estObj = response.toObject ? response.toObject() : response;
+
+    if (estObj.customerId && estObj.customerId.address) {
+      if (estObj.billingAddress) {
+        const billingStr = estObj.billingAddress.toString();
+        estObj.billingAddress = estObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr) || estObj.billingAddress;
+      }
+      if (estObj.shippingAddress) {
+        const shippingStr = estObj.shippingAddress.toString();
+        estObj.shippingAddress = estObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr) || estObj.shippingAddress;
+      }
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Estimate"), estObj, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

@@ -1,5 +1,6 @@
 import Joi from "joi";
 import { commonAdditionalChargeSchema, objectId, transectionSummarySchema } from "./common";
+import { ESTIMATE_STATUS } from "../common";
 
 const estimateItemSchema = Joi.object().keys({
   productId: objectId().required(),
@@ -28,7 +29,6 @@ export const addEstimateSchema = Joi.object().keys({
   items: Joi.array().items(estimateItemSchema).min(1).required(),
   notes: Joi.array().items(Joi.string()).optional(),
   reverseCharge: Joi.boolean().default(false).optional(),
-  status: Joi.string().valid("pending", "converted", "cancelled").default("pending").optional(),
   transectionSummary: transectionSummarySchema.required(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   paymentTerms: Joi.array().items(objectId()).optional(),
@@ -48,7 +48,6 @@ export const editEstimateSchema = Joi.object().keys({
   items: Joi.array().items(estimateItemSchema).optional(),
   notes: Joi.array().items(Joi.string()).optional(),
   reverseCharge: Joi.boolean().optional(),
-  status: Joi.string().valid("pending", "converted", "cancelled").optional(),
   transectionSummary: transectionSummarySchema.optional(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   paymentTerms: Joi.array().items(objectId()).optional(),

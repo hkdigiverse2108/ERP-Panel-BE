@@ -1,5 +1,5 @@
 import { Schema } from "mongoose";
-import { IBase, ITransactionSummary } from "./base";
+import { IBase, ITransectionSummary } from "./base";
 import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS } from "../common";
 
 export interface ISupplierBillItem {
@@ -61,7 +61,7 @@ export interface ISupplierBill extends IBase {
     item: ISupplierBillReturnItem[];
     totalQty?: number;
     total?: number;
-    summary?: ITransactionSummary;
+    summary?: ITransectionSummary;
   };
 
   additionalCharges?: {
@@ -72,7 +72,7 @@ export interface ISupplierBill extends IBase {
   termsAndConditionIds?: Schema.Types.ObjectId[];
   notes?: string;
 
-  summary?: ITransactionSummary;
+  summary?: ITransectionSummary;
 
   paidAmount?: number;
   balanceAmount?: number;

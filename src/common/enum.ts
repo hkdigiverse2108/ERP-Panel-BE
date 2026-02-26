@@ -334,3 +334,9 @@ export const SHIPPING_TYPE = {
   DELIVERY: "delivery",
   PICKUP: "pickup",
 } as const;
+
+export const ESTIMATE_STATUS = {
+  PENDING: "pending",
+  ORDER_CREATED: "order-created",
+  INVOICE_CREATED: "invoice-created",
+} as const;

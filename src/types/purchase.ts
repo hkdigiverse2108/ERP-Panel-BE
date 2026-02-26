@@ -1,5 +1,5 @@
 import { Schema } from "mongoose";
-import { IBase, ITransactionSummary } from "./base";
+import { IBase, ITransectionSummary } from "./base";
 import { ORDER_STATUS, TAX_TYPE } from "../common";
 
 export interface IPurchaseItem {
@@ -32,7 +32,7 @@ export interface IPurchaseOrder extends IBase {
   totalTax?: string;
   total?: string;
 
-  summary?: ITransactionSummary;
+  summary?: ITransectionSummary;
 
   status?: (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
 }

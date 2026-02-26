@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { salesItemSchema } from "./salesOrder";
-import { baseSchemaFields, baseSchemaOptions, transectionSummarySchema, commonAdditionalChargeSchema } from "./base";
+import { baseSchemaFields, baseSchemaOptions, transactionSummarySchema, commonAdditionalChargeSchema } from "./base";
 import { IInvoice } from "../../types";
 import { INVOICE_PAYMENT_STATUS, INVOICE_STATUS } from "../../common";
 
@@ -14,7 +14,7 @@ const invoiceSchema = new Schema<IInvoice>({
     customerId: { type: Schema.Types.ObjectId, ref: 'contact', required: true },
     salesOrderId: { type: Schema.Types.ObjectId, ref: 'sales-order' },
     items: [salesItemSchema],
-    transectionSummary: { type: transectionSummarySchema },
+    transectionSummary: { type: transactionSummarySchema },
     additionalCharges: { type: [commonAdditionalChargeSchema] },
     paidAmount: { type: Number, default: 0 },
     balanceAmount: { type: Number, default: 0 },

@@ -38,6 +38,7 @@
     "winston": "^3.18.3"
   },
   "devDependencies": {
+    "@types/mongoose": "^5.11.96",
     "@types/node": "^18.0.0",
     "nodemon": "^2.0.18",
     "rimraf": "^3.0.2",
