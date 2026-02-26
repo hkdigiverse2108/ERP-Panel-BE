@@ -23,3 +23,20 @@ export const commonContactSchema = Joi.object().keys({
     .pattern(/^\d{6,15}$/)
     .optional(),
 });
+
+export const transectionSummarySchema = Joi.object().keys({
+  flatDiscount: Joi.number().optional(),
+  grossAmount: Joi.number().optional(),
+  discountAmount: Joi.number().optional(),
+  taxableAmount: Joi.number().optional(),
+  taxAmount: Joi.number().optional(),
+  roundOff: Joi.number().optional(),
+  netAmount: Joi.number().optional(),
+});
+
+export const commonAdditionalChargeSchema = Joi.object().keys({
+  chargeId: objectId().required(),
+  taxId: objectId().required(),
+  amount: Joi.number().required(),
+  totalAmount: Joi.number().required(),
+});

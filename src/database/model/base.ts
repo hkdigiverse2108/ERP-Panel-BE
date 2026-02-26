@@ -54,7 +54,6 @@ export const transectionSummarySchema = {
   discountAmount: { type: Number },
   taxableAmount: { type: Number },
   taxAmount: { type: Number },
-  totalAmount: { type: Number },
   roundOff: { type: Number },
   netAmount: { type: Number },
 }
