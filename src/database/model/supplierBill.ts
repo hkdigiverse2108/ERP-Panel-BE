@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS } from "../../common";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema } from "./base";
 
 export const supplierBillItemSchema = new Schema(
   {
@@ -20,15 +20,15 @@ export const supplierBillItemSchema = new Schema(
   { _id: false },
 );
 
-const additionalChargeSchema = new Schema(
-  {
-    chargeId: { type: Schema.Types.ObjectId, ref: "additional-charge", required: true },
-    value: { type: Number, default: 0, min: 0 },
-    taxRate: { type: Number },
-    total: { type: Number },
-  },
-  { _id: false },
-);
+// const additionalChargeSchema = new Schema(
+//   {
+//     chargeId: { type: Schema.Types.ObjectId, ref: "additional-charge", required: true },
+//     value: { type: Number, default: 0, min: 0 },
+//     taxRate: { type: Number },
+//     total: { type: Number },
+//   },
+//   { _id: false },
+// );
 
 export const supplierBillReturnItemSchema = new Schema(
   {
@@ -85,7 +85,7 @@ const supplierBillSchema = new Schema(
     },
 
     additionalCharges: {
-      item: [additionalChargeSchema],
+      item: [commonAdditionalChargeSchema],
       total: { type: Number },
     },
 
