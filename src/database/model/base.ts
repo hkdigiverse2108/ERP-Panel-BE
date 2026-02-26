@@ -21,19 +21,40 @@ export const baseSchemaOptions: SchemaOptions<any> = {
   versionKey: false,
 };
 
-export const commonShippingSchema = new Schema(
-  {
-    shippingType: { type: String, enum: Object.values(SHIPPING_TYPE) },
-    shippingDate: { type: Date },
-    referenceNo: { type: String },
-    transportDate: { type: Date },
-    modeOfTransport: { type: String },
-    transporterId: {
-      type: Schema.Types.ObjectId,
-      ref: "contact",
-    },
-    vehicleNo: { type: String },
-    weight: { type: Number },
+export const commonShippingSchema = {
+  shippingType: { type: String, enum: Object.values(SHIPPING_TYPE) },
+  shippingDate: { type: Date },
+  referenceNo: { type: String },
+  transportDate: { type: Date },
+  modeOfTransport: { type: String },
+  transporterId: {
+    type: Schema.Types.ObjectId,
+    ref: "contact",
   },
-  { _id: false },
-);
+  vehicleNo: { type: String },
+  weight: { type: Number },
+};
+
+export const commonAdditionalChargeSchema = {
+  chargeId: {
+    type: Schema.Types.ObjectId,
+    ref: "additionalCharge",
+  },
+  taxId: {
+    type: Schema.Types.ObjectId,
+    ref: "tax",
+  },
+  amount: { type: Number },
+  totalAmount: { type: Number },
+};
+
+export const transectionSummarySchema = {
+  flatDiscount: { type: Number },
+  grossAmount: { type: Number },
+  discountAmount: { type: Number },
+  taxableAmount: { type: Number },
+  taxAmount: { type: Number },
+  totalAmount: { type: Number },
+  roundOff: { type: Number },
+  netAmount: { type: Number },
+}
