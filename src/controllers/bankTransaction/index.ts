@@ -1,24 +1,9 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { bankModel, BankTransactionModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, checkIdExist, checkCompany } from "../../helper";
+import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, checkIdExist, checkCompany, generateSequenceNumber } from "../../helper";
 import { addBankTransactionSchema, editBankTransactionSchema, getBankTransactionSchema, deleteBankTransactionSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
-
-const generateVoucherNo = async (companyId: string) => {
-    const lastTransaction = await BankTransactionModel.findOne({ companyId })
-        .sort({ createdAt: -1 })
-        .select("voucherNo");
-
-    let nextVoucherNo = "BT-0001";
-
-    if (lastTransaction && lastTransaction.voucherNo) {
-        const lastNo = parseInt(lastTransaction.voucherNo.split("-")[1]);
-        nextVoucherNo = `BT-${(lastNo + 1).toString().padStart(4, "0")}`;
-    }
-
-    return nextVoucherNo;
-};
 
 export const addBankTransaction = async (req, res) => {
     reqInfo(req);
@@ -40,7 +25,9 @@ export const addBankTransaction = async (req, res) => {
         value.createdBy = user?._id || null;
         value.updatedBy = user?._id || null;
 
-        const voucherNo = await generateVoucherNo(value.companyId);
+        const voucherNo = await generateSequenceNumber(
+            { model: BankTransactionModel, prefix: "BT", fieldName: "BankVoucher", companyId: value.companyId }
+        );
         value.voucherNo = voucherNo;
 
         const response = await createOne(BankTransactionModel, value);

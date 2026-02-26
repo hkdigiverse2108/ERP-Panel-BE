@@ -15,5 +15,6 @@ router.get("/receivable", dashboardController.receivable);
 router.get("/payable", dashboardController.payable);
 router.get("/sales-and-purchase-graph", dashboardController.salesAndPurchaseGraph);
 router.get("/transaction-graph", dashboardController.transactionGraph);
+router.get("/category-sales", dashboardController.getCategorySeles);
 
 export const dashboardRouter = router;
