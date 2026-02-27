@@ -32,12 +32,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/upload",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "upload"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["upload"]
             }
           },
           "response": []
@@ -71,12 +67,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/upload",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "upload"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["upload"]
             }
           },
           "response": []
@@ -114,13 +106,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/upload/images",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "upload",
-                "images"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["upload", "images"]
             }
           },
           "response": []
@@ -138,13 +125,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/upload/pdf",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "upload",
-                "pdf"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["upload", "pdf"]
             }
           },
           "response": []
@@ -170,13 +152,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/auth/register",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "auth",
-                "register"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "register"]
             }
           },
           "response": []
@@ -203,13 +180,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/auth/login",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "auth",
-                "login"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "login"]
             }
           },
           "response": []
@@ -236,13 +208,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/auth/verify-otp",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "auth",
-                "verify-otp"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "verify-otp"]
             }
           },
           "response": []
@@ -269,13 +236,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/auth/resend-otp",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "auth",
-                "resend-otp"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "resend-otp"]
             }
           },
           "response": []
@@ -302,13 +264,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/auth/reset-password",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "auth",
-                "reset-password"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "reset-password"]
             }
           },
           "response": []
@@ -331,13 +288,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/user/all?typeFilter=employee",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "user",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["user", "all"],
               "query": [
                 {
                   "key": "page",
@@ -406,13 +358,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/user/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "user",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["user", "add"]
             }
           },
           "response": []
@@ -439,13 +386,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/user/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "user",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["user", "edit"]
             }
           },
           "response": []
@@ -463,13 +405,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/user/6970c4da6a2acaf17d438dee",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "user",
-                "6970c4da6a2acaf17d438dee"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["user", "6970c4da6a2acaf17d438dee"]
             }
           },
           "response": []
@@ -487,13 +424,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/user/6970a38354cd7939bf4fbafa",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "user",
-                "6970a38354cd7939bf4fbafa"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["user", "6970a38354cd7939bf4fbafa"]
             }
           },
           "response": []
@@ -511,13 +443,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/user/dropdown?typeFilter=employee",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "user",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["user", "dropdown"],
               "query": [
                 {
                   "key": "companyFilter",
@@ -555,14 +482,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/user/693ba2e3c6e9cf6248ea6a73/permission",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "user",
-                "693ba2e3c6e9cf6248ea6a73",
-                "permission"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["user", "693ba2e3c6e9cf6248ea6a73", "permission"]
             }
           },
           "response": []
@@ -585,13 +506,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/role/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "role",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["role", "all"],
               "query": [
                 {
                   "key": "page",
@@ -655,13 +571,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/role/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "role",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["role", "add"]
             }
           },
           "response": []
@@ -688,13 +599,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/role/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "role",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["role", "edit"]
             }
           },
           "response": []
@@ -712,13 +618,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/role/694d0dee247344d583841fef",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "role",
-                "694d0dee247344d583841fef"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["role", "694d0dee247344d583841fef"]
             }
           },
           "response": []
@@ -736,13 +637,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/role/6970a2b89a90406f4e0fa110",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "role",
-                "6970a2b89a90406f4e0fa110"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["role", "6970a2b89a90406f4e0fa110"]
             }
           },
           "response": []
@@ -760,13 +656,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/role/dropdown?companyFilter=6971b0ac8f6495bc4fc0d99f",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "role",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["role", "dropdown"],
               "query": [
                 {
                   "key": "companyFilter",
@@ -800,9 +691,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -811,9 +700,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -843,13 +730,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/product/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "product",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["product", "add"]
             }
           },
           "response": []
@@ -876,13 +758,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/product/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "product",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["product", "edit"]
             }
           },
           "response": []
@@ -900,13 +777,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/product/693ab3739d2c88d6fa895c6a",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "product",
-                "693ab3739d2c88d6fa895c6a"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["product", "693ab3739d2c88d6fa895c6a"]
             }
           },
           "response": []
@@ -924,13 +796,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/product/all?page=1&limit=10",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "product",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["product", "all"],
               "query": [
                 {
                   "key": "page",
@@ -983,13 +850,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/product/6995d0762d0b02d9836563cd",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "product",
-                "6995d0762d0b02d9836563cd"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["product", "6995d0762d0b02d9836563cd"]
             }
           },
           "response": []
@@ -1007,13 +869,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/product/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "product",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["product", "dropdown"],
               "query": [
                 {
                   "key": "companyFilter",
@@ -1053,9 +910,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -1064,9 +919,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -1087,13 +940,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/stock/all?activeFilter=true",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "stock",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["stock", "all"],
               "query": [
                 {
                   "key": "page",
@@ -1191,13 +1039,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/stock/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "stock",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["stock", "add"]
             }
           },
           "response": []
@@ -1224,13 +1067,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/stock/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "stock",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["stock", "edit"]
             }
           },
           "response": []
@@ -1248,13 +1086,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/stock/694ce4e9fe1e8268510ce66a",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "stock",
-                "694ce4e9fe1e8268510ce66a"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["stock", "694ce4e9fe1e8268510ce66a"]
             }
           },
           "response": []
@@ -1272,13 +1105,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/stock/6964e4d08c7bcd821552ffe0",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "stock",
-                "6964e4d08c7bcd821552ffe0"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["stock", "6964e4d08c7bcd821552ffe0"]
             }
           },
           "response": []
@@ -1299,13 +1127,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/stock/bulk-adjustment",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "stock",
-                "bulk-adjustment"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["stock", "bulk-adjustment"]
             }
           },
           "response": []
@@ -1333,9 +1156,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -1344,9 +1165,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -1367,13 +1186,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/stock-verification/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "stock-verification",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["stock-verification", "all"],
               "query": [
                 {
                   "key": "page",
@@ -1467,13 +1281,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/stock-verification/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "stock-verification",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["stock-verification", "add"]
             }
           },
           "response": []
@@ -1500,13 +1309,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/stock-verification/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "stock-verification",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["stock-verification", "edit"]
             }
           },
           "response": []
@@ -1524,13 +1328,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/stock-verification/6979aec9cf43bb79b8c0614c",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "stock-verification",
-                "6979aec9cf43bb79b8c0614c"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["stock-verification", "6979aec9cf43bb79b8c0614c"]
             }
           },
           "response": []
@@ -1548,13 +1347,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/stock-verification/6979aec9cf43bb79b8c0614c",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "stock-verification",
-                "6979aec9cf43bb79b8c0614c"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["stock-verification", "6979aec9cf43bb79b8c0614c"]
             }
           },
           "response": []
@@ -1577,13 +1371,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/bank/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "bank",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["bank", "all"],
               "query": [
                 {
                   "key": "page",
@@ -1647,13 +1436,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/bank/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "bank",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["bank", "add"]
             }
           },
           "response": []
@@ -1680,13 +1464,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/bank/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "bank",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["bank", "edit"]
             }
           },
           "response": []
@@ -1704,13 +1483,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/bank/6952452fe98abea8579cace5",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "bank",
-                "6952452fe98abea8579cace5"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["bank", "6952452fe98abea8579cace5"]
             }
           },
           "response": []
@@ -1728,13 +1502,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/bank/696f1c09b712c6bb7d41149c",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "bank",
-                "696f1c09b712c6bb7d41149c"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["bank", "696f1c09b712c6bb7d41149c"]
             }
           },
           "response": []
@@ -1746,13 +1515,8 @@
             "header": [],
             "url": {
               "raw": "{{BASE_URL}}/bank/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "bank",
-                "dropdown"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["bank", "dropdown"]
             }
           },
           "response": []
@@ -1780,9 +1544,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -1791,9 +1553,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -1814,13 +1574,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/call-request/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "call-request",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["call-request", "all"],
               "query": [
                 {
                   "key": "page",
@@ -1884,13 +1639,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/call-request/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "call-request",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["call-request", "add"]
             }
           },
           "response": []
@@ -1917,13 +1667,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/call-request/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "call-request",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["call-request", "edit"]
             }
           },
           "response": []
@@ -1941,13 +1686,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/call-request/693ab93ed96c5cfe580f76e4",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "call-request",
-                "693ab93ed96c5cfe580f76e4"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["call-request", "693ab93ed96c5cfe580f76e4"]
             }
           },
           "response": []
@@ -1965,13 +1705,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/call-request/694e802d729a27cd28c3698a",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "call-request",
-                "694e802d729a27cd28c3698a"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["call-request", "694e802d729a27cd28c3698a"]
             }
           },
           "response": []
@@ -1994,13 +1729,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/material/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "material",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["material", "all"],
               "query": [
                 {
                   "key": "page",
@@ -2064,13 +1794,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/material/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "material",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["material", "add"]
             }
           },
           "response": []
@@ -2097,13 +1822,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/material/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "material",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["material", "edit"]
             }
           },
           "response": []
@@ -2121,13 +1841,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/material/6958db2c4d8e2e4671c02014",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "material",
-                "6958db2c4d8e2e4671c02014"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["material", "6958db2c4d8e2e4671c02014"]
             }
           },
           "response": []
@@ -2145,13 +1860,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/material/6958db2c4d8e2e4671c02014",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "material",
-                "6958db2c4d8e2e4671c02014"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["material", "6958db2c4d8e2e4671c02014"]
             }
           },
           "response": []
@@ -2174,13 +1884,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/material-consumption/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "material-consumption",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["material-consumption", "all"],
               "query": [
                 {
                   "key": "page",
@@ -2244,13 +1949,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/material-consumption/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "material-consumption",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["material-consumption", "add"]
             }
           },
           "response": []
@@ -2277,13 +1977,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/material-consumption/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "material-consumption",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["material-consumption", "edit"]
             }
           },
           "response": []
@@ -2301,13 +1996,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/material-consumption/697b3e3d6c705c526d634b08",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "material-consumption",
-                "697b3e3d6c705c526d634b08"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["material-consumption", "697b3e3d6c705c526d634b08"]
             }
           },
           "response": []
@@ -2325,13 +2015,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/material-consumption/697b3d816c705c526d634a9a",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "material-consumption",
-                "697b3d816c705c526d634a9a"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["material-consumption", "697b3d816c705c526d634a9a"]
             }
           },
           "response": []
@@ -2354,13 +2039,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/product-request/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "product-request",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["product-request", "all"],
               "query": [
                 {
                   "key": "page",
@@ -2424,13 +2104,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/product-request/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "product-request",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["product-request", "add"]
             }
           },
           "response": []
@@ -2457,13 +2132,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/product-request/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "product-request",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["product-request", "edit"]
             }
           },
           "response": []
@@ -2481,13 +2151,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/product-request/695cf6866e349e6e49fbb48d",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "product-request",
-                "695cf6866e349e6e49fbb48d"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["product-request", "695cf6866e349e6e49fbb48d"]
             }
           },
           "response": []
@@ -2505,13 +2170,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/product-request/695cf6866e349e6e49fbb48d",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "product-request",
-                "695cf6866e349e6e49fbb48d"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["product-request", "695cf6866e349e6e49fbb48d"]
             }
           },
           "response": []
@@ -2543,13 +2203,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/announcement/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "announcement",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["announcement", "add"]
             }
           },
           "response": []
@@ -2574,13 +2229,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/announcement/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "announcement",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["announcement", "all"],
               "query": [
                 {
                   "key": "page",
@@ -2644,13 +2294,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/announcement/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "announcement",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["announcement", "edit"]
             }
           },
           "response": []
@@ -2672,13 +2317,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/announcement/6937bbd85ce51d7f24b9d6ed",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "announcement",
-                "6937bbd85ce51d7f24b9d6ed"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["announcement", "6937bbd85ce51d7f24b9d6ed"]
             }
           },
           "response": []
@@ -2703,13 +2343,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/announcement/694f6fadfc105dda9391d6ab",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "announcement",
-                "694f6fadfc105dda9391d6ab"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["announcement", "694f6fadfc105dda9391d6ab"]
             }
           },
           "response": []
@@ -2741,13 +2376,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/company/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "company",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["company", "add"]
             }
           },
           "response": []
@@ -2774,13 +2404,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/company/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "company",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["company", "edit"]
             }
           },
           "response": []
@@ -2805,13 +2430,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/company/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "company",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["company", "all"],
               "query": [
                 {
                   "key": "page",
@@ -2870,13 +2490,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/company/694e694120be2a3fbb62e3ea",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "company",
-                "694e694120be2a3fbb62e3ea"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["company", "694e694120be2a3fbb62e3ea"]
             }
           },
           "response": []
@@ -2894,13 +2509,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/company/694a6ccf473cedf2701a6386",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "company",
-                "694a6ccf473cedf2701a6386"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["company", "694a6ccf473cedf2701a6386"]
             }
           },
           "response": []
@@ -2912,13 +2522,8 @@
             "header": [],
             "url": {
               "raw": "{{BASE_URL}}/company/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "company",
-                "dropdown"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["company", "dropdown"]
             }
           },
           "response": []
@@ -2946,9 +2551,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -2957,9 +2560,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -2992,13 +2593,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/branch/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "branch",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["branch", "all"],
               "query": [
                 {
                   "key": "page",
@@ -3062,13 +2658,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/branch/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "branch",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["branch", "add"]
             }
           },
           "response": []
@@ -3090,13 +2681,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/branch/694d375976694c2200484db6",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "branch",
-                "694d375976694c2200484db6"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["branch", "694d375976694c2200484db6"]
             }
           },
           "response": []
@@ -3123,13 +2709,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/branch/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "branch",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["branch", "edit"]
             }
           },
           "response": []
@@ -3147,13 +2728,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/branch/696e2e853c201f2776467224",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "branch",
-                "696e2e853c201f2776467224"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["branch", "696e2e853c201f2776467224"]
             }
           },
           "response": []
@@ -3165,13 +2741,8 @@
             "header": [],
             "url": {
               "raw": "{{BASE_URL}}/branch/dropdown?companyFilter=694a6ccf473cedf2701a6386",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "branch",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["branch", "dropdown"],
               "query": [
                 {
                   "key": "companyFilter",
@@ -3205,9 +2776,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -3216,9 +2785,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -3248,13 +2815,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/contacts/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "contacts",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["contacts", "add"]
             }
           },
           "response": []
@@ -3272,13 +2834,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/contacts/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "contacts",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["contacts", "all"],
               "query": [
                 {
                   "key": "page",
@@ -3347,13 +2904,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/contacts/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "contacts",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["contacts", "edit"]
             }
           },
           "response": []
@@ -3371,13 +2923,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/contacts/696e2cfbf789608b4999935a",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "contacts",
-                "696e2cfbf789608b4999935a"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["contacts", "696e2cfbf789608b4999935a"]
             }
           },
           "response": []
@@ -3395,13 +2942,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/contacts/6954bd283d6642f43d2480d9",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "contacts",
-                "6954bd283d6642f43d2480d9"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["contacts", "6954bd283d6642f43d2480d9"]
             }
           },
           "response": []
@@ -3413,13 +2955,8 @@
             "header": [],
             "url": {
               "raw": "{{BASE_URL}}/contacts/dropdown?typeFilter=customer",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "contacts",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["contacts", "dropdown"],
               "query": [
                 {
                   "key": "companyFilter",
@@ -3458,9 +2995,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -3469,9 +3004,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -3501,13 +3034,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/recipe/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "recipe",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["recipe", "add"]
             }
           },
           "response": []
@@ -3532,13 +3060,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/recipe/6968b80005557721e52ccc3e",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "recipe",
-                "6968b80005557721e52ccc3e"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["recipe", "6968b80005557721e52ccc3e"]
             }
           },
           "response": []
@@ -3556,13 +3079,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/recipe/6968b7ea05557721e52ccc2a",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "recipe",
-                "6968b7ea05557721e52ccc2a"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["recipe", "6968b7ea05557721e52ccc2a"]
             }
           },
           "response": []
@@ -3587,13 +3105,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/recipe/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "recipe",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["recipe", "all"],
               "query": [
                 {
                   "key": "page",
@@ -3652,13 +3165,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/recipe/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "recipe",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["recipe", "edit"]
             }
           },
           "response": []
@@ -3676,13 +3184,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/recipe/dropdown?companyFilter=6940d7d3f5973ae81cfaa664",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "recipe",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["recipe", "dropdown"],
               "query": [
                 {
                   "key": "companyFilter",
@@ -3720,13 +3223,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/bill-of-live-product/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "bill-of-live-product",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["bill-of-live-product", "add"]
             }
           },
           "response": []
@@ -3751,13 +3249,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/bill-of-live-product/696a2ebfc75ddc548e4142c4",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "bill-of-live-product",
-                "696a2ebfc75ddc548e4142c4"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["bill-of-live-product", "696a2ebfc75ddc548e4142c4"]
             }
           },
           "response": []
@@ -3775,13 +3268,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/bill-of-live-product/696a2a6bef8192889185e772",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "bill-of-live-product",
-                "696a2a6bef8192889185e772"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["bill-of-live-product", "696a2a6bef8192889185e772"]
             }
           },
           "response": []
@@ -3806,13 +3294,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/bill-of-live-product/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "bill-of-live-product",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["bill-of-live-product", "all"],
               "query": [
                 {
                   "key": "page",
@@ -3871,13 +3354,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/bill-of-live-product/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "bill-of-live-product",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["bill-of-live-product", "edit"]
             }
           },
           "response": []
@@ -3895,13 +3373,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/bill-of-live-product/dropdown?companyFilter=6940d7d3f5973ae81cfaa664",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "bill-of-live-product",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["bill-of-live-product", "dropdown"],
               "query": [
                 {
                   "key": "companyFilter",
@@ -3935,9 +3408,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -3946,9 +3417,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -3970,14 +3439,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/recipe/6941217703088f375ba25da5/product_of_material",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "recipe",
-                "6941217703088f375ba25da5",
-                "product_of_material"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["recipe", "6941217703088f375ba25da5", "product_of_material"]
             }
           },
           "response": []
@@ -4009,13 +3472,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/brand/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "brand",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["brand", "add"]
             }
           },
           "response": []
@@ -4033,13 +3491,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/brand/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "brand",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["brand", "all"],
               "query": [
                 {
                   "key": "page",
@@ -4092,13 +3545,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/brand/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "brand",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["brand", "edit"]
             }
           },
           "response": []
@@ -4114,13 +3562,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/brand/6943ca842830ff6d3b8c54c2",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "brand",
-                "6943ca842830ff6d3b8c54c2"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["brand", "6943ca842830ff6d3b8c54c2"]
             }
           },
           "response": []
@@ -4145,13 +3588,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/brand/694f5ea15f909cd06c6edfb3",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "brand",
-                "694f5ea15f909cd06c6edfb3"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["brand", "694f5ea15f909cd06c6edfb3"]
             }
           },
           "response": []
@@ -4169,14 +3607,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/brand/tree/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "brand",
-                "tree",
-                "all"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["brand", "tree", "all"]
             }
           },
           "response": []
@@ -4188,13 +3620,8 @@
             "header": [],
             "url": {
               "raw": "{{BASE_URL}}/brand/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "brand",
-                "dropdown"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["brand", "dropdown"]
             }
           },
           "response": []
@@ -4222,9 +3649,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -4233,9 +3658,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -4265,13 +3688,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/category/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "category",
-                "add"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["category", "add"],
               "query": [
                 {
                   "key": "page",
@@ -4335,13 +3753,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/category/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "category",
-                "edit"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["category", "edit"],
               "query": [
                 {
                   "key": "page",
@@ -4396,13 +3809,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/category/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "category",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["category", "all"],
               "query": [
                 {
                   "key": "page",
@@ -4461,13 +3869,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/category/6943ce792830ff6d3b8c54d2",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "category",
-                "6943ce792830ff6d3b8c54d2"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["category", "6943ce792830ff6d3b8c54d2"]
             }
           },
           "response": []
@@ -4485,14 +3888,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/category/tree/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "category",
-                "tree",
-                "all"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["category", "tree", "all"]
             }
           },
           "response": []
@@ -4510,13 +3907,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/category/69564e573609f898c4fdc875",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "category",
-                "69564e573609f898c4fdc875"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["category", "69564e573609f898c4fdc875"]
             }
           },
           "response": []
@@ -4534,14 +3926,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/category/sub-category/tree?categoryFilter=6943ce942830ff6d3b8c54d5",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "category",
-                "sub-category",
-                "tree"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["category", "sub-category", "tree"],
               "query": [
                 {
                   "key": "categoryFilter",
@@ -4559,13 +3945,8 @@
             "header": [],
             "url": {
               "raw": "{{BASE_URL}}/category/dropdown?parentCategoryFilter=6982cf9e71a845f8931c609b",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "category",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["category", "dropdown"],
               "query": [
                 {
                   "key": "parentCategoryFilter",
@@ -4604,9 +3985,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -4615,9 +3994,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -4638,13 +4015,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-order/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "all"],
               "query": [
                 {
                   "key": "page",
@@ -4741,13 +4113,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-order/dropdown?duePaymentFilter=true",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "dropdown"],
               "query": [
                 {
                   "key": "page",
@@ -4797,13 +4164,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-order/cash-control?branchId=694d2785de6a425d9cb092b6",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "cash-control"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "cash-control"],
               "query": [
                 {
                   "key": "page",
@@ -4867,13 +4229,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-order/hold",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "hold"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "hold"],
               "query": [
                 {
                   "key": "search",
@@ -4907,13 +4264,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pos-order/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "add"]
             }
           },
           "response": []
@@ -4940,13 +4292,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pos-order/quick-add-product",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "quick-add-product"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "quick-add-product"]
             }
           },
           "response": []
@@ -4973,13 +4320,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pos-order/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "edit"]
             }
           },
           "response": []
@@ -5006,13 +4348,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pos-order/cash-control",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "cash-control"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "cash-control"]
             }
           },
           "response": []
@@ -5039,13 +4376,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pos-order/hold",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "hold"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "hold"]
             }
           },
           "response": []
@@ -5072,13 +4404,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pos-order/release",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "release"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "release"]
             }
           },
           "response": []
@@ -5105,13 +4432,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pos-order/convert-to-invoice",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "convert-to-invoice"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "convert-to-invoice"]
             }
           },
           "response": []
@@ -5129,13 +4451,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-order/6958fb0c6535820f12652ed1",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "6958fb0c6535820f12652ed1"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "6958fb0c6535820f12652ed1"]
             }
           },
           "response": []
@@ -5153,14 +4470,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-order/customer/69895b8a1ba2b4871ec34d08",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "customer",
-                "69895b8a1ba2b4871ec34d08"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "customer", "69895b8a1ba2b4871ec34d08"]
             }
           },
           "response": []
@@ -5178,13 +4489,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-order/698afb5794490bd8444f4e29",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-order",
-                "698afb5794490bd8444f4e29"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-order", "698afb5794490bd8444f4e29"]
             }
           },
           "response": []
@@ -5207,13 +4513,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/supplier-bill/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "supplier-bill",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["supplier-bill", "all"],
               "query": [
                 {
                   "key": "page",
@@ -5263,13 +4564,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/supplier-bill/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "supplier-bill",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["supplier-bill", "dropdown"],
               "query": [
                 {
                   "key": "supplierId",
@@ -5318,13 +4614,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/supplier-bill/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "supplier-bill",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["supplier-bill", "add"]
             }
           },
           "response": []
@@ -5351,13 +4642,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/supplier-bill/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "supplier-bill",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["supplier-bill", "edit"]
             }
           },
           "response": []
@@ -5375,13 +4661,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/supplier-bill/697a08056810c7f27200c76c",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "supplier-bill",
-                "697a08056810c7f27200c76c"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["supplier-bill", "697a08056810c7f27200c76c"]
             }
           },
           "response": []
@@ -5399,13 +4680,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/supplier-bill/697a08056810c7f27200c76c",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "supplier-bill",
-                "697a08056810c7f27200c76c"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["supplier-bill", "697a08056810c7f27200c76c"]
             }
           },
           "response": []
@@ -5428,13 +4704,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/cash-control/all?registerFilter=true",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "cash-control",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["cash-control", "all"],
               "query": [
                 {
                   "key": "page",
@@ -5488,13 +4759,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/cash-control/dropdown?registerFilter=true",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "cash-control",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["cash-control", "dropdown"],
               "query": [
                 {
                   "key": "supplierId",
@@ -5547,13 +4813,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/cash-control/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "cash-control",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["cash-control", "add"]
             }
           },
           "response": []
@@ -5580,13 +4841,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/cash-control/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "cash-control",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["cash-control", "edit"]
             }
           },
           "response": []
@@ -5604,13 +4860,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/cash-control/699568614a24bd6db8435c85",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "cash-control",
-                "699568614a24bd6db8435c85"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["cash-control", "699568614a24bd6db8435c85"]
             }
           },
           "response": []
@@ -5628,13 +4879,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/cash-control/699563598ceb06663d50d6a5",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "cash-control",
-                "699563598ceb06663d50d6a5"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["cash-control", "699563598ceb06663d50d6a5"]
             }
           },
           "response": []
@@ -5657,13 +4903,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-cash-register/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-cash-register",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-cash-register", "all"],
               "query": [
                 {
                   "key": "page",
@@ -5713,13 +4954,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-cash-register/details",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-cash-register",
-                "details"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-cash-register", "details"],
               "query": [
                 {
                   "key": "page",
@@ -5769,13 +5005,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-cash-register/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-cash-register",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-cash-register", "dropdown"],
               "query": [
                 {
                   "key": "supplierId",
@@ -5824,13 +5055,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pos-cash-register/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-cash-register",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-cash-register", "add"]
             }
           },
           "response": []
@@ -5857,13 +5083,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pos-cash-register/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-cash-register",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-cash-register", "edit"]
             }
           },
           "response": []
@@ -5881,13 +5102,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-cash-register/69959abbbeee56741bb0d840",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-cash-register",
-                "69959abbbeee56741bb0d840"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-cash-register", "69959abbbeee56741bb0d840"]
             }
           },
           "response": []
@@ -5905,13 +5121,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-cash-register/6995a039dd57daa9626a6af6",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-cash-register",
-                "6995a039dd57daa9626a6af6"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-cash-register", "6995a039dd57daa9626a6af6"]
             }
           },
           "response": []
@@ -5934,13 +5145,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-credit-note/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-credit-note",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-credit-note", "all"],
               "query": [
                 {
                   "key": "page",
@@ -5999,13 +5205,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pos-credit-note/redeem",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-credit-note",
-                "redeem"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-credit-note", "redeem"]
             }
           },
           "response": []
@@ -6023,13 +5224,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-credit-note/6999523df1c172777e74d99e",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-credit-note",
-                "6999523df1c172777e74d99e"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-credit-note", "6999523df1c172777e74d99e"]
             }
           },
           "response": []
@@ -6047,13 +5243,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-credit-note/6999523df1c172777e74d99e",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-credit-note",
-                "6999523df1c172777e74d99e"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-credit-note", "6999523df1c172777e74d99e"]
             }
           },
           "response": []
@@ -6076,13 +5267,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pay-later/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pay-later",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["pay-later", "all"],
               "query": [
                 {
                   "key": "page",
@@ -6141,13 +5327,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pay-later/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pay-later",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pay-later", "add"]
             }
           },
           "response": []
@@ -6174,13 +5355,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pay-later/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pay-later",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pay-later", "edit"]
             }
           },
           "response": []
@@ -6198,13 +5374,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pay-later/6989b6719fdaecc33ad345c7",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pay-later",
-                "6989b6719fdaecc33ad345c7"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pay-later", "6989b6719fdaecc33ad345c7"]
             }
           },
           "response": []
@@ -6222,13 +5393,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pay-later/6989b6719fdaecc33ad345c7",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pay-later",
-                "6989b6719fdaecc33ad345c7"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pay-later", "6989b6719fdaecc33ad345c7"]
             }
           },
           "response": []
@@ -6251,13 +5417,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/return-pos-order/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "return-pos-order",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["return-pos-order", "all"],
               "query": [
                 {
                   "key": "page",
@@ -6307,7 +5468,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"posOrderId\": \"6987158728a1fb305fb90223\",\r\n    \"customerId\": \"6987152828a1fb305fb90214\",\r\n    \"salesManId\": \"694d017b7cb4009f97a30854\",\r\n    \"items\": [\r\n        {\r\n            \"productId\": \"6982c76c8d96adcd3e5c7d42\",\r\n            \"quantity\": 200,\r\n            \"price\": 500,\r\n            \"total\": 1000\r\n        }\r\n    ],\r\n    \"total\": 1000,\r\n    \"type\": \"sales_return\",\r\n    \"reason\": \"Damaged product\",\r\n    \"refundViaCash\": 1000,\r\n    \"refundViaBank\": 0,\r\n    \"bankAccountId\": null,\r\n    \"refundDescription\": \"Cash refunded at counter\"\r\n}",
+              "raw": "{\r\n    \"posOrderId\": \"6987158728a1fb305fb90223\",\r\n    \"customerId\": \"6987152828a1fb305fb90214\",\r\n    \"salesManId\": \"694d017b7cb4009f97a30854\",\r\n    \"items\": [\r\n        {\r\n            \"productId\": \"6982c76c8d96adcd3e5c7d42\",\r\n            \"qty\": 200,\r\n            \"price\": 500,\r\n            \"total\": 1000\r\n        }\r\n    ],\r\n    \"total\": 1000,\r\n    \"type\": \"sales_return\",\r\n    \"reason\": \"Damaged product\",\r\n    \"refundViaCash\": 1000,\r\n    \"refundViaBank\": 0,\r\n    \"bankAccountId\": null,\r\n    \"refundDescription\": \"Cash refunded at counter\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6316,13 +5477,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/return-pos-order/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "return-pos-order",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["return-pos-order", "add"]
             }
           },
           "response": []
@@ -6340,7 +5496,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"returnPosOrderId\": \"699bc9f8bd4cb8b31edd1e35\",\r\n    \"posOrderId\": \"6987158728a1fb305fb90223\",\r\n    \"customerId\": \"6987152828a1fb305fb90214\",\r\n    \"salesManId\": \"694d017b7cb4009f97a30854\",\r\n    \"items\": [\r\n        {\r\n            \"productId\": \"6982c76c8d96adcd3e5c7d42\",\r\n            \"quantity\": 200,\r\n            \"price\": 500,\r\n            \"total\": 1000\r\n        }\r\n    ],\r\n    \"total\": 1000,\r\n    \"type\": \"sales_return\",\r\n    \"reason\": \"Damaged product\",\r\n    \"refundViaCash\": 1000,\r\n    \"refundViaBank\": 0,\r\n    \"bankAccountId\": null,\r\n    \"refundDescription\": \"Cash refunded at counter\"\r\n}",
+              "raw": "{\r\n    \"returnPosOrderId\": \"699bc9f8bd4cb8b31edd1e35\",\r\n    \"posOrderId\": \"6987158728a1fb305fb90223\",\r\n    \"customerId\": \"6987152828a1fb305fb90214\",\r\n    \"salesManId\": \"694d017b7cb4009f97a30854\",\r\n    \"items\": [\r\n        {\r\n            \"productId\": \"6982c76c8d96adcd3e5c7d42\",\r\n            \"qty\": 200,\r\n            \"price\": 500,\r\n            \"total\": 1000\r\n        }\r\n    ],\r\n    \"total\": 1000,\r\n    \"type\": \"sales_return\",\r\n    \"reason\": \"Damaged product\",\r\n    \"refundViaCash\": 1000,\r\n    \"refundViaBank\": 0,\r\n    \"bankAccountId\": null,\r\n    \"refundDescription\": \"Cash refunded at counter\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6349,13 +5505,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/return-pos-order/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "return-pos-order",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["return-pos-order", "edit"]
             }
           },
           "response": []
@@ -6373,13 +5524,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/return-pos-order/699bc9f8bd4cb8b31edd1e35",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "return-pos-order",
-                "699bc9f8bd4cb8b31edd1e35"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["return-pos-order", "699bc9f8bd4cb8b31edd1e35"]
             }
           },
           "response": []
@@ -6397,13 +5543,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/return-pos-order/699bc9f8bd4cb8b31edd1e35",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "return-pos-order",
-                "699bc9f8bd4cb8b31edd1e35"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["return-pos-order", "699bc9f8bd4cb8b31edd1e35"]
             }
           },
           "response": []
@@ -6426,13 +5567,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-payment/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-payment",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-payment", "all"],
               "query": [
                 {
                   "key": "page",
@@ -6497,13 +5633,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pos-payment/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-payment",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-payment", "add"]
             }
           },
           "response": []
@@ -6530,13 +5661,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/pos-payment/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-payment",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-payment", "edit"]
             }
           },
           "response": []
@@ -6554,13 +5680,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-payment/6981c34d75235d0daf104c86",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-payment",
-                "6981c34d75235d0daf104c86"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-payment", "6981c34d75235d0daf104c86"]
             }
           },
           "response": []
@@ -6578,13 +5699,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/pos-payment/69994daf583b81d26a5d143f",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "pos-payment",
-                "69994daf583b81d26a5d143f"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["pos-payment", "69994daf583b81d26a5d143f"]
             }
           },
           "response": []
@@ -6607,13 +5723,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/additional-charge/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "additional-charge",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["additional-charge", "all"],
               "query": [
                 {
                   "key": "page",
@@ -6663,13 +5774,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/additional-charge/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "additional-charge",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["additional-charge", "dropdown"],
               "query": [
                 {
                   "key": "supplierId",
@@ -6718,13 +5824,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/additional-charge/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "additional-charge",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["additional-charge", "add"]
             }
           },
           "response": []
@@ -6751,13 +5852,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/additional-charge/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "additional-charge",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["additional-charge", "edit"]
             }
           },
           "response": []
@@ -6775,13 +5871,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/additional-charge/69775b376afdcfe6ae76a96c",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "additional-charge",
-                "69775b376afdcfe6ae76a96c"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["additional-charge", "69775b376afdcfe6ae76a96c"]
             }
           },
           "response": []
@@ -6799,13 +5890,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/additional-charge/69775b376afdcfe6ae76a96c",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "additional-charge",
-                "69775b376afdcfe6ae76a96c"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["additional-charge", "69775b376afdcfe6ae76a96c"]
             }
           },
           "response": []
@@ -6828,13 +5914,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/terms-condition/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "terms-condition",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["terms-condition", "all"],
               "query": [
                 {
                   "key": "page",
@@ -6884,13 +5965,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/terms-condition/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "terms-condition",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["terms-condition", "dropdown"],
               "query": [
                 {
                   "key": "supplierId",
@@ -6939,13 +6015,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/terms-condition/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "terms-condition",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["terms-condition", "add"]
             }
           },
           "response": []
@@ -6972,13 +6043,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/terms-condition/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "terms-condition",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["terms-condition", "edit"]
             }
           },
           "response": []
@@ -6996,13 +6062,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/terms-condition/69773bd601b7334a2b93fb93",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "terms-condition",
-                "69773bd601b7334a2b93fb93"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["terms-condition", "69773bd601b7334a2b93fb93"]
             }
           },
           "response": []
@@ -7020,13 +6081,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/terms-condition/69773bd601b7334a2b93fb93",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "terms-condition",
-                "69773bd601b7334a2b93fb93"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["terms-condition", "69773bd601b7334a2b93fb93"]
             }
           },
           "response": []
@@ -7049,13 +6105,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/debit-note/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "debit-note",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["debit-note", "all"],
               "query": [
                 {
                   "key": "page",
@@ -7099,13 +6150,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/debit-note/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "debit-note",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["debit-note", "add"]
             }
           },
           "response": []
@@ -7132,13 +6178,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/debit-note/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "debit-note",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["debit-note", "edit"]
             }
           },
           "response": []
@@ -7156,13 +6197,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/debit-note/695b80994833883eb5bfc832",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "debit-note",
-                "695b80994833883eb5bfc832"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["debit-note", "695b80994833883eb5bfc832"]
             }
           },
           "response": []
@@ -7180,13 +6216,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/debit-note/697af722227e51887069a0cf",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "debit-note",
-                "697af722227e51887069a0cf"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["debit-note", "697af722227e51887069a0cf"]
             }
           },
           "response": []
@@ -7209,13 +6240,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/sales-debit-note/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-debit-note",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-debit-note", "all"],
               "query": [
                 {
                   "key": "page",
@@ -7259,13 +6285,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/sales-debit-note/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-debit-note",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-debit-note", "add"]
             }
           },
           "response": []
@@ -7292,13 +6313,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/sales-debit-note/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-debit-note",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-debit-note", "edit"]
             }
           },
           "response": []
@@ -7316,13 +6332,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/sales-debit-note/695b80994833883eb5bfc832",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-debit-note",
-                "695b80994833883eb5bfc832"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-debit-note", "695b80994833883eb5bfc832"]
             }
           },
           "response": []
@@ -7340,13 +6351,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/sales-debit-note/695b80994833883eb5bfc832",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-debit-note",
-                "695b80994833883eb5bfc832"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-debit-note", "695b80994833883eb5bfc832"]
             }
           },
           "response": []
@@ -7369,13 +6375,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/estimate/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "estimate",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["estimate", "all"],
               "query": [
                 {
                   "key": "page",
@@ -7419,13 +6420,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/estimate/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "estimate",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["estimate", "add"]
             }
           },
           "response": []
@@ -7452,13 +6448,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/estimate/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "estimate",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["estimate", "edit"]
             }
           },
           "response": []
@@ -7476,13 +6467,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/estimate/695b8eaa7a056e80e135a23c",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "estimate",
-                "695b8eaa7a056e80e135a23c"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["estimate", "695b8eaa7a056e80e135a23c"]
             }
           },
           "response": []
@@ -7500,13 +6486,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/estimate/695b8ea87a056e80e135a232",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "estimate",
-                "695b8ea87a056e80e135a232"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["estimate", "695b8ea87a056e80e135a232"]
             }
           },
           "response": []
@@ -7529,13 +6510,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/sales-order/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-order",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-order", "all"],
               "query": [
                 {
                   "key": "page",
@@ -7580,13 +6556,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/sales-order/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-order",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-order", "dropdown"],
               "query": [
                 {
                   "key": "customerId",
@@ -7630,13 +6601,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/sales-order/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-order",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-order", "add"]
             }
           },
           "response": []
@@ -7663,13 +6629,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/sales-order/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-order",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-order", "edit"]
             }
           },
           "response": []
@@ -7687,13 +6648,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/sales-order/695b9456c2dd68ee05f66ed3",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-order",
-                "695b9456c2dd68ee05f66ed3"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-order", "695b9456c2dd68ee05f66ed3"]
             }
           },
           "response": []
@@ -7711,13 +6667,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/sales-order/695b9456c2dd68ee05f66ed3",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-order",
-                "695b9456c2dd68ee05f66ed3"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-order", "695b9456c2dd68ee05f66ed3"]
             }
           },
           "response": []
@@ -7740,13 +6691,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/invoice/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "invoice",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["invoice", "all"],
               "query": [
                 {
                   "key": "page",
@@ -7796,13 +6742,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/invoice/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "invoice",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["invoice", "dropdown"],
               "query": [
                 {
                   "key": "customerId",
@@ -7851,13 +6792,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/invoice/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "invoice",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["invoice", "add"]
             }
           },
           "response": []
@@ -7884,13 +6820,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/invoice/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "invoice",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["invoice", "edit"]
             }
           },
           "response": []
@@ -7908,13 +6839,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/invoice/695b9a54188894926a32b10b",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "invoice",
-                "695b9a54188894926a32b10b"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["invoice", "695b9a54188894926a32b10b"]
             }
           },
           "response": []
@@ -7932,13 +6858,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/invoice/695b9a54188894926a32b10b",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "invoice",
-                "695b9a54188894926a32b10b"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["invoice", "695b9a54188894926a32b10b"]
             }
           },
           "response": []
@@ -7961,13 +6882,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/delivery-challan/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "delivery-challan",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["delivery-challan", "all"],
               "query": [
                 {
                   "key": "page",
@@ -8011,13 +6927,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/delivery-challan/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "delivery-challan",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["delivery-challan", "add"]
             }
           },
           "response": []
@@ -8044,13 +6955,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/delivery-challan/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "delivery-challan",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["delivery-challan", "edit"]
             }
           },
           "response": []
@@ -8068,13 +6974,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/delivery-challan/695ba30dd8e70c8ac8db781c",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "delivery-challan",
-                "695ba30dd8e70c8ac8db781c"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["delivery-challan", "695ba30dd8e70c8ac8db781c"]
             }
           },
           "response": []
@@ -8092,13 +6993,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/delivery-challan/695ba30dd8e70c8ac8db781c",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "delivery-challan",
-                "695ba30dd8e70c8ac8db781c"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["delivery-challan", "695ba30dd8e70c8ac8db781c"]
             }
           },
           "response": []
@@ -8121,13 +7017,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/credit-note/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "credit-note",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["credit-note", "all"],
               "query": [
                 {
                   "key": "page",
@@ -8171,13 +7062,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/credit-note/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "credit-note",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["credit-note", "add"]
             }
           },
           "response": []
@@ -8195,13 +7081,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/credit-note/697affcbc41026e7142a5a04",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "credit-note",
-                "697affcbc41026e7142a5a04"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["credit-note", "697affcbc41026e7142a5a04"]
             }
           },
           "response": []
@@ -8228,13 +7109,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/credit-note/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "credit-note",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["credit-note", "edit"]
             }
           },
           "response": []
@@ -8252,13 +7128,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/credit-note/697affcbc41026e7142a5a04",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "credit-note",
-                "697affcbc41026e7142a5a04"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["credit-note", "697affcbc41026e7142a5a04"]
             }
           },
           "response": []
@@ -8281,13 +7152,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/sales-credit-note/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-credit-note",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-credit-note", "all"],
               "query": [
                 {
                   "key": "page",
@@ -8331,13 +7197,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/sales-credit-note/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-credit-note",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-credit-note", "add"]
             }
           },
           "response": []
@@ -8355,13 +7216,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/sales-credit-note/695bab05e3c3f9a13515f58b",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-credit-note",
-                "695bab05e3c3f9a13515f58b"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-credit-note", "695bab05e3c3f9a13515f58b"]
             }
           },
           "response": []
@@ -8388,13 +7244,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/sales-credit-note/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-credit-note",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-credit-note", "edit"]
             }
           },
           "response": []
@@ -8412,13 +7263,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/sales-credit-note/695bab05e3c3f9a13515f58b",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "sales-credit-note",
-                "695bab05e3c3f9a13515f58b"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["sales-credit-note", "695bab05e3c3f9a13515f58b"]
             }
           },
           "response": []
@@ -8441,13 +7287,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/voucher/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "voucher",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["voucher", "all"],
               "query": [
                 {
                   "key": "page",
@@ -8496,13 +7337,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/voucher/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "voucher",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["voucher", "add"]
             }
           },
           "response": []
@@ -8529,13 +7365,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/voucher/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "voucher",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["voucher", "edit"]
             }
           },
           "response": []
@@ -8553,13 +7384,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/voucher/695bb7e28b23d2d37de2f57a",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "voucher",
-                "695bb7e28b23d2d37de2f57a"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["voucher", "695bb7e28b23d2d37de2f57a"]
             }
           },
           "response": []
@@ -8577,13 +7403,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/voucher/695bb6bc1c8546e5c013d68e",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "voucher",
-                "695bb6bc1c8546e5c013d68e"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["voucher", "695bb6bc1c8546e5c013d68e"]
             }
           },
           "response": []
@@ -8601,14 +7422,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/voucher/payment/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "voucher",
-                "payment",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["voucher", "payment", "all"],
               "query": [
                 {
                   "key": "page",
@@ -8647,14 +7462,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/voucher/payment/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "voucher",
-                "payment",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["voucher", "payment", "add"]
             }
           },
           "response": []
@@ -8672,14 +7481,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/voucher/receipt/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "voucher",
-                "receipt",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["voucher", "receipt", "all"],
               "query": [
                 {
                   "key": "page",
@@ -8718,14 +7521,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/voucher/receipt/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "voucher",
-                "receipt",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["voucher", "receipt", "add"]
             }
           },
           "response": []
@@ -8743,14 +7540,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/voucher/expense/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "voucher",
-                "expense",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["voucher", "expense", "all"],
               "query": [
                 {
                   "key": "page",
@@ -8789,14 +7580,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/voucher/expense/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "voucher",
-                "expense",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["voucher", "expense", "add"]
             }
           },
           "response": []
@@ -8819,13 +7604,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/account/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["account", "all"],
               "query": [
                 {
                   "key": "page",
@@ -8865,13 +7645,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/account/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["account", "dropdown"],
               "query": [
                 {
                   "key": "accountType",
@@ -8915,13 +7690,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/account/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["account", "add"]
             }
           },
           "response": []
@@ -8948,13 +7718,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/account/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["account", "edit"]
             }
           },
           "response": []
@@ -8972,13 +7737,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/account/695bb7d68b23d2d37de2f571",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account",
-                "695bb7d68b23d2d37de2f571"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["account", "695bb7d68b23d2d37de2f571"]
             }
           },
           "response": []
@@ -8996,13 +7756,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/account/695bb7d68b23d2d37de2f571",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account",
-                "695bb7d68b23d2d37de2f571"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["account", "695bb7d68b23d2d37de2f571"]
             }
           },
           "response": []
@@ -9025,13 +7780,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/account-group/696f668e78fdb5bacffa67c4",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account-group",
-                "696f668e78fdb5bacffa67c4"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["account-group", "696f668e78fdb5bacffa67c4"]
             }
           },
           "response": []
@@ -9049,13 +7799,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/account-group/dropdown?natureFilter=purchase",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account-group",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["account-group", "dropdown"],
               "query": [
                 {
                   "key": "groupLevelFilter",
@@ -9084,13 +7829,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/account-group/tree",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account-group",
-                "tree"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["account-group", "tree"]
             }
           },
           "response": []
@@ -9108,13 +7848,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/account-group/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account-group",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["account-group", "all"],
               "query": [
                 {
                   "key": "groupLevelFilter",
@@ -9155,14 +7890,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/account-group/list/json",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account-group",
-                "list",
-                "json"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["account-group", "list", "json"]
             }
           },
           "response": []
@@ -9189,13 +7918,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/account-group/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account-group",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["account-group", "edit"]
             }
           },
           "response": []
@@ -9213,13 +7937,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/account-group/696b097daf20fffb308e86b5",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account-group",
-                "696b097daf20fffb308e86b5"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["account-group", "696b097daf20fffb308e86b5"]
             }
           },
           "response": []
@@ -9246,13 +7965,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/account-group/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "account-group",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["account-group", "add"]
             }
           },
           "response": []
@@ -9275,13 +7989,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/payment-term/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "payment-term",
-                "all"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["payment-term", "all"]
             }
           },
           "response": []
@@ -9299,13 +8008,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/payment-term/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "payment-term",
-                "dropdown"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["payment-term", "dropdown"]
             }
           },
           "response": []
@@ -9323,13 +8027,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/payment-term/695e299fae1ac0ad70ee1619",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "payment-term",
-                "695e299fae1ac0ad70ee1619"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["payment-term", "695e299fae1ac0ad70ee1619"]
             }
           },
           "response": []
@@ -9356,13 +8055,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/payment-term/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "payment-term",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["payment-term", "add"]
             }
           },
           "response": []
@@ -9380,13 +8074,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/payment-term/695e299fae1ac0ad70ee1619",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "payment-term",
-                "695e299fae1ac0ad70ee1619"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["payment-term", "695e299fae1ac0ad70ee1619"]
             }
           },
           "response": []
@@ -9413,13 +8102,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/payment-term/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "payment-term",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["payment-term", "edit"]
             }
           },
           "response": []
@@ -9442,13 +8126,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/location/country",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "location",
-                "country"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["location", "country"]
             }
           },
           "response": []
@@ -9466,14 +8145,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/location/state/6970b5d93fb438e3e47085ca",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "location",
-                "state",
-                "6970b5d93fb438e3e47085ca"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["location", "state", "6970b5d93fb438e3e47085ca"]
             }
           },
           "response": []
@@ -9491,14 +8164,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/location/city/6970c04c8e1002cefa6f5c46",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "location",
-                "city",
-                "6970c04c8e1002cefa6f5c46"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["location", "city", "6970c04c8e1002cefa6f5c46"]
             }
           },
           "response": []
@@ -9525,13 +8192,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/location/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "location",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["location", "add"]
             }
           },
           "response": []
@@ -9549,13 +8211,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/location/all?parentFilter=696e1bd14cbd5d934a9618e5&typeFilter=city",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "location",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["location", "all"],
               "query": [
                 {
                   "key": "page",
@@ -9608,13 +8265,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/location/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "location",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["location", "edit"]
             }
           },
           "response": []
@@ -9632,13 +8284,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/location/696b296237744834e960bb63",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "location",
-                "696b296237744834e960bb63"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["location", "696b296237744834e960bb63"]
             }
           },
           "response": []
@@ -9656,13 +8303,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/location/696b297037744834e960bb6a",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "location",
-                "696b297037744834e960bb6a"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["location", "696b297037744834e960bb6a"]
             }
           },
           "response": []
@@ -9688,13 +8330,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/uom/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "uom",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["uom", "add"]
             }
           },
           "response": []
@@ -9715,13 +8352,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/uom/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "uom",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["uom", "edit"]
             }
           },
           "response": []
@@ -9739,13 +8371,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/uom/6964afee85fe44bb61c99104",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "uom",
-                "6964afee85fe44bb61c99104"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["uom", "6964afee85fe44bb61c99104"]
             }
           },
           "response": []
@@ -9757,13 +8384,8 @@
             "header": [],
             "url": {
               "raw": "{{BASE_URL}}/uom/all?page=1&limit=1",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "uom",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["uom", "all"],
               "query": [
                 {
                   "key": "page",
@@ -9791,13 +8413,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/uom/6964b0cc5a746162d67af0de",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "uom",
-                "6964b0cc5a746162d67af0de"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["uom", "6964b0cc5a746162d67af0de"]
             }
           },
           "response": []
@@ -9809,13 +8426,8 @@
             "header": [],
             "url": {
               "raw": "{{BASE_URL}}/uom/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "uom",
-                "dropdown"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["uom", "dropdown"]
             }
           },
           "response": []
@@ -9843,9 +8455,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -9854,9 +8464,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -9880,13 +8488,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/tax/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "tax",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["tax", "add"]
             }
           },
           "response": []
@@ -9907,13 +8510,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/tax/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "tax",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["tax", "edit"]
             }
           },
           "response": []
@@ -9931,13 +8529,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/tax/6964afee85fe44bb61c99104",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "tax",
-                "6964afee85fe44bb61c99104"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["tax", "6964afee85fe44bb61c99104"]
             }
           },
           "response": []
@@ -9949,13 +8542,8 @@
             "header": [],
             "url": {
               "raw": "{{BASE_URL}}/tax/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "tax",
-                "all"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["tax", "all"]
             }
           },
           "response": []
@@ -9973,13 +8561,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/tax/6964b8176bfce325ede7f9e3",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "tax",
-                "6964b8176bfce325ede7f9e3"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["tax", "6964b8176bfce325ede7f9e3"]
             }
           },
           "response": []
@@ -9997,13 +8580,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/tax/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "tax",
-                "dropdown"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["tax", "dropdown"]
             }
           },
           "response": []
@@ -10031,9 +8609,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -10042,9 +8618,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -10068,13 +8642,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/settings/update",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "settings",
-                "update"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["settings", "update"]
             }
           },
           "response": []
@@ -10098,13 +8667,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/settings/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "settings",
-                "all"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["settings", "all"]
             }
           },
           "response": []
@@ -10132,9 +8696,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -10143,9 +8705,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -10172,13 +8732,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/dashboard/category-wise-customers?typeFilter=VIP_Customer",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "dashboard",
-                "category-wise-customers"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["dashboard", "category-wise-customers"],
               "query": [
                 {
                   "key": "typeFilter",
@@ -10208,13 +8763,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/dashboard/top-customers",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "dashboard",
-                "top-customers"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["dashboard", "top-customers"]
             }
           },
           "response": []
@@ -10238,13 +8788,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/dashboard/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "dashboard",
-                "all"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["dashboard", "all"]
             }
           },
           "response": []
@@ -10268,13 +8813,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/dashboard/category-wise-customers-count",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "dashboard",
-                "category-wise-customers-count"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["dashboard", "category-wise-customers-count"]
             }
           },
           "response": []
@@ -10293,13 +8833,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/login-log/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "login-log",
-                "all"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["login-log", "all"]
             }
           },
           "response": []
@@ -10327,9 +8862,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -10338,9 +8871,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -10361,13 +8892,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/coupon/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "coupon",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["coupon", "all"],
               "query": [
                 {
                   "key": "page",
@@ -10397,13 +8923,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/coupon/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "coupon",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["coupon", "dropdown"],
               "query": [
                 {
                   "key": "page",
@@ -10448,13 +8969,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/coupon/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "coupon",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["coupon", "add"]
             }
           },
           "response": []
@@ -10481,13 +8997,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/coupon/verify",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "coupon",
-                "verify"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["coupon", "verify"]
             }
           },
           "response": []
@@ -10514,13 +9025,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/coupon/remove",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "coupon",
-                "remove"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["coupon", "remove"]
             }
           },
           "response": []
@@ -10547,13 +9053,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/coupon/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "coupon",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["coupon", "edit"]
             }
           },
           "response": []
@@ -10571,13 +9072,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/coupon/698dc2373e3c7789a0e34492",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "coupon",
-                "698dc2373e3c7789a0e34492"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["coupon", "698dc2373e3c7789a0e34492"]
             }
           },
           "response": []
@@ -10595,13 +9091,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/coupon/6996900191824daae8f146b2",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "coupon",
-                "6996900191824daae8f146b2"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["coupon", "6996900191824daae8f146b2"]
             }
           },
           "response": []
@@ -10624,13 +9115,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/discount/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "discount",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["discount", "all"],
               "query": [
                 {
                   "key": "page",
@@ -10669,13 +9155,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/discount/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "discount",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["discount", "add"]
             }
           },
           "response": []
@@ -10702,13 +9183,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/discount/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "discount",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["discount", "edit"]
             }
           },
           "response": []
@@ -10726,13 +9202,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/discount/695a11bc7c101593469c8a21",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "discount",
-                "695a11bc7c101593469c8a21"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["discount", "695a11bc7c101593469c8a21"]
             }
           },
           "response": []
@@ -10750,13 +9221,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/discount/695a11bc7c101593469c8a21",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "discount",
-                "695a11bc7c101593469c8a21"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["discount", "695a11bc7c101593469c8a21"]
             }
           },
           "response": []
@@ -10779,13 +9245,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/feedback/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "feedback",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["feedback", "all"],
               "query": [
                 {
                   "key": "page",
@@ -10824,13 +9285,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/feedback/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "feedback",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["feedback", "add"]
             }
           },
           "response": []
@@ -10857,13 +9313,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/feedback/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "feedback",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["feedback", "edit"]
             }
           },
           "response": []
@@ -10881,13 +9332,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/feedback/695bcb5499579b1103bf73ea",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "feedback",
-                "695bcb5499579b1103bf73ea"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["feedback", "695bcb5499579b1103bf73ea"]
             }
           },
           "response": []
@@ -10905,13 +9351,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/feedback/695bcaf899579b1103bf73e1",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "feedback",
-                "695bcaf899579b1103bf73e1"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["feedback", "695bcaf899579b1103bf73e1"]
             }
           },
           "response": []
@@ -10934,13 +9375,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/loyalty/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "loyalty",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["loyalty", "all"],
               "query": [
                 {
                   "key": "page",
@@ -10970,13 +9406,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/loyalty/dropdown",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "loyalty",
-                "dropdown"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["loyalty", "dropdown"],
               "query": [
                 {
                   "key": "page",
@@ -11012,13 +9443,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/loyalty-points/",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "loyalty-points",
-                ""
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["loyalty-points", ""],
               "query": [
                 {
                   "key": "limit",
@@ -11058,13 +9484,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/loyalty/remove",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "loyalty",
-                "remove"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["loyalty", "remove"]
             }
           },
           "response": []
@@ -11091,13 +9512,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/loyalty/redeem",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "loyalty",
-                "redeem"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["loyalty", "redeem"]
             }
           },
           "response": []
@@ -11124,13 +9540,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/loyalty/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "loyalty",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["loyalty", "add"]
             }
           },
           "response": []
@@ -11157,13 +9568,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/loyalty-points/",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "loyalty-points",
-                ""
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["loyalty-points", ""]
             }
           },
           "response": []
@@ -11190,13 +9596,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/loyalty/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "loyalty",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["loyalty", "edit"]
             }
           },
           "response": []
@@ -11214,13 +9615,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/loyalty/698f0736e82ca43a550924d0",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "loyalty",
-                "698f0736e82ca43a550924d0"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["loyalty", "698f0736e82ca43a550924d0"]
             }
           },
           "response": []
@@ -11238,13 +9634,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/loyalty/698f1ac3531cc126296c19fe",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "loyalty",
-                "698f1ac3531cc126296c19fe"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["loyalty", "698f1ac3531cc126296c19fe"]
             }
           },
           "response": []
@@ -11267,13 +9658,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/prefix/all",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "prefix",
-                "all"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["prefix", "all"]
             }
           },
           "response": []
@@ -11291,14 +9677,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/prefix/module/INVOICE1",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "prefix",
-                "module",
-                "INVOICE1"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["prefix", "module", "INVOICE1"]
             }
           },
           "response": []
@@ -11325,13 +9705,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/prefix/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "prefix",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["prefix", "add"]
             }
           },
           "response": []
@@ -11358,13 +9733,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/prefix/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "prefix",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["prefix", "edit"]
             }
           },
           "response": []
@@ -11382,13 +9752,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/prefix/695bce0ae0d764912bf0d995",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "prefix",
-                "695bce0ae0d764912bf0d995"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["prefix", "695bce0ae0d764912bf0d995"]
             }
           },
           "response": []
@@ -11406,13 +9771,8 @@
             ],
             "url": {
               "raw": "{{BASE_URL}}/prefix/695bce01e0d764912bf0d987",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "prefix",
-                "695bce01e0d764912bf0d987"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["prefix", "695bce01e0d764912bf0d987"]
             }
           },
           "response": []
@@ -11438,13 +9798,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/module/add",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "module",
-                "add"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["module", "add"]
             }
           },
           "response": []
@@ -11465,13 +9820,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/module/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "module",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["module", "edit"]
             }
           },
           "response": []
@@ -11492,13 +9842,8 @@
             },
             "url": {
               "raw": "{{base_url}}/module/6892de30eba0cf77503d1eeb",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "module",
-                "6892de30eba0cf77503d1eeb"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["module", "6892de30eba0cf77503d1eeb"]
             }
           },
           "response": []
@@ -11522,13 +9867,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/module/all?page=1&limit=10",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "module",
-                "all"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["module", "all"],
               "query": [
                 {
                   "key": "page",
@@ -11562,13 +9902,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/module/697209c858165cc44eae394b",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "module",
-                "697209c858165cc44eae394b"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["module", "697209c858165cc44eae394b"]
             }
           },
           "response": []
@@ -11589,14 +9924,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/module/bulk/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "module",
-                "bulk",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["module", "bulk", "edit"]
             }
           },
           "response": []
@@ -11620,14 +9949,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/module/user/permissions?moduleId=6972066036d22410ba5899c7",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "module",
-                "user",
-                "permissions"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["module", "user", "permissions"],
               "query": [
                 {
                   "key": "moduleId",
@@ -11661,9 +9984,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -11672,9 +9993,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -11698,13 +10017,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/permission/edit",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "permission",
-                "edit"
-              ]
+              "host": ["{{BASE_URL}}"],
+              "path": ["permission", "edit"]
             },
             "description": "## Edit Permission\n\nThis endpoint allows you to modify the permissions associated with a specific role in the system. It is used to update the access rights for different tabs within the application.\n\n### Request\n\n- **Method:** POST\n    \n- **URL:** `{{base_url}}/permission/edit`\n    \n- **Content-Type:** application/json\n    \n\n#### Request Body\n\nThe request body must be a JSON object containing the following parameters:\n\n- `data` (Array of Objects): An array of permission objects that define the access rights for different tabs. Each object in the array should include:\n    \n    - `_id` (String): The unique identifier for the permission entry.\n        \n    - `tabName` (String): The name of the tab for which permissions are being set.\n        \n    - `displayName` (String): The display name of the tab.\n        \n    - `tabUrl` (String): The URL associated with the tab.\n        \n    - `number` (Integer): An integer representing the order or priority of the tab.\n        \n    - `hasView` (Boolean): Indicates if the role has view permission for the tab.\n        \n    - `hasAdd` (Boolean): Indicates if the role has add permission for the tab.\n        \n    - `hasEdit` (Boolean): Indicates if the role has edit permission for the tab.\n        \n    - `hasDelete` (Boolean): Indicates if the role has delete permission for the tab.\n        \n    - `isActive` (Boolean): Indicates if the permission is currently active.\n        \n    - `parentId` (String or Null): The ID of the parent permission, if applicable.\n        \n    - `createdAt` (String): Timestamp of when the permission was created.\n        \n    - `updatedAt` (String): Timestamp of when the permission was last updated.\n        \n    - `__v` (Integer): Version key for the permission object.\n        \n    - `view` (Boolean): Indicates if the view permission is enabled.\n        \n    - `add` (Boolean): Indicates if the add permission is enabled.\n        \n    - `edit` (Boolean): Indicates if the edit permission is enabled.\n        \n    - `delete` (Boolean): Indicates if the delete permission is enabled.\n        \n- `roleId` (String): The unique identifier of the role whose permissions are being edited.\n    \n\n### Response\n\nThe response will typically include a confirmation of the update status, along with any relevant data regarding the updated permissions. The structure may vary depending on the implementation, but it generally indicates whether the operation was successful or if there were any errors.\n\nEnsure that the input parameters are correctly formatted and that the role ID corresponds to an existing role in the system to avoid errors during the update process."
           },
@@ -11729,13 +10043,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/permission/details?userId=696868718e1bb198ff05dae2",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "permission",
-                "details"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["permission", "details"],
               "query": [
                 {
                   "key": "userId",
@@ -11765,14 +10074,8 @@
             },
             "url": {
               "raw": "{{BASE_URL}}/permission/child/details?userId=696868718e1bb198ff05dae2",
-              "host": [
-                "{{BASE_URL}}"
-              ],
-              "path": [
-                "permission",
-                "child",
-                "details"
-              ],
+              "host": ["{{BASE_URL}}"],
+              "path": ["permission", "child", "details"],
               "query": [
                 {
                   "key": "userId",
@@ -11806,9 +10109,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         },
         {
@@ -11817,9 +10118,7 @@
             "type": "text/javascript",
             "packages": {},
             "requests": {},
-            "exec": [
-              ""
-            ]
+            "exec": [""]
           }
         }
       ]
@@ -11832,9 +10131,7 @@
         "type": "text/javascript",
         "packages": {},
         "requests": {},
-        "exec": [
-          ""
-        ]
+        "exec": [""]
       }
     },
     {
@@ -11843,9 +10140,7 @@
         "type": "text/javascript",
         "packages": {},
         "requests": {},
-        "exec": [
-          ""
-        ]
+        "exec": [""]
       }
     }
   ],

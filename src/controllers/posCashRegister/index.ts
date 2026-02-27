@@ -37,7 +37,7 @@ export const addPosCashRegister = async (req, res) => {
     value.createdBy = user?._id || null;
     value.salesManId = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.registerNo = await generateSequenceNumber({ model: PosCashRegisterModel, prefix: "REG", companyId: value.companyId });
+    value.registerNo = await generateSequenceNumber({ model: PosCashRegisterModel, prefix: "REG", fieldName: "registerNo", companyId: value.companyId });
 
     const response = await createOne(PosCashRegisterModel, value);
     if (!response) {
@@ -69,8 +69,19 @@ export const editPosCashRegister = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Cash Register"), {}, {}));
     }
 
+    if (value.status === CASH_REGISTER_STATUS.CLOSED) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Register is already closed", {}, {}));
+    }
+
     if (!value.salesManId) {
       value.salesManId = user?._id || null;
+    }
+
+    if (value.status === CASH_REGISTER_STATUS.CLOSED) {
+      const isPosHoldOrderExist = await getFirstMatch(PosOrderModel, { createdAt: { $gte: isExist?.createdAt }, status: POS_ORDER_STATUS.HOLD, isDeleted: false, companyId: isExist?.companyId }, {}, {});
+      if (isPosHoldOrderExist) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "First Settle the all hold orders", {}, {}));
+      }
     }
 
     value.updatedBy = user?._id || null;

@@ -36,6 +36,7 @@ export const posItemSchema = new Schema(
     additionalDiscountAmount: { type: Number, default: 0 },
     unitCost: { type: Number },
     netAmount: { type: Number },
+    returnedQty: { type: Number, default: 0 },
   },
   { _id: false },
 );
@@ -60,6 +61,8 @@ const posOrderSchema = new Schema(
     flatDiscountAmount: { type: Number, default: 0 },
     roundOff: { type: Number, default: 0 },
     totalAmount: { type: Number, default: 0 },
+    totalReturnedQty: { type: Number, default: 0 },
+    returnedAmount: { type: Number, default: 0 },
 
     additionalCharges: [posAdditionalChargeSchema],
 
