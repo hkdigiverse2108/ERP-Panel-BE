@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { contactModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel, EstimateModel } from "../../database";
+import { contactModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel, EstimateModel, userModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addSalesOrderSchema, deleteSalesOrderSchema, editSalesOrderSchema, getSalesOrderSchema } from "../../validation";
 
@@ -49,7 +49,7 @@ export const addSalesOrder = async (req, res) => {
     }
 
     // Validate salesman exists if provided
-    if (value.salesManId && !(await checkIdExist(contactModel, value.salesManId, "Salesman", res))) return;
+    if (value.salesManId && !(await checkIdExist(userModel, value.salesManId, "Salesman", res))) return;
 
     // Validate estimate exists if provided
     if (value.selectedEstimateId && !(await checkIdExist(EstimateModel, value.selectedEstimateId, "Selected Estimate", res))) return;
@@ -142,7 +142,7 @@ export const editSalesOrder = async (req, res) => {
     }
 
     // Validate salesman exists if provided
-    if (value.salesManId && !(await checkIdExist(contactModel, value.salesManId, "Salesman", res))) return;
+    if (value.salesManId && !(await checkIdExist(userModel, value.salesManId, "Salesman", res))) return;
 
     // Validate estimate exists if provided
     if (value.selectedEstimateId && !(await checkIdExist(EstimateModel, value.selectedEstimateId, "Selected Estimate", res))) return;

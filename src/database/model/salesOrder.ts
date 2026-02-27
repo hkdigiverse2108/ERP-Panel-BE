@@ -22,7 +22,7 @@ const SalesOrderSchema = new Schema<ISalesOrder>(
     shippingAddress: { type: Schema.Types.ObjectId },
     paymentTerms: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
     taxType: { type: String, enum: Object.values(TAX_TYPE) },
-    salesManId: { type: Schema.Types.ObjectId, ref: "contact" },
+    salesManId: { type: Schema.Types.ObjectId, ref: "user" },
     selectedEstimateId: { type: Schema.Types.ObjectId, ref: "estimate" },
     items: [salesOrderItemSchema],
     transectionSummary: { type: transactionSummarySchema },

@@ -2,9 +2,12 @@ import { Schema } from "mongoose";
 import { ISalesDocument } from "./sales";
 
 export interface IInvoice extends ISalesDocument {
-    salesOrderId?: Schema.Types.ObjectId;
-    paymentStatus: 'paid' | 'unpaid' | 'partial';
+    invoiceNo: string;
+    paymentStatus: 'paid' | 'unpaid' | 'partial' | 'due';
+    payType: 'cash' | 'bank';
+    dueAmount: number;
     paidAmount: number;
     balanceAmount: number;
-    salesManId?: Schema.Types.ObjectId;
+    accountLedgerId?: Schema.Types.ObjectId;
+    createdFrom: 'sales-order' | 'delivery-challan';
 }

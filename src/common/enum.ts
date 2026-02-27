@@ -354,3 +354,8 @@ export const SALES_ORDER_STATUS = {
   DELIVERY_CHALLAN_CREATED: "delivery_challan_created",
   CANCELLED: "cancelled",
 } as const;
+
+export const INVOICE_CREATED_FROM = {
+  SALES_ORDER: "sales-order",
+  DELIVERY_CHALLAN: "delivery-challan",
+} as const;
