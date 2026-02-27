@@ -663,7 +663,7 @@ export const getOnePosOrder = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "salesManId", select: "fullName" },
           { path: "customerId", select: "firstName lastName companyName email phoneNo" },
-          { path: "items.productId", select: "name itemCode" },
+          { path: "items.productId", select: "-isDeleted -isActive -createdAt -updatedAt -createdBy -updatedBy -images -nutrition" },
           { path: "invoiceId", select: "documentNo" },
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "additionalCharges.chargeId", select: "name" },
@@ -676,7 +676,54 @@ export const getOnePosOrder = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Order"), response, {}));
+    const productIds = response?.items?.map((item) => item?.productId?._id);
+
+    const stockResponse = await getDataWithSorting(
+      stockModel,
+      { isDeleted: false, isActive: true, companyId: response?.companyId, productId: { $in: productIds } },
+      { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1 },
+      {
+        sort: { updatedAt: -1 },
+        populate: [
+          { path: "purchaseTaxId", select: "name percentage" },
+          { path: "salesTaxId", select: "name percentage" },
+          { path: "uomId", select: "name code" },
+        ],
+      },
+    );
+
+    const stockMap = stockResponse.reduce((acc, stock) => {
+      acc[stock.productId.toString()] = stock;
+      return acc;
+    }, {});
+
+    const updatedResponse = {
+      ...response,
+      items: response.items.map((item) => {
+        const product = item.productId;
+        if (product && product._id) {
+          const stock = stockMap[product._id.toString()];
+          item.productId = {
+            ...product,
+            qty: stock?.qty ?? 0,
+            purchasePrice: stock?.purchasePrice ?? product.purchasePrice,
+            landingCost: stock?.landingCost ?? product.landingCost,
+            mrp: stock?.mrp ?? product.mrp,
+            sellingPrice: stock?.sellingPrice ?? product.sellingPrice,
+            sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
+            sellingMargin: stock?.sellingMargin ?? product.sellingMargin,
+            purchaseTaxId: stock?.purchaseTaxId,
+            salesTaxId: stock?.salesTaxId,
+            isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
+            isSalesTaxIncluding: stock?.isSalesTaxIncluding,
+            uomId: stock?.uomId,
+          };
+        }
+        return item;
+      }),
+    };
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Order"), updatedResponse, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

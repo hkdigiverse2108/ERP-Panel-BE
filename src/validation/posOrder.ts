@@ -66,7 +66,10 @@ export const addPosOrderSchema = Joi.object({
 
   payLater: Joi.object({
     dueDate: Joi.date().optional().allow(null),
-    paymentTerm: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional().allow("", null),
+    paymentTerm: Joi.string()
+      .valid(...Object.values(PAYMENT_TERMS_ENUM))
+      .optional()
+      .allow("", null),
     sendReminder: Joi.boolean().default(false).optional(),
   })
     .optional()
@@ -81,7 +84,10 @@ export const addPosOrderSchema = Joi.object({
 
   redeemCreditId: objectId().optional().allow(null),
   redeemCreditAmount: Joi.number().min(0).optional().default(0),
-  redeemCreditType: Joi.string().valid(...Object.values(REDEEM_CREDIT_TYPE)).optional().allow(null),
+  redeemCreditType: Joi.string()
+    .valid(...Object.values(REDEEM_CREDIT_TYPE))
+    .optional()
+    .allow(null),
 
   ...baseApiSchema,
 });
@@ -123,7 +129,10 @@ export const editPosOrderSchema = Joi.object().keys({
 
   payLater: Joi.object({
     dueDate: Joi.date().optional().allow(null),
-    paymentTerm: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional().allow("", null),
+    paymentTerm: Joi.string()
+      .valid(...Object.values(PAYMENT_TERMS_ENUM))
+      .optional()
+      .allow("", null),
     sendReminder: Joi.boolean().optional(),
   })
     .optional()
@@ -135,6 +144,13 @@ export const editPosOrderSchema = Joi.object().keys({
 
   loyaltyId: objectId().optional().allow(null),
   loyaltyDiscount: Joi.number().min(0).optional(),
+
+  redeemCreditId: objectId().optional().allow(null),
+  redeemCreditAmount: Joi.number().min(0).optional().default(0),
+  redeemCreditType: Joi.string()
+    .valid(...Object.values(REDEEM_CREDIT_TYPE))
+    .optional()
+    .allow(null),
 
   ...baseApiSchema,
 });
@@ -195,4 +211,3 @@ export const getCombinedPaymentsSchema = Joi.object().keys({
   endDate: Joi.date().optional(),
   locationId: objectId().optional().allow("", null),
 });
-
