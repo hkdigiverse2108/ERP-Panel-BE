@@ -46,7 +46,7 @@ export * as permissionController from "./permission";
 export * as termsConditionController from "./termsCondition";
 export * as additionalChargeController from "./additionalCharge";
 export * as salesCreditNoteController from "./salesCreditNote";
-export * as salesDebitNoteController from "./salesDebitNote";
+export * as purchaseDebitNoteController from "./purchaseDebitNote";
 export * as payLaterController from "./payLater";
 export * as posPaymentController from "./posPayment";
 export * as loyaltyPointsController from "./loyaltyPoints";

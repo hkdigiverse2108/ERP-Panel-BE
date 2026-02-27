@@ -49,7 +49,7 @@ import { permissionRouter } from "./permission";
 import { termsConditionRouter } from "./termsCondition";
 import { additionalChargeRouter } from "./additionalCharge";
 import { salesCreditNoteRouter } from "./salesCreditNote";
-import { salesDebitNoteRouter } from "./salesDebitNote";
+import { purchaseDebitNoteRouter } from "./purchaseDebitNote";
 import { posPaymentRouter } from "./posPayment";
 import { cashControlRouter } from "./cashControl";
 import { posCashRegisterRouter } from "./posCashRegister";
@@ -93,7 +93,7 @@ router.use("/terms-condition", termsConditionRouter);
 router.use("/purchase-order", purchaseOrderRouter);
 router.use("/supplier-bill", supplierBillRouter);
 router.use("/debit-note", debitNoteRouter);
-router.use("/sales-debit-note", salesDebitNoteRouter);
+router.use("/sales-debit-note", purchaseDebitNoteRouter);
 router.use("/estimate", estimateRouter);
 router.use("/sales-order", salesOrderRouter);
 router.use("/invoice", invoiceRouter);
@@ -120,9 +120,8 @@ router.use("/recipe", recipeRouter);
 router.use("/material", materialRouter);
 router.use("/material-consumption", materialConsumptionRouter);
 router.use("/bill-of-live-product", billOfLiveProductRouter);
-router.use("/settings", settingsRouter)
-router.use("/journal-voucher", journalVoucherRouter)
-
+router.use("/settings", settingsRouter);
+router.use("/journal-voucher", journalVoucherRouter);
 
 // === For Super Admin
 router.use("/account-group", accountGroupRouter);

@@ -1,7 +1,7 @@
 import Joi from "joi";
 import { objectId } from "./common";
 
-const salesDebitNoteItemSchema = Joi.object().keys({
+const purchaseDebitNoteItemSchema = Joi.object().keys({
   productId: objectId().required(),
   productName: Joi.string().required(),
   batchNo: Joi.string().optional().allow("", null),
@@ -24,7 +24,7 @@ export const addpurchaseDebitNoteSchema = Joi.object().keys({
   supplierId: objectId().required(),
   supplierName: Joi.string().optional(),
   supplierBillId: objectId().optional().allow("", null),
-  items: Joi.array().items(salesDebitNoteItemSchema).min(1).required(),
+  items: Joi.array().items(purchaseDebitNoteItemSchema).min(1).required(),
   grossAmount: Joi.number().min(0).default(0).optional(),
   discountAmount: Joi.number().min(0).default(0).optional(),
   taxAmount: Joi.number().min(0).default(0).optional(),
@@ -35,13 +35,13 @@ export const addpurchaseDebitNoteSchema = Joi.object().keys({
 });
 
 export const editpurchaseDebitNoteSchema = Joi.object().keys({
-  salesDebitNoteId: objectId().required(),
+  purchaseDebitNoteId: objectId().required(),
   documentNo: Joi.string().optional(),
   date: Joi.date().optional(),
   customerId: objectId().optional(),
   customerName: Joi.string().optional(),
   invoiceId: objectId().optional().allow("", null),
-  items: Joi.array().items(salesDebitNoteItemSchema).optional(),
+  items: Joi.array().items(purchaseDebitNoteItemSchema).optional(),
   grossAmount: Joi.number().min(0).optional(),
   discountAmount: Joi.number().min(0).optional(),
   taxAmount: Joi.number().min(0).optional(),

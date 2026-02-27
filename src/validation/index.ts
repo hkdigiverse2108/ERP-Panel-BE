@@ -44,7 +44,7 @@ export * from "./permission";
 export * from "./termsCondition";
 export * from "./additionalCharge";
 export * from "./salesCreditNote";
-export * from "./salesDebitNote";
+export * from "./purchaseDebitNote";
 export * from "./stock";
 export * from "./employee";
 export * from "./payLater";
