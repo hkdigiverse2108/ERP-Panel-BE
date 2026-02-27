@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel } from "../../database";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel } from "../../database";
 import { applyDateFilter, checkCompany, checkIdExist, checkStockQty, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
 import { applyCoupon, applyLoyalty, applyRedeemCredit, revertCoupon, revertLoyalty, revertRedeemCredit } from "./helper";
@@ -435,6 +435,12 @@ export const deletePosOrder = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
 
+    // Prevent deletion if return orders exist
+    const hasReturns = await returnPosOrderModel.findOne({ posOrderId: isExist._id, isDeleted: false });
+    if (hasReturns) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Cannot delete order with active returns. Please delete the return order first.", {}, {}));
+    }
+
     // -----------------------------------------------------------
     let response;
     if (isExist.status === POS_ORDER_STATUS.HOLD) {
@@ -445,9 +451,9 @@ export const deletePosOrder = async (req, res) => {
 
       // --- Stock Management Logic ---
       // Revert stock if the order was not cancelled
-      for (const item of isExist.items) {
-        await stockModel.findOneAndUpdate({ productId: item.productId, companyId: isExist.companyId, isDeleted: false }, { $inc: { qty: item.qty } });
-      }
+        for (const item of isExist.items) {
+          await stockModel.findOneAndUpdate({ productId: item.productId, companyId: isExist.companyId, isDeleted: false }, { $inc: { qty: item.qty } });
+        }
       // --- Revert Coupon, Loyalty Campaign, and Redeem Credit ---
       if (isExist.couponId && isExist.customerId) {
         await revertCoupon(isExist.couponId, isExist.customerId);
