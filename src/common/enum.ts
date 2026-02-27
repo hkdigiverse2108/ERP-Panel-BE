@@ -238,6 +238,8 @@ export const POS_ORDER_STATUS = {
   COMPLETED: "completed",
   HOLD: "hold",
   CANCELLED: "cancelled",
+  PARTIALLY_RETURNED: "partially_returned",
+  RETURNED: "returned",
 } as const;
 
 export const POS_ORDER_TYPE = {
@@ -267,12 +269,10 @@ export const POS_RECEIPT_TYPE = {
   ADVANCE: "advance",
 } as const;
 
-
 export const RETURN_POS_ORDER_TYPE = {
   REFUND: "refund",
   SALES_RETURN: "sales_return",
 } as const;
-
 
 export const LOYALTY_REDEMPTION_TYPE = {
   SINGLE: "single",
@@ -294,7 +294,6 @@ export const REDEEM_CREDIT_MODEL = {
   CREDIT_NOTE: "pos-credit-note",
   ADVANCE_PAYMENT: "pos-payment",
 } as const;
-
 
 export const CASH_REGISTER_STATUS = {
   OPEN: "open",

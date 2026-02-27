@@ -33,7 +33,7 @@ const stockSchema = new Schema<IStock>(
     sellingDiscount: { type: Number, default: 0 },
     sellingPrice: { type: Number, default: 0 },
     sellingMargin: { type: Number, default: 0 },
-    qty: { type: Number, default: 0 },
+    qty: { type: Number, default: 0, min: 0 },
 
     purchaseTaxId: { type: Schema.Types.ObjectId, ref: "tax" },
     salesTaxId: { type: Schema.Types.ObjectId, ref: "tax" },

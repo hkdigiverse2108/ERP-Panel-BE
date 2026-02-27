@@ -16,7 +16,7 @@ export interface IProduct extends IBase {
   // Product Type
   productType: "finished" | "raw_material" | "semi_finished" | "service" | "non_inventory";
 
-  // Units & Quantity
+  // Units & qty
   uomId: Schema.Types.ObjectId;
   netWeight?: number;
   masterQty?: number;
@@ -70,7 +70,7 @@ export interface IProduct extends IBase {
 
   // Misc
   additionalInfo?: string;
-  
+
   // departmentId?: Schema.Types.ObjectId; //  Commented in schema
   // image?: string; //  single image not used
   // netWeightUnit?: string; //  Commented in schema
