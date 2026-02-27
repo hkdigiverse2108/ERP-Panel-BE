@@ -60,7 +60,6 @@ export const addPosOrderSchema = Joi.object({
   status: Joi.string()
     .valid(...Object.values(POS_ORDER_STATUS))
     .default(POS_ORDER_STATUS.PENDING),
-  holdDate: Joi.date().optional().allow(null),
   invoiceId: objectId().optional().allow(null),
   paidAmount: Joi.number().min(0).default(0).optional(),
 
@@ -123,7 +122,6 @@ export const editPosOrderSchema = Joi.object().keys({
     .valid(...Object.values(POS_ORDER_STATUS))
     .default(POS_ORDER_STATUS.PENDING)
     .optional(),
-  holdDate: Joi.date().optional().allow(null),
   invoiceId: objectId().optional().allow(null),
   paidAmount: Joi.number().min(0).optional(),
 
