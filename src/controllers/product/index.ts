@@ -159,9 +159,7 @@ export const getAllProduct = async (req, res) => {
 
       const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
 
-      const productIds = (stockEntries || [])
-        .filter((s: any) => s.productId)
-        .map((s: any) => new ObjectId(s.productId.toString()));
+      const productIds = (stockEntries || []).filter((s: any) => s.productId).map((s: any) => new ObjectId(s.productId.toString()));
 
       criteria._id = { $in: productIds };
     }
@@ -174,9 +172,7 @@ export const getAllProduct = async (req, res) => {
 
       const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
 
-      const productIds = (stockEntries || [])
-        .filter((s: any) => s.productId)
-        .map((s: any) => new ObjectId(s.productId.toString()));
+      const productIds = (stockEntries || []).filter((s: any) => s.productId).map((s: any) => new ObjectId(s.productId.toString()));
 
       criteria._id = { $in: productIds };
     }
@@ -243,14 +239,14 @@ export const getAllProduct = async (req, res) => {
               from: "uoms",
               localField: "uomId",
               foreignField: "_id",
-              as: "uomData"
-            }
+              as: "uomData",
+            },
           },
           {
             $unwind: {
               path: "$uomData",
-              preserveNullAndEmptyArrays: true
-            }
+              preserveNullAndEmptyArrays: true,
+            },
           },
           // 🎯 Shape the final output
           {
@@ -270,7 +266,6 @@ export const getAllProduct = async (req, res) => {
               totalSellingMargin: 1,
             },
           },
-
         ]);
 
         const qty = stockAggregation.length > 0 ? stockAggregation[0].totalQty : 0;
@@ -307,14 +302,19 @@ export const getAllProduct = async (req, res) => {
 export const getProductDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    let { user } = req?.headers, stockCriteria: any = { isDeleted: false, isActive: true };
+    let { user } = req?.headers,
+      stockCriteria: any = { isDeleted: false, isActive: true };
 
     const companyId = user?.companyId?._id;
 
-    const { productType, search, companyFilter, categoryFilter, brandFilter, isNewProduct } = req.query;
+    const { productType, search, companyFilter, categoryFilter, brandFilter, isNewProduct, stockFilter } = req.query;
 
     if (companyId) stockCriteria.companyId = companyId;
     if (companyFilter) stockCriteria.companyId = companyFilter;
+
+    if (stockFilter == "true") {
+      stockCriteria.qty = { $gt: 0 };
+    }
 
     let productIdsWithStock: string[] = [];
     const stockByProductId = new Map<string, any>();
@@ -462,7 +462,6 @@ export const getOneProduct = async (req, res) => {
           path: "$purchaseTax",
           preserveNullAndEmptyArrays: true,
         },
-
       },
 
       {
@@ -545,7 +544,6 @@ export const getOneProduct = async (req, res) => {
           salesTaxId: 1,
           isPurchaseTaxIncluding: 1,
           isSalesTaxIncluding: 1,
-
         },
       },
     ]);
