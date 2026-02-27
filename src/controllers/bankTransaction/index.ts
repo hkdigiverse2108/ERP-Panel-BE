@@ -78,7 +78,7 @@ export const getBankTransactions = async (req, res) => {
         const options = {
             sort: { createdAt: -1 },
             populate: [
-                { path: "companyId", select: "displayName" },
+                { path: "companyId", select: "name" },
                 { path: "fromAccount", select: "name" },
                 { path: "toAccount", select: "name" },
                 { path: "createdBy", select: "fullName" },
@@ -119,7 +119,7 @@ export const getBankTransactionById = async (req, res) => {
             {},
             {
                 populate: [
-                    { path: "companyId", select: "displayName" },
+                    { path: "companyId", select: "name" },
                     { path: "fromAccount", select: "name" },
                     { path: "toAccount", select: "name" },
                     { path: "createdBy", select: "fullName" },
