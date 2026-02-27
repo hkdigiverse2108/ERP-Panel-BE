@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { baseApiSchema, commonContactSchema, objectId } from "./common";
-import { CONTACT_STATUS, CONTACT_TYPE, CUSTOMER_TYPE, SUPPLIER_TYPE } from "../common";
+import { CONTACT_STATUS, CONTACT_TYPE, CUSTOMER_TYPE, SUPPLIER_TYPE, PAYMENT_TERMS_ENUM } from "../common";
 
 const addressSchema = Joi.object({
   gstType: Joi.string().optional().allow("", null),
@@ -46,7 +46,7 @@ export const addContactSchema = Joi.object({
   anniversaryDate: Joi.date().optional(),
 
   paymentMode: Joi.string().optional(),
-  paymentTerms: Joi.string().optional(),
+  paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional(),
 
   openingBalance: Joi.object({
     debitBalance: Joi.string().optional(),
@@ -121,7 +121,7 @@ export const editContactSchema = Joi.object({
   anniversaryDate: Joi.date().optional(),
 
   paymentMode: Joi.string().optional(),
-  paymentTerms: Joi.string().optional(),
+  paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional(),
 
   openingBalance: Joi.object({
     debitBalance: Joi.string().optional(),

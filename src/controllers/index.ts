@@ -26,7 +26,7 @@ export * as feedbackController from "./feedback";
 export * as loyaltyController from "./loyalty";
 export * as prefixController from "./prefix";
 export * as posOrderController from "./posOrder";
-export * as paymentTermController from "./paymentTerm";
+// export * as paymentTermController from "./paymentTerm";
 export * as locationController from "./location";
 export * as uomController from "./uom";
 export * as taxController from "./tax";

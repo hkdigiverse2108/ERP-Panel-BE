@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { contactModel, EstimateModel, productModel, taxModel } from "../../database";
+import { contactModel, EstimateModel, productModel, taxModel, termsConditionModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { generateSequenceNumber } from "../../helper/generateSequenceNumber";
 import { addEstimateSchema, deleteEstimateSchema, editEstimateSchema, getEstimateSchema } from "../../validation";
@@ -34,6 +34,13 @@ export const addEstimate = async (req, res) => {
     if (value.additionalCharges) {
       for (const charge of value.additionalCharges) {
         if (charge.taxId && !(await checkIdExist(taxModel, charge.taxId, "Additional Charge Tax", res))) return;
+      }
+    }
+
+    // Validate terms and conditions exist
+    if (value.termsAndConditionIds && value.termsAndConditionIds.length > 0) {
+      for (const tncId of value.termsAndConditionIds) {
+        if (!(await checkIdExist(termsConditionModel, tncId, "Terms and Condition", res))) return;
       }
     }
 
@@ -92,6 +99,13 @@ export const editEstimate = async (req, res) => {
     if (value.additionalCharges && value.additionalCharges.length > 0) {
       for (const charge of value.additionalCharges) {
         if (charge.taxId && !(await checkIdExist(taxModel, charge.taxId, "Additional Charge Tax", res))) return;
+      }
+    }
+
+    // Validate terms and conditions exist
+    if (value.termsAndConditionIds && value.termsAndConditionIds.length > 0) {
+      for (const tncId of value.termsAndConditionIds) {
+        if (!(await checkIdExist(termsConditionModel, tncId, "Terms and Condition", res))) return;
       }
     }
 
@@ -177,6 +191,7 @@ export const getAllEstimate = async (req, res) => {
         { path: "items.taxId", select: "name percentage" },
         { path: "companyId", select: "name " },
         { path: "branchId", select: "name " },
+        { path: "termsAndConditionIds", select: "termsCondition " },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -241,6 +256,7 @@ export const getOneEstimate = async (req, res) => {
           { path: "items.taxId", select: "name percentage type" },
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
+          { path: "termsAndConditionIds", select: "termsCondition " },
         ],
       },
     );

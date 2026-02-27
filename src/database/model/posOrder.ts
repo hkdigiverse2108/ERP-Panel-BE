@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
-import { PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS, REDEEM_CREDIT_MODEL, REDEEM_CREDIT_TYPE } from "../../common";
+import { PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS, REDEEM_CREDIT_MODEL, REDEEM_CREDIT_TYPE, PAYMENT_TERMS_ENUM } from "../../common";
 
 export const posMultiplePaymentSchema = new Schema(
   {
@@ -75,7 +75,7 @@ const posOrderSchema = new Schema(
 
     payLater: {
       dueDate: { type: Date },
-      paymentTerm: { type: String },
+      paymentTerm: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
       status: { type: String, enum: Object.values(PAY_LATER_STATUS) },
       sendReminder: { type: Boolean, default: false },
       settledDate: { type: Date },

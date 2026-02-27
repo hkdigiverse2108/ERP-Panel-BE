@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema, transactionSummarySchema } from "./base";
+import { PAYMENT_TERMS_ENUM } from "../../common";
 
 export interface IpurchaseDebitNote {
   _id?: Schema.Types.ObjectId;
@@ -55,7 +56,7 @@ const purchaseDebitNoteSchema = new Schema(
     debitNoteDate: { type: Date },
     dueDate: { type: Date },
     shippingDate: { type: Date },
-    paymentTerm: { type: String },
+    paymentTerm: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
     purchaseId: {
       type: Schema.Types.ObjectId,
       ref: "purchase",

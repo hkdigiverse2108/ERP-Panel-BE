@@ -340,3 +340,11 @@ export const ESTIMATE_STATUS = {
   ORDER_CREATED: "order-created",
   INVOICE_CREATED: "invoice-created",
 } as const;
+
+export const PAYMENT_TERMS_ENUM = {
+  SEVEN_DAYS: "7_days",
+  FIFTEEN_DAYS: "15_days",
+  THIRTY_DAYS: "30_days",
+  SIXTY_DAYS: "60_days",
+  NINETY_DAYS: "90_days",
+} as const;

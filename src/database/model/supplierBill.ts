@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS } from "../../common";
+import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS, PAYMENT_TERMS_ENUM } from "../../common";
 import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema, transactionSummarySchema } from "./base";
 import { ISupplierBill } from "../../types";
 
@@ -47,7 +47,7 @@ const supplierBillSchema = new Schema<ISupplierBill>(
 
     // purchaseOrderId: { type: Schema.Types.ObjectId, ref: "purchase-order" },
 
-    paymentTerm: { type: String },
+    paymentTerm: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
     dueDate: { type: Date },
 
     reverseCharge: { type: Boolean, default: false },

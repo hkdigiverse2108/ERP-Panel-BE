@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { commonAdditionalChargeSchema, objectId, transectionSummarySchema } from "./common";
-import { ESTIMATE_STATUS } from "../common";
+import { ESTIMATE_STATUS, PAYMENT_TERMS_ENUM } from "../common";
 
 const estimateItemSchema = Joi.object().keys({
   productId: objectId().required(),
@@ -21,17 +21,17 @@ const estimateItemSchema = Joi.object().keys({
 
 export const addEstimateSchema = Joi.object().keys({
   date: Joi.date().required(),
-  dueDate: Joi.date().optional().allow("", null),
+  dueDate: Joi.date().required(),
   customerId: objectId().required(),
   placeOfSupply: Joi.string().optional().allow("", null),
   billingAddress: objectId().optional().allow("", null),
   shippingAddress: objectId().optional().allow("", null),
   items: Joi.array().items(estimateItemSchema).min(1).required(),
-  notes: Joi.array().items(Joi.string()).optional(),
+  termsAndConditionIds: Joi.array().items(objectId()).optional(),
   reverseCharge: Joi.boolean().default(false).optional(),
   transectionSummary: transectionSummarySchema.required(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
-  paymentTerms: Joi.array().items(objectId()).optional(),
+  paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional(),
   taxType: Joi.string().optional().allow("", null),
   sez: Joi.string().optional().allow("", null),
 });
@@ -40,17 +40,17 @@ export const editEstimateSchema = Joi.object().keys({
   estimateId: objectId().required(),
   estimateNo: Joi.string().optional(),
   date: Joi.date().optional(),
-  dueDate: Joi.date().optional().allow("", null),
+  dueDate: Joi.date().optional(),
   customerId: objectId().optional(),
   placeOfSupply: Joi.string().optional().allow("", null),
   billingAddress: objectId().optional().allow("", null),
   shippingAddress: objectId().optional().allow("", null),
   items: Joi.array().items(estimateItemSchema).optional(),
-  notes: Joi.array().items(Joi.string()).optional(),
+  termsAndConditionIds: Joi.array().items(objectId()).optional(),
   reverseCharge: Joi.boolean().optional(),
   transectionSummary: transectionSummarySchema.optional(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
-  paymentTerms: Joi.array().items(objectId()).optional(),
+  paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional(),
   taxType: Joi.string().optional().allow("", null),
   sez: Joi.string().optional().allow("", null),
 });

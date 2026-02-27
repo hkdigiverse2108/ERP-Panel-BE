@@ -31,7 +31,7 @@ export * from "./invoice";
 export * from "./loyalty";
 export * from "./materialInward";
 export * from "./membership";
-export * from "./paymentTerm";
+// export * from "./paymentTerm";
 export * from "./prefix";
 export * from "./purchaseOrder";
 export * from "./salesOrder";
