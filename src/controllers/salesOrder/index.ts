@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, ESTIMATE_STATUS, HTTP_STATUS } from "../../common";
 import { contactModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel, EstimateModel, userModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addSalesOrderSchema, deleteSalesOrderSchema, editSalesOrderSchema, getSalesOrderSchema } from "../../validation";
@@ -86,6 +86,11 @@ export const addSalesOrder = async (req, res) => {
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+    }
+
+    // Update the estimate status if sales order is created from an estimate
+    if (value.selectedEstimateId) {
+      await updateData(EstimateModel, { _id: value.selectedEstimateId }, { status: ESTIMATE_STATUS.ORDER_CREATED }, {});
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Sales Order"), response, {}));
@@ -213,6 +218,11 @@ export const deleteSalesOrder = async (req, res) => {
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Sales Order"), {}, {}));
+    }
+
+    // Revert estimate status if this sales order was created from an estimate
+    if (response.selectedEstimateId) {
+      await updateData(EstimateModel, { _id: response.selectedEstimateId }, { status: ESTIMATE_STATUS.PENDING }, {});
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Sales Order"), response, {}));

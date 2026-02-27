@@ -10,4 +10,6 @@ export interface IInvoice extends ISalesDocument {
     balanceAmount: number;
     accountLedgerId?: Schema.Types.ObjectId;
     createdFrom: 'sales-order' | 'delivery-challan';
+    salesOrderIds: Schema.Types.ObjectId[];
+    deliveryChallanIds: Schema.Types.ObjectId[];
 }

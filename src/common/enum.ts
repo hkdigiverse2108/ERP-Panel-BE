@@ -1,3 +1,5 @@
+import { CANCELLED } from "dns";
+
 export const LOGIN_SOURCES = {
   SUPER_ADMIN_PANEL: "super-admin-panel",
   ADMIN_PANEL: "admin-panel",
@@ -173,8 +175,8 @@ export const VOUCHAR_TYPE = {
 } as const;
 
 export const INVOICE_STATUS = {
-  ACTIVE: "active",
-  DRAFT: "draft",
+  INVOICED: "invoiced",
+  DELIVERY_CHALLAN_CREATED: "delivery_challan_created",
   CANCELLED: "cancelled",
 } as const;
 
@@ -358,4 +360,9 @@ export const SALES_ORDER_STATUS = {
 export const INVOICE_CREATED_FROM = {
   SALES_ORDER: "sales-order",
   DELIVERY_CHALLAN: "delivery-challan",
+} as const;
+
+export const PAY_TYPE = {
+  CASH: "cash",
+  BANK: "bank",
 } as const;
