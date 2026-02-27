@@ -1,20 +1,16 @@
 import Joi from "joi";
 import { commonAdditionalChargeSchema, objectId, transectionSummarySchema } from "./common";
-import { ESTIMATE_STATUS, PAYMENT_TERMS_ENUM } from "../common";
+import { ESTIMATE_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE } from "../common";
 
 const estimateItemSchema = Joi.object().keys({
   productId: objectId().required(),
-  productName: Joi.string().optional().allow("", null),
-  batchNo: Joi.string().optional().allow("", null),
   qty: Joi.number().min(0).required(),
   freeQty: Joi.number().min(0).default(0).optional(),
-  uom: Joi.string().optional().allow("", null),
+  uomId: objectId().optional().allow(null),
   price: Joi.number().min(0).required(),
-  discountPercent: Joi.number().min(0).default(0).optional(),
-  discountAmount: Joi.number().min(0).default(0).optional(),
+  discount1: Joi.number().min(0).default(0).optional(),
+  discount2: Joi.number().min(0).default(0).optional(),
   taxId: objectId().optional().allow("", null),
-  taxPercent: Joi.number().min(0).default(0).optional(),
-  taxAmount: Joi.number().min(0).default(0).optional(),
   taxableAmount: Joi.number().min(0).optional(),
   totalAmount: Joi.number().min(0).optional(),
 });
@@ -32,7 +28,7 @@ export const addEstimateSchema = Joi.object().keys({
   transectionSummary: transectionSummarySchema.required(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional(),
-  taxType: Joi.string().optional().allow("", null),
+  taxType: Joi.string().optional().valid(...Object.values(TAX_TYPE)),
   sez: Joi.string().optional().allow("", null),
 });
 
@@ -51,7 +47,7 @@ export const editEstimateSchema = Joi.object().keys({
   transectionSummary: transectionSummarySchema.optional(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional(),
-  taxType: Joi.string().optional().allow("", null),
+  taxType: Joi.string().optional().valid(...Object.values(TAX_TYPE)),
   sez: Joi.string().optional().allow("", null),
 });
 

@@ -1,6 +1,9 @@
 import mongoose, { Schema } from "mongoose";
-import { salesItemSchema } from "./salesOrder";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import {
+  baseSchemaFields,
+  baseSchemaOptions,
+  salesItemSchema,
+} from "./base";
 import { IDeliveryChallan } from "../../types";
 import { SHIPPING_TYPE, DELIVERY_CHALLAN_STATUS, TAX_TYPE, PAYMENT_TERMS_ENUM } from "../../common";
 // TODO: Continue This After The Estimate, Sales Order And Invoice Is Completed

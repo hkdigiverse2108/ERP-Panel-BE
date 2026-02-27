@@ -1,8 +1,13 @@
 import mongoose, { Schema } from "mongoose";
-import { baseSchemaFields, baseSchemaOptions, transactionSummarySchema, commonAdditionalChargeSchema } from "./base";
-import { ESTIMATE_STATUS, PAYMENT_TERMS_ENUM } from "../../common";
+import {
+  baseSchemaFields,
+  baseSchemaOptions,
+  transactionSummarySchema,
+  commonAdditionalChargeSchema,
+  salesItemSchema,
+} from "./base";
+import { ESTIMATE_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE } from "../../common";
 import { IEstimate } from "../../types";
-import { salesItemSchema } from "./salesOrder";
 
 const EstimateSchema = new Schema<IEstimate>(
   {
@@ -21,7 +26,7 @@ const EstimateSchema = new Schema<IEstimate>(
     transectionSummary: { type: transactionSummarySchema },
     additionalCharges: { type: [commonAdditionalChargeSchema] },
     paymentTerms: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
-    taxType: { type: String },
+    taxType: { type: String, enum: Object.values(TAX_TYPE), default: TAX_TYPE.DEFAULT },
     sez: { type: String },
   },
   baseSchemaOptions,
