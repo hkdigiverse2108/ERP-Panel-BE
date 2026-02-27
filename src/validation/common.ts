@@ -25,13 +25,13 @@ export const commonContactSchema = Joi.object().keys({
 });
 
 export const transectionSummarySchema = Joi.object().keys({
-  flatDiscount: Joi.number().optional(),
-  grossAmount: Joi.number().optional(),
-  discountAmount: Joi.number().optional(),
-  taxableAmount: Joi.number().optional(),
-  taxAmount: Joi.number().optional(),
-  roundOff: Joi.number().optional(),
-  netAmount: Joi.number().optional(),
+  flatDiscount: Joi.number().default(0).optional(),
+  grossAmount: Joi.number().default(0).optional(),
+  discountAmount: Joi.number().default(0).optional(),
+  taxableAmount: Joi.number().default(0).optional(),
+  taxAmount: Joi.number().default(0).optional(),
+  roundOff: Joi.number().default(0).optional(),
+  netAmount: Joi.number().default(0).optional(),
 });
 
 export const commonAdditionalChargeSchema = Joi.object().keys({

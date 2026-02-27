@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
-import { PAYMENT_MODE, POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS, REDEEM_CREDIT_TYPE } from "../common";
+import { PAYMENT_MODE, POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS, REDEEM_CREDIT_TYPE, PAYMENT_TERMS_ENUM } from "../common";
 
 const multiplePaymentSchema = Joi.object({
   amount: Joi.number().min(0).required(),
@@ -66,7 +66,7 @@ export const addPosOrderSchema = Joi.object({
 
   payLater: Joi.object({
     dueDate: Joi.date().optional().allow(null),
-    paymentTerm: Joi.string().optional().allow("", null),
+    paymentTerm: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional().allow("", null),
     sendReminder: Joi.boolean().default(false).optional(),
   })
     .optional()
@@ -123,7 +123,7 @@ export const editPosOrderSchema = Joi.object().keys({
 
   payLater: Joi.object({
     dueDate: Joi.date().optional().allow(null),
-    paymentTerm: Joi.string().optional().allow("", null),
+    paymentTerm: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional().allow("", null),
     sendReminder: Joi.boolean().optional(),
   })
     .optional()

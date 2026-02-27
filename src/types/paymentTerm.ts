@@ -1,6 +1,6 @@
-import { IBase } from "./base";
+// import { IBase } from "./base";
 
-export interface IPaymentTerm extends IBase {
-    name: string;
-    day: number;
-}
+// export interface IPaymentTerm extends IBase {
+//     name: string;
+//     day: number;
+// }

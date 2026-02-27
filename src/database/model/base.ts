@@ -57,3 +57,20 @@ export const transactionSummarySchema = {
   roundOff: { type: Number },
   netAmount: { type: Number },
 };
+
+// Shared Item Schema for Sales Documents
+export const salesItemSchema = new Schema(
+  {
+    productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
+    qty: { type: Number, default: 0 },
+    freeQty: { type: Number, default: 0 },
+    uomId: { type: Schema.Types.ObjectId, ref: "uom" },
+    price: { type: Number, default: 0 },
+    discount1: { type: Number, default: 0 },
+    discount2: { type: Number, default: 0 },
+    taxId: { type: Schema.Types.ObjectId, ref: "tax" },
+    taxableAmount: { type: Number, default: 0 },
+    totalAmount: { type: Number, default: 0 },
+  },
+  { _id: false },
+);

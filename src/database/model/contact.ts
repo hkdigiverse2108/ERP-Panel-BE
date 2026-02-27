@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { CONTACT_STATUS, CONTACT_TYPE, CUSTOMER_TYPE, SUPPLIER_TYPE } from "../../common";
+import { CONTACT_STATUS, CONTACT_TYPE, CUSTOMER_TYPE, SUPPLIER_TYPE, PAYMENT_TERMS_ENUM } from "../../common";
 import { IContact } from "../../types";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
 
@@ -26,7 +26,7 @@ const contactSchema = new Schema<IContact>(
     anniversaryDate: { type: Date },
 
     paymentMode: { type: String },
-    paymentTerms: { type: String },
+    paymentTerms: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
     openingBalance: {
       debitBalance: { type: String },
       creditBalance: { type: String },

@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { contactModel, EstimateModel, productModel, taxModel } from "../../database";
+import { contactModel, EstimateModel, productModel, taxModel, termsConditionModel, uomModel, additionalChargeModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { generateSequenceNumber } from "../../helper/generateSequenceNumber";
 import { addEstimateSchema, deleteEstimateSchema, editEstimateSchema, getEstimateSchema } from "../../validation";
@@ -21,19 +21,45 @@ export const addEstimate = async (req, res) => {
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    // Validate customer exists
-    if (!(await checkIdExist(contactModel, value?.customerId, "Customer", res))) return;
+    // Validate customer exists and verify billing/shipping addresses if provided
+    const customer = await getFirstMatch(contactModel, { _id: value?.customerId, isDeleted: false }, {}, {});
+    if (!customer) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Customer"), {}, {}));
+    }
+
+    if (value.billingAddress) {
+      const isBillingValid = customer?.address?.find((addr: any) => addr._id && addr._id.toString() === value.billingAddress.toString());
+      if (!isBillingValid) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Billing Address ID", {}, {}));
+      }
+    }
+
+    if (value.shippingAddress) {
+      const isShippingValid = customer?.address?.find((addr: any) => addr._id && addr._id.toString() === value.shippingAddress.toString());
+      if (!isShippingValid) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Shipping Address ID", {}, {}));
+      }
+    }
 
     // Validate products exist
     for (const item of value.items) {
       if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+      if (item.uomId && !(await checkIdExist(uomModel, item.uomId, "UOM", res))) return;
       if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
     }
 
     // Validate additional charge taxes exist
     if (value.additionalCharges) {
       for (const charge of value.additionalCharges) {
+        if (charge.chargeId && !(await checkIdExist(additionalChargeModel, charge.chargeId, "Additional Charge", res))) return;
         if (charge.taxId && !(await checkIdExist(taxModel, charge.taxId, "Additional Charge Tax", res))) return;
+      }
+    }
+
+    // Validate terms and conditions exist
+    if (value.termsAndConditionIds && value.termsAndConditionIds.length > 0) {
+      for (const tncId of value.termsAndConditionIds) {
+        if (!(await checkIdExist(termsConditionModel, tncId, "Terms and Condition", res))) return;
       }
     }
 
@@ -75,15 +101,40 @@ export const editEstimate = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Estimate"), {}, {}));
     }
 
-    // Validate customer if being changed
+    // Validate customer if being changed or Validate addresses if provided
+    let customerForAddress = null;
     if (value.customerId && value.customerId !== isExist.customerId.toString()) {
-      if (!(await checkIdExist(contactModel, value.customerId, "Customer", res))) return;
+      customerForAddress = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
+      if (!customerForAddress) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Customer"), {}, {}));
+      }
+    } else if (value.billingAddress || value.shippingAddress) {
+      customerForAddress = await getFirstMatch(contactModel, { _id: isExist.customerId, isDeleted: false }, {}, {});
+      if (!customerForAddress) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Customer"), {}, {}));
+      }
+    }
+
+    if (customerForAddress) {
+      if (value.billingAddress) {
+        const isBillingValid = customerForAddress?.address?.find((addr: any) => addr._id && addr._id.toString() === value.billingAddress.toString());
+        if (!isBillingValid) {
+          return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Billing Address ID", {}, {}));
+        }
+      }
+      if (value.shippingAddress) {
+        const isShippingValid = customerForAddress?.address?.find((addr: any) => addr._id && addr._id.toString() === value.shippingAddress.toString());
+        if (!isShippingValid) {
+          return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Shipping Address ID", {}, {}));
+        }
+      }
     }
 
     // Validate products if items are being updated
     if (value.items && value.items.length > 0) {
       for (const item of value.items) {
         if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+        if (item.uomId && !(await checkIdExist(uomModel, item.uomId, "UOM", res))) return;
         if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
       }
     }
@@ -91,7 +142,15 @@ export const editEstimate = async (req, res) => {
     // Validate additional charge taxes exist
     if (value.additionalCharges && value.additionalCharges.length > 0) {
       for (const charge of value.additionalCharges) {
+        if (charge.chargeId && !(await checkIdExist(additionalChargeModel, charge.chargeId, "Additional Charge", res))) return;
         if (charge.taxId && !(await checkIdExist(taxModel, charge.taxId, "Additional Charge Tax", res))) return;
+      }
+    }
+
+    // Validate terms and conditions exist
+    if (value.termsAndConditionIds && value.termsAndConditionIds.length > 0) {
+      for (const tncId of value.termsAndConditionIds) {
+        if (!(await checkIdExist(termsConditionModel, tncId, "Terms and Condition", res))) return;
       }
     }
 
@@ -177,6 +236,7 @@ export const getAllEstimate = async (req, res) => {
         { path: "items.taxId", select: "name percentage" },
         { path: "companyId", select: "name " },
         { path: "branchId", select: "name " },
+        { path: "termsAndConditionIds", select: "termsCondition " },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -241,6 +301,7 @@ export const getOneEstimate = async (req, res) => {
           { path: "items.taxId", select: "name percentage type" },
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
+          { path: "termsAndConditionIds", select: "termsCondition " },
         ],
       },
     );

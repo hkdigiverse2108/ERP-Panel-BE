@@ -22,7 +22,7 @@ import { materialRouter } from "./material";
 import { materialConsumptionRouter } from "./materialConsumption";
 import { accountGroupRouter } from "./accountGroup";
 import { accountRouter } from "./account";
-import { paymentTermRouter } from "./paymentTerm";
+// import { paymentTermRouter } from "./paymentTerm";
 import { locationRouter } from "./location";
 import { uomRouter } from "./uom";
 import { taxRouter } from "./tax";
@@ -85,7 +85,7 @@ router.use("/stock-verification", stockVerificationRouter);
 
 router.use("/contacts", contactRouter);
 router.use("/bank", bankRouter);
-router.use("/payment-term", paymentTermRouter);
+// router.use("/payment-term", paymentTermRouter);
 router.use("/location", locationRouter);
 router.use("/uom", uomRouter);
 router.use("/tax", taxRouter);

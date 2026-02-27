@@ -1,6 +1,11 @@
 import mongoose, { Schema } from "mongoose";
-import { salesItemSchema } from "./salesOrder";
-import { baseSchemaFields, baseSchemaOptions, transactionSummarySchema, commonAdditionalChargeSchema } from "./base";
+import {
+    baseSchemaFields,
+    baseSchemaOptions,
+    transactionSummarySchema,
+    commonAdditionalChargeSchema,
+    salesItemSchema,
+} from "./base";
 import { IInvoice } from "../../types";
 import { INVOICE_PAYMENT_STATUS, INVOICE_STATUS } from "../../common";
 

@@ -7,7 +7,7 @@ export interface IDeliveryChallan extends IBase {
     deliveryChallanNo: string;
     date: Date;
     customerId: Schema.Types.ObjectId;
-    paymentTerms: Schema.Types.ObjectId;
+    paymentTerms: string;
     dueDate: Date;
     texType: string;
     items: any[];

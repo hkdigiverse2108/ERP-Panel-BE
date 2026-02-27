@@ -1,6 +1,11 @@
 import mongoose, { Schema } from "mongoose";
-import { baseSchemaFields, baseSchemaOptions, transactionSummarySchema, commonAdditionalChargeSchema } from "./base";
-import { salesItemSchema } from "./salesOrder";
+import {
+  baseSchemaFields,
+  baseSchemaOptions,
+  transactionSummarySchema,
+  commonAdditionalChargeSchema,
+  salesItemSchema,
+} from "./base";
 import { ISalesDocument } from "../../types";
 
 export interface ISalesCreditNote extends ISalesDocument {
