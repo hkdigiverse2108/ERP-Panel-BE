@@ -6,7 +6,7 @@ export interface ISalesDocument extends IBase {
     date: Date;
     dueDate?: Date;
     customerId: Schema.Types.ObjectId;
-
+    salesManId?: Schema.Types.ObjectId;
     items: any[];
 
     transectionSummary: any;
@@ -22,9 +22,13 @@ export interface ISalesDocument extends IBase {
     placeOfSupply: string;
     billingAddress: Schema.Types.ObjectId;
     shippingAddress: Schema.Types.ObjectId;
+    shippingDetails?: any;
 }
 
 export interface IEstimate extends ISalesDocument {
     estimateNo: string;
 }
-export interface ISalesOrder extends ISalesDocument { }
+export interface ISalesOrder extends ISalesDocument {
+    salesOrderNo: string;
+    selectedEstimateId?: Schema.Types.ObjectId;
+}

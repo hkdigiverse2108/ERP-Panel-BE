@@ -1,17 +1,9 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { contactModel, SalesOrderModel, productModel, taxModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { contactModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel, EstimateModel } from "../../database";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addSalesOrderSchema, deleteSalesOrderSchema, editSalesOrderSchema, getSalesOrderSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
-
-// Generate unique sales order number
-const generateSalesOrderNo = async (companyId): Promise<string> => {
-  const count = await SalesOrderModel.countDocuments({ companyId, isDeleted: false });
-  const prefix = "SO";
-  const number = String(count + 1).padStart(6, "0");
-  return `${prefix}${number}`;
-};
 
 export const addSalesOrder = async (req, res) => {
   reqInfo(req);
@@ -28,32 +20,63 @@ export const addSalesOrder = async (req, res) => {
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    // Validate customer exists
-    if (!(await checkIdExist(contactModel, value?.customerId, "Customer", res))) return;
+    // Validate customer exists and verify billing/shipping addresses if provided
+    const customer = await getFirstMatch(contactModel, { _id: value?.customerId, isDeleted: false }, {}, {});
+    if (!customer) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Customer"), {}, {}));
+    }
+
+    if (value.billingAddress) {
+      const isBillingValid = customer?.address?.find((addr: any) => addr._id && addr._id.toString() === value.billingAddress.toString());
+      if (!isBillingValid) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Billing Address ID", {}, {}));
+      }
+    }
+
+    if (value.shippingAddress) {
+      const isShippingValid = customer?.address?.find((addr: any) => addr._id && addr._id.toString() === value.shippingAddress.toString());
+      if (!isShippingValid) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Shipping Address ID", {}, {}));
+      }
+    }
 
     // Validate products exist
     for (const item of value.items) {
       if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+      if (item.uomId && !(await checkIdExist(uomModel, item.uomId, "UOM", res))) return;
       if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+      if (item.refId && !(await checkIdExist(EstimateModel, item.refId, "Estimate Reference", res))) return;
+    }
+
+    // Validate salesman exists if provided
+    if (value.salesManId && !(await checkIdExist(contactModel, value.salesManId, "Salesman", res))) return;
+
+    // Validate estimate exists if provided
+    if (value.selectedEstimateId && !(await checkIdExist(EstimateModel, value.selectedEstimateId, "Selected Estimate", res))) return;
+
+    // Validate additional charge taxes exist
+    if (value.additionalCharges) {
+      for (const charge of value.additionalCharges) {
+        if (charge.chargeId && !(await checkIdExist(additionalChargeModel, charge.chargeId, "Additional Charge", res))) return;
+        if (charge.taxId && !(await checkIdExist(taxModel, charge.taxId, "Additional Charge Tax", res))) return;
+      }
+    }
+
+    // Validate terms and conditions exist
+    if (value.termsAndConditionIds && value.termsAndConditionIds.length > 0) {
+      for (const tncId of value.termsAndConditionIds) {
+        if (!(await checkIdExist(termsConditionModel, tncId, "Terms and Condition", res))) return;
+      }
+    }
+
+    // Validate transporter if provided
+    if (value.shippingDetails && value.shippingDetails.transporterId) {
+      if (!(await checkIdExist(contactModel, value.shippingDetails.transporterId, "Transporter", res))) return;
     }
 
     // Generate document number if not provided
-    if (!value.documentNo) {
-      value.documentNo = await generateSalesOrderNo(value.companyId);
-    }
-
-    // Get customer name
-    const customer = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
-    if (customer) {
-      value.customerName = customer.companyName || `${customer.firstName} ${customer.lastName || ""}`.trim();
-    }
-
-    // Calculate totals if not provided
-    if (!value.grossAmount) {
-      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
-    }
-    if (value.netAmount === undefined || value.netAmount === null) {
-      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
+    if (!value.salesOrderNo) {
+      value.salesOrderNo = await generateSequenceNumber({ model: SalesOrderModel, prefix: "SO", fieldName: "salesOrderNo", companyId: value.companyId });
     }
 
     value.createdBy = user?._id || null;
@@ -89,25 +112,69 @@ export const editSalesOrder = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Sales Order"), {}, {}));
     }
 
-    // Validate customer if being changed
+    // Validate customer if being changed or Validate addresses if provided
+    let customerForAddress = null;
     if (value.customerId && value.customerId !== isExist.customerId.toString()) {
-      if (!(await checkIdExist(contactModel, value.customerId, "Customer", res))) return;
-      const customer = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
-      if (customer) {
-        value.customerName = customer.companyName || `${customer.firstName} ${customer.lastName || ""}`.trim();
+      customerForAddress = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
+      if (!customerForAddress) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Customer"), {}, {}));
+      }
+    } else if (value.billingAddress || value.shippingAddress) {
+      customerForAddress = await getFirstMatch(contactModel, { _id: isExist.customerId, isDeleted: false }, {}, {});
+      if (!customerForAddress) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Customer"), {}, {}));
       }
     }
+
+    if (customerForAddress) {
+      if (value.billingAddress) {
+        const isBillingValid = customerForAddress?.address?.find((addr: any) => addr._id && addr._id.toString() === value.billingAddress.toString());
+        if (!isBillingValid) {
+          return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Billing Address ID", {}, {}));
+        }
+      }
+      if (value.shippingAddress) {
+        const isShippingValid = customerForAddress?.address?.find((addr: any) => addr._id && addr._id.toString() === value.shippingAddress.toString());
+        if (!isShippingValid) {
+          return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Shipping Address ID", {}, {}));
+        }
+      }
+    }
+
+    // Validate salesman exists if provided
+    if (value.salesManId && !(await checkIdExist(contactModel, value.salesManId, "Salesman", res))) return;
+
+    // Validate estimate exists if provided
+    if (value.selectedEstimateId && !(await checkIdExist(EstimateModel, value.selectedEstimateId, "Selected Estimate", res))) return;
 
     // Validate products if items are being updated
     if (value.items && value.items.length > 0) {
       for (const item of value.items) {
         if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+        if (item.uomId && !(await checkIdExist(uomModel, item.uomId, "UOM", res))) return;
         if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+        if (item.refId && !(await checkIdExist(EstimateModel, item.refId, "Estimate Reference", res))) return;
       }
+    }
 
-      // Recalculate totals
-      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
-      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
+    // Validate additional charge taxes exist
+    if (value.additionalCharges && value.additionalCharges.length > 0) {
+      for (const charge of value.additionalCharges) {
+        if (charge.chargeId && !(await checkIdExist(additionalChargeModel, charge.chargeId, "Additional Charge", res))) return;
+        if (charge.taxId && !(await checkIdExist(taxModel, charge.taxId, "Additional Charge Tax", res))) return;
+      }
+    }
+
+    // Validate terms and conditions exist
+    if (value.termsAndConditionIds && value.termsAndConditionIds.length > 0) {
+      for (const tncId of value.termsAndConditionIds) {
+        if (!(await checkIdExist(termsConditionModel, tncId, "Terms and Condition", res))) return;
+      }
+    }
+
+    // Validate transporter if provided
+    if (value.shippingDetails && value.shippingDetails.transporterId) {
+      if (!(await checkIdExist(contactModel, value.shippingDetails.transporterId, "Transporter", res))) return;
     }
 
     value.updatedBy = user?._id || null;
@@ -174,7 +241,7 @@ export const getAllSalesOrder = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }];
+      criteria.$or = [{ salesOrderNo: { $regex: search, $options: "si" } }];
     }
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
@@ -198,6 +265,24 @@ export const getAllSalesOrder = async (req, res) => {
     };
 
     const response = await getDataWithSorting(SalesOrderModel, criteria, {}, options);
+
+    // Manually extract billing and shipping addresses from the populated customer object
+    const finalResponse = response.map((so: any) => {
+      let soObj = so.toObject ? so.toObject() : so;
+
+      if (soObj.customerId && soObj.customerId.address) {
+        if (soObj.billingAddress) {
+          const billingStr = soObj.billingAddress.toString();
+          soObj.billingAddress = soObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr) || soObj.billingAddress;
+        }
+        if (soObj.shippingAddress) {
+          const shippingStr = soObj.shippingAddress.toString();
+          soObj.shippingAddress = soObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr) || soObj.shippingAddress;
+        }
+      }
+      return soObj;
+    });
+
     const totalData = await countData(SalesOrderModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -208,7 +293,7 @@ export const getAllSalesOrder = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order"), { salesOrder_data: response, totalData, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order"), { salesOrder_data: finalResponse, totalData, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -243,7 +328,20 @@ export const getOneSalesOrder = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Sales Order"), {}, {}));
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order"), response, {}));
+    let soObj = response.toObject ? response.toObject() : response;
+
+    if (soObj.customerId && soObj.customerId.address) {
+      if (soObj.billingAddress) {
+        const billingStr = soObj.billingAddress.toString();
+        soObj.billingAddress = soObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr) || soObj.billingAddress;
+      }
+      if (soObj.shippingAddress) {
+        const shippingStr = soObj.shippingAddress.toString();
+        soObj.shippingAddress = soObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr) || soObj.shippingAddress;
+      }
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order"), soObj, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -278,7 +376,7 @@ export const getSalesOrderDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }];
+      criteria.$or = [{ salesOrderNo: { $regex: search, $options: "si" } }];
     }
 
     const options: any = {
@@ -287,15 +385,14 @@ export const getSalesOrderDropdown = async (req, res) => {
       populate: [{ path: "customerId", select: "firstName lastName companyName" }],
     };
 
-    const response = await getDataWithSorting(SalesOrderModel, criteria, { documentNo: 1, customerName: 1, date: 1, netAmount: 1 }, options);
+    const response = await getDataWithSorting(SalesOrderModel, criteria, { salesOrderNo: 1, date: 1, netAmount: 1, transectionSummary: 1 }, options);
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
-      name: item.documentNo,
-      documentNo: item.documentNo,
-      customerName: item.customerName,
+      name: item.salesOrderNo,
+      salesOrderNo: item.salesOrderNo,
       date: item.date,
-      netAmount: item.netAmount,
+      netAmount: item.transectionSummary?.netAmount || 0,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order Dropdown"), dropdownData, {}));

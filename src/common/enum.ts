@@ -348,3 +348,10 @@ export const PAYMENT_TERMS_ENUM = {
   SIXTY_DAYS: "60_days",
   NINETY_DAYS: "90_days",
 } as const;
+
+export const SALES_ORDER_STATUS = {
+  PENDING: "pending",
+  INVOICE_CREATED: "invoice_created",
+  DELIVERY_CHALLAN_CREATED: "delivery_challan_created",
+  CANCELLED: "cancelled",
+} as const;

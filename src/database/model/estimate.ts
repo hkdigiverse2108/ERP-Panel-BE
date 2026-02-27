@@ -5,6 +5,7 @@ import {
   transactionSummarySchema,
   commonAdditionalChargeSchema,
   salesItemSchema,
+  commonShippingSchema,
 } from "./base";
 import { ESTIMATE_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE } from "../../common";
 import { IEstimate } from "../../types";
@@ -28,6 +29,7 @@ const EstimateSchema = new Schema<IEstimate>(
     paymentTerms: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
     taxType: { type: String, enum: Object.values(TAX_TYPE), default: TAX_TYPE.DEFAULT },
     sez: { type: String },
+    shippingDetails: { type: commonShippingSchema },
   },
   baseSchemaOptions,
 );

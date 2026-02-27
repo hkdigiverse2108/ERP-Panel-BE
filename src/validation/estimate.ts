@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { commonAdditionalChargeSchema, objectId, transectionSummarySchema } from "./common";
-import { ESTIMATE_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE } from "../common";
+import { ESTIMATE_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE, SHIPPING_TYPE } from "../common";
 
 const estimateItemSchema = Joi.object().keys({
   productId: objectId().required(),
@@ -15,7 +15,19 @@ const estimateItemSchema = Joi.object().keys({
   totalAmount: Joi.number().min(0).optional(),
 });
 
+export const commonShippingSchema = Joi.object().keys({
+  shippingType: Joi.string().valid(...Object.values(SHIPPING_TYPE)).optional(),
+  shippingDate: Joi.date().optional(),
+  referenceNo: Joi.string().optional().allow("", null),
+  transportDate: Joi.date().optional(),
+  modeOfTransport: Joi.string().optional().allow("", null),
+  transporterId: objectId().optional().allow("", null),
+  vehicleNo: Joi.string().optional().allow("", null),
+  weight: Joi.number().min(0).optional(),
+});
+
 export const addEstimateSchema = Joi.object().keys({
+  companyId: objectId().optional().allow("", null),
   date: Joi.date().required(),
   dueDate: Joi.date().required(),
   customerId: objectId().required(),
@@ -30,10 +42,12 @@ export const addEstimateSchema = Joi.object().keys({
   paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional(),
   taxType: Joi.string().optional().valid(...Object.values(TAX_TYPE)),
   sez: Joi.string().optional().allow("", null),
+  shippingDetails: commonShippingSchema.optional(),
 });
 
 export const editEstimateSchema = Joi.object().keys({
   estimateId: objectId().required(),
+  companyId: objectId().optional().allow("", null),
   estimateNo: Joi.string().optional(),
   date: Joi.date().optional(),
   dueDate: Joi.date().optional(),
@@ -49,6 +63,7 @@ export const editEstimateSchema = Joi.object().keys({
   paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional(),
   taxType: Joi.string().optional().valid(...Object.values(TAX_TYPE)),
   sez: Joi.string().optional().allow("", null),
+  shippingDetails: commonShippingSchema.optional(),
 });
 
 export const deleteEstimateSchema = Joi.object().keys({

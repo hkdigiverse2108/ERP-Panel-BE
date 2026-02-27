@@ -63,6 +63,11 @@ export const addEstimate = async (req, res) => {
       }
     }
 
+    // Validate transporter if provided
+    if (value.shippingDetails && value.shippingDetails.transporterId) {
+      if (!(await checkIdExist(contactModel, value.shippingDetails.transporterId, "Transporter", res))) return;
+    }
+
     // Generate document number if not provided
     if (!value.estimateNo) {
       value.estimateNo = await generateSequenceNumber({ model: EstimateModel, prefix: "EST", fieldName: "estimateNo", companyId: value.companyId });
@@ -152,6 +157,11 @@ export const editEstimate = async (req, res) => {
       for (const tncId of value.termsAndConditionIds) {
         if (!(await checkIdExist(termsConditionModel, tncId, "Terms and Condition", res))) return;
       }
+    }
+
+    // Validate transporter if provided
+    if (value.shippingDetails && value.shippingDetails.transporterId) {
+      if (!(await checkIdExist(contactModel, value.shippingDetails.transporterId, "Transporter", res))) return;
     }
 
     value.updatedBy = user?._id || null;
