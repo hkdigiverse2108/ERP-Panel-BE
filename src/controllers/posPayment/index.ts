@@ -179,7 +179,7 @@ export const getAllPosPayment = async (req, res) => {
     const options = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "posOrderId", select: "orderNo totalAmount" },
+        { path: "posOrderId", select: "orderNo totalAmount createdAt paidAmount" },
         { path: "partyId", select: "firstName lastName companyName" },
       ],
       skip: (page - 1) * limit,
