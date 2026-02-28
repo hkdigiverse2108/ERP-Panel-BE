@@ -1,7 +1,38 @@
 import mongoose from "mongoose";
-import { apiResponse, CUSTOMER_CATEGORY_ENUM, HTTP_STATUS, POS_ORDER_STATUS, VOUCHAR_TYPE, ACCOUNT_TYPE, POS_VOUCHER_TYPE, RETURN_POS_ORDER_TYPE, PAYMENT_MODE, CASH_REGISTER_STATUS } from "../../common";
-import { accountModel, debitNoteModel, InvoiceModel, PosOrderModel, PosPaymentModel, productModel, returnPosOrderModel, salesCreditNoteModel, stockModel, supplierBillModel, voucherModel, PosCashRegisterModel } from "../../database";
-import { applyDateFilter, reqInfo, responseMessage } from "../../helper";
+import {
+  apiResponse,
+  CUSTOMER_CATEGORY_ENUM,
+  HTTP_STATUS,
+  POS_ORDER_STATUS,
+  VOUCHAR_TYPE,
+  ACCOUNT_TYPE,
+  POS_VOUCHER_TYPE,
+  RETURN_POS_ORDER_TYPE,
+  PAYMENT_MODE,
+  CASH_REGISTER_STATUS,
+} from "../../common";
+import {
+  accountModel,
+  debitNoteModel,
+  InvoiceModel,
+  PosOrderModel,
+  PosPaymentModel,
+  productModel,
+  returnPosOrderModel,
+  salesCreditNoteModel,
+  stockModel,
+  supplierBillModel,
+  voucherModel,
+  PosCashRegisterModel,
+  companyModel,
+} from "../../database";
+import {
+  applyDateFilter,
+  countData,
+  getData,
+  reqInfo,
+  responseMessage,
+} from "../../helper";
 import { getCategoryWiseCustomersSchema } from "../../validation";
 
 // Frequency-based thresholds for customer categorization
@@ -28,14 +59,29 @@ export const transactionDetails = async (req, res) => {
     if (finalCompanyId) commonCriteria.companyId = finalCompanyId;
 
     const dateCriteria: any = { ...commonCriteria };
-    applyDateFilter(dateCriteria, startDate as string, endDate as string, "createdAt");
+    applyDateFilter(
+      dateCriteria,
+      startDate as string,
+      endDate as string,
+      "createdAt",
+    );
 
     // Specific date criteria for models with distinct date fields if needed
     const voucherDateCriteria: any = { ...commonCriteria };
-    applyDateFilter(voucherDateCriteria, startDate as string, endDate as string, "date");
+    applyDateFilter(
+      voucherDateCriteria,
+      startDate as string,
+      endDate as string,
+      "date",
+    );
 
     const purchaseDateCriteria: any = { ...commonCriteria };
-    applyDateFilter(purchaseDateCriteria, startDate as string, endDate as string, "supplierBillDate");
+    applyDateFilter(
+      purchaseDateCriteria,
+      startDate as string,
+      endDate as string,
+      "supplierBillDate",
+    );
 
     // Execute aggregations in parallel
     const results: any = await Promise.all([
@@ -48,14 +94,32 @@ export const transactionDetails = async (req, res) => {
             totalSales: { $sum: "$totalAmount" },
             totalInvoice: { $sum: 1 },
             soldQty: { $sum: "$totalQty" },
-            uniqueCustomers: { $addToSet: { $cond: [{ $ne: ["$customerId", null] }, "$customerId", "$$REMOVE"] } },
+            uniqueCustomers: {
+              $addToSet: {
+                $cond: [
+                  { $ne: ["$customerId", null] },
+                  "$customerId",
+                  "$$REMOVE",
+                ],
+              },
+            },
             toReceive: { $sum: "$dueAmount" },
             totalItemCost: {
               $sum: {
                 $reduce: {
                   input: "$items",
                   initialValue: 0,
-                  in: { $add: ["$$value", { $multiply: ["$$this.qty", { $ifNull: ["$$this.unitCost", 0] }] }] },
+                  in: {
+                    $add: [
+                      "$$value",
+                      {
+                        $multiply: [
+                          "$$this.qty",
+                          { $ifNull: ["$$this.unitCost", 0] },
+                        ],
+                      },
+                    ],
+                  },
                 },
               },
             },
@@ -71,9 +135,19 @@ export const transactionDetails = async (req, res) => {
             totalPurchase: { $sum: "$summary.netAmount" },
             totalBills: { $sum: 1 },
             purchaseQty: { $sum: "$productDetails.totalQty" },
-            uniqueSuppliers: { $addToSet: { $cond: [{ $ne: ["$supplierId", null] }, "$supplierId", "$$REMOVE"] } },
+            uniqueSuppliers: {
+              $addToSet: {
+                $cond: [
+                  { $ne: ["$supplierId", null] },
+                  "$supplierId",
+                  "$$REMOVE",
+                ],
+              },
+            },
             toPay: { $sum: "$balanceAmount" },
-            totalPurchaseReturn: { $sum: "$returnProductDetails.summary.netAmount" },
+            totalPurchaseReturn: {
+              $sum: "$returnProductDetails.summary.netAmount",
+            },
           },
         },
       ]),
@@ -89,20 +163,40 @@ export const transactionDetails = async (req, res) => {
       ]),
       // 🔹 Expense (Voucher + PosPayment)
       (async () => {
-        const [vEx, pEx]: any = await Promise.all([voucherModel.aggregate([{ $match: { ...voucherDateCriteria, type: VOUCHAR_TYPE.EXPENSE } }, { $group: { _id: null, total: { $sum: "$amount" } } }]), PosPaymentModel.aggregate([{ $match: { ...dateCriteria, voucherType: POS_VOUCHER_TYPE.EXPENSE } }, { $group: { _id: null, total: { $sum: "$amount" } } }])]);
+        const [vEx, pEx]: any = await Promise.all([
+          voucherModel.aggregate([
+            { $match: { ...voucherDateCriteria, type: VOUCHAR_TYPE.EXPENSE } },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ]),
+          PosPaymentModel.aggregate([
+            {
+              $match: {
+                ...dateCriteria,
+                voucherType: POS_VOUCHER_TYPE.EXPENSE,
+              },
+            },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ]),
+        ]);
         return { totalExpense: (vEx[0]?.total || 0) + (pEx[0]?.total || 0) };
       })(),
       // 🔹 Inventory & Stock
       (async () => {
         const [productCount, stockInfo]: any = await Promise.all([
-          stockModel.distinct("productId", commonCriteria).then((ids) => ids.length),
+          stockModel
+            .distinct("productId", commonCriteria)
+            .then((ids) => ids.length),
           stockModel.aggregate([
             { $match: commonCriteria },
             {
               $group: {
                 _id: null,
                 stockQty: { $sum: "$qty" },
-                stockValue: { $sum: { $multiply: ["$qty", { $ifNull: ["$landingCost", 0] }] } },
+                stockValue: {
+                  $sum: {
+                    $multiply: ["$qty", { $ifNull: ["$landingCost", 0] }],
+                  },
+                },
               },
             },
           ]),
@@ -110,12 +204,36 @@ export const transactionDetails = async (req, res) => {
         return [productCount, stockInfo];
       })(),
       // 🔹 Cash In Hand (strictly from pos-cashRegister)
-      PosCashRegisterModel.aggregate([{ $match: { ...commonCriteria, status: CASH_REGISTER_STATUS.OPEN } }, { $group: { _id: null, totalCash: { $sum: "$totalCashLeftInDrawer" } } }]),
+      PosCashRegisterModel.aggregate([
+        { $match: { ...commonCriteria, status: CASH_REGISTER_STATUS.OPEN } },
+        {
+          $group: { _id: null, totalCash: { $sum: "$totalCashLeftInDrawer" } },
+        },
+      ]),
       // 🔹 Bank Accounts Balance
-      accountModel.aggregate([{ $match: { ...commonCriteria, type: ACCOUNT_TYPE.BANK } }, { $group: { _id: null, totalBank: { $sum: "$currentBalance" } } }]),
+      accountModel.aggregate([
+        { $match: { ...commonCriteria, type: ACCOUNT_TYPE.BANK } },
+        { $group: { _id: null, totalBank: { $sum: "$currentBalance" } } },
+      ]),
       // 🔹 Total Paid (Voucher + PosPayment purchase/expense)
       (async () => {
-        const [vPay, pPay]: any = await Promise.all([voucherModel.aggregate([{ $match: { ...voucherDateCriteria, type: VOUCHAR_TYPE.PAYMENT } }, { $group: { _id: null, total: { $sum: "$amount" } } }]), PosPaymentModel.aggregate([{ $match: { ...dateCriteria, voucherType: { $in: [POS_VOUCHER_TYPE.PURCHASE, POS_VOUCHER_TYPE.EXPENSE] } } }, { $group: { _id: null, total: { $sum: "$amount" } } }])]);
+        const [vPay, pPay]: any = await Promise.all([
+          voucherModel.aggregate([
+            { $match: { ...voucherDateCriteria, type: VOUCHAR_TYPE.PAYMENT } },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ]),
+          PosPaymentModel.aggregate([
+            {
+              $match: {
+                ...dateCriteria,
+                voucherType: {
+                  $in: [POS_VOUCHER_TYPE.PURCHASE, POS_VOUCHER_TYPE.EXPENSE],
+                },
+              },
+            },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ]),
+        ]);
         return { totalPaid: (vPay[0]?.total || 0) + (pPay[0]?.total || 0) };
       })(),
     ]);
@@ -140,12 +258,15 @@ export const transactionDetails = async (req, res) => {
     const grossProfit = totalSales - (s.totalItemCost || 0);
 
     // 🔹 Profitability calculations
-    const avgProfitMarginAmount = totalInvoice > 0 ? grossProfit / totalInvoice : 0;
-    const avgProfitMarginPercent = totalSales > 0 ? (grossProfit / totalSales) * 100 : 0;
+    const avgProfitMarginAmount =
+      totalInvoice > 0 ? grossProfit / totalInvoice : 0;
+    const avgProfitMarginPercent =
+      totalSales > 0 ? (grossProfit / totalSales) * 100 : 0;
 
     // 🔹 Customer & Billing Insights
     const avgCartValue = totalInvoice > 0 ? totalSales / totalInvoice : 0;
-    const avgBillsCount = uniqueCustomersCount > 0 ? totalInvoice / uniqueCustomersCount : 0;
+    const avgBillsCount =
+      uniqueCustomersCount > 0 ? totalInvoice / uniqueCustomersCount : 0;
 
     const result = {
       // Sales & Revenue
@@ -185,10 +306,28 @@ export const transactionDetails = async (req, res) => {
       avgBillsCount: Number(avgBillsCount.toFixed(2)),
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Dashboard Transaction Details"), result, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Dashboard Transaction Details"),
+          result,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
 
@@ -196,18 +335,35 @@ export const topCustomers = async (req, res) => {
   try {
     const { user } = req.headers;
 
-    let { limit = 20, startDate, endDate, companyFilter, companyId } = req.query;
+    let {
+      limit = 20,
+      startDate,
+      endDate,
+      companyFilter,
+      companyId,
+    } = req.query;
 
     if (!companyId && user?.companyId?._id) {
       companyId = user.companyId._id;
     }
 
-    const criteria: any = { isDeleted: false, status: POS_ORDER_STATUS.COMPLETED, customerId: { $ne: null } };
+    const criteria: any = {
+      isDeleted: false,
+      status: POS_ORDER_STATUS.COMPLETED,
+      customerId: { $ne: null },
+    };
 
-    if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
-    if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+    if (companyId)
+      criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+    if (companyFilter)
+      criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
 
-    applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
+    applyDateFilter(
+      criteria,
+      startDate as string,
+      endDate as string,
+      "createdAt",
+    );
 
     const data = await PosOrderModel.aggregate([
       { $match: criteria },
@@ -236,8 +392,23 @@ export const topCustomers = async (req, res) => {
             _id: "$_id",
             name: {
               $cond: {
-                if: { $or: [{ $ifNull: ["$customer.firstName", false] }, { $ifNull: ["$customer.lastName", false] }] },
-                then: { $trim: { input: { $concat: [{ $ifNull: ["$customer.firstName", ""] }, " ", { $ifNull: ["$customer.lastName", ""] }] } } },
+                if: {
+                  $or: [
+                    { $ifNull: ["$customer.firstName", false] },
+                    { $ifNull: ["$customer.lastName", false] },
+                  ],
+                },
+                then: {
+                  $trim: {
+                    input: {
+                      $concat: [
+                        { $ifNull: ["$customer.firstName", ""] },
+                        " ",
+                        { $ifNull: ["$customer.lastName", ""] },
+                      ],
+                    },
+                  },
+                },
                 else: "$customer.companyName",
               },
             },
@@ -248,10 +419,28 @@ export const topCustomers = async (req, res) => {
       },
     ]);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Top Customers"), data, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Top Customers"),
+          data,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
 
@@ -265,12 +454,23 @@ export const categoryWiseCustomersCount = async (req, res) => {
       companyId = user.companyId._id;
     }
 
-    const criteria: any = { isDeleted: false, status: POS_ORDER_STATUS.COMPLETED, customerId: { $ne: null } };
+    const criteria: any = {
+      isDeleted: false,
+      status: POS_ORDER_STATUS.COMPLETED,
+      customerId: { $ne: null },
+    };
 
-    if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
-    if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+    if (companyId)
+      criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+    if (companyFilter)
+      criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
 
-    applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
+    applyDateFilter(
+      criteria,
+      startDate as string,
+      endDate as string,
+      "createdAt",
+    );
 
     const data = await PosOrderModel.aggregate([
       { $match: criteria },
@@ -285,9 +485,18 @@ export const categoryWiseCustomersCount = async (req, res) => {
           category: {
             $switch: {
               branches: [
-                { case: { $gte: ["$noOfBill", CUSTOMER_THRESHOLDS.VIP] }, then: CUSTOMER_CATEGORY_ENUM.VIP },
-                { case: { $gte: ["$noOfBill", CUSTOMER_THRESHOLDS.REGULAR] }, then: CUSTOMER_CATEGORY_ENUM.REGULAR },
-                { case: { $gte: ["$noOfBill", CUSTOMER_THRESHOLDS.RISK] }, then: CUSTOMER_CATEGORY_ENUM.RISK },
+                {
+                  case: { $gte: ["$noOfBill", CUSTOMER_THRESHOLDS.VIP] },
+                  then: CUSTOMER_CATEGORY_ENUM.VIP,
+                },
+                {
+                  case: { $gte: ["$noOfBill", CUSTOMER_THRESHOLDS.REGULAR] },
+                  then: CUSTOMER_CATEGORY_ENUM.REGULAR,
+                },
+                {
+                  case: { $gte: ["$noOfBill", CUSTOMER_THRESHOLDS.RISK] },
+                  then: CUSTOMER_CATEGORY_ENUM.RISK,
+                },
               ],
               default: CUSTOMER_CATEGORY_ENUM.LOST,
             },
@@ -311,7 +520,12 @@ export const categoryWiseCustomersCount = async (req, res) => {
           _id: 0,
           data: {
             $map: {
-              input: [CUSTOMER_CATEGORY_ENUM.VIP, CUSTOMER_CATEGORY_ENUM.REGULAR, CUSTOMER_CATEGORY_ENUM.RISK, CUSTOMER_CATEGORY_ENUM.LOST],
+              input: [
+                CUSTOMER_CATEGORY_ENUM.VIP,
+                CUSTOMER_CATEGORY_ENUM.REGULAR,
+                CUSTOMER_CATEGORY_ENUM.RISK,
+                CUSTOMER_CATEGORY_ENUM.LOST,
+              ],
               as: "cat",
               in: {
                 $let: {
@@ -327,7 +541,10 @@ export const categoryWiseCustomersCount = async (req, res) => {
                   in: {
                     $cond: {
                       if: { $gt: [{ $size: "$$match" }, 0] },
-                      then: { category: "$$cat", count: { $arrayElemAt: ["$$match.count", 0] } },
+                      then: {
+                        category: "$$cat",
+                        count: { $arrayElemAt: ["$$match.count", 0] },
+                      },
                       else: { category: "$$cat", count: 0 },
                     },
                   },
@@ -341,10 +558,28 @@ export const categoryWiseCustomersCount = async (req, res) => {
       { $replaceRoot: { newRoot: "$data" } },
     ]);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Category Wise Customers Count"), data, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Category Wise Customers Count"),
+          data,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
 
@@ -353,21 +588,53 @@ export const categoryWiseCustomers = async (req, res) => {
     const { user } = req.headers;
 
     const { error, value } = getCategoryWiseCustomersSchema.validate(req.query);
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    if (error)
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            error?.details[0]?.message,
+            {},
+            {},
+          ),
+        );
 
-    let { startDate, endDate, companyFilter, typeFilter = "all", customerTypeFilter, customerFilter, companyId } = value;
+    let {
+      startDate,
+      endDate,
+      companyFilter,
+      typeFilter = "all",
+      customerTypeFilter,
+      customerFilter,
+      companyId,
+    } = value;
 
     if (!companyId && user?.companyId?._id) {
       companyId = user.companyId._id;
     }
 
-    const criteria: any = { isDeleted: false, status: POS_ORDER_STATUS.COMPLETED, customerId: { $ne: null } };
+    const criteria: any = {
+      isDeleted: false,
+      status: POS_ORDER_STATUS.COMPLETED,
+      customerId: { $ne: null },
+    };
 
-    if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
-    if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
-    if (customerFilter) criteria.customerId = new mongoose.Types.ObjectId(customerFilter as string);
+    if (companyId)
+      criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+    if (companyFilter)
+      criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+    if (customerFilter)
+      criteria.customerId = new mongoose.Types.ObjectId(
+        customerFilter as string,
+      );
 
-    applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
+    applyDateFilter(
+      criteria,
+      startDate as string,
+      endDate as string,
+      "createdAt",
+    );
 
     const pipeline: any[] = [
       { $match: criteria },
@@ -392,8 +659,23 @@ export const categoryWiseCustomers = async (req, res) => {
           _id: 1,
           name: {
             $cond: {
-              if: { $or: [{ $ifNull: ["$customer.firstName", false] }, { $ifNull: ["$customer.lastName", false] }] },
-              then: { $trim: { input: { $concat: [{ $ifNull: ["$customer.firstName", ""] }, " ", { $ifNull: ["$customer.lastName", ""] }] } } },
+              if: {
+                $or: [
+                  { $ifNull: ["$customer.firstName", false] },
+                  { $ifNull: ["$customer.lastName", false] },
+                ],
+              },
+              then: {
+                $trim: {
+                  input: {
+                    $concat: [
+                      { $ifNull: ["$customer.firstName", ""] },
+                      " ",
+                      { $ifNull: ["$customer.lastName", ""] },
+                    ],
+                  },
+                },
+              },
               else: "$customer.companyName",
             },
           },
@@ -404,9 +686,18 @@ export const categoryWiseCustomers = async (req, res) => {
           category: {
             $switch: {
               branches: [
-                { case: { $gte: ["$noOfBill", CUSTOMER_THRESHOLDS.VIP] }, then: CUSTOMER_CATEGORY_ENUM.VIP },
-                { case: { $gte: ["$noOfBill", CUSTOMER_THRESHOLDS.REGULAR] }, then: CUSTOMER_CATEGORY_ENUM.REGULAR },
-                { case: { $gte: ["$noOfBill", CUSTOMER_THRESHOLDS.RISK] }, then: CUSTOMER_CATEGORY_ENUM.RISK },
+                {
+                  case: { $gte: ["$noOfBill", CUSTOMER_THRESHOLDS.VIP] },
+                  then: CUSTOMER_CATEGORY_ENUM.VIP,
+                },
+                {
+                  case: { $gte: ["$noOfBill", CUSTOMER_THRESHOLDS.REGULAR] },
+                  then: CUSTOMER_CATEGORY_ENUM.REGULAR,
+                },
+                {
+                  case: { $gte: ["$noOfBill", CUSTOMER_THRESHOLDS.RISK] },
+                  then: CUSTOMER_CATEGORY_ENUM.RISK,
+                },
               ],
               default: CUSTOMER_CATEGORY_ENUM.LOST,
             },
@@ -427,10 +718,28 @@ export const categoryWiseCustomers = async (req, res) => {
 
     const data = await PosOrderModel.aggregate(pipeline);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Category Wise Customers"), data, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Category Wise Customers"),
+          data,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
 
@@ -444,12 +753,22 @@ export const bestSellingProducts = async (req, res) => {
       companyId = user.companyId._id;
     }
 
-    const criteria: any = { isDeleted: false, status: POS_ORDER_STATUS.COMPLETED };
+    const criteria: any = {
+      isDeleted: false,
+      status: POS_ORDER_STATUS.COMPLETED,
+    };
 
-    if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
-    if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+    if (companyId)
+      criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+    if (companyFilter)
+      criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
 
-    applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
+    applyDateFilter(
+      criteria,
+      startDate as string,
+      endDate as string,
+      "createdAt",
+    );
 
     const data = await PosOrderModel.aggregate([
       { $match: criteria },
@@ -466,11 +785,17 @@ export const bestSellingProducts = async (req, res) => {
       {
         $group: {
           _id: "$product._id",
-          productName: { $first: { $ifNull: ["$product.name", "Uncategorized"] } },
+          productName: {
+            $first: { $ifNull: ["$product.name", "Uncategorized"] },
+          },
           uniqueOrders: { $addToSet: "$_id" },
           totalSalesQty: { $sum: "$items.qty" },
           totalSalesValue: { $sum: "$items.netAmount" },
-          totalCostValue: { $sum: { $multiply: ["$items.qty", { $ifNull: ["$items.unitCost", 0] }] } },
+          totalCostValue: {
+            $sum: {
+              $multiply: ["$items.qty", { $ifNull: ["$items.unitCost", 0] }],
+            },
+          },
         },
       },
       {
@@ -505,7 +830,17 @@ export const bestSellingProducts = async (req, res) => {
             $cond: {
               if: { $eq: ["$grandTotalSales", 0] },
               then: 0,
-              else: { $round: [{ $multiply: [{ $divide: ["$totalSalesValue", "$grandTotalSales"] }, 100] }, 2] },
+              else: {
+                $round: [
+                  {
+                    $multiply: [
+                      { $divide: ["$totalSalesValue", "$grandTotalSales"] },
+                      100,
+                    ],
+                  },
+                  2,
+                ],
+              },
             },
           },
         },
@@ -513,10 +848,28 @@ export const bestSellingProducts = async (req, res) => {
       { $sort: { totalSalesQty: -1 } },
     ]);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Best Selling Products"), data, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Best Selling Products"),
+          data,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
 
@@ -530,12 +883,22 @@ export const leastSellingProducts = async (req, res) => {
       companyId = user.companyId._id;
     }
 
-    const criteria: any = { isDeleted: false, status: POS_ORDER_STATUS.COMPLETED };
+    const criteria: any = {
+      isDeleted: false,
+      status: POS_ORDER_STATUS.COMPLETED,
+    };
 
-    if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
-    if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+    if (companyId)
+      criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+    if (companyFilter)
+      criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
 
-    applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
+    applyDateFilter(
+      criteria,
+      startDate as string,
+      endDate as string,
+      "createdAt",
+    );
 
     const data = await PosOrderModel.aggregate([
       { $match: criteria },
@@ -552,11 +915,17 @@ export const leastSellingProducts = async (req, res) => {
       {
         $group: {
           _id: "$product._id",
-          productName: { $first: { $ifNull: ["$product.name", "Uncategorized"] } },
+          productName: {
+            $first: { $ifNull: ["$product.name", "Uncategorized"] },
+          },
           uniqueOrders: { $addToSet: "$_id" },
           totalSalesQty: { $sum: "$items.qty" },
           totalSalesValue: { $sum: "$items.netAmount" },
-          totalCostValue: { $sum: { $multiply: ["$items.qty", { $ifNull: ["$items.unitCost", 0] }] } },
+          totalCostValue: {
+            $sum: {
+              $multiply: ["$items.qty", { $ifNull: ["$items.unitCost", 0] }],
+            },
+          },
         },
       },
       {
@@ -591,7 +960,17 @@ export const leastSellingProducts = async (req, res) => {
             $cond: {
               if: { $eq: ["$grandTotalSales", 0] },
               then: 0,
-              else: { $round: [{ $multiply: [{ $divide: ["$totalSalesValue", "$grandTotalSales"] }, 100] }, 2] },
+              else: {
+                $round: [
+                  {
+                    $multiply: [
+                      { $divide: ["$totalSalesValue", "$grandTotalSales"] },
+                      100,
+                    ],
+                  },
+                  2,
+                ],
+              },
             },
           },
         },
@@ -599,10 +978,28 @@ export const leastSellingProducts = async (req, res) => {
       { $sort: { totalSalesQty: 1 } },
     ]);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Least Selling Products"), data, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Least Selling Products"),
+          data,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
 
@@ -616,12 +1013,22 @@ export const topExpenses = async (req, res) => {
       companyId = user.companyId._id;
     }
 
-    const criteria: any = { isDeleted: false, voucherType: POS_VOUCHER_TYPE.EXPENSE };
+    const criteria: any = {
+      isDeleted: false,
+      voucherType: POS_VOUCHER_TYPE.EXPENSE,
+    };
 
-    if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
-    if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+    if (companyId)
+      criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+    if (companyFilter)
+      criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
 
-    applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
+    applyDateFilter(
+      criteria,
+      startDate as string,
+      endDate as string,
+      "createdAt",
+    );
 
     const data = await PosPaymentModel.aggregate([
       { $match: criteria },
@@ -637,7 +1044,9 @@ export const topExpenses = async (req, res) => {
       {
         $group: {
           _id: "$accountId",
-          accountName: { $first: { $ifNull: ["$account.name", "Uncategorized Expense"] } },
+          accountName: {
+            $first: { $ifNull: ["$account.name", "Uncategorized Expense"] },
+          },
           totalAmount: { $sum: "$amount" },
           expenseCount: { $sum: 1 },
         },
@@ -654,10 +1063,28 @@ export const topExpenses = async (req, res) => {
       { $limit: Number(limit) },
     ]);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Top Expenses"), data, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Top Expenses"),
+          data,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
 
@@ -672,12 +1099,23 @@ export const topCoupons = async (req, res) => {
     }
 
     // We only care about completed orders that actually used a coupon
-    const criteria: any = { isDeleted: false, status: POS_ORDER_STATUS.COMPLETED, couponId: { $ne: null } };
+    const criteria: any = {
+      isDeleted: false,
+      status: POS_ORDER_STATUS.COMPLETED,
+      couponId: { $ne: null },
+    };
 
-    if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
-    if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+    if (companyId)
+      criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+    if (companyFilter)
+      criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
 
-    applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
+    applyDateFilter(
+      criteria,
+      startDate as string,
+      endDate as string,
+      "createdAt",
+    );
 
     const data = await PosOrderModel.aggregate([
       { $match: criteria },
@@ -712,10 +1150,28 @@ export const topCoupons = async (req, res) => {
       { $limit: Number(limit) },
     ]);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Top Coupons"), data, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Top Coupons"),
+          data,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
 
@@ -730,7 +1186,10 @@ export const receivable = async (req, res) => {
     }
 
     const criteria: any = { isDeleted: false, dueAmount: { $gt: 0 } };
-    const invoiceCriteria: any = { isDeleted: false, balanceAmount: { $gt: 0 } };
+    const invoiceCriteria: any = {
+      isDeleted: false,
+      balanceAmount: { $gt: 0 },
+    };
 
     if (companyId) {
       const companyObjId = new mongoose.Types.ObjectId(companyId as string);
@@ -738,13 +1197,25 @@ export const receivable = async (req, res) => {
       invoiceCriteria.companyId = companyObjId;
     }
     if (companyFilter) {
-      const companyFilterObjId = new mongoose.Types.ObjectId(companyFilter as string);
+      const companyFilterObjId = new mongoose.Types.ObjectId(
+        companyFilter as string,
+      );
       criteria.companyId = companyFilterObjId;
       invoiceCriteria.companyId = companyFilterObjId;
     }
 
-    applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
-    applyDateFilter(invoiceCriteria, startDate as string, endDate as string, "date");
+    applyDateFilter(
+      criteria,
+      startDate as string,
+      endDate as string,
+      "createdAt",
+    );
+    applyDateFilter(
+      invoiceCriteria,
+      startDate as string,
+      endDate as string,
+      "date",
+    );
 
     // Run aggregations in parallel to fetch arrays
     const [posOrders, invoiceData] = await Promise.all([
@@ -761,7 +1232,13 @@ export const receivable = async (req, res) => {
         { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
         {
           $project: {
-            customerName: { $concat: [{ $ifNull: ["$customer.firstName", "Walk-In"] }, " ", { $ifNull: ["$customer.lastName", ""] }] },
+            customerName: {
+              $concat: [
+                { $ifNull: ["$customer.firstName", "Walk-In"] },
+                " ",
+                { $ifNull: ["$customer.lastName", ""] },
+              ],
+            },
             invoiceNo: "$orderNo",
             pendingAmount: "$dueAmount",
             date: "$createdAt",
@@ -782,7 +1259,13 @@ export const receivable = async (req, res) => {
         { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
         {
           $project: {
-            customerName: { $concat: [{ $ifNull: ["$customer.firstName", "Walk-In"] }, " ", { $ifNull: ["$customer.lastName", ""] }] },
+            customerName: {
+              $concat: [
+                { $ifNull: ["$customer.firstName", "Walk-In"] },
+                " ",
+                { $ifNull: ["$customer.lastName", ""] },
+              ],
+            },
             invoiceNo: "$documentNo",
             pendingAmount: "$balanceAmount",
             date: "$date",
@@ -794,14 +1277,34 @@ export const receivable = async (req, res) => {
 
     const combined = [...posOrders, ...invoiceData];
     // Sort by date descending (latest first)
-    combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    combined.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
 
     const data = combined;
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Receivable Data"), data, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Receivable Data"),
+          data,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
 
@@ -815,16 +1318,28 @@ export const payable = async (req, res) => {
       companyId = user.companyId._id;
     }
 
-    const supplierCriteria: any = { isDeleted: false, balanceAmount: { $gt: 0 } };
+    const supplierCriteria: any = {
+      isDeleted: false,
+      balanceAmount: { $gt: 0 },
+    };
 
     if (companyId) {
-      supplierCriteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+      supplierCriteria.companyId = new mongoose.Types.ObjectId(
+        companyId as string,
+      );
     }
     if (companyFilter) {
-      supplierCriteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+      supplierCriteria.companyId = new mongoose.Types.ObjectId(
+        companyFilter as string,
+      );
     }
 
-    applyDateFilter(supplierCriteria, startDate as string, endDate as string, "supplierBillDate");
+    applyDateFilter(
+      supplierCriteria,
+      startDate as string,
+      endDate as string,
+      "supplierBillDate",
+    );
 
     const data = await supplierBillModel.aggregate([
       { $match: supplierCriteria },
@@ -839,7 +1354,13 @@ export const payable = async (req, res) => {
       { $unwind: { path: "$supplier", preserveNullAndEmptyArrays: true } },
       {
         $project: {
-          supplierName: { $concat: [{ $ifNull: ["$supplier.firstName", "Unknown Supplier"] }, " ", { $ifNull: ["$supplier.lastName", ""] }] },
+          supplierName: {
+            $concat: [
+              { $ifNull: ["$supplier.firstName", "Unknown Supplier"] },
+              " ",
+              { $ifNull: ["$supplier.lastName", ""] },
+            ],
+          },
           billNo: "$supplierBillNo",
           pendingAmount: "$balanceAmount",
           date: "$supplierBillDate",
@@ -850,10 +1371,28 @@ export const payable = async (req, res) => {
 
     const result = data;
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payable Data"), result, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Payable Data"),
+          result,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
 
@@ -868,7 +1407,10 @@ export const salesAndPurchaseGraph = async (req, res) => {
     }
 
     const criteria: any = { isDeleted: false };
-    const statusCriteria: any = { isDeleted: false, status: POS_ORDER_STATUS.COMPLETED };
+    const statusCriteria: any = {
+      isDeleted: false,
+      status: POS_ORDER_STATUS.COMPLETED,
+    };
 
     if (companyId) {
       const companyObjId = new mongoose.Types.ObjectId(companyId as string);
@@ -876,7 +1418,9 @@ export const salesAndPurchaseGraph = async (req, res) => {
       statusCriteria.companyId = companyObjId;
     }
     if (companyFilter) {
-      const companyFilterObjId = new mongoose.Types.ObjectId(companyFilter as string);
+      const companyFilterObjId = new mongoose.Types.ObjectId(
+        companyFilter as string,
+      );
       criteria.companyId = companyFilterObjId;
       statusCriteria.companyId = companyFilterObjId;
     }
@@ -891,29 +1435,101 @@ export const salesAndPurchaseGraph = async (req, res) => {
     };
 
     const posCriteria = { ...statusCriteria };
-    applyDateFilter(posCriteria, startDate as string, endDate as string, dateFields.posOrder);
+    applyDateFilter(
+      posCriteria,
+      startDate as string,
+      endDate as string,
+      dateFields.posOrder,
+    );
     const invCriteria = { ...criteria };
-    applyDateFilter(invCriteria, startDate as string, endDate as string, dateFields.invoice);
-    const rPosCriteria = { ...criteria, type: RETURN_POS_ORDER_TYPE.SALES_RETURN };
-    applyDateFilter(rPosCriteria, startDate as string, endDate as string, dateFields.returnPosOrder);
+    applyDateFilter(
+      invCriteria,
+      startDate as string,
+      endDate as string,
+      dateFields.invoice,
+    );
+    const rPosCriteria = {
+      ...criteria,
+      type: RETURN_POS_ORDER_TYPE.SALES_RETURN,
+    };
+    applyDateFilter(
+      rPosCriteria,
+      startDate as string,
+      endDate as string,
+      dateFields.returnPosOrder,
+    );
     const scnCriteria = { ...criteria };
-    applyDateFilter(scnCriteria, startDate as string, endDate as string, dateFields.salesCreditNote);
+    applyDateFilter(
+      scnCriteria,
+      startDate as string,
+      endDate as string,
+      dateFields.salesCreditNote,
+    );
     const sbCriteria = { ...criteria };
-    applyDateFilter(sbCriteria, startDate as string, endDate as string, dateFields.supplierBill);
+    applyDateFilter(
+      sbCriteria,
+      startDate as string,
+      endDate as string,
+      dateFields.supplierBill,
+    );
     const dnCriteria = { ...criteria };
-    applyDateFilter(dnCriteria, startDate as string, endDate as string, dateFields.debitNote);
+    applyDateFilter(
+      dnCriteria,
+      startDate as string,
+      endDate as string,
+      dateFields.debitNote,
+    );
 
     const groupByDateStr = (dateField) => ({
       $dateToString: { format: "%Y-%m-%d", date: `$${dateField}` },
     });
 
-    const [posSales, invSales, posReturns, scnReturns, supPurchases, dnReturns] = await Promise.all([
+    const [
+      posSales,
+      invSales,
+      posReturns,
+      scnReturns,
+      supPurchases,
+      dnReturns,
+    ] = await Promise.all([
       // 1. Sales
-      PosOrderModel.aggregate([{ $match: posCriteria }, { $group: { _id: groupByDateStr(dateFields.posOrder), total: { $sum: "$totalAmount" } } }]),
-      InvoiceModel.aggregate([{ $match: invCriteria }, { $group: { _id: groupByDateStr(dateFields.invoice), total: { $sum: "$netAmount" } } }]),
+      PosOrderModel.aggregate([
+        { $match: posCriteria },
+        {
+          $group: {
+            _id: groupByDateStr(dateFields.posOrder),
+            total: { $sum: "$totalAmount" },
+          },
+        },
+      ]),
+      InvoiceModel.aggregate([
+        { $match: invCriteria },
+        {
+          $group: {
+            _id: groupByDateStr(dateFields.invoice),
+            total: { $sum: "$netAmount" },
+          },
+        },
+      ]),
       // 2. Sales Returns
-      returnPosOrderModel.aggregate([{ $match: rPosCriteria }, { $group: { _id: groupByDateStr(dateFields.returnPosOrder), total: { $sum: "$total" } } }]),
-      salesCreditNoteModel.aggregate([{ $match: scnCriteria }, { $group: { _id: groupByDateStr(dateFields.salesCreditNote), total: { $sum: "$netAmount" } } }]),
+      returnPosOrderModel.aggregate([
+        { $match: rPosCriteria },
+        {
+          $group: {
+            _id: groupByDateStr(dateFields.returnPosOrder),
+            total: { $sum: "$total" },
+          },
+        },
+      ]),
+      salesCreditNoteModel.aggregate([
+        { $match: scnCriteria },
+        {
+          $group: {
+            _id: groupByDateStr(dateFields.salesCreditNote),
+            total: { $sum: "$netAmount" },
+          },
+        },
+      ]),
       // 3. Purchases & Purchase Returns (from Supplier Bill)
       supplierBillModel.aggregate([
         { $match: sbCriteria },
@@ -921,20 +1537,47 @@ export const salesAndPurchaseGraph = async (req, res) => {
           $group: {
             _id: groupByDateStr(dateFields.supplierBill),
             totalPurchase: { $sum: "$summary.netAmount" },
-            totalPurchaseReturn: { $sum: "$returnProductDetails.summary.netAmount" },
+            totalPurchaseReturn: {
+              $sum: "$returnProductDetails.summary.netAmount",
+            },
           },
         },
       ]),
       // 4. Additional Purchase Returns (from Debit Note)
-      debitNoteModel.aggregate([{ $match: dnCriteria }, { $group: { _id: groupByDateStr(dateFields.debitNote), total: { $sum: "$amount" } } }]),
+      debitNoteModel.aggregate([
+        { $match: dnCriteria },
+        {
+          $group: {
+            _id: groupByDateStr(dateFields.debitNote),
+            total: { $sum: "$amount" },
+          },
+        },
+      ]),
     ]);
 
-    const mergedData: Record<string, { sales: number; salesReturn: number; purchase: number; purchaseReturn: number }> = {};
+    const mergedData: Record<
+      string,
+      {
+        sales: number;
+        salesReturn: number;
+        purchase: number;
+        purchaseReturn: number;
+      }
+    > = {};
 
-    const addValue = (date: string, type: "sales" | "salesReturn" | "purchase" | "purchaseReturn", value: number) => {
+    const addValue = (
+      date: string,
+      type: "sales" | "salesReturn" | "purchase" | "purchaseReturn",
+      value: number,
+    ) => {
       if (!date) return;
       if (!mergedData[date]) {
-        mergedData[date] = { sales: 0, salesReturn: 0, purchase: 0, purchaseReturn: 0 };
+        mergedData[date] = {
+          sales: 0,
+          salesReturn: 0,
+          purchase: 0,
+          purchaseReturn: 0,
+        };
       }
       mergedData[date][type] += value || 0;
     };
@@ -950,7 +1593,9 @@ export const salesAndPurchaseGraph = async (req, res) => {
       addValue(item._id, "purchaseReturn", item.totalPurchaseReturn);
     });
 
-    dnReturns.forEach((item) => addValue(item._id, "purchaseReturn", item.total));
+    dnReturns.forEach((item) =>
+      addValue(item._id, "purchaseReturn", item.total),
+    );
 
     // Fill in missing dates
     const getDatesInRange = (startDate: Date, endDate: Date) => {
@@ -963,7 +1608,9 @@ export const salesAndPurchaseGraph = async (req, res) => {
       return dates;
     };
 
-    let start = startDate ? new Date(startDate as string) : new Date(new Date().setDate(new Date().getDate() - 30));
+    let start = startDate
+      ? new Date(startDate as string)
+      : new Date(new Date().setDate(new Date().getDate() - 30));
     let end = endDate ? new Date(endDate as string) : new Date();
 
     // Reset time part for accurate daily iteration
@@ -974,7 +1621,12 @@ export const salesAndPurchaseGraph = async (req, res) => {
 
     allDates.forEach((date) => {
       if (!mergedData[date]) {
-        mergedData[date] = { sales: 0, salesReturn: 0, purchase: 0, purchaseReturn: 0 };
+        mergedData[date] = {
+          sales: 0,
+          salesReturn: 0,
+          purchase: 0,
+          purchaseReturn: 0,
+        };
       }
     });
 
@@ -984,12 +1636,32 @@ export const salesAndPurchaseGraph = async (req, res) => {
     }));
 
     // Sort chronologically
-    graphData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    graphData.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales and Purchase Graph"), graphData, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Sales and Purchase Graph"),
+          graphData,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
 
@@ -997,17 +1669,22 @@ export const transactionGraph = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    let { startDate, endDate, companyFilter, companyId, typeFilter } = req.query;
+    let { startDate, endDate, companyFilter, companyId, typeFilter } =
+      req.query;
 
     if (!companyId && user?.companyId?._id) {
       companyId = user.companyId._id;
     }
 
     const criteria: any = { isDeleted: false };
-    if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
-    if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+    if (companyId)
+      criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+    if (companyFilter)
+      criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
 
-    let start = startDate ? new Date(startDate as string) : new Date(new Date().setDate(new Date().getDate() - 30));
+    let start = startDate
+      ? new Date(startDate as string)
+      : new Date(new Date().setDate(new Date().getDate() - 30));
     let end = endDate ? new Date(endDate as string) : new Date();
 
     start.setHours(0, 0, 0, 0);
@@ -1026,8 +1703,12 @@ export const transactionGraph = async (req, res) => {
     const posCriteria = { ...criteria, voucherType: { $in: posVoucherTypes } };
 
     let vCriteria: any = { isDeleted: false, type: { $in: voucherTypes } };
-    if (companyId) vCriteria.companyId = new mongoose.Types.ObjectId(companyId as string);
-    if (companyFilter) vCriteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+    if (companyId)
+      vCriteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+    if (companyFilter)
+      vCriteria.companyId = new mongoose.Types.ObjectId(
+        companyFilter as string,
+      );
     vCriteria.date = { $gte: start, $lte: end };
 
     const groupByDateStr = (dateField) => ({
@@ -1127,20 +1808,44 @@ export const transactionGraph = async (req, res) => {
       }
     };
 
-    posPayments.forEach((item) => addValue(item._id.date, item._id.method, item.total));
-    vouchers.forEach((item) => addValue(item._id.date, item._id.method, item.total));
+    posPayments.forEach((item) =>
+      addValue(item._id.date, item._id.method, item.total),
+    );
+    vouchers.forEach((item) =>
+      addValue(item._id.date, item._id.method, item.total),
+    );
 
     const graphData = Object.keys(mergedData).map((date) => ({
       date,
       ...mergedData[date],
     }));
 
-    graphData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    graphData.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Transaction Graph"), graphData, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Transaction Graph"),
+          graphData,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
 
@@ -1155,12 +1860,22 @@ export const getCategorySales = async (req, res) => {
       companyId = user.companyId._id;
     }
 
-    const criteria: any = { isDeleted: false, status: POS_ORDER_STATUS.COMPLETED };
+    const criteria: any = {
+      isDeleted: false,
+      status: POS_ORDER_STATUS.COMPLETED,
+    };
 
-    if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
-    if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
+    if (companyId)
+      criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
+    if (companyFilter)
+      criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
 
-    applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
+    applyDateFilter(
+      criteria,
+      startDate as string,
+      endDate as string,
+      "createdAt",
+    );
 
     const data = await PosOrderModel.aggregate([
       { $match: criteria },
@@ -1180,7 +1895,11 @@ export const getCategorySales = async (req, res) => {
           uniqueOrders: { $addToSet: "$_id" },
           totalSalesQty: { $sum: "$items.qty" },
           totalSalesValue: { $sum: "$items.netAmount" },
-          totalCostValue: { $sum: { $multiply: ["$items.qty", { $ifNull: ["$items.unitCost", 0] }] } },
+          totalCostValue: {
+            $sum: {
+              $multiply: ["$items.qty", { $ifNull: ["$items.unitCost", 0] }],
+            },
+          },
         },
       },
       {
@@ -1224,7 +1943,17 @@ export const getCategorySales = async (req, res) => {
             $cond: {
               if: { $eq: ["$grandTotalSales", 0] },
               then: 0,
-              else: { $round: [{ $multiply: [{ $divide: ["$totalSalesValue", "$grandTotalSales"] }, 100] }, 2] },
+              else: {
+                $round: [
+                  {
+                    $multiply: [
+                      { $divide: ["$totalSalesValue", "$grandTotalSales"] },
+                      100,
+                    ],
+                  },
+                  2,
+                ],
+              },
             },
           },
         },
@@ -1232,9 +1961,151 @@ export const getCategorySales = async (req, res) => {
       { $sort: { totalSalesQty: -1 } },
     ]);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Category Sales"), data, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Category Sales"),
+          data,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
+  }
+};
+
+export const getRenewalDueOfMonth = async (req, res) => {
+  try {
+    let { startDate, endDate, search } = req.query;
+
+    let criteria: any = { isDeleted: false, isActive: true };
+
+    if (search) {
+      criteria.$or = [
+        { name: { $regex: search, $options: "si" } },
+        { displayName: { $regex: search, $options: "si" } },
+      ];
+    }
+
+    if (!startDate && !endDate) {
+      // Default to current month if no filter provided
+      const now = new Date();
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      endDate = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+      ).toISOString();
+    }
+
+    applyDateFilter(
+      criteria,
+      startDate as string,
+      endDate as string,
+      "planEndDate",
+    );
+
+    const data = await getData(
+      companyModel,
+      criteria,
+      {},
+      { sort: { planEndDate: 1 } },
+    );
+    const total = await countData(companyModel, criteria);
+
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("Renewal Due Companies"),
+          { company_data: data, totalData: total },
+          {},
+        ),
+      );
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
+  }
+};
+
+export const getNewRegistrations = async (req, res) => {
+  try {
+    let { startDate, endDate, search } = req.query;
+
+    let criteria: any = { isDeleted: false };
+
+    if (search) {
+      criteria.$or = [
+        { name: { $regex: search, $options: "si" } },
+        { displayName: { $regex: search, $options: "si" } },
+      ];
+    }
+
+    if (!startDate && !endDate) {
+      // Default to today if no filter
+      const today = new Date();
+      startDate = new Date(today.setHours(0, 0, 0, 0)).toISOString();
+      endDate = new Date(today.setHours(23, 59, 59, 999)).toISOString();
+    }
+
+    applyDateFilter(
+      criteria,
+      startDate as string,
+      endDate as string,
+      "createdAt",
+    );
+
+    const data = await getData(
+      companyModel,
+      criteria,
+      {},
+      { sort: { createdAt: -1 } },
+    );
+    const total = await countData(companyModel, criteria);
+
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.getDataSuccess("New Registrations"),
+          { company_data: data, totalData: total },
+          {},
+        ),
+      );
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };

@@ -1,20 +1,34 @@
 import express from "express";
 import { dashboardController } from "../controllers";
+import { superAdminJwt } from "../helper";
 
 const router = express.Router();
 
 router.get("/transactions", dashboardController.transactionDetails);
 router.get("/top-customers", dashboardController.topCustomers);
-router.get("/category-wise-customers", dashboardController.categoryWiseCustomers);
-router.get("/category-wise-customers-count", dashboardController.categoryWiseCustomersCount);
+router.get(
+  "/category-wise-customers",
+  dashboardController.categoryWiseCustomers,
+);
+router.get(
+  "/category-wise-customers-count",
+  dashboardController.categoryWiseCustomersCount,
+);
 router.get("/best-selling-products", dashboardController.bestSellingProducts);
 router.get("/least-selling-products", dashboardController.leastSellingProducts);
 router.get("/top-expenses", dashboardController.topExpenses);
 router.get("/top-coupons", dashboardController.topCoupons);
 router.get("/receivable", dashboardController.receivable);
 router.get("/payable", dashboardController.payable);
-router.get("/sales-and-purchase-graph", dashboardController.salesAndPurchaseGraph);
+router.get(
+  "/sales-and-purchase-graph",
+  dashboardController.salesAndPurchaseGraph,
+);
 router.get("/transaction-graph", dashboardController.transactionGraph);
 router.get("/category-sales", dashboardController.getCategorySales);
+
+router.use(superAdminJwt);
+router.get("/renewal-due", dashboardController.getRenewalDueOfMonth);
+router.get("/new-registrations", dashboardController.getNewRegistrations);
 
 export const dashboardRouter = router;

@@ -1,7 +1,39 @@
-import { apiResponse, generateHash, generateToken, getOtpExpireTime, getUniqueOtp, HTTP_STATUS, LOGIN_SOURCES, USER_ROLES, USER_TYPES } from "../../common";
-import { moduleModel, permissionModel, roleModel, userModel } from "../../database";
-import { checkIdExist, createOne, emailVerificationMail, findAllAndPopulateWithSorting, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { loginSchema, registerSchema, resendOtpSchema, resetPasswordSchema, verifyOtpSchema } from "../../validation";
+import {
+  apiResponse,
+  generateHash,
+  generateToken,
+  getOtpExpireTime,
+  getUniqueOtp,
+  HTTP_STATUS,
+  LOGIN_SOURCES,
+  USER_ROLES,
+  USER_TYPES,
+} from "../../common";
+import {
+  companyModel,
+  moduleModel,
+  permissionModel,
+  roleModel,
+  userModel,
+} from "../../database";
+import {
+  checkIdExist,
+  createOne,
+  emailVerificationMail,
+  findAllAndPopulateWithSorting,
+  getData,
+  getFirstMatch,
+  reqInfo,
+  responseMessage,
+  updateData,
+} from "../../helper";
+import {
+  loginSchema,
+  registerSchema,
+  resendOtpSchema,
+  resetPasswordSchema,
+  verifyOtpSchema,
+} from "../../validation";
 
 import bcryptjs from "bcryptjs";
 import { createLoginLogEntry } from "../loginLog";
@@ -12,7 +44,17 @@ export const register = async (req, res) => {
   try {
     let { error, value } = registerSchema.validate(req.body);
 
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    if (error)
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            error?.details[0]?.message,
+            {},
+            {},
+          ),
+        );
 
     if (!(await checkIdExist(roleModel, value?.role, "Role", res))) return;
 
@@ -24,24 +66,90 @@ export const register = async (req, res) => {
     let existingUser = null;
 
     if (orCondition.length) {
-      existingUser = await getFirstMatch(userModel, { $or: orCondition, isDeleted: false }, {}, {});
+      existingUser = await getFirstMatch(
+        userModel,
+        { $or: orCondition, isDeleted: false },
+        {},
+        {},
+      );
 
       if (existingUser) {
-        if (existingUser?.email === value?.email) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Email"), {}, {}));
-        if (Number(existingUser?.phoneNo?.phoneNo) === Number(phoneNo)) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Phone number"), {}, {}));
-        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("User"), {}, {}));
+        if (existingUser?.email === value?.email)
+          return res
+            .status(HTTP_STATUS.CONFLICT)
+            .json(
+              new apiResponse(
+                HTTP_STATUS.CONFLICT,
+                responseMessage?.dataAlreadyExist("Email"),
+                {},
+                {},
+              ),
+            );
+        if (Number(existingUser?.phoneNo?.phoneNo) === Number(phoneNo))
+          return res
+            .status(HTTP_STATUS.CONFLICT)
+            .json(
+              new apiResponse(
+                HTTP_STATUS.CONFLICT,
+                responseMessage?.dataAlreadyExist("Phone number"),
+                {},
+                {},
+              ),
+            );
+        return res
+          .status(HTTP_STATUS.CONFLICT)
+          .json(
+            new apiResponse(
+              HTTP_STATUS.CONFLICT,
+              responseMessage?.dataAlreadyExist("User"),
+              {},
+              {},
+            ),
+          );
       }
     }
 
-    existingUser = await getFirstMatch(userModel, { "phoneNo.phoneNo": phoneNo, isDeleted: false }, {}, {});
-    if (existingUser) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Phone Number"), {}, {}));
+    existingUser = await getFirstMatch(
+      userModel,
+      { "phoneNo.phoneNo": phoneNo, isDeleted: false },
+      {},
+      {},
+    );
+    if (existingUser)
+      return res
+        .status(HTTP_STATUS.CONFLICT)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.CONFLICT,
+            responseMessage?.dataAlreadyExist("Phone Number"),
+            {},
+            {},
+          ),
+        );
 
     value.password = await generateHash(value.password);
 
     let response = await createOne(userModel, value);
 
-    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
-    const token = await generateToken({ _id: response?._id, status: "Register", generatedOn: new Date().getTime() }, { expiresIn: "24h" });
+    if (!response)
+      return res
+        .status(HTTP_STATUS.NOT_IMPLEMENTED)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.NOT_IMPLEMENTED,
+            responseMessage?.addDataError,
+            {},
+            {},
+          ),
+        );
+    const token = await generateToken(
+      {
+        _id: response?._id,
+        status: "Register",
+        generatedOn: new Date().getTime(),
+      },
+      { expiresIn: "24h" },
+    );
 
     const { password, ...rest } = response?._doc || {};
     response = {
@@ -49,10 +157,28 @@ export const register = async (req, res) => {
       token,
     };
 
-    return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.signupSuccess, response, {}));
+    return res
+      .status(HTTP_STATUS.CREATED)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.CREATED,
+          responseMessage?.signupSuccess,
+          response,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
 
@@ -61,7 +187,17 @@ export const login = async (req, res) => {
   try {
     const { error, value } = loginSchema.validate(req.body);
 
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    if (error)
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            error?.details[0]?.message,
+            {},
+            {},
+          ),
+        );
 
     let response = await getFirstMatch(
       userModel,
@@ -76,35 +212,156 @@ export const login = async (req, res) => {
       },
     );
 
-    if (!response) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
-    const comparePassword = await bcryptjs.compare(value?.password, response?.password);
-    if (!comparePassword) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
+    if (!response)
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.invalidUserPasswordEmail,
+            {},
+            {},
+          ),
+        );
+    const comparePassword = await bcryptjs.compare(
+      value?.password,
+      response?.password,
+    );
+    if (!comparePassword)
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.invalidUserPasswordEmail,
+            {},
+            {},
+          ),
+        );
 
     // ========================  Check For Login Sources ========================
-    if (value.loginSource === LOGIN_SOURCES.SUPER_ADMIN_PANEL && response.userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
+    if (
+      value.loginSource === LOGIN_SOURCES.SUPER_ADMIN_PANEL &&
+      response.userType !== USER_TYPES.SUPER_ADMIN
+    )
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.invalidUserPasswordEmail,
+            {},
+            {},
+          ),
+        );
 
-    if (value.loginSource === LOGIN_SOURCES.ADMIN_PANEL && response.userType !== USER_TYPES.ADMIN) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
+    if (
+      value.loginSource === LOGIN_SOURCES.ADMIN_PANEL &&
+      response.userType !== USER_TYPES.ADMIN
+    )
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.invalidUserPasswordEmail,
+            {},
+            {},
+          ),
+        );
 
-    if (value.loginSource === LOGIN_SOURCES.WEBSITE && response.userType !== USER_TYPES.USER) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
+    if (
+      value.loginSource === LOGIN_SOURCES.WEBSITE &&
+      response.userType !== USER_TYPES.USER
+    )
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.invalidUserPasswordEmail,
+            {},
+            {},
+          ),
+        );
 
-    if (response.isActive === false) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
+    if (response.isActive === false)
+      return res
+        .status(HTTP_STATUS.FORBIDDEN)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.FORBIDDEN,
+            responseMessage?.accountBlock,
+            {},
+            {},
+          ),
+        );
 
     // OTP Generation For Super Admin
-    const isSuperAdmin = value.loginSource === LOGIN_SOURCES.SUPER_ADMIN_PANEL && response?.userType === USER_TYPES.SUPER_ADMIN;
+    const isSuperAdmin =
+      value.loginSource === LOGIN_SOURCES.SUPER_ADMIN_PANEL &&
+      response?.userType === USER_TYPES.SUPER_ADMIN;
     if (isSuperAdmin) {
-
       const otp = await getUniqueOtp();
 
       if (response?.email) {
-        emailVerificationMail(response, otp)
+        emailVerificationMail(response, otp);
       }
 
       const otpExpireTime = getOtpExpireTime();
 
-      await userModel.findOneAndUpdate({ _id: response?._id }, { otp, otpExpireTime }, { new: true })
+      await userModel.findOneAndUpdate(
+        { _id: response?._id },
+        { otp, otpExpireTime },
+        { new: true },
+      );
     }
 
-    const token = await generateToken({ _id: response?._id, status: "Login", generatedOn: new Date().getTime() }, { expiresIn: "24h" });
+    const isAdmin =
+      value.loginSource === LOGIN_SOURCES.ADMIN_PANEL &&
+      response?.userType === USER_TYPES.ADMIN;
+
+    if (isAdmin) {
+      const company = await getFirstMatch(
+        companyModel,
+        { _id: response?.companyId },
+        {},
+        {},
+      );
+      if (!company) {
+        return res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            new apiResponse(
+              HTTP_STATUS.BAD_REQUEST,
+              responseMessage?.invalidUserPasswordEmail,
+              {},
+              {},
+            ),
+          );
+      }
+
+      if (company?.isActive === false) {
+        return res
+          .status(HTTP_STATUS.FORBIDDEN)
+          .json(
+            new apiResponse(
+              HTTP_STATUS.FORBIDDEN,
+              responseMessage?.companyPlanExpired,
+              {},
+              {},
+            ),
+          );
+      }
+    }
+    const token = await generateToken(
+      {
+        _id: response?._id,
+        status: "Login",
+        generatedOn: new Date().getTime(),
+      },
+      { expiresIn: "24h" },
+    );
 
     const { password, otp, ...rest } = response;
 
@@ -191,23 +448,57 @@ export const login = async (req, res) => {
 
     // newUserPermissionData.sort((a, b) => a.number - b.number);
     if (response?.userType !== USER_ROLES.SUPER_ADMIN) {
-      createLoginLogEntry(req, response, "LOGIN", `${response?.companyId?.name || "Company"} Logged In`);
+      createLoginLogEntry(
+        req,
+        response,
+        "LOGIN",
+        `${response?.companyId?.name || "Company"} Logged In`,
+      );
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, isSuperAdmin ? responseMessage?.otpSendSuccess : responseMessage?.loginSuccess, response, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          isSuperAdmin
+            ? responseMessage?.otpSendSuccess
+            : responseMessage?.loginSuccess,
+          response,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          error,
+        ),
+      );
   }
 };
-
 
 export const resetPassword = async (req, res) => {
   reqInfo(req);
   try {
     const { error, value } = resetPasswordSchema.validate(req.body);
 
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    if (error)
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            error?.details[0]?.message,
+            {},
+            {},
+          ),
+        );
 
     let response = await getFirstMatch(
       userModel,
@@ -222,36 +513,140 @@ export const resetPassword = async (req, res) => {
       },
     );
 
-    if (!response) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("User"), {}, {}));
+    if (!response)
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.getDataNotFound("User"),
+            {},
+            {},
+          ),
+        );
 
-    if (response.isActive === false) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
+    if (response.isActive === false)
+      return res
+        .status(HTTP_STATUS.FORBIDDEN)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.FORBIDDEN,
+            responseMessage?.accountBlock,
+            {},
+            {},
+          ),
+        );
 
-    if (value?.oldPassword === value?.newPassword) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.passwordSameError, {}, {}));
+    if (value?.oldPassword === value?.newPassword)
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.passwordSameError,
+            {},
+            {},
+          ),
+        );
 
-    const comparePassword = await bcryptjs.compare(value?.oldPassword, response?.password);
-    if (!comparePassword) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.oldPasswordError, {}, {}));
+    const comparePassword = await bcryptjs.compare(
+      value?.oldPassword,
+      response?.password,
+    );
+    if (!comparePassword)
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.oldPasswordError,
+            {},
+            {},
+          ),
+        );
 
     // ========================  Check For Login Sources ========================
-    if (value.loginSource === LOGIN_SOURCES.SUPER_ADMIN_PANEL && response.userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
+    if (
+      value.loginSource === LOGIN_SOURCES.SUPER_ADMIN_PANEL &&
+      response.userType !== USER_TYPES.SUPER_ADMIN
+    )
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.invalidUserPasswordEmail,
+            {},
+            {},
+          ),
+        );
 
-    if (value.loginSource === LOGIN_SOURCES.ADMIN_PANEL && response.userType !== USER_TYPES.ADMIN) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
+    if (
+      value.loginSource === LOGIN_SOURCES.ADMIN_PANEL &&
+      response.userType !== USER_TYPES.ADMIN
+    )
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.invalidUserPasswordEmail,
+            {},
+            {},
+          ),
+        );
 
-    if (value.loginSource === LOGIN_SOURCES.WEBSITE && response.userType !== USER_TYPES.USER) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
-
+    if (
+      value.loginSource === LOGIN_SOURCES.WEBSITE &&
+      response.userType !== USER_TYPES.USER
+    )
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.invalidUserPasswordEmail,
+            {},
+            {},
+          ),
+        );
 
     const hashedPassword = await generateHash(value?.newPassword);
 
-    response = await updateData(userModel, { _id: response?._id }, { password: hashedPassword }, {});
+    response = await updateData(
+      userModel,
+      { _id: response?._id },
+      { password: hashedPassword },
+      {},
+    );
     const { password, ...rest } = response;
 
     response = {
       ...rest,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.resetPasswordSuccess, response, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.resetPasswordSuccess,
+          response,
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          {},
+        ),
+      );
   }
 };
 
@@ -260,26 +655,83 @@ export const verifyOtp = async (req, res) => {
   try {
     const { error, value } = verifyOtpSchema.validate(req.body);
 
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    if (error)
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            error?.details[0]?.message,
+            {},
+            {},
+          ),
+        );
 
-    let response = await getFirstMatch(userModel, { email: value?.email, isDeleted: false }, {}, {});
+    let response = await getFirstMatch(
+      userModel,
+      { email: value?.email, isDeleted: false },
+      {},
+      {},
+    );
 
-    if (!response) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("User"), {}, {}));
+    if (!response)
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.getDataNotFound("User"),
+            {},
+            {},
+          ),
+        );
 
+    if (Number(response?.otp) !== Number(value?.otp))
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.invalidOTP,
+            {},
+            {},
+          ),
+        );
 
-    if (Number(response?.otp) !== Number(value?.otp)) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidOTP, {}, {}));
-
-    if (response?.otpExpireTime < new Date()) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.expireOTP, {}, {}));
+    if (response?.otpExpireTime < new Date())
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.expireOTP,
+            {},
+            {},
+          ),
+        );
 
     // response = await updateData(userModel, { _id: response?._id }, { otp: null, otpExpireTime: null }, {});
     const { password, otp, otpExpireTime, ...rest } = response;
 
     response = rest;
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.OTPVerified, {}, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(HTTP_STATUS.OK, responseMessage?.OTPVerified, {}, {}),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          {},
+        ),
+      );
   }
 };
 
@@ -288,26 +740,84 @@ export const resendOtp = async (req, res) => {
   try {
     const { error, value } = resendOtpSchema.validate(req.body);
 
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    if (error)
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            error?.details[0]?.message,
+            {},
+            {},
+          ),
+        );
 
-    let response = await getFirstMatch(userModel, { email: value?.email, isDeleted: false }, {}, {});
+    let response = await getFirstMatch(
+      userModel,
+      { email: value?.email, isDeleted: false },
+      {},
+      {},
+    );
 
-    if (!response) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("User"), {}, {}));
+    if (!response)
+      return res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            responseMessage?.getDataNotFound("User"),
+            {},
+            {},
+          ),
+        );
 
-    if (response?.isActive === false) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
+    if (response?.isActive === false)
+      return res
+        .status(HTTP_STATUS.FORBIDDEN)
+        .json(
+          new apiResponse(
+            HTTP_STATUS.FORBIDDEN,
+            responseMessage?.accountBlock,
+            {},
+            {},
+          ),
+        );
 
     const otp = await getUniqueOtp();
     const otpExpireTime = getOtpExpireTime();
 
     if (response?.email) {
-      emailVerificationMail(response, otp)
+      emailVerificationMail(response, otp);
     }
 
-    response = await updateData(userModel, { _id: response?._id }, { otp, otpExpireTime }, {});
+    response = await updateData(
+      userModel,
+      { _id: response?._id },
+      { otp, otpExpireTime },
+      {},
+    );
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.resendOtpSuccess, {}, {}));
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.OK,
+          responseMessage?.resendOtpSuccess,
+          {},
+          {},
+        ),
+      );
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, {}));
+    return res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(
+        new apiResponse(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          responseMessage?.internalServerError,
+          {},
+          {},
+        ),
+      );
   }
-};  
+};

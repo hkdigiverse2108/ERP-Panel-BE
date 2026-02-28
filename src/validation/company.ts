@@ -74,6 +74,10 @@ export const addCompanySchema = Joi.object().keys({
   reportFormatLogo: Joi.string().optional().allow("", null),
   authorizedSignature: Joi.string().optional().allow("", null),
   isActive: Joi.boolean().optional(),
+
+  currentPlan: Joi.string().optional(),
+  planStartDate: Joi.date().optional(),
+  planEndDate: Joi.date().optional(),
 });
 
 export const editCompanySchema = Joi.object().keys({
@@ -122,7 +126,9 @@ export const editCompanySchema = Joi.object().keys({
   // *******************  Other Details *******************
   corporateIdentificationNumber: Joi.string().optional().allow("", null),
   letterOfUndertaking: Joi.string().optional().allow("", null),
-  taxDeductionAndCollectionAccountNumber: Joi.string().optional().allow("", null),
+  taxDeductionAndCollectionAccountNumber: Joi.string()
+    .optional()
+    .allow("", null),
   importerExporterCode: Joi.string().optional().allow("", null),
   outletSize: Joi.string().optional().allow("", null),
 
@@ -145,6 +151,10 @@ export const editCompanySchema = Joi.object().keys({
   reportFormatLogo: Joi.string().optional().allow("", null),
   authorizedSignature: Joi.string().optional().allow("", null),
   isActive: Joi.boolean().optional(),
+
+  currentPlan: Joi.string().optional(),
+  planStartDate: Joi.date().optional(),
+  planEndDate: Joi.date().optional(),
 });
 
 export const deleteCompanySchema = Joi.object().keys({

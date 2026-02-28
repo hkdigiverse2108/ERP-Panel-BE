@@ -14,7 +14,8 @@ export const responseMessage = {
   resendOtpSuccess: "OTP has been resent successfully!",
   invalidEmail: "You have entered an invalid email!",
   emailVerificationComplete: "Email verification complete!",
-  invalidIdTokenAndAccessToken: "You have entered an invalid idToken or accessToken!",
+  invalidIdTokenAndAccessToken:
+    "You have entered an invalid idToken or accessToken!",
   errorMail: "Error in mail system!",
   resetPasswordSuccess: "Your password has been successfully reset!",
   resetPasswordError: "Error in reset password!",
@@ -22,7 +23,8 @@ export const responseMessage = {
   passwordChangeSuccess: "Password has been changed!",
   passwordChangeError: "During password changing error in database!",
   passwordSameError: "New password cannot be same as old password!",
-  invalidOldTokenReFreshToken: "You have entered an invalid old token or refresh token!",
+  invalidOldTokenReFreshToken:
+    "You have entered an invalid old token or refresh token!",
   refreshTokenNotFound: "Refresh token not found!",
   tokenNotExpire: "Token has been not expired!",
   tokenExpire: "Token has been expired!",
@@ -54,6 +56,7 @@ export const responseMessage = {
   roleInUse: "Role is assigned to users and cannot be deleted",
   posAlreadyOnHold: "the POS you requested is already on hold",
   parentGroupError: "A group cannot be its own parent",
+  companyPlanExpired: "your plan expired!, please contact to our support team",
 
   fieldIsSame: (message: string): any => {
     return `${message} cannot be same!`;
@@ -91,7 +94,11 @@ export const responseMessage = {
   deleteDataError: (message: string): any => {
     return `${message[0].toUpperCase() + message.slice(1).toLowerCase()} deleting time getting an error!`;
   },
-  insufficientStock: (product: string, available: number, requested: number): string => {
+  insufficientStock: (
+    product: string,
+    available: number,
+    requested: number,
+  ): string => {
     return `Insufficient stock for ${product}. Available: ${available}, Requested: ${requested}`;
   },
 };

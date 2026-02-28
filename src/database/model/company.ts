@@ -25,9 +25,21 @@ const companySchema: any = new mongoose.Schema(
     // ******************* Communication Details *******************
     address: {
       address: { type: String },
-      city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-      state: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
-      country: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
+      city: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "location",
+        default: null,
+      },
+      state: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "location",
+        default: null,
+      },
+      country: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "location",
+        default: null,
+      },
       pinCode: { type: Number },
     },
     // timeZone: { type: String },
@@ -35,12 +47,6 @@ const companySchema: any = new mongoose.Schema(
 
     // ******************* Bank Details *******************
     bankId: { type: mongoose.Schema.Types.ObjectId, ref: "bank" },
-    // upiId: { type: String },
-    // name: { type: String },
-    // bankIFSC: { type: String },
-    // branchName: { type: String },
-    // accountHolderName: { type: String },
-    // bankAccountNumber: { type: String },
 
     // ******************* Other Details *******************
     userName: { type: String },
@@ -72,9 +78,27 @@ const companySchema: any = new mongoose.Schema(
     reportFormatLogo: { type: String },
     authorizedSignature: { type: String },
 
-    userIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "user", default: [] }],
+    userIds: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "user", default: [] },
+    ],
     roles: [{ type: mongoose.Schema.Types.ObjectId, ref: "role", default: [] }],
-    employees: [{ type: mongoose.Schema.Types.ObjectId, ref: "employee", default: [] }],
+    employees: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "employee", default: [] },
+    ],
+
+    currentPlan: { type: String, default: null },
+    planStartDate: { type: Date, default: null },
+    planEndDate: { type: Date, default: null },
+
+    planHistory: [
+      {
+        planName: { type: String },
+        planPrice: { type: Number },
+        planStartDate: { type: Date },
+        planEndDate: { type: Date },
+        planStatus: { type: String },
+      },
+    ],
 
     ...baseCommonFields,
   },
