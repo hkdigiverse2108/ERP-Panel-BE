@@ -1,5 +1,9 @@
 import mongoose, { Schema } from "mongoose";
-import { baseSchemaFields, baseSchemaOptions, transactionSummarySchema } from "./base";
+import {
+  baseSchemaFields,
+  baseSchemaOptions,
+  transactionSummarySchema,
+} from "./base";
 import { IPurchaseOrder } from "../../types";
 import { ORDER_STATUS, TAX_TYPE } from "../../common";
 
@@ -24,12 +28,16 @@ const purchaseOrderSchema = new Schema<IPurchaseOrder>(
     supplierId: { type: Schema.Types.ObjectId, ref: "contact", required: true },
     orderDate: { type: Date, required: true },
     orderNo: { type: String },
+    placeOfSupply: { type: String },
+    billingAddress: { type: Schema.Types.ObjectId },
     shippingDate: { type: Date },
     shippingNote: { type: String },
     taxType: { type: String, enum: Object.values(TAX_TYPE) },
     items: [purchaseItemSchema],
 
-    termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
+    termsAndConditionIds: [
+      { type: Schema.Types.ObjectId, ref: "terms-condition" },
+    ],
     notes: { type: String },
 
     totalQty: { type: String },
@@ -38,9 +46,16 @@ const purchaseOrderSchema = new Schema<IPurchaseOrder>(
 
     summary: transactionSummarySchema,
 
-    status: { type: String, enum: Object.values(ORDER_STATUS), default: ORDER_STATUS.IN_PROGRESS },
+    status: {
+      type: String,
+      enum: Object.values(ORDER_STATUS),
+      default: ORDER_STATUS.IN_PROGRESS,
+    },
   },
   baseSchemaOptions,
 );
 
-export const purchaseOrderModel = mongoose.model<IPurchaseOrder>("purchase-order", purchaseOrderSchema);
+export const purchaseOrderModel = mongoose.model<IPurchaseOrder>(
+  "purchase-order",
+  purchaseOrderSchema,
+);

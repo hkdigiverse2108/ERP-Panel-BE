@@ -20,6 +20,9 @@ export const addPurchaseOrderSchema = Joi.object({
   shippingDate: Joi.date().optional().allow("", null),
   shippingNote: Joi.string().optional().allow("", null),
 
+  placeOfSupply: Joi.string().optional().allow("", null),
+  billingAddress: objectId().optional(),
+
   taxType: Joi.string()
     .valid(...Object.values(TAX_TYPE))
     .optional(),
@@ -57,6 +60,9 @@ export const editPurchaseOrderSchema = Joi.object({
   taxType: Joi.string()
     .valid(...Object.values(TAX_TYPE))
     .optional(),
+
+  placeOfSupply: Joi.string().optional().allow("", null),
+  billingAddress: objectId().optional(),
 
   items: Joi.array().items(purchaseOrderItemSchema).min(1).optional(),
 

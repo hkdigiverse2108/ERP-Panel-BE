@@ -18,6 +18,8 @@ export interface IPurchaseOrder extends IBase {
 
   orderDate: Date;
   orderNo?: string;
+  placeOfSupply?: string;
+  billingAddress?: Schema.Types.ObjectId;
   shippingDate?: Date;
   shippingNote?: string;
 

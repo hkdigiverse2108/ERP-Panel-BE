@@ -1,60 +1,109 @@
 import Joi from "joi";
-import { objectId } from "./common";
+import {
+  baseApiSchema,
+  objectId,
+  transectionSummarySchema,
+  commonAdditionalChargeSchema,
+} from "./common";
+import { PAYMENT_TERMS_ENUM, PURCHASE_DEBIT_NOTE_STATUS } from "../common";
 
-const purchaseDebitNoteItemSchema = Joi.object().keys({
+const purchaseDebitNoteItemSchema = Joi.object({
   productId: objectId().required(),
-  productName: Joi.string().required(),
-  batchNo: Joi.string().optional().allow("", null),
-  qty: Joi.number().min(0.01).required(),
-  receivedQty: Joi.number().min(0).default(0).optional(),
-  uom: Joi.string().optional().allow("", null),
-  price: Joi.number().min(0).required(),
-  discountPercent: Joi.number().min(0).max(100).default(0).optional(),
-  discountAmount: Joi.number().min(0).default(0).optional(),
-  taxId: objectId().optional().allow("", null),
-  taxPercent: Joi.number().min(0).default(0).optional(),
-  taxAmount: Joi.number().min(0).default(0).optional(),
-  taxableAmount: Joi.number().min(0).required(),
-  totalAmount: Joi.number().min(0).required(),
+  uomId: objectId().optional(),
+  unitCost: Joi.number().min(0).optional(),
+  mrp: Joi.number().min(0).optional(),
+  sellingPrice: Joi.number().min(0).optional(),
+  discount1: Joi.number().min(0).default(0),
+  discount2: Joi.number().min(0).default(0),
+  taxId: objectId().optional(),
+  landingCost: Joi.number().min(0).optional(),
+  margin: Joi.number().min(0).optional(),
+  total: Joi.number().min(0).optional(),
 });
 
-export const addpurchaseDebitNoteSchema = Joi.object().keys({
-  documentNo: Joi.string().optional(),
-  date: Joi.date().required(),
+export const addPurchaseDebitNoteSchema = Joi.object({
   supplierId: objectId().required(),
-  supplierName: Joi.string().optional(),
-  supplierBillId: objectId().optional().allow("", null),
-  items: Joi.array().items(purchaseDebitNoteItemSchema).min(1).required(),
-  grossAmount: Joi.number().min(0).default(0).optional(),
-  discountAmount: Joi.number().min(0).default(0).optional(),
-  taxAmount: Joi.number().min(0).default(0).optional(),
-  roundOff: Joi.number().default(0).optional(),
-  netAmount: Joi.number().min(0).default(0).optional(),
-  reason: Joi.string().optional().allow("", null), // Model shows it's optional String
-  status: Joi.string().valid("active", "draft", "cancelled").default("active").optional(),
+  placeOfSupply: Joi.string().allow("").optional(),
+  billingAddress: objectId().optional(),
+  shippingAddress: objectId().optional(),
+  referenceBillNo: Joi.string().optional(),
+  debitNoteDate: Joi.date().required(),
+  dueDate: Joi.date().optional(),
+  shippingDate: Joi.date().optional(),
+  paymentTerm: Joi.string()
+    .valid(...Object.values(PAYMENT_TERMS_ENUM))
+    .optional(),
+  purchaseId: objectId().optional(),
+  reverseCharge: Joi.boolean().default(false),
+  reason: Joi.string().allow("").optional(),
+  accountLedgerId: objectId().optional(),
+
+  productDetails: Joi.object({
+    items: Joi.array().items(purchaseDebitNoteItemSchema).optional(),
+    totalQty: Joi.number().optional(),
+    totalTax: Joi.number().optional(),
+    totalAmount: Joi.number().optional(),
+  }).optional(),
+
+  additionalCharges: Joi.object({
+    items: Joi.array().items(commonAdditionalChargeSchema).optional(),
+    total: Joi.number().optional(),
+  }).optional(),
+
+  termsAndConditionIds: Joi.array().items(objectId()).optional(),
+  summary: transectionSummarySchema.optional(),
+
+  status: Joi.string()
+    .valid(...Object.values(PURCHASE_DEBIT_NOTE_STATUS))
+    .default(PURCHASE_DEBIT_NOTE_STATUS.OPEN),
+
+  ...baseApiSchema,
 });
 
-export const editpurchaseDebitNoteSchema = Joi.object().keys({
+export const editPurchaseDebitNoteSchema = Joi.object({
   purchaseDebitNoteId: objectId().required(),
-  documentNo: Joi.string().optional(),
-  date: Joi.date().optional(),
-  customerId: objectId().optional(),
-  customerName: Joi.string().optional(),
-  invoiceId: objectId().optional().allow("", null),
-  items: Joi.array().items(purchaseDebitNoteItemSchema).optional(),
-  grossAmount: Joi.number().min(0).optional(),
-  discountAmount: Joi.number().min(0).optional(),
-  taxAmount: Joi.number().min(0).optional(),
-  roundOff: Joi.number().optional(),
-  netAmount: Joi.number().min(0).optional(),
-  reason: Joi.string().optional().allow("", null),
-  status: Joi.string().valid("active", "draft", "cancelled").optional(),
+  supplierId: objectId().optional(),
+  placeOfSupply: Joi.string().allow("").optional(),
+  billingAddress: objectId().optional(),
+  shippingAddress: objectId().optional(),
+  referenceBillNo: Joi.string().optional(),
+  debitNoteDate: Joi.date().optional(),
+  dueDate: Joi.date().optional(),
+  shippingDate: Joi.date().optional(),
+  paymentTerm: Joi.string()
+    .valid(...Object.values(PAYMENT_TERMS_ENUM))
+    .optional(),
+  purchaseId: objectId().optional(),
+  reverseCharge: Joi.boolean().optional(),
+  reason: Joi.string().allow("").optional(),
+  accountLedgerId: objectId().optional(),
+
+  productDetails: Joi.object({
+    items: Joi.array().items(purchaseDebitNoteItemSchema).optional(),
+    totalQty: Joi.number().optional(),
+    totalTax: Joi.number().optional(),
+    totalAmount: Joi.number().optional(),
+  }).optional(),
+
+  additionalCharges: Joi.object({
+    items: Joi.array().items(commonAdditionalChargeSchema).optional(),
+    total: Joi.number().optional(),
+  }).optional(),
+
+  termsAndConditionIds: Joi.array().items(objectId()).optional(),
+  summary: transectionSummarySchema.optional(),
+
+  status: Joi.string()
+    .valid(...Object.values(PURCHASE_DEBIT_NOTE_STATUS))
+    .optional(),
+
+  ...baseApiSchema,
 });
 
-export const deletepurchaseDebitNoteSchema = Joi.object().keys({
+export const getPurchaseDebitNoteSchema = Joi.object().keys({
   id: objectId().required(),
 });
 
-export const getpurchaseDebitNoteSchema = Joi.object().keys({
+export const deletePurchaseDebitNoteSchema = Joi.object().keys({
   id: objectId().required(),
 });

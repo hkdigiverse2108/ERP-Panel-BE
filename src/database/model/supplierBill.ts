@@ -1,6 +1,15 @@
 import mongoose, { Schema } from "mongoose";
-import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS, PAYMENT_TERMS_ENUM } from "../../common";
-import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema, transactionSummarySchema } from "./base";
+import {
+  SUPPLIER_BILL_STATUS,
+  SUPPLIER_PAYMENT_STATUS,
+  PAYMENT_TERMS_ENUM,
+} from "../../common";
+import {
+  baseSchemaFields,
+  baseSchemaOptions,
+  commonAdditionalChargeSchema,
+  transactionSummarySchema,
+} from "./base";
 import { ISupplierBill } from "../../types";
 
 export const supplierBillItemSchema = new Schema(
@@ -46,6 +55,8 @@ const supplierBillSchema = new Schema<ISupplierBill>(
     supplierBillDate: { type: Date },
 
     // purchaseOrderId: { type: Schema.Types.ObjectId, ref: "purchase-order" },
+    placeOfSupply: { type: String },
+    billingAddress: { type: Schema.Types.ObjectId },
 
     paymentTerm: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
     dueDate: { type: Date },
@@ -80,7 +91,9 @@ const supplierBillSchema = new Schema<ISupplierBill>(
       total: { type: Number },
     },
 
-    termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
+    termsAndConditionIds: [
+      { type: Schema.Types.ObjectId, ref: "terms-condition" },
+    ],
     notes: { type: String },
 
     summary: transactionSummarySchema,
@@ -103,4 +116,7 @@ const supplierBillSchema = new Schema<ISupplierBill>(
   baseSchemaOptions,
 );
 
-export const supplierBillModel = mongoose.model<ISupplierBill>("supplier-bill", supplierBillSchema);
+export const supplierBillModel = mongoose.model<ISupplierBill>(
+  "supplier-bill",
+  supplierBillSchema,
+);

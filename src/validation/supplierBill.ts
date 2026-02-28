@@ -1,6 +1,15 @@
 import Joi from "joi";
-import { baseApiSchema, objectId, transectionSummarySchema, commonAdditionalChargeSchema } from "./common";
-import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS, PAYMENT_TERMS_ENUM } from "../common";
+import {
+  baseApiSchema,
+  objectId,
+  transectionSummarySchema,
+  commonAdditionalChargeSchema,
+} from "./common";
+import {
+  SUPPLIER_BILL_STATUS,
+  SUPPLIER_PAYMENT_STATUS,
+  PAYMENT_TERMS_ENUM,
+} from "../common";
 
 const supplierBillItemSchema = Joi.object({
   productId: objectId().required(),
@@ -33,11 +42,18 @@ const supplierBillReturnItemSchema = Joi.object({
 export const addSupplierBillSchema = Joi.object({
   supplierId: objectId().required(),
 
-  supplierBillNo: Joi.string().optional(),
+  // supplierBillNo: Joi.string().optional(),
   referenceBillNo: Joi.string().optional(),
   supplierBillDate: Joi.date().required(),
 
-  paymentTerm: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional(),
+  placeOfSupply: Joi.string().optional().allow("", null),
+  billingAddress: objectId().optional(),
+
+  paymentTerm: Joi.string()
+    .valid(...Object.values(PAYMENT_TERMS_ENUM))
+    .optional(),
+
+  dueDate: Joi.date().optional(),
 
   reverseCharge: Joi.boolean().default(false),
   shippingDate: Joi.date().optional(),
@@ -88,11 +104,16 @@ export const editSupplierBillSchema = Joi.object({
 
   supplierId: objectId().optional(),
 
-  supplierBillNo: Joi.string().optional(),
+  // supplierBillNo: Joi.string().optional(),
   referenceBillNo: Joi.string().optional(),
   supplierBillDate: Joi.date().optional(),
 
-  paymentTerm: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional(),
+  placeOfSupply: Joi.string().optional().allow("", null),
+  billingAddress: objectId().optional(),
+
+  paymentTerm: Joi.string()
+    .valid(...Object.values(PAYMENT_TERMS_ENUM))
+    .optional(),
   dueDate: Joi.date().optional(),
 
   reverseCharge: Joi.boolean().optional(),

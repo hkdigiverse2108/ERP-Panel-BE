@@ -93,7 +93,7 @@ router.use("/terms-condition", termsConditionRouter);
 router.use("/purchase-order", purchaseOrderRouter);
 router.use("/supplier-bill", supplierBillRouter);
 router.use("/debit-note", debitNoteRouter);
-router.use("/sales-debit-note", purchaseDebitNoteRouter);
+router.use("/purchase-debit-note", purchaseDebitNoteRouter);
 router.use("/estimate", estimateRouter);
 router.use("/sales-order", salesOrderRouter);
 router.use("/invoice", invoiceRouter);

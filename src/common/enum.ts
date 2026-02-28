@@ -366,3 +366,9 @@ export const PAY_TYPE = {
   CASH: "cash",
   BANK: "bank",
 } as const;
+
+export const PURCHASE_DEBIT_NOTE_STATUS = {
+  OPEN: "open",
+  PAID: "paid",
+  DUE: "due",
+} as const;
