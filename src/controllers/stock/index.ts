@@ -219,13 +219,18 @@ export const deleteStock = async (req, res) => {
 export const getAllStock = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req.headers;
     const { page, limit, search, activeFilter, companyFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, branchFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
 
     const stockMatchCriteria: any = { isDeleted: false };
+
     if (branchFilter) stockMatchCriteria.branchId = branchFilter;
     if (companyFilter) stockMatchCriteria.companyId = companyFilter;
     if (activeFilter !== undefined) stockMatchCriteria.isActive = activeFilter == "true";
 
+    if (user?.userType !== USER_TYPES.SUPER_ADMIN && user?.companyId?._id) {
+      stockMatchCriteria.companyId = user?.companyId?._id;
+    }
 
     const stockAggregationPipeline: any[] = [
       { $match: stockMatchCriteria },
