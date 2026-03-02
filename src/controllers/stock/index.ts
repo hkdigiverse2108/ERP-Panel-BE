@@ -228,7 +228,7 @@ export const getAllStock = async (req, res) => {
     if (companyFilter) stockMatchCriteria.companyId = companyFilter;
     if (activeFilter !== undefined) stockMatchCriteria.isActive = activeFilter == "true";
 
-    if (user?.userType !== USER_TYPES.SUPER_ADMIN && user?.companyId?._id) {
+    if (user?.companyId?._id) {
       stockMatchCriteria.companyId = user?.companyId?._id;
     }
 
