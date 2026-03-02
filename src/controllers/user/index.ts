@@ -186,9 +186,8 @@ export const getAllUser = async (req, res) => {
     }
 
     let roles = await getData(roleModel, { name: USER_ROLES.SUPER_ADMIN, isDeleted: false }, { _id: 1 }, {});
-    let roleIds = roles.map((role) => new ObjectId(role._id));
-    // avoid super admin
-    criteria.role = { $ne: roleIds };
+    let roleIds = roles?.map((role) => new ObjectId(role._id));
+    criteria.role = { $nin: roleIds };
 
     if (branchFilter) {
       criteria.branchId = branchFilter;
