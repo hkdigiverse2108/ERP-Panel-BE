@@ -1,5 +1,6 @@
 import Joi from "joi";
 import mongoose from "mongoose";
+import { SHIPPING_TYPE } from "../common";
 
 export const objectId = () =>
   Joi.string()
@@ -42,7 +43,9 @@ export const commonAdditionalChargeSchema = Joi.object().keys({
 });
 
 export const commonShippingSchema = Joi.object().keys({
-  shippingType: Joi.string().optional(),
+  shippingType: Joi.string()
+    .valid(...Object.values(SHIPPING_TYPE))
+    .optional(),
   shippingDate: Joi.date().optional(),
   referenceNo: Joi.string().allow("").optional(),
   transportDate: Joi.date().optional(),
@@ -51,3 +54,4 @@ export const commonShippingSchema = Joi.object().keys({
   vehicleNo: Joi.string().allow("").optional(),
   weight: Joi.number().optional(),
 });
+ 

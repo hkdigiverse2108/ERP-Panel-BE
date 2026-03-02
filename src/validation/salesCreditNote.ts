@@ -1,25 +1,18 @@
 import Joi from "joi";
-import {
-  baseApiSchema,
-  objectId,
-  transectionSummarySchema,
-  commonAdditionalChargeSchema,
-  commonShippingSchema,
-} from "./common";
-import {
-  PURCHASE_DEBIT_NOTE_STATUS,
-  SALES_CREDIT_NOTE_PRODUCT_TYPE,
-} from "../common";
+import { baseApiSchema, objectId, transectionSummarySchema, commonAdditionalChargeSchema, commonShippingSchema } from "./common";
+import { PURCHASE_DEBIT_NOTE_STATUS, SALES_CREDIT_NOTE_PRODUCT_TYPE } from "../common";
 
 const salesCreditNoteItemSchema = Joi.object({
   productId: objectId().required(),
   uomId: objectId().optional(),
+  unit: Joi.string().optional(),
   qty: Joi.number().min(0).required(),
   freeQty: Joi.number().min(0).default(0),
   price: Joi.number().min(0).optional(),
   discount1: Joi.number().min(0).default(0),
   discount2: Joi.number().min(0).default(0),
   taxId: objectId().optional(),
+  tax: Joi.number().optional(),
   total: Joi.number().min(0).optional(),
 });
 
@@ -55,6 +48,7 @@ export const addSalesCreditNoteSchema = Joi.object({
   }).optional(),
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
+  notes: Joi.string().allow("").optional(),
   shippingDetails: commonShippingSchema.optional(),
   summary: transectionSummarySchema.optional(),
 
@@ -98,6 +92,7 @@ export const editSalesCreditNoteSchema = Joi.object({
   }).optional(),
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
+  notes: Joi.string().allow("").optional(),
   shippingDetails: commonShippingSchema.optional(),
   summary: transectionSummarySchema.optional(),
 

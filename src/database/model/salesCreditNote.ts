@@ -1,19 +1,9 @@
 import mongoose, { Schema } from "mongoose";
-import {
-  baseSchemaFields,
-  baseSchemaOptions,
-  transactionSummarySchema,
-  commonAdditionalChargeSchema,
-  salesItemSchema,
-  commonShippingSchema,
-} from "./base";
-import { ISalesDocument } from "../../types";
-import {
-  PURCHASE_DEBIT_NOTE_STATUS,
-  SALES_CREDIT_NOTE_PRODUCT_TYPE,
-} from "../../common";
+import { baseSchemaFields, baseSchemaOptions, transactionSummarySchema, commonAdditionalChargeSchema, salesItemSchema, commonShippingSchema } from "./base";
+import { IBase } from "../../types";
+import { PURCHASE_DEBIT_NOTE_STATUS, SALES_CREDIT_NOTE_PRODUCT_TYPE } from "../../common";
 
-export interface ISalesCreditNote extends ISalesDocument {
+export interface ISalesCreditNote extends IBase {
   customerId: Schema.Types.ObjectId;
   placeOfSupply?: string;
   billingAddress?: Schema.Types.ObjectId;
@@ -48,6 +38,7 @@ export interface ISalesCreditNote extends ISalesDocument {
   };
 
   termsAndConditionIds: Schema.Types.ObjectId[];
+  notes?: string;
 
   shippingDetails?: {
     shippingType?: string;
@@ -66,10 +57,10 @@ export interface ISalesCreditNote extends ISalesDocument {
 
 export const salesCreditNoteItemSchema = new Schema(
   {
-    productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
+    productId: { type: Schema.Types.ObjectId, ref: "product" },
     uomId: { type: Schema.Types.ObjectId, ref: "uom" },
-
-    qty: { type: Number, min: 0, required: true },
+    unit: { type: String },
+    qty: { type: Number, min: 0 },
     freeQty: { type: Number, min: 0, default: 0 },
 
     price: { type: Number, min: 0 },
@@ -77,7 +68,7 @@ export const salesCreditNoteItemSchema = new Schema(
     discount2: { type: Number, default: 0, min: 0 },
 
     taxId: { type: Schema.Types.ObjectId, ref: "tax" },
-
+    tax: { type: Number },
     total: { type: Number, min: 0 },
   },
   { _id: false },
@@ -101,7 +92,7 @@ const salesCreditNoteSchema = new Schema<ISalesCreditNote>(
 
     salesId: {
       type: Schema.Types.ObjectId,
-      ref: "sales",
+      ref: "invoice",
     },
 
     reverseCharge: { type: Boolean, default: false },
@@ -137,9 +128,8 @@ const salesCreditNoteSchema = new Schema<ISalesCreditNote>(
       total: { type: Number, default: 0 },
     },
 
-    termsAndConditionIds: [
-      { type: Schema.Types.ObjectId, ref: "terms-condition" },
-    ],
+    termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
+    notes: { type: String },
 
     shippingDetails: commonShippingSchema,
 
@@ -154,7 +144,4 @@ const salesCreditNoteSchema = new Schema<ISalesCreditNote>(
   baseSchemaOptions,
 );
 
-export const salesCreditNoteModel = mongoose.model<ISalesCreditNote>(
-  "sales-credit-note",
-  salesCreditNoteSchema,
-);
+export const salesCreditNoteModel = mongoose.model<ISalesCreditNote>("sales-credit-note", salesCreditNoteSchema);

@@ -6,7 +6,9 @@ const purchaseOrderItemSchema = Joi.object({
   productId: objectId().required(),
   qty: Joi.number().min(0.01).required(),
   uomId: objectId().optional(),
+  unit: Joi.string().optional().allow("", null),
   unitCost: Joi.number().min(0).optional(),
+  taxId: objectId().optional(),
   tax: Joi.string().optional().allow("", null),
   landingCost: Joi.string().optional().allow("", null),
   margin: Joi.string().optional().allow("", null),
@@ -52,7 +54,6 @@ export const editPurchaseOrderSchema = Joi.object({
 
   supplierId: objectId().optional(),
   orderDate: Joi.date().optional(),
-  // orderNo: Joi.string().optional().allow("", null),
 
   shippingDate: Joi.date().optional().allow("", null),
   shippingNote: Joi.string().optional().allow("", null),
