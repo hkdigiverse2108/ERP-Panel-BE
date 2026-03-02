@@ -23,7 +23,6 @@ export const addInvoiceSchema = Joi.object().keys({
   date: Joi.date().required(),
   dueDate: Joi.date().required(),
   customerId: objectId().required(),
-  customerName: Joi.string().optional(),
   salesOrderIds: Joi.array().items(objectId()).optional(),
   deliveryChallanIds: Joi.array().items(objectId()).optional(),
   placeOfSupply: Joi.string().optional().allow("", null),

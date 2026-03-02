@@ -1,29 +1,9 @@
 import { Schema } from "mongoose";
-import { IBase } from "./base";
+import { ISalesDocument } from "./sales";
 
-export interface IDeliveryChallan extends IBase {
+export interface IDeliveryChallan extends ISalesDocument {
     invoiceIds?: Schema.Types.ObjectId[] | null;
     salesOrderIds?: Schema.Types.ObjectId[] | null;
     deliveryChallanNo: string;
-    date: Date;
-    customerId: Schema.Types.ObjectId;
-    paymentTerms: string;
-    dueDate: Date;
-    texType: string;
-    items: any[];
-    flatDiscount: boolean;
-    flatDiscountPercent: number;
-    flatDiscountAmount: number;
-    grossAmount: number;
-    discountAmount: number;
-    taxAmount: number;
-    roundOff: number;
-    netAmount: number;
-    notes?: string;
-    status: string;
-    reverseCharge: boolean;
     createdFrom: string;
-    shippingAddress?: string;
-    billingAddress?: string;
-    shippingType: string;
 }

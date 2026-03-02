@@ -3,7 +3,7 @@ import {
   baseSchemaFields,
   baseSchemaOptions,
   transactionSummarySchema,
-  commonAdditionalChargeSchema,
+  commonAdditionalCharge,
   salesItemSchema,
 } from "./base";
 import { ISalesDocument } from "../../types";
@@ -22,7 +22,7 @@ const salesCreditNoteSchema = new Schema<ISalesCreditNote>(
     invoiceId: { type: Schema.Types.ObjectId, ref: "invoice" },
     items: [salesItemSchema],
     transectionSummary: { type: transactionSummarySchema },
-    additionalCharges: { type: [commonAdditionalChargeSchema] },
+    additionalCharges: { type: [commonAdditionalCharge] },
     reason: { type: String },
     status: { type: String, default: "active" },
   },

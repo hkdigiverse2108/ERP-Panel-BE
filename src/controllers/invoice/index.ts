@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS } from "../../common";
 import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, accountGroupModel, termsConditionModel, deliveryChallanModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSchema } from "../../validation";
@@ -298,6 +298,14 @@ export const deleteInvoice = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Invoice"), {}, {}));
     }
 
+    if (invoice.status !== "invoiced") {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invoice is not in invoiced status", {}, {}));
+    }
+
+    if (invoice.paymentStatus === "paid") {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invoice is already paid", {}, {}));
+    }
+
     const payload = {
       isDeleted: true,
       updatedBy: user?._id || null,
@@ -315,10 +323,15 @@ export const deleteInvoice = async (req, res) => {
         const so = await getFirstMatch(SalesOrderModel, { _id: soId, isDeleted: false }, {}, {});
         if (so) {
           await updateData(SalesOrderModel, { _id: soId }, { status: SALES_ORDER_STATUS.PENDING }, {});
+        }
+      }
+    }
 
-          if (so.selectedEstimateId) {
-            await updateData(EstimateModel, { _id: so.selectedEstimateId }, { status: ESTIMATE_STATUS.ORDER_CREATED }, {});
-          }
+    if (invoice.deliveryChallanIds && invoice.deliveryChallanIds.length > 0) {
+      for (const dcId of invoice.deliveryChallanIds) {
+        const dc = await getFirstMatch(deliveryChallanModel, { _id: dcId, isDeleted: false }, {}, {});
+        if (dc) {
+          await updateData(deliveryChallanModel, { _id: dcId }, { status: DELIVERY_CHALLAN_STATUS.DELIVERED }, {});
         }
       }
     }

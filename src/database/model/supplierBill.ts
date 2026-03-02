@@ -7,7 +7,7 @@ import {
 import {
   baseSchemaFields,
   baseSchemaOptions,
-  commonAdditionalChargeSchema,
+  commonAdditionalCharge,
   transactionSummarySchema,
 } from "./base";
 import { ISupplierBill } from "../../types";
@@ -87,7 +87,7 @@ const supplierBillSchema = new Schema<ISupplierBill>(
     },
 
     additionalCharges: {
-      item: [commonAdditionalChargeSchema],
+      item: [commonAdditionalCharge],
       total: { type: Number },
     },
 

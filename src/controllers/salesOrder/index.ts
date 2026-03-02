@@ -209,6 +209,11 @@ export const deleteSalesOrder = async (req, res) => {
 
     if (!(await checkIdExist(SalesOrderModel, value?.id, "Sales Order", res))) return;
 
+    const isExist = await getFirstMatch(SalesOrderModel, { _id: value?.id, isDeleted: false }, {}, {});
+    if (isExist.status !== "pending") {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Sales Order is not in pending state", {}, {}));
+    }
+
     const payload = {
       isDeleted: true,
       updatedBy: user?._id || null,

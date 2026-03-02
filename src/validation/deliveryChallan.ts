@@ -1,7 +1,9 @@
 import Joi from "joi";
-import { objectId } from "./common";
+import { commonAdditionalChargeSchema, objectId, transectionSummarySchema } from "./common";
+import { DELIVERY_CHALLAN_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE } from "../common";
 
 const deliveryChallanItemSchema = Joi.object().keys({
+  refId: objectId().optional().allow(null),
   productId: objectId().required(),
   qty: Joi.number().min(0).required(),
   freeQty: Joi.number().min(0).default(0).optional(),
@@ -17,26 +19,44 @@ const deliveryChallanItemSchema = Joi.object().keys({
 });
 
 export const addDeliveryChallanSchema = Joi.object().keys({
-  documentNo: Joi.string().optional(), // Auto-generated if not provided
+  deliveryChallanNo: Joi.string().optional(),
   date: Joi.date().required(),
+  dueDate: Joi.date().required(),
   customerId: objectId().required(),
-  customerName: Joi.string().optional(),
-  invoiceId: objectId().optional().allow("", null),
+  salesOrderIds: Joi.array().items(objectId()).optional(),
+  invoiceIds: Joi.array().items(objectId()).optional(),
+  placeOfSupply: Joi.string().optional().allow("", null),
+  billingAddress: objectId().optional().allow("", null),
+  shippingAddress: objectId().optional().allow("", null),
+  paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional().allow("", null),
+  createdFrom: Joi.string().valid(...Object.values(["invoice", "sales-order", ""])).optional().allow("", null),
+  taxType: Joi.string().valid(...Object.values(TAX_TYPE)).optional().allow("", null),
+  shippingDetails: Joi.object().optional(),
+  transectionSummary: transectionSummarySchema.optional(),
+  additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   items: Joi.array().items(deliveryChallanItemSchema).min(1).required(),
-  notes: Joi.string().optional().allow("", null),
-  status: Joi.string().valid("pending", "completed", "cancelled").default("pending").optional(),
+  termsAndConditionIds: Joi.array().items(objectId()).optional(),
+  status: Joi.string().valid(...Object.values(DELIVERY_CHALLAN_STATUS)).default(DELIVERY_CHALLAN_STATUS.DELIVERED),
 });
 
 export const editDeliveryChallanSchema = Joi.object().keys({
   deliveryChallanId: objectId().required(),
-  documentNo: Joi.string().optional(),
   date: Joi.date().optional(),
   customerId: objectId().optional(),
-  customerName: Joi.string().optional(),
-  invoiceId: objectId().optional().allow("", null),
+  salesOrderIds: Joi.array().items(objectId()).optional(),
+  invoiceIds: Joi.array().items(objectId()).optional(),
+  placeOfSupply: Joi.string().optional().allow("", null),
+  billingAddress: objectId().optional().allow("", null),
+  shippingAddress: objectId().optional().allow("", null),
+  paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional().allow("", null),
+  createdFrom: Joi.string().valid(...Object.values(["invoice", "sales-order", ""])).optional().allow("", null),
+  taxType: Joi.string().valid(...Object.values(TAX_TYPE)).optional().allow("", null),
+  shippingDetails: Joi.object().optional(),
+  transectionSummary: transectionSummarySchema.optional(),
+  additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   items: Joi.array().items(deliveryChallanItemSchema).optional(),
-  notes: Joi.string().optional().allow("", null),
-  status: Joi.string().valid("pending", "completed", "cancelled").optional(),
+  termsAndConditionIds: Joi.array().items(objectId()).optional(),
+  status: Joi.string().valid(...Object.values(DELIVERY_CHALLAN_STATUS)).default(DELIVERY_CHALLAN_STATUS.DELIVERED),
 });
 
 export const deleteDeliveryChallanSchema = Joi.object().keys({

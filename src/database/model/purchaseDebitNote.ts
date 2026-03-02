@@ -2,7 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import {
   baseSchemaFields,
   baseSchemaOptions,
-  commonAdditionalChargeSchema,
+  commonAdditionalCharge,
   transactionSummarySchema,
 } from "./base";
 import { PAYMENT_TERMS_ENUM, PURCHASE_DEBIT_NOTE_STATUS } from "../../common";
@@ -97,7 +97,7 @@ const purchaseDebitNoteSchema = new Schema<IpurchaseDebitNote>(
       totalAmount: { type: Number },
     },
     additionalCharges: {
-      items: [commonAdditionalChargeSchema],
+      items: [commonAdditionalCharge],
       total: { type: Number },
     },
     termsAndConditionIds: [
