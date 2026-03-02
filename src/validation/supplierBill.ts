@@ -1,26 +1,21 @@
 import Joi from "joi";
-import {
-  baseApiSchema,
-  objectId,
-  transectionSummarySchema,
-  commonAdditionalChargeSchema,
-} from "./common";
-import {
-  SUPPLIER_BILL_STATUS,
-  SUPPLIER_PAYMENT_STATUS,
-  PAYMENT_TERMS_ENUM,
-} from "../common";
+import { baseApiSchema, objectId, transectionSummarySchema, commonAdditionalChargeSchema } from "./common";
+import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS, PAYMENT_TERMS_ENUM } from "../common";
 
 const supplierBillItemSchema = Joi.object({
   productId: objectId().required(),
   qty: Joi.number().min(0).required(),
+  uomId: objectId().required(),
+  unit: Joi.string().required(),
   freeQty: Joi.number().min(0).default(0),
   mrp: Joi.number().min(0).optional(),
   sellingPrice: Joi.number().min(0).optional(),
   unitCost: Joi.number().min(0).optional(),
   discount1: Joi.number().min(0).default(0),
   discount2: Joi.number().min(0).default(0),
-  taxAmount: Joi.number().min(0).optional(),
+  taxable: Joi.number().min(0).optional(),
+  taxId: objectId().optional(),
+  tax: Joi.string().optional(),
   landingCost: Joi.number().min(0).optional(),
   margin: Joi.number().min(0).optional(),
   total: Joi.number().min(0).optional(),
@@ -29,10 +24,14 @@ const supplierBillItemSchema = Joi.object({
 const supplierBillReturnItemSchema = Joi.object({
   productId: objectId().required(),
   qty: Joi.number().min(0).required(),
+  uomId: objectId().optional(),
+  unit: Joi.string().optional(),
   unitCost: Joi.number().min(0).optional(),
   discount1: Joi.number().min(0).default(0),
   discount2: Joi.number().min(0).default(0),
-  tax: Joi.number().min(0).optional(),
+  taxId: objectId().optional(),
+  tax: Joi.string().optional(),
+  taxable: Joi.number().min(0).optional(),
   landingCost: Joi.number().min(0).optional(),
   total: Joi.number().min(0).optional(),
 });
