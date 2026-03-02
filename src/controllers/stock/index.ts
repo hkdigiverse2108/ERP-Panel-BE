@@ -224,13 +224,17 @@ export const getAllStock = async (req, res) => {
 
     const stockMatchCriteria: any = { isDeleted: false };
 
-    if (branchFilter) stockMatchCriteria.branchId = branchFilter;
-    if (companyFilter) stockMatchCriteria.companyId = companyFilter;
+    if (branchFilter) stockMatchCriteria.branchId = new ObjectId(branchFilter as string);
+    if (companyFilter) stockMatchCriteria.companyId = new ObjectId(companyFilter as string);
     if (activeFilter !== undefined) stockMatchCriteria.isActive = activeFilter == "true";
+    if (purchaseTaxFilter) stockMatchCriteria.purchaseTaxId = new ObjectId(purchaseTaxFilter as string);
+    if (salesTaxIdFilter) stockMatchCriteria.salesTaxId = new ObjectId(salesTaxIdFilter as string);
 
-    if (user?.companyId?._id) {
+    if (!companyFilter && user?.companyId?._id) {
       stockMatchCriteria.companyId = user?.companyId?._id;
     }
+
+    console.log(stockMatchCriteria);
 
     const stockAggregationPipeline: any[] = [
       { $match: stockMatchCriteria },
@@ -289,10 +293,6 @@ export const getAllStock = async (req, res) => {
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
-    if (companyFilter) {
-      criteria.companyId = companyFilter;
-    }
-
     if (categoryFilter) criteria.categoryId = categoryFilter;
 
     if (subCategoryFilter) criteria.subCategoryId = subCategoryFilter;
@@ -302,10 +302,6 @@ export const getAllStock = async (req, res) => {
     if (subBrandFilter) criteria.subBrandId = subBrandFilter;
 
     if (hsnCodeFilter) criteria.hsnCode = hsnCodeFilter;
-
-    if (purchaseTaxFilter) criteria.purchaseTaxId = purchaseTaxFilter;
-
-    if (salesTaxIdFilter) criteria.salesTaxId = salesTaxIdFilter;
 
     if (productTypeFilter) criteria.productType = productTypeFilter;
 
