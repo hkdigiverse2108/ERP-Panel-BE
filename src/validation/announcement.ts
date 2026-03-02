@@ -9,7 +9,7 @@ export const addAnnouncementSchema = Joi.object().keys({
 });
 
 export const editAnnouncementSchema = Joi.object().keys({
-  id: objectId().required(),
+  announcementId: objectId().required(),
   version: Joi.string().optional().allow("", null),
   link: Joi.string().optional().allow("", null),
   desc: Joi.string().optional(),

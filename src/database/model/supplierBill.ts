@@ -1,15 +1,6 @@
 import mongoose, { Schema } from "mongoose";
-import {
-  SUPPLIER_BILL_STATUS,
-  SUPPLIER_PAYMENT_STATUS,
-  PAYMENT_TERMS_ENUM,
-} from "../../common";
-import {
-  baseSchemaFields,
-  baseSchemaOptions,
-  commonAdditionalChargeSchema,
-  transactionSummarySchema,
-} from "./base";
+import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS, PAYMENT_TERMS_ENUM } from "../../common";
+import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema, transactionSummarySchema } from "./base";
 import { ISupplierBill } from "../../types";
 
 export const supplierBillItemSchema = new Schema(
@@ -17,12 +8,16 @@ export const supplierBillItemSchema = new Schema(
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
     qty: { type: Number, min: 0 },
     freeQty: { type: Number, default: 0, min: 0 },
+    uomId: { type: Schema.Types.ObjectId, ref: "uom" },
+    unit: { type: String },
+    unitCost: { type: Number, min: 0 },
     mrp: { type: Number, min: 0 },
     sellingPrice: { type: Number, min: 0 },
-    unitCost: { type: Number, min: 0 },
     discount1: { type: Number, default: 0, min: 0 },
     discount2: { type: Number, default: 0, min: 0 },
-    taxAmount: { type: Number, min: 0 },
+    taxable: { type: Number, min: 0 },
+    taxId: { type: Schema.Types.ObjectId, ref: "tax" },
+    tax: { type: String },
     landingCost: { type: Number, min: 0 },
     margin: { type: Number, min: 0 },
     total: { type: Number, min: 0 },
@@ -36,8 +31,12 @@ export const supplierBillReturnItemSchema = new Schema(
     qty: { type: Number, min: 0 },
     discount1: { type: Number, default: 0, min: 0 },
     discount2: { type: Number, default: 0, min: 0 },
+    uomId: { type: Schema.Types.ObjectId, ref: "uom" },
+    unit: { type: String },
     unitCost: { type: Number, min: 0 },
-    tax: { type: Number, default: 0, min: 0 },
+    taxable: { type: Number, min: 0 },
+    taxId: { type: Schema.Types.ObjectId, ref: "tax" },
+    tax: { type: String },
     landingCost: { type: Number, min: 0 },
     total: { type: Number, min: 0 },
   },
@@ -91,9 +90,7 @@ const supplierBillSchema = new Schema<ISupplierBill>(
       total: { type: Number },
     },
 
-    termsAndConditionIds: [
-      { type: Schema.Types.ObjectId, ref: "terms-condition" },
-    ],
+    termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
     notes: { type: String },
 
     summary: transactionSummarySchema,
@@ -116,7 +113,4 @@ const supplierBillSchema = new Schema<ISupplierBill>(
   baseSchemaOptions,
 );
 
-export const supplierBillModel = mongoose.model<ISupplierBill>(
-  "supplier-bill",
-  supplierBillSchema,
-);
+export const supplierBillModel = mongoose.model<ISupplierBill>("supplier-bill", supplierBillSchema);

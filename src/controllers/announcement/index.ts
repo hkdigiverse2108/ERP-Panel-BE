@@ -49,18 +49,18 @@ export const editAnnouncementById = async (req, res) => {
     let isExist = undefined;
 
     if (value?.version) {
-      isExist = await getFirstMatch(announcementModel, { version: value?.version, isDeleted: false, _id: { $ne: value?.id } }, {}, {});
+      isExist = await getFirstMatch(announcementModel, { version: value?.version, isDeleted: false, _id: { $ne: value?.announcementId } }, {}, {});
       if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Version"), {}, {}));
     }
 
     if (value?.link) {
-      isExist = await getFirstMatch(announcementModel, { link: value?.link, isDeleted: false, _id: { $ne: value?.id } }, {}, {});
+      isExist = await getFirstMatch(announcementModel, { link: value?.link, isDeleted: false, _id: { $ne: value?.announcementId } }, {}, {});
       if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Link"), {}, {}));
     }
 
     value.updatedBy = user?._id || null;
 
-    const response = await updateData(announcementModel, { _id: new ObjectId(value?._id), isDeleted: false }, value, {});
+    const response = await updateData(announcementModel, { _id: new ObjectId(value?.announcementId), isDeleted: false }, value, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Announcement details"), {}, {}));
 
