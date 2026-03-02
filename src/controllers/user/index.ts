@@ -76,6 +76,26 @@ export const addUser = async (req, res) => {
       }
     }
 
+    if (value?.role === USER_ROLES.ADMIN) {
+      let allModules = await getData(moduleModel, { isActive: true, isDeleted: false, default: true }, {}, {});
+      if (allModules && allModules.length > 0) {
+        for (let module of allModules) {
+          let permissionData = {
+            moduleId: new ObjectId(module._id),
+            userId: new ObjectId(response?._id),
+            view: true,
+            add: true,
+            edit: true,
+            delete: true,
+            isActive: true,
+          };
+
+          await updateData(permissionModel, { userId: new ObjectId(response?._id), moduleId: new ObjectId(module._id) }, permissionData, { upsert: true, new: true });
+          await updateData(moduleModel, { _id: new ObjectId(module._id) }, { default: true }, {});
+        }
+      }
+    }
+
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("User"), response, {}));
   } catch (error) {
     console.error(error);
