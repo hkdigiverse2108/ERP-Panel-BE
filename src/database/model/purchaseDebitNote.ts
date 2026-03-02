@@ -3,6 +3,7 @@ import {
   baseSchemaFields,
   baseSchemaOptions,
   commonAdditionalChargeSchema,
+  commonShippingSchema,
   transactionSummarySchema,
 } from "./base";
 import { PAYMENT_TERMS_ENUM, PURCHASE_DEBIT_NOTE_STATUS } from "../../common";
@@ -36,6 +37,16 @@ export interface IpurchaseDebitNote {
     total: number;
   };
   termsAndConditionIds: Schema.Types.ObjectId[];
+  shippingDetails?: {
+    shippingType?: string;
+    shippingDate?: Date;
+    referenceNo?: string;
+    transportDate?: Date;
+    modeOfTransport?: string;
+    transporterId?: Schema.Types.ObjectId;
+    vehicleNo?: string;
+    weight?: number;
+  };
   summary: any;
   status: string;
   isDeleted: boolean;
@@ -103,6 +114,7 @@ const purchaseDebitNoteSchema = new Schema<IpurchaseDebitNote>(
     termsAndConditionIds: [
       { type: Schema.Types.ObjectId, ref: "terms-condition" },
     ],
+    shippingDetails: commonShippingSchema,
     summary: transactionSummarySchema,
     status: {
       type: String,

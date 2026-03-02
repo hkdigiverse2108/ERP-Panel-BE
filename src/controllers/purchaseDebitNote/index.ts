@@ -163,6 +163,18 @@ export const addPurchaseDebitNote = async (req, res) => {
       }
     }
 
+    if (value.shippingDetails?.transporterId) {
+      if (
+        !(await checkIdExist(
+          contactModel,
+          value.shippingDetails.transporterId,
+          "Transporter",
+          res,
+        ))
+      )
+        return;
+    }
+
     // Validate items
     if (
       value?.productDetails?.items &&
@@ -429,6 +441,18 @@ export const editPurchaseDebitNote = async (req, res) => {
         )
           return;
       }
+    }
+
+    if (value.shippingDetails?.transporterId) {
+      if (
+        !(await checkIdExist(
+          contactModel,
+          value.shippingDetails.transporterId,
+          "Transporter",
+          res,
+        ))
+      )
+        return;
     }
 
     // Validate items

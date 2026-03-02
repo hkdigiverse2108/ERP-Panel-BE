@@ -1,60 +1,117 @@
 import Joi from "joi";
-import { objectId } from "./common";
+import {
+  baseApiSchema,
+  objectId,
+  transectionSummarySchema,
+  commonAdditionalChargeSchema,
+  commonShippingSchema,
+} from "./common";
+import {
+  PURCHASE_DEBIT_NOTE_STATUS,
+  SALES_CREDIT_NOTE_PRODUCT_TYPE,
+} from "../common";
 
-const salesCreditNoteItemSchema = Joi.object().keys({
+const salesCreditNoteItemSchema = Joi.object({
   productId: objectId().required(),
-  productName: Joi.string().required(),
-  batchNo: Joi.string().optional().allow("", null),
-  qty: Joi.number().min(0.01).required(),
-  freeQty: Joi.number().min(0).default(0).optional(),
-  uom: Joi.string().optional().allow("", null),
-  price: Joi.number().min(0).required(),
-  discountPercent: Joi.number().min(0).max(100).default(0).optional(),
-  discountAmount: Joi.number().min(0).default(0).optional(),
-  taxId: objectId().optional().allow("", null),
-  taxPercent: Joi.number().min(0).default(0).optional(),
-  taxAmount: Joi.number().min(0).default(0).optional(),
-  taxableAmount: Joi.number().min(0).required(),
-  totalAmount: Joi.number().min(0).required(),
+  uomId: objectId().optional(),
+  qty: Joi.number().min(0).required(),
+  freeQty: Joi.number().min(0).default(0),
+  price: Joi.number().min(0).optional(),
+  discount1: Joi.number().min(0).default(0),
+  discount2: Joi.number().min(0).default(0),
+  taxId: objectId().optional(),
+  total: Joi.number().min(0).optional(),
 });
 
-export const addSalesCreditNoteSchema = Joi.object().keys({
-  documentNo: Joi.string().optional(), // Auto-generated if not provided
-  date: Joi.date().required(),
+export const addSalesCreditNoteSchema = Joi.object({
   customerId: objectId().required(),
-  customerName: Joi.string().optional(),
-  invoiceId: objectId().optional().allow("", null),
-  items: Joi.array().items(salesCreditNoteItemSchema).min(1).required(),
-  grossAmount: Joi.number().min(0).default(0).optional(),
-  discountAmount: Joi.number().min(0).default(0).optional(),
-  taxAmount: Joi.number().min(0).default(0).optional(),
-  roundOff: Joi.number().default(0).optional(),
-  netAmount: Joi.number().min(0).default(0).optional(),
-  reason: Joi.string().optional().allow("", null), // Model shows it's optional String
-  status: Joi.string().valid("active", "draft", "cancelled").default("active").optional(),
+  placeOfSupply: Joi.string().allow("").optional(),
+  billingAddress: objectId().optional(),
+  shippingAddress: objectId().optional(),
+  creditNoteDate: Joi.date().required(),
+  dueDate: Joi.date().optional(),
+  salesId: objectId().optional(),
+  reverseCharge: Joi.boolean().default(false),
+  reason: Joi.string().allow("").optional(),
+  accountLedgerId: objectId().optional(),
+  sez: Joi.string().allow("").optional(),
+  paymentReminder: Joi.boolean().default(false),
+  productType: Joi.string()
+    .valid(...Object.values(SALES_CREDIT_NOTE_PRODUCT_TYPE))
+    .default(SALES_CREDIT_NOTE_PRODUCT_TYPE.ALL),
+  salesManId: objectId().optional(),
+
+  productDetails: Joi.object({
+    items: Joi.array().items(salesCreditNoteItemSchema).optional(),
+    totalQty: Joi.number().optional(),
+    totalFreeQty: Joi.number().optional(),
+    totalTax: Joi.number().optional(),
+    totalAmount: Joi.number().optional(),
+  }).optional(),
+
+  additionalCharges: Joi.object({
+    items: Joi.array().items(commonAdditionalChargeSchema).optional(),
+    total: Joi.number().optional(),
+  }).optional(),
+
+  termsAndConditionIds: Joi.array().items(objectId()).optional(),
+  shippingDetails: commonShippingSchema.optional(),
+  summary: transectionSummarySchema.optional(),
+
+  status: Joi.string()
+    .valid(...Object.values(PURCHASE_DEBIT_NOTE_STATUS))
+    .default(PURCHASE_DEBIT_NOTE_STATUS.OPEN),
+
+  ...baseApiSchema,
 });
 
-export const editSalesCreditNoteSchema = Joi.object().keys({
+export const editSalesCreditNoteSchema = Joi.object({
   salesCreditNoteId: objectId().required(),
-  documentNo: Joi.string().optional(),
-  date: Joi.date().optional(),
   customerId: objectId().optional(),
-  customerName: Joi.string().optional(),
-  invoiceId: objectId().optional().allow("", null),
-  items: Joi.array().items(salesCreditNoteItemSchema).optional(),
-  grossAmount: Joi.number().min(0).optional(),
-  discountAmount: Joi.number().min(0).optional(),
-  taxAmount: Joi.number().min(0).optional(),
-  roundOff: Joi.number().optional(),
-  netAmount: Joi.number().min(0).optional(),
-  reason: Joi.string().optional().allow("", null),
-  status: Joi.string().valid("active", "draft", "cancelled").optional(),
-});
+  placeOfSupply: Joi.string().allow("").optional(),
+  billingAddress: objectId().optional(),
+  shippingAddress: objectId().optional(),
+  creditNoteDate: Joi.date().optional(),
+  dueDate: Joi.date().optional(),
+  salesId: objectId().optional(),
+  reverseCharge: Joi.boolean().optional(),
+  reason: Joi.string().allow("").optional(),
+  accountLedgerId: objectId().optional(),
+  sez: Joi.string().allow("").optional(),
+  paymentReminder: Joi.boolean().optional(),
+  productType: Joi.string()
+    .valid(...Object.values(SALES_CREDIT_NOTE_PRODUCT_TYPE))
+    .optional(),
+  salesManId: objectId().optional(),
 
-export const deleteSalesCreditNoteSchema = Joi.object().keys({
-  id: objectId().required(),
+  productDetails: Joi.object({
+    items: Joi.array().items(salesCreditNoteItemSchema).optional(),
+    totalQty: Joi.number().optional(),
+    totalFreeQty: Joi.number().optional(),
+    totalTax: Joi.number().optional(),
+    totalAmount: Joi.number().optional(),
+  }).optional(),
+
+  additionalCharges: Joi.object({
+    items: Joi.array().items(commonAdditionalChargeSchema).optional(),
+    total: Joi.number().optional(),
+  }).optional(),
+
+  termsAndConditionIds: Joi.array().items(objectId()).optional(),
+  shippingDetails: commonShippingSchema.optional(),
+  summary: transectionSummarySchema.optional(),
+
+  status: Joi.string()
+    .valid(...Object.values(PURCHASE_DEBIT_NOTE_STATUS))
+    .optional(),
+
+  ...baseApiSchema,
 });
 
 export const getSalesCreditNoteSchema = Joi.object().keys({
+  id: objectId().required(),
+});
+
+export const deleteSalesCreditNoteSchema = Joi.object().keys({
   id: objectId().required(),
 });

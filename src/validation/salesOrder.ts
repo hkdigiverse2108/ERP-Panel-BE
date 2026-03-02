@@ -1,7 +1,11 @@
 import Joi from "joi";
-import { objectId, transectionSummarySchema, commonAdditionalChargeSchema } from "./common";
+import {
+  objectId,
+  transectionSummarySchema,
+  commonAdditionalChargeSchema,
+  commonShippingSchema,
+} from "./common";
 import { PAYMENT_TERMS_ENUM, SALES_ORDER_STATUS, TAX_TYPE } from "../common";
-import { commonShippingSchema } from "./estimate";
 
 const salesOrderItemSchema = Joi.object().keys({
   refId: objectId().optional().allow("", null), // Reference to estimate
@@ -26,15 +30,22 @@ export const addSalesOrderSchema = Joi.object().keys({
   placeOfSupply: Joi.string().optional().allow("", null),
   billingAddress: objectId().optional().allow("", null),
   shippingAddress: objectId().optional().allow("", null),
-  paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional(),
-  taxType: Joi.string().optional().valid(...Object.values(TAX_TYPE)),
+  paymentTerms: Joi.string()
+    .valid(...Object.values(PAYMENT_TERMS_ENUM))
+    .optional(),
+  taxType: Joi.string()
+    .optional()
+    .valid(...Object.values(TAX_TYPE)),
   salesManId: objectId().optional().allow("", null),
   selectedEstimateId: objectId().optional().allow("", null),
   items: Joi.array().items(salesOrderItemSchema).min(1).required(),
   transectionSummary: transectionSummarySchema.required(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
-  status: Joi.string().valid(...Object.values(SALES_ORDER_STATUS)).default(SALES_ORDER_STATUS.PENDING).optional(),
+  status: Joi.string()
+    .valid(...Object.values(SALES_ORDER_STATUS))
+    .default(SALES_ORDER_STATUS.PENDING)
+    .optional(),
   shippingDetails: commonShippingSchema.optional(),
 });
 
@@ -48,15 +59,21 @@ export const editSalesOrderSchema = Joi.object().keys({
   placeOfSupply: Joi.string().optional().allow("", null),
   billingAddress: objectId().optional().allow("", null),
   shippingAddress: objectId().optional().allow("", null),
-  paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional(),
-  taxType: Joi.string().optional().valid(...Object.values(TAX_TYPE)),
+  paymentTerms: Joi.string()
+    .valid(...Object.values(PAYMENT_TERMS_ENUM))
+    .optional(),
+  taxType: Joi.string()
+    .optional()
+    .valid(...Object.values(TAX_TYPE)),
   salesManId: objectId().optional().allow("", null),
   selectedEstimateId: objectId().optional().allow("", null),
   items: Joi.array().items(salesOrderItemSchema).optional(),
   transectionSummary: transectionSummarySchema.optional(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
-  status: Joi.string().valid(...Object.values(SALES_ORDER_STATUS)).optional(),
+  status: Joi.string()
+    .valid(...Object.values(SALES_ORDER_STATUS))
+    .optional(),
   shippingDetails: commonShippingSchema.optional(),
 });
 
@@ -67,4 +84,3 @@ export const deleteSalesOrderSchema = Joi.object().keys({
 export const getSalesOrderSchema = Joi.object().keys({
   id: objectId().required(),
 });
-

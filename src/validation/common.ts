@@ -40,3 +40,14 @@ export const commonAdditionalChargeSchema = Joi.object().keys({
   amount: Joi.number().required(),
   totalAmount: Joi.number().required(),
 });
+
+export const commonShippingSchema = Joi.object().keys({
+  shippingType: Joi.string().optional(),
+  shippingDate: Joi.date().optional(),
+  referenceNo: Joi.string().allow("").optional(),
+  transportDate: Joi.date().optional(),
+  modeOfTransport: Joi.string().allow("").optional(),
+  transporterId: objectId().optional(),
+  vehicleNo: Joi.string().allow("").optional(),
+  weight: Joi.number().optional(),
+});
