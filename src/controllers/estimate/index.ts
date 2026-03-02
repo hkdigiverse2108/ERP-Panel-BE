@@ -246,12 +246,23 @@ export const getAllEstimate = async (req, res) => {
     const options = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "customerId", select: "firstName lastName companyName email phoneNo address" },
+        {
+          path: "customerId",
+          select: "firstName lastName companyName email phoneNo address",
+          populate: [
+            { path: "address.country", select: "name" },
+            { path: "address.state", select: "name" },
+            { path: "address.city", select: "name" },
+          ],
+        },
         { path: "items.productId", select: "name itemCode" },
         { path: "items.taxId", select: "name percentage" },
+        { path: "items.uomId", select: "name" },
         { path: "companyId", select: "name " },
         { path: "branchId", select: "name " },
         { path: "termsAndConditionIds", select: "termsCondition " },
+        { path: "additionalCharges.chargeId", select: "name type" },
+        { path: "additionalCharges.taxId", select: "name percentage" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -264,17 +275,33 @@ export const getAllEstimate = async (req, res) => {
       let estObj = est.toObject ? est.toObject() : est;
 
       if (estObj.customerId && estObj.customerId.address) {
+        const extractAddressFields = (addr: any) => ({
+          addressLine1: addr.addressLine1,
+          addressLine2: addr.addressLine2,
+          country: addr.country,
+          state: addr.state,
+          city: addr.city,
+          pinCode: addr.pinCode,
+          _id: addr._id,
+        });
+
+        // Trim all addresses in the customer's address array
+        estObj.customerId.address = estObj.customerId.address.map(extractAddressFields);
+
         if (estObj.billingAddress) {
           const billingStr = estObj.billingAddress.toString();
-          estObj.billingAddress = estObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr) || estObj.billingAddress;
+          const billingAddr = estObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr);
+          if (billingAddr) {
+            estObj.billingAddress = extractAddressFields(billingAddr);
+          }
         }
         if (estObj.shippingAddress) {
           const shippingStr = estObj.shippingAddress.toString();
-          estObj.shippingAddress = estObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr) || estObj.shippingAddress;
+          const shippingAddr = estObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr);
+          if (shippingAddr) {
+            estObj.shippingAddress = extractAddressFields(shippingAddr);
+          }
         }
-
-        // Optionally remove the full address array from customerId if it's too large to send
-        // delete estObj.customerId.address; 
       }
       return estObj;
     });
@@ -311,12 +338,23 @@ export const getOneEstimate = async (req, res) => {
       {},
       {
         populate: [
-          { path: "customerId", select: "firstName lastName companyName email phoneNo address" },
+          {
+            path: "customerId",
+            select: "firstName lastName companyName email phoneNo address",
+            populate: [
+              { path: "address.country", select: "name" },
+              { path: "address.state", select: "name" },
+              { path: "address.city", select: "name" },
+            ],
+          },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },
-          { path: "items.taxId", select: "name percentage type" },
+          { path: "items.taxId", select: "name percentage" },
+          { path: "items.uomId", select: "name" },
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
           { path: "termsAndConditionIds", select: "termsCondition " },
+          { path: "additionalCharges.chargeId", select: "name type" },
+          { path: "additionalCharges.taxId", select: "name percentage" },
         ],
       },
     );
@@ -328,13 +366,32 @@ export const getOneEstimate = async (req, res) => {
     let estObj = response.toObject ? response.toObject() : response;
 
     if (estObj.customerId && estObj.customerId.address) {
+      const extractAddressFields = (addr: any) => ({
+        addressLine1: addr.addressLine1,
+        addressLine2: addr.addressLine2,
+        country: addr.country,
+        state: addr.state,
+        city: addr.city,
+        pinCode: addr.pinCode,
+        _id: addr._id,
+      });
+
+      // Trim all addresses in the customer's address array
+      estObj.customerId.address = estObj.customerId.address.map(extractAddressFields);
+
       if (estObj.billingAddress) {
         const billingStr = estObj.billingAddress.toString();
-        estObj.billingAddress = estObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr) || estObj.billingAddress;
+        const billingAddr = estObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr);
+        if (billingAddr) {
+          estObj.billingAddress = extractAddressFields(billingAddr);
+        }
       }
       if (estObj.shippingAddress) {
         const shippingStr = estObj.shippingAddress.toString();
-        estObj.shippingAddress = estObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr) || estObj.shippingAddress;
+        const shippingAddr = estObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr);
+        if (shippingAddr) {
+          estObj.shippingAddress = extractAddressFields(shippingAddr);
+        }
       }
     }
 
@@ -368,9 +425,7 @@ export const getEstimateDropdown = async (req, res) => {
     const options = {
       sort: { createdAt: -1 },
       select: "estimateNo date netAmount transectionSummary status",
-      populate: [
-        { path: "customerId", select: "firstName lastName companyName" },
-      ],
+      populate: [{ path: "customerId", select: "firstName lastName companyName" }],
     };
 
     const response = await getDataWithSorting(EstimateModel, criteria, {}, options);

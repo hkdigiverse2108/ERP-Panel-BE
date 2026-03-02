@@ -264,6 +264,11 @@ export const getAllPurchaseDebitNote = async (req, res) => {
         {
           path: "supplierId",
           select: "firstName lastName companyName email phoneNo address contactType",
+          populate: [
+            { path: "address.country", select: "name" },
+            { path: "address.state", select: "name" },
+            { path: "address.city", select: "name" },
+          ],
         },
         { path: "purchaseId", select: "purchaseNo" },
         {
@@ -271,10 +276,13 @@ export const getAllPurchaseDebitNote = async (req, res) => {
           select: "name itemCode purchasePrice",
         },
         { path: "productDetails.items.uomId", select: "name" },
-        { path: "productDetails.items.taxId", select: "name" },
+        { path: "productDetails.items.taxId", select: "name percentage" },
         { path: "additionalCharges.items.chargeId", select: "name type" },
+        { path: "additionalCharges.items.taxId", select: "name percentage" },
         { path: "termsAndConditionIds", select: "termsCondition" },
         { path: "companyId", select: "name" },
+        { path: "accountLedgerId", select: "name" },
+        
       ],
       skip: (page - 1) * limit,
       limit,
@@ -289,6 +297,7 @@ export const getAllPurchaseDebitNote = async (req, res) => {
       if (pdnObj.supplierId && pdnObj.supplierId.address) {
         const extractAddressFields = (addr: any) => ({
           addressLine1: addr.addressLine1,
+          addressLine2: addr.addressLine2,
           country: addr.country,
           state: addr.state,
           city: addr.city,
@@ -351,6 +360,11 @@ export const getOnePurchaseDebitNote = async (req, res) => {
           {
             path: "supplierId",
             select: "firstName lastName companyName email phoneNo address contactType",
+            populate: [
+              { path: "address.country", select: "name" },
+              { path: "address.state", select: "name" },
+              { path: "address.city", select: "name" },
+            ],
           },
           { path: "purchaseId", select: "purchaseNo" },
           {
@@ -377,6 +391,7 @@ export const getOnePurchaseDebitNote = async (req, res) => {
     if (pdnObj.supplierId && pdnObj.supplierId.address) {
       const extractAddressFields = (addr: any) => ({
         addressLine1: addr.addressLine1,
+        addressLine2: addr.addressLine2,
         country: addr.country,
         state: addr.state,
         city: addr.city,
