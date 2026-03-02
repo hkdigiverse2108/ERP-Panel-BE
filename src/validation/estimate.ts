@@ -17,10 +17,12 @@ const estimateItemSchema = Joi.object().keys({
   qty: Joi.number().min(0).required(),
   freeQty: Joi.number().min(0).default(0).optional(),
   uomId: objectId().optional().allow(null),
+  unit: Joi.string().optional().allow("", null),
   price: Joi.number().min(0).required(),
   discount1: Joi.number().min(0).default(0).optional(),
   discount2: Joi.number().min(0).default(0).optional(),
   taxId: objectId().optional().allow("", null),
+  tax: Joi.number().min(0).optional(),
   taxableAmount: Joi.number().min(0).optional(),
   totalAmount: Joi.number().min(0).optional(),
 });
