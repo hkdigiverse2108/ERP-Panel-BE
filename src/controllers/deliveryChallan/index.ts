@@ -286,10 +286,8 @@ export const getAllDeliveryChallan = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = checkCompany(user, res);
+    const companyId = await checkCompany(user, res);
     let { page, limit, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
-
-
 
     page = Number(page);
     limit = Number(limit);
@@ -318,13 +316,22 @@ export const getAllDeliveryChallan = async (req, res) => {
     const options = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "customerId", select: "firstName lastName companyName email phoneNo" },
+        {
+          path: "customerId",
+          select: "firstName lastName companyName email phoneNo address",
+          populate: [
+            { path: "address.country", select: "name" },
+            { path: "address.state", select: "name" },
+            { path: "address.city", select: "name" },
+          ],
+        },
         { path: "salesOrderIds", select: "salesOrderNo" },
         { path: "invoiceIds", select: "invoiceNo" },
         { path: "items.productId", select: "name itemCode" },
         { path: "items.taxId", select: "name percentage" },
         { path: "companyId", select: "name " },
         { path: "branchId", select: "name " },
+
       ],
       skip: (page - 1) * limit,
       limit,
@@ -337,13 +344,32 @@ export const getAllDeliveryChallan = async (req, res) => {
       let dcObj = dc.toObject ? dc.toObject() : dc;
 
       if (dcObj.customerId && dcObj.customerId.address) {
+        const extractAddressFields = (addr: any) => ({
+          addressLine1: addr.addressLine1,
+          addressLine2: addr.addressLine2,
+          country: addr.country,
+          state: addr.state,
+          city: addr.city,
+          pinCode: addr.pinCode,
+          _id: addr._id,
+        });
+
+        // Trim all addresses in the customer's address array
+        dcObj.customerId.address = dcObj.customerId.address.map(extractAddressFields);
+
         if (dcObj.billingAddress) {
           const billingStr = dcObj.billingAddress.toString();
-          dcObj.billingAddress = dcObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr) || dcObj.billingAddress;
+          const billingAddr = dcObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr);
+          if (billingAddr) {
+            dcObj.billingAddress = extractAddressFields(billingAddr);
+          }
         }
         if (dcObj.shippingAddress) {
           const shippingStr = dcObj.shippingAddress.toString();
-          dcObj.shippingAddress = dcObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr) || dcObj.shippingAddress;
+          const shippingAddr = dcObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr);
+          if (shippingAddr) {
+            dcObj.shippingAddress = extractAddressFields(shippingAddr);
+          }
         }
       }
       return dcObj;
@@ -381,14 +407,22 @@ export const getOneDeliveryChallan = async (req, res) => {
       {},
       {
         populate: [
-          { path: "customerId", select: "firstName lastName companyName email phoneNo address" },
+          {
+            path: "customerId",
+            select: "firstName lastName companyName email phoneNo address",
+            populate: [
+              { path: "address.country", select: "name" },
+              { path: "address.state", select: "name" },
+              { path: "address.city", select: "name" },
+            ],
+          },
           { path: "salesOrderIds", select: "salesOrderNo date" },
           { path: "invoiceIds", select: "invoiceNo date" },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },
           { path: "items.taxId", select: "name percentage type" },
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
-          { path: "termsAndConditionIds", select: "termsCondition " },
+
         ],
       },
     );
@@ -400,13 +434,32 @@ export const getOneDeliveryChallan = async (req, res) => {
     let dcObj = response.toObject ? response.toObject() : response;
 
     if (dcObj.customerId && dcObj.customerId.address) {
+      const extractAddressFields = (addr: any) => ({
+        addressLine1: addr.addressLine1,
+        addressLine2: addr.addressLine2,
+        country: addr.country,
+        state: addr.state,
+        city: addr.city,
+        pinCode: addr.pinCode,
+        _id: addr._id,
+      });
+
+      // Trim all addresses in the customer's address array
+      dcObj.customerId.address = dcObj.customerId.address.map(extractAddressFields);
+
       if (dcObj.billingAddress) {
         const billingStr = dcObj.billingAddress.toString();
-        dcObj.billingAddress = dcObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr) || dcObj.billingAddress;
+        const billingAddr = dcObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr);
+        if (billingAddr) {
+          dcObj.billingAddress = extractAddressFields(billingAddr);
+        }
       }
       if (dcObj.shippingAddress) {
         const shippingStr = dcObj.shippingAddress.toString();
-        dcObj.shippingAddress = dcObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr) || dcObj.shippingAddress;
+        const shippingAddr = dcObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr);
+        if (shippingAddr) {
+          dcObj.shippingAddress = extractAddressFields(shippingAddr);
+        }
       }
     }
 

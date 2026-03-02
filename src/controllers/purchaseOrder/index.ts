@@ -202,10 +202,18 @@ export const getAllPurchaseOrder = async (req, res) => {
         {
           path: "supplierId",
           select: "firstName lastName companyName email phoneNo address contactType",
+          populate: [
+            { path: "address.country", select: "name" },
+            { path: "address.state", select: "name" },
+            { path: "address.city", select: "name" },
+          ],
         },
         { path: "items.productId", select: "name itemCode" },
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
+        { path: "termsAndConditionIds", select: "name" },
+        { path: "items.taxId", select: "name percentage" },
+        { path: "items.uomId", select: "name" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -220,6 +228,7 @@ export const getAllPurchaseOrder = async (req, res) => {
       if (poObj.supplierId && poObj.supplierId.address) {
         const extractAddressFields = (addr: any) => ({
           addressLine1: addr.addressLine1,
+          addressLine2: addr.addressLine2,
           country: addr.country,
           state: addr.state,
           city: addr.city,
@@ -275,6 +284,11 @@ export const getOnePurchaseOrder = async (req, res) => {
           {
             path: "supplierId",
             select: "firstName lastName companyName email phoneNo address contactType",
+            populate: [
+              { path: "address.country", select: "name" },
+              { path: "address.state", select: "name" },
+              { path: "address.city", select: "name" },
+            ],
           },
           {
             path: "items.productId",
@@ -282,6 +296,9 @@ export const getOnePurchaseOrder = async (req, res) => {
           },
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
+          { path: "termsAndConditionIds", select: "name" },
+          { path: "items.taxId", select: "name percentage" },
+          { path: "items.uomId", select: "name" },
         ],
       },
     );
@@ -295,6 +312,7 @@ export const getOnePurchaseOrder = async (req, res) => {
     if (poObj.supplierId && poObj.supplierId.address) {
       const extractAddressFields = (addr: any) => ({
         addressLine1: addr.addressLine1,
+        addressLine2: addr.addressLine2,
         country: addr.country,
         state: addr.state,
         city: addr.city,

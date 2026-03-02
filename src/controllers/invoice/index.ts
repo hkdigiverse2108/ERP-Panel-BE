@@ -5,7 +5,6 @@ import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSch
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
-
 export const addInvoice = async (req, res) => {
   reqInfo(req);
   try {
@@ -221,7 +220,7 @@ export const editInvoice = async (req, res) => {
 
     // Validate terms and conditions exist
     if (value.termsAndConditionIds && value.termsAndConditionIds.length > 0) {
-      const existingTncIds = isExist.termsAndConditionIds?.map(id => id.toString()) || [];
+      const existingTncIds = isExist.termsAndConditionIds?.map((id) => id.toString()) || [];
       for (const tncId of value.termsAndConditionIds) {
         if (!existingTncIds.includes(tncId.toString())) {
           if (!(await checkIdExist(termsConditionModel, tncId, "Terms and Condition", res))) return;
@@ -381,14 +380,26 @@ export const getAllInvoice = async (req, res) => {
     const options = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "customerId", select: "firstName lastName companyName email phoneNo" },
+        {
+          path: "customerId",
+          select: "firstName lastName companyName email phoneNo address",
+          populate: [
+            { path: "address.country", select: "name" },
+            { path: "address.state", select: "name" },
+            { path: "address.city", select: "name" },
+          ],
+        },
         { path: "salesOrderIds", select: "salesOrderNo" },
         { path: "deliveryChallanIds", select: "deliveryChallanNo" },
         { path: "salesManId", select: "firstName lastName" },
         { path: "items.productId", select: "name itemCode" },
         { path: "items.taxId", select: "name percentage" },
+        { path: "items.uomId", select: "name" },
         { path: "companyId", select: "name " },
         { path: "branchId", select: "name " },
+        { path: "additionalCharges.chargeId", select: "name " },
+        { path: "additionalCharges.taxId", select: "name percentage" },
+        { path: "termsAndConditionIds", select: "name " },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -401,13 +412,32 @@ export const getAllInvoice = async (req, res) => {
       let invObj = inv.toObject ? inv.toObject() : inv;
 
       if (invObj.customerId && invObj.customerId.address) {
+        const extractAddressFields = (addr: any) => ({
+          addressLine1: addr.addressLine1,
+          addressLine2: addr.addressLine2,
+          country: addr.country,
+          state: addr.state,
+          city: addr.city,
+          pinCode: addr.pinCode,
+          _id: addr._id,
+        });
+
+        // Trim all addresses in the customer's address array
+        invObj.customerId.address = invObj.customerId.address.map(extractAddressFields);
+
         if (invObj.billingAddress) {
           const billingStr = invObj.billingAddress.toString();
-          invObj.billingAddress = invObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr) || invObj.billingAddress;
+          const billingAddr = invObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr);
+          if (billingAddr) {
+            invObj.billingAddress = extractAddressFields(billingAddr);
+          }
         }
         if (invObj.shippingAddress) {
           const shippingStr = invObj.shippingAddress.toString();
-          invObj.shippingAddress = invObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr) || invObj.shippingAddress;
+          const shippingAddr = invObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr);
+          if (shippingAddr) {
+            invObj.shippingAddress = extractAddressFields(shippingAddr);
+          }
         }
       }
       return invObj;
@@ -445,14 +475,26 @@ export const getOneInvoice = async (req, res) => {
       {},
       {
         populate: [
-          { path: "customerId", select: "firstName lastName companyName email phoneNo address" },
+          {
+            path: "customerId",
+            select: "firstName lastName companyName email phoneNo address",
+            populate: [
+              { path: "address.country", select: "name" },
+              { path: "address.state", select: "name" },
+              { path: "address.city", select: "name" },
+            ],
+          },
           { path: "salesOrderIds", select: "salesOrderNo date netAmount" },
           { path: "deliveryChallanIds", select: "deliveryChallanNo date netAmount" },
           { path: "salesManId", select: "firstName lastName" },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },
           { path: "items.taxId", select: "name percentage type" },
+          { path: "items.uomId", select: "name" },
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
+          { path: "additionalCharges.chargeId", select: "name " },
+          { path: "additionalCharges.taxId", select: "name percentage" },
+          { path: "termsAndConditionIds", select: "name " },
         ],
       },
     );
@@ -464,13 +506,32 @@ export const getOneInvoice = async (req, res) => {
     let invObj = response.toObject ? response.toObject() : response;
 
     if (invObj.customerId && invObj.customerId.address) {
+      const extractAddressFields = (addr: any) => ({
+        addressLine1: addr.addressLine1,
+        addressLine2: addr.addressLine2,
+        country: addr.country,
+        state: addr.state,
+        city: addr.city,
+        pinCode: addr.pinCode,
+        _id: addr._id,
+      });
+
+      // Trim all addresses in the customer's address array
+      invObj.customerId.address = invObj.customerId.address.map(extractAddressFields);
+
       if (invObj.billingAddress) {
         const billingStr = invObj.billingAddress.toString();
-        invObj.billingAddress = invObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr) || invObj.billingAddress;
+        const billingAddr = invObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr);
+        if (billingAddr) {
+          invObj.billingAddress = extractAddressFields(billingAddr);
+        }
       }
       if (invObj.shippingAddress) {
         const shippingStr = invObj.shippingAddress.toString();
-        invObj.shippingAddress = invObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr) || invObj.shippingAddress;
+        const shippingAddr = invObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr);
+        if (shippingAddr) {
+          invObj.shippingAddress = extractAddressFields(shippingAddr);
+        }
       }
     }
 

@@ -1,21 +1,17 @@
 import Joi from "joi";
-import {
-  baseApiSchema,
-  objectId,
-  transectionSummarySchema,
-  commonAdditionalChargeSchema,
-  commonShippingSchema,
-} from "./common";
+import { baseApiSchema, objectId, transectionSummarySchema, commonAdditionalChargeSchema, commonShippingSchema } from "./common";
 import { PAYMENT_TERMS_ENUM, PURCHASE_DEBIT_NOTE_STATUS } from "../common";
 
 const purchaseDebitNoteItemSchema = Joi.object({
   productId: objectId().required(),
+  unit: Joi.string().optional(),
   uomId: objectId().optional(),
   unitCost: Joi.number().min(0).optional(),
   mrp: Joi.number().min(0).optional(),
   sellingPrice: Joi.number().min(0).optional(),
   discount1: Joi.number().min(0).default(0),
   discount2: Joi.number().min(0).default(0),
+  tax: Joi.number().min(0).optional(),
   taxId: objectId().optional(),
   landingCost: Joi.number().min(0).optional(),
   margin: Joi.number().min(0).optional(),
