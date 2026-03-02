@@ -3,17 +3,15 @@ import { objectId } from "./common";
 
 const salesCreditNoteItemSchema = Joi.object().keys({
   productId: objectId().required(),
-  productName: Joi.string().required(),
-  batchNo: Joi.string().optional().allow("", null),
-  qty: Joi.number().min(0.01).required(),
+  qty: Joi.number().min(0).required(),
   freeQty: Joi.number().min(0).default(0).optional(),
-  uom: Joi.string().optional().allow("", null),
+  uomId: objectId().optional().allow(null),
+  unit: Joi.string().optional().allow("", null),
   price: Joi.number().min(0).required(),
-  discountPercent: Joi.number().min(0).max(100).default(0).optional(),
-  discountAmount: Joi.number().min(0).default(0).optional(),
+  discount1: Joi.number().min(0).default(0).optional(),
+  discount2: Joi.number().min(0).default(0).optional(),
   taxId: objectId().optional().allow("", null),
-  taxPercent: Joi.number().min(0).default(0).optional(),
-  taxAmount: Joi.number().min(0).default(0).optional(),
+  tax: Joi.number().min(0).optional(),
   taxableAmount: Joi.number().min(0).required(),
   totalAmount: Joi.number().min(0).required(),
 });
