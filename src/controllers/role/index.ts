@@ -246,6 +246,8 @@ export const getRoleDropdown = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
+    if (!companyFilter && !companyId) criteria.companyId = null;
+
     const response = await getDataWithSorting(roleModel, criteria, { _id: 1, name: 1 }, { sort: { name: 1 } });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), response, {}));
