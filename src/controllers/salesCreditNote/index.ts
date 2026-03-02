@@ -271,17 +271,26 @@ export const getAllSalesCreditNote = async (req, res) => {
         {
           path: "customerId",
           select: "firstName lastName companyName email phoneNo address contactType",
+          populate: [
+            { path: "address.country", select: "name" },
+            { path: "address.state", select: "name" },
+            { path: "address.city", select: "name" },
+          ],
         },
-        { path: "salesId", select: "salesNo" },
+        { path: "salesId", select: "invoiceNo" },
         {
           path: "productDetails.items.productId",
           select: "name itemCode sellingPrice",
         },
         { path: "productDetails.items.uomId", select: "name" },
+        { path: "productDetails.items.taxId", select: "name percentage" },
         { path: "additionalCharges.items.chargeId", select: "name type" },
+        { path: "additionalCharges.items.taxId", select: "name percentage" },
+        { path: "shippingDetails.transporterId", select: "firstName lastName" },
         { path: "termsAndConditionIds", select: "termsCondition" },
         { path: "companyId", select: "name" },
         { path: "salesManId", select: "firstName lastName" },
+        { path: "accountLedgerId", select: "name" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -296,6 +305,7 @@ export const getAllSalesCreditNote = async (req, res) => {
       if (scnObj.customerId && scnObj.customerId.address) {
         const extractAddressFields = (addr: any) => ({
           addressLine1: addr.addressLine1,
+          addressLine2: addr.addressLine2,
           country: addr.country,
           state: addr.state,
           city: addr.city,
@@ -358,8 +368,13 @@ export const getOneSalesCreditNote = async (req, res) => {
           {
             path: "customerId",
             select: "firstName lastName companyName email phoneNo address contactType",
+            populate: [
+              { path: "address.country", select: "name" },
+              { path: "address.state", select: "name" },
+              { path: "address.city", select: "name" },
+            ],
           },
-          { path: "salesId", select: "salesNo" },
+          { path: "salesId", select: "invoiceNo" },
           {
             path: "productDetails.items.productId",
             select: "name itemCode sellingPrice hsn gst",
@@ -372,6 +387,8 @@ export const getOneSalesCreditNote = async (req, res) => {
           { path: "companyId", select: "name gstNo" },
           { path: "accountLedgerId", select: "name" },
           { path: "salesManId", select: "firstName lastName" },
+          { path: "accountLedgerId", select: "name" },
+          { path: "shippingDetails.transporterId", select: "firstName lastName" },
         ],
       },
     );
@@ -385,6 +402,7 @@ export const getOneSalesCreditNote = async (req, res) => {
     if (scnObj.customerId && scnObj.customerId.address) {
       const extractAddressFields = (addr: any) => ({
         addressLine1: addr.addressLine1,
+        addressLine2: addr.addressLine2,
         country: addr.country,
         state: addr.state,
         city: addr.city,

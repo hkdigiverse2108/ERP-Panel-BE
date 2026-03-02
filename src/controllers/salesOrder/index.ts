@@ -269,11 +269,25 @@ export const getAllSalesOrder = async (req, res) => {
     const options = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "customerId", select: "firstName lastName companyName email phoneNo" },
+        {
+          path: "customerId",
+          select: "firstName lastName companyName email phoneNo address",
+          populate: [
+            { path: "address.country", select: "name" },
+            { path: "address.state", select: "name" },
+            { path: "address.city", select: "name" },
+          ],
+        },
         { path: "items.productId", select: "name itemCode" },
         { path: "items.taxId", select: "name percentage" },
+        { path: "items.uomId", select: "name" },
         { path: "companyId", select: "name " },
         { path: "branchId", select: "name " },
+        { path: "selectedEstimateId", select: "estimateNo" },
+        { path: "additionalCharges.chargeId", select: "name" },
+        { path: "additionalCharges.taxId", select: "name percentage" },
+        { path: "termsAndConditionIds", select: "name" },
+        { path: "shippingDetails.transporterId", select: "name" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -286,13 +300,32 @@ export const getAllSalesOrder = async (req, res) => {
       let soObj = so.toObject ? so.toObject() : so;
 
       if (soObj.customerId && soObj.customerId.address) {
+        const extractAddressFields = (addr: any) => ({
+          addressLine1: addr.addressLine1,
+          addressLine2: addr.addressLine2,
+          country: addr.country,
+          state: addr.state,
+          city: addr.city,
+          pinCode: addr.pinCode,
+          _id: addr._id,
+        });
+
+        // Trim all addresses in the customer's address array
+        soObj.customerId.address = soObj.customerId.address.map(extractAddressFields);
+
         if (soObj.billingAddress) {
           const billingStr = soObj.billingAddress.toString();
-          soObj.billingAddress = soObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr) || soObj.billingAddress;
+          const billingAddr = soObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr);
+          if (billingAddr) {
+            soObj.billingAddress = extractAddressFields(billingAddr);
+          }
         }
         if (soObj.shippingAddress) {
           const shippingStr = soObj.shippingAddress.toString();
-          soObj.shippingAddress = soObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr) || soObj.shippingAddress;
+          const shippingAddr = soObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr);
+          if (shippingAddr) {
+            soObj.shippingAddress = extractAddressFields(shippingAddr);
+          }
         }
       }
       return soObj;
@@ -330,11 +363,21 @@ export const getOneSalesOrder = async (req, res) => {
       {},
       {
         populate: [
-          { path: "customerId", select: "firstName lastName companyName email phoneNo address" },
+          {
+            path: "customerId",
+            select: "firstName lastName companyName email phoneNo address",
+            populate: [
+              { path: "address.country", select: "name" },
+              { path: "address.state", select: "name" },
+              { path: "address.city", select: "name" },
+            ],
+          },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },
           { path: "items.taxId", select: "name percentage type" },
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
+          { path: "createdBy", select: "firstName lastName" },
+          { path: "updatedBy", select: "firstName lastName" },
         ],
       },
     );
@@ -346,13 +389,32 @@ export const getOneSalesOrder = async (req, res) => {
     let soObj = response.toObject ? response.toObject() : response;
 
     if (soObj.customerId && soObj.customerId.address) {
+      const extractAddressFields = (addr: any) => ({
+        addressLine1: addr.addressLine1,
+        addressLine2: addr.addressLine2,
+        country: addr.country,
+        state: addr.state,
+        city: addr.city,
+        pinCode: addr.pinCode,
+        _id: addr._id,
+      });
+
+      // Trim all addresses in the customer's address array
+      soObj.customerId.address = soObj.customerId.address.map(extractAddressFields);
+
       if (soObj.billingAddress) {
         const billingStr = soObj.billingAddress.toString();
-        soObj.billingAddress = soObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr) || soObj.billingAddress;
+        const billingAddr = soObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr);
+        if (billingAddr) {
+          soObj.billingAddress = extractAddressFields(billingAddr);
+        }
       }
       if (soObj.shippingAddress) {
         const shippingStr = soObj.shippingAddress.toString();
-        soObj.shippingAddress = soObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr) || soObj.shippingAddress;
+        const shippingAddr = soObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr);
+        if (shippingAddr) {
+          soObj.shippingAddress = extractAddressFields(shippingAddr);
+        }
       }
     }
 
