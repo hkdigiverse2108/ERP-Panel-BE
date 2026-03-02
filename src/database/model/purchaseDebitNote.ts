@@ -108,7 +108,7 @@ const purchaseDebitNoteSchema = new Schema<IpurchaseDebitNote>(
       totalAmount: { type: Number },
     },
     additionalCharges: {
-      items: [commonAdditionalCharge],
+      items: [commonAdditionalChargeSchema],
       total: { type: Number },
     },
     termsAndConditionIds: [
