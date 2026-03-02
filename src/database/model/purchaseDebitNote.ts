@@ -1,11 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import {
-  baseSchemaFields,
-  baseSchemaOptions,
-  commonAdditionalChargeSchema,
-  commonShippingSchema,
-  transactionSummarySchema,
-} from "./base";
+import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema, commonShippingSchema, transactionSummarySchema } from "./base";
 import { PAYMENT_TERMS_ENUM, PURCHASE_DEBIT_NOTE_STATUS } from "../../common";
 
 export interface IpurchaseDebitNote {
@@ -60,12 +54,14 @@ export interface IpurchaseDebitNote {
 export const purchaseDebitNoteItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product" },
+    unit: { type: String },
     uomId: { type: Schema.Types.ObjectId, ref: "uom" },
     unitCost: { type: Number, min: 0 },
     mrp: { type: Number, min: 0 },
     sellingPrice: { type: Number, min: 0 },
     discount1: { type: Number, default: 0, min: 0 },
     discount2: { type: Number, default: 0, min: 0 },
+    tax: { type: Number, min: 0 },
     taxId: { type: Schema.Types.ObjectId, ref: "tax" },
     landingCost: { type: Number, min: 0 },
     margin: { type: Number, min: 0 },
@@ -111,9 +107,7 @@ const purchaseDebitNoteSchema = new Schema<IpurchaseDebitNote>(
       items: [commonAdditionalChargeSchema],
       total: { type: Number },
     },
-    termsAndConditionIds: [
-      { type: Schema.Types.ObjectId, ref: "terms-condition" },
-    ],
+    termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
     shippingDetails: commonShippingSchema,
     summary: transactionSummarySchema,
     status: {
@@ -125,7 +119,4 @@ const purchaseDebitNoteSchema = new Schema<IpurchaseDebitNote>(
   baseSchemaOptions,
 );
 
-export const purchaseDebitNoteModel = mongoose.model(
-  "purchase-debit-note",
-  purchaseDebitNoteSchema,
-);
+export const purchaseDebitNoteModel = mongoose.model("purchase-debit-note", purchaseDebitNoteSchema);
