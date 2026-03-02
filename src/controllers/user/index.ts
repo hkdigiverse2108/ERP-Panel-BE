@@ -9,7 +9,6 @@ export const addUser = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-
     let { error, value } = addUserSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -56,43 +55,37 @@ export const addUser = async (req, res) => {
 
     if (value?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $push: { userIds: response?._id } }, {});
 
-    if (value?.role?.name === USER_ROLES.SUPER_ADMIN) {
+    if (user?.role?.name === USER_ROLES.SUPER_ADMIN) {
       let allModules = await getData(moduleModel, { isActive: true, isDeleted: false, default: true }, {}, {});
-      if (allModules && allModules.length > 0) {
-        for (let module of allModules) {
-          let permissionData = {
-            moduleId: new ObjectId(module._id),
-            userId: new ObjectId(response?._id),
-            view: true,
-            add: true,
-            edit: true,
-            delete: true,
-            isActive: true,
-          };
+      for (let module of allModules) {
+        let permissionData = {
+          moduleId: new ObjectId(module._id),
+          userId: new ObjectId(response?._id),
+          view: true,
+          add: true,
+          edit: true,
+          delete: true,
+          isActive: true,
+        };
 
-          await updateData(permissionModel, { userId: new ObjectId(response?._id), moduleId: new ObjectId(module._id) }, permissionData, { upsert: true, new: true });
-          await updateData(moduleModel, { _id: new ObjectId(module._id) }, { default: true }, {});
-        }
+        await updateData(permissionModel, { userId: new ObjectId(response?._id), moduleId: new ObjectId(module._id) }, permissionData, { upsert: true, new: true });
       }
     }
 
-    if (value?.role === USER_ROLES.ADMIN) {
+    if (user?.role?.name === USER_ROLES.ADMIN) {
       let allModules = await getData(moduleModel, { isActive: true, isDeleted: false, default: true }, {}, {});
-      if (allModules && allModules.length > 0) {
-        for (let module of allModules) {
-          let permissionData = {
-            moduleId: new ObjectId(module._id),
-            userId: new ObjectId(response?._id),
-            view: true,
-            add: true,
-            edit: true,
-            delete: true,
-            isActive: true,
-          };
+      for (let module of allModules) {
+        let permissionData = {
+          moduleId: new ObjectId(module._id),
+          userId: new ObjectId(response?._id),
+          view: true,
+          add: true,
+          edit: true,
+          delete: true,
+          isActive: true,
+        };
 
-          await updateData(permissionModel, { userId: new ObjectId(response?._id), moduleId: new ObjectId(module._id) }, permissionData, { upsert: true, new: true });
-          await updateData(moduleModel, { _id: new ObjectId(module._id) }, { default: true }, {});
-        }
+        await updateData(permissionModel, { userId: new ObjectId(response?._id), moduleId: new ObjectId(module._id) }, permissionData, { upsert: true, new: true });
       }
     }
 
