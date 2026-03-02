@@ -1,9 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import {
-  baseSchemaFields,
-  baseSchemaOptions,
-  transactionSummarySchema,
-} from "./base";
+import { baseSchemaFields, baseSchemaOptions, transactionSummarySchema } from "./base";
 import { IPurchaseOrder } from "../../types";
 import { ORDER_STATUS, TAX_TYPE } from "../../common";
 
@@ -13,7 +9,9 @@ export const purchaseItemSchema = new Schema(
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
     qty: { type: Number, required: true },
     uomId: { type: Schema.Types.ObjectId, ref: "product" },
+    unit: { type: String },
     unitCost: { type: Number },
+    taxId: { type: Schema.Types.ObjectId, ref: "tax" },
     tax: { type: String },
     landingCost: { type: String },
     margin: { type: String },
@@ -35,9 +33,7 @@ const purchaseOrderSchema = new Schema<IPurchaseOrder>(
     taxType: { type: String, enum: Object.values(TAX_TYPE) },
     items: [purchaseItemSchema],
 
-    termsAndConditionIds: [
-      { type: Schema.Types.ObjectId, ref: "terms-condition" },
-    ],
+    termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
     notes: { type: String },
 
     totalQty: { type: String },
@@ -55,7 +51,4 @@ const purchaseOrderSchema = new Schema<IPurchaseOrder>(
   baseSchemaOptions,
 );
 
-export const purchaseOrderModel = mongoose.model<IPurchaseOrder>(
-  "purchase-order",
-  purchaseOrderSchema,
-);
+export const purchaseOrderModel = mongoose.model<IPurchaseOrder>("purchase-order", purchaseOrderSchema);

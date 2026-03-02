@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { baseSchemaFields, baseSchemaOptions, transactionSummarySchema, commonAdditionalCharge, salesItemSchema, commonShippingSchema } from "./base";
+import { baseSchemaFields, baseSchemaOptions, transactionSummarySchema, commonAdditionalChargeSchema, salesItemSchema, commonShippingSchema } from "./base";
 import { IInvoice } from "../../types";
 import { INVOICE_PAYMENT_STATUS, INVOICE_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE, INVOICE_CREATED_FROM, PAY_TYPE } from "../../common";
 
@@ -27,7 +27,7 @@ const invoiceSchema = new Schema<IInvoice>({
     shippingDetails: { type: commonShippingSchema },
     items: [invoiceItemSchema],
     transectionSummary: { type: transactionSummarySchema },
-    additionalCharges: { type: [commonAdditionalCharge] },
+    additionalCharges: { type: [commonAdditionalChargeSchema] },
     paidAmount: { type: Number, default: 0 },
     payType: { type: String, enum: Object.values(PAY_TYPE) },
     balanceAmount: { type: Number, default: 0 },

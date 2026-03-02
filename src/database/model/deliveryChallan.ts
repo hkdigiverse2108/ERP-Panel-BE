@@ -4,7 +4,7 @@ import {
   baseSchemaOptions,
   salesItemSchema,
   transactionSummarySchema,
-  commonAdditionalCharge,
+  commonAdditionalChargeSchema,
   commonShippingSchema,
 } from "./base";
 import { IDeliveryChallan } from "../../types";
@@ -33,7 +33,7 @@ const deliveryChallanSchema = new Schema<IDeliveryChallan>(
     shippingDetails: { type: commonShippingSchema },
     items: [itemsSchema],
     transectionSummary: { type: transactionSummarySchema },
-    additionalCharges: { type: [commonAdditionalCharge] },
+    additionalCharges: { type: [commonAdditionalChargeSchema] },
     reverseCharge: { type: Boolean, default: false },
     status: { type: String, enum: Object.values(DELIVERY_CHALLAN_STATUS), default: DELIVERY_CHALLAN_STATUS.DELIVERED },
     termsAndConditionIds: { type: [Schema.Types.ObjectId], ref: 'terms-condition' },

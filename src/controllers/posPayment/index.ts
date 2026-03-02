@@ -13,7 +13,6 @@ export const addPosPayment = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-
     value.companyId = await checkCompany(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
@@ -60,8 +59,6 @@ export const addPosPayment = async (req, res) => {
       }
       await updateData(PosOrderModel, { _id: value.posOrderId }, posOrder, {});
     }
-
-
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
@@ -169,7 +166,6 @@ export const getAllPosPayment = async (req, res) => {
     if (partyFilter) criteria.partyId = partyFilter;
     if (companyFilter) criteria.companyId = companyId;
 
-
     if (search) {
       criteria.paymentNo = { $regex: search, $options: "si" };
     }
@@ -181,6 +177,10 @@ export const getAllPosPayment = async (req, res) => {
       populate: [
         { path: "posOrderId", select: "orderNo totalAmount createdAt paidAmount" },
         { path: "partyId", select: "firstName lastName companyName" },
+        { path: "purchaseBillId", select: "documentNo totalAmount" },
+        { path: "accountId", select: "name" },
+        { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -214,6 +214,8 @@ export const getOnePosPayment = async (req, res) => {
           { path: "partyId", select: "firstName lastName companyName email phoneNo" },
           { path: "purchaseBillId", select: "documentNo totalAmount" },
           { path: "accountId", select: "name" },
+          { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
         ],
       },
     );

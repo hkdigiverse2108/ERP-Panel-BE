@@ -372,3 +372,8 @@ export const PURCHASE_DEBIT_NOTE_STATUS = {
   PAID: "paid",
   DUE: "due",
 } as const;
+
+export const SALES_CREDIT_NOTE_PRODUCT_TYPE = {
+  EXPIRY: "expiry",
+  ALL: "all",
+} as const;

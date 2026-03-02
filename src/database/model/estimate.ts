@@ -3,7 +3,7 @@ import {
   baseSchemaFields,
   baseSchemaOptions,
   transactionSummarySchema,
-  commonAdditionalCharge,
+  commonAdditionalChargeSchema,
   salesItemSchema,
   commonShippingSchema,
 } from "./base";
@@ -25,7 +25,7 @@ const EstimateSchema = new Schema<IEstimate>(
     reverseCharge: { type: Boolean, default: false },
     status: { type: String, enum: Object.values(ESTIMATE_STATUS), default: ESTIMATE_STATUS.PENDING },
     transectionSummary: { type: transactionSummarySchema },
-    additionalCharges: { type: [commonAdditionalCharge] },
+    additionalCharges: { type: [commonAdditionalChargeSchema] },
     paymentTerms: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
     taxType: { type: String, enum: Object.values(TAX_TYPE), default: TAX_TYPE.DEFAULT },
     sez: { type: String },

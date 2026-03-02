@@ -4,6 +4,7 @@ import {
   objectId,
   transectionSummarySchema,
   commonAdditionalChargeSchema,
+  commonShippingSchema,
 } from "./common";
 import { PAYMENT_TERMS_ENUM, PURCHASE_DEBIT_NOTE_STATUS } from "../common";
 
@@ -51,6 +52,7 @@ export const addPurchaseDebitNoteSchema = Joi.object({
   }).optional(),
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
+  shippingDetails: commonShippingSchema.optional(),
   summary: transectionSummarySchema.optional(),
 
   status: Joi.string()
@@ -91,6 +93,7 @@ export const editPurchaseDebitNoteSchema = Joi.object({
   }).optional(),
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
+  shippingDetails: commonShippingSchema.optional(),
   summary: transectionSummarySchema.optional(),
 
   status: Joi.string()

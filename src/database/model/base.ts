@@ -35,7 +35,7 @@ export const commonShippingSchema = {
   weight: { type: Number },
 };
 
-export const commonAdditionalCharge = {
+export const commonAdditionalChargeSchema = {
   chargeId: {
     type: Schema.Types.ObjectId,
     ref: "additional-charge",

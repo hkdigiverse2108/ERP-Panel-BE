@@ -1,18 +1,9 @@
-import { HTTP_STATUS } from "../../common";
-import { apiResponse } from "../../common/utils";
-import { contactModel, salesCreditNoteModel, InvoiceModel, productModel, taxModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
-import { addSalesCreditNoteSchema, deleteSalesCreditNoteSchema, editSalesCreditNoteSchema, getSalesCreditNoteSchema } from "../../validation/salesCreditNote";
+import { apiResponse, HTTP_STATUS } from "../../common";
+import { contactModel, salesCreditNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, accountGroupModel, employeeModel, SalesOrderModel, InvoiceModel, userModel } from "../../database";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { addSalesCreditNoteSchema, deleteSalesCreditNoteSchema, editSalesCreditNoteSchema, getSalesCreditNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
-
-// Generate unique sales credit note number
-const generateSalesCreditNoteNo = async (companyId): Promise<string> => {
-  const count = await salesCreditNoteModel.countDocuments({ companyId, isDeleted: false });
-  const prefix = "SCN";
-  const number = String(count + 1).padStart(6, "0");
-  return `${prefix}${number}`;
-};
 
 export const addSalesCreditNote = async (req, res) => {
   reqInfo(req);
@@ -27,37 +18,74 @@ export const addSalesCreditNote = async (req, res) => {
 
     value.companyId = await checkCompany(user, value);
 
-    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-
-    // Validate customer exists
-    if (!(await checkIdExist(contactModel, value?.supplierId, "Customer", res))) return;
-
-    // Validate invoice if provided
-    if (value.invoiceId && !(await checkIdExist(InvoiceModel, value.invoiceId, "Invoice", res))) return;
-
-    // Validate products exist
-    for (const item of value.items) {
-      if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
-      if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+    if (!value.companyId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
     }
 
-    // Generate document number if not provided
-    if (!value.documentNo) {
-      value.documentNo = await generateSalesCreditNoteNo(value.companyId);
+    // Validate customer exists and verify billing/shipping addresses if provided
+    const customer = await getFirstMatch(contactModel, { _id: value?.customerId, isDeleted: false }, {}, {});
+    if (!customer) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Customer"), {}, {}));
     }
 
-    // Get customer name
-    const customer = await getFirstMatch(contactModel, { _id: value.supplierId, isDeleted: false }, {}, {});
-    if (customer) {
-      value.customerName = customer.companyName || `${customer.firstName} ${customer.lastName || ""}`.trim();
+    if (value.billingAddress) {
+      const isBillingValid = customer?.address?.find((addr: any) => addr._id && addr._id.toString() === value.billingAddress.toString());
+      if (!isBillingValid) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Billing Address ID", {}, {}));
+      }
     }
 
-    // Calculate totals if not provided
-    if (!value.grossAmount) {
-      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
+    if (value.shippingAddress) {
+      const isShippingValid = customer?.address?.find((addr: any) => addr._id && addr._id.toString() === value.shippingAddress.toString());
+      if (!isShippingValid) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Shipping Address ID", {}, {}));
+      }
     }
-    if (value.netAmount === undefined || value.netAmount === null) {
-      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
+
+    // Validate Sales Order if provided
+    if (value?.salesId && !(await checkIdExist(InvoiceModel, value?.salesId, "Sales", res))) return;
+
+    // Validate Account Ledger if provided
+    if (value?.accountLedgerId && !(await checkIdExist(accountGroupModel, value?.accountLedgerId, "Account Ledger", res))) return;
+
+    // Validate Salesman if provided
+    if (value?.salesManId && !(await checkIdExist(userModel, value?.salesManId, "Salesman", res))) return;
+
+    if (value?.termsAndConditionIds) {
+      for (const item of value?.termsAndConditionIds) {
+        if (!(await checkIdExist(termsConditionModel, item, "Terms And Condition", res))) return;
+      }
+    }
+
+    if (value.shippingDetails?.transporterId) {
+      if (!(await checkIdExist(contactModel, value.shippingDetails.transporterId, "Transporter", res))) return;
+    }
+
+    // Validate items
+    if (value?.productDetails?.items && value?.productDetails?.items?.length > 0) {
+      for (const item of value?.productDetails.items) {
+        if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+        if (item?.uomId && !(await checkIdExist(uomModel, item?.uomId, "UOM", res))) return;
+        if (item?.taxId && !(await checkIdExist(taxModel, item?.taxId, "Tax", res))) return;
+      }
+    }
+
+    // Validate additional charges
+    if (value?.additionalCharges?.items && value?.additionalCharges?.items?.length > 0) {
+      for (const item of value.additionalCharges?.items) {
+        if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
+        if (item?.taxId && !(await checkIdExist(taxModel, item?.taxId, "Tax", res))) return;
+      }
+    }
+
+    // Generate credit note number if not provided
+    if (!value?.creditNoteNo) {
+      value.creditNoteNo = await generateSequenceNumber({
+        model: salesCreditNoteModel,
+        prefix: "SCN",
+        fieldName: "creditNoteNo",
+        companyId: value.companyId,
+      });
     }
 
     value.createdBy = user?._id || null;
@@ -93,35 +121,77 @@ export const editSalesCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Sales Credit Note"), {}, {}));
     }
 
-    // Validate customer if being changed
-    if (value.supplierId && value.supplierId !== isExist.supplierId.toString()) {
-      if (!(await checkIdExist(contactModel, value.supplierId, "Customer", res))) return;
-      const customer = await getFirstMatch(contactModel, { _id: value.supplierId, isDeleted: false }, {}, {});
-      if (customer) {
-        value.customerName = customer.companyName || `${customer.firstName} ${customer.lastName || ""}`.trim();
+    // Validate customer if being changed or Validate addresses if provided
+    let customerForAddress = null;
+    if (value.customerId && value.customerId !== isExist.customerId.toString()) {
+      customerForAddress = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
+      if (!customerForAddress) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Customer"), {}, {}));
+      }
+    } else if (value.billingAddress || value.shippingAddress) {
+      customerForAddress = await getFirstMatch(contactModel, { _id: isExist.customerId, isDeleted: false }, {}, {});
+      if (!customerForAddress) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Customer"), {}, {}));
       }
     }
 
-    // Validate invoice if being changed
-    if (value.invoiceId && value.invoiceId !== isExist.invoiceId?.toString()) {
-      if (!(await checkIdExist(InvoiceModel, value.invoiceId, "Invoice", res))) return;
+    if (customerForAddress) {
+      if (value.billingAddress) {
+        const isBillingValid = customerForAddress?.address?.find((addr: any) => addr._id && addr._id.toString() === value.billingAddress.toString());
+        if (!isBillingValid) {
+          return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Billing Address ID", {}, {}));
+        }
+      }
+      if (value.shippingAddress) {
+        const isShippingValid = customerForAddress?.address?.find((addr: any) => addr._id && addr._id.toString() === value.shippingAddress.toString());
+        if (!isShippingValid) {
+          return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Shipping Address ID", {}, {}));
+        }
+      }
     }
 
-    // Validate products if items are being updated
-    if (value.items && value.items.length > 0) {
-      for (const item of value.items) {
+    if (value?.salesId && value?.salesId !== isExist?.salesId?.toString()) {
+      if (!(await checkIdExist(SalesOrderModel, value?.salesId, "Sales Order", res))) return;
+    }
+
+    if (value?.accountLedgerId && value?.accountLedgerId !== isExist?.accountLedgerId?.toString()) {
+      if (!(await checkIdExist(accountGroupModel, value?.accountLedgerId, "Account Ledger", res))) return;
+    }
+
+    if (value?.salesManId && value?.salesManId !== isExist?.salesManId?.toString()) {
+      if (!(await checkIdExist(employeeModel, value?.salesManId, "Salesman", res))) return;
+    }
+
+    if (value?.termsAndConditionIds) {
+      for (const item of value?.termsAndConditionIds) {
+        if (!(await checkIdExist(termsConditionModel, item, "Terms And Condition", res))) return;
+      }
+    }
+
+    if (value.shippingDetails?.transporterId) {
+      if (!(await checkIdExist(contactModel, value.shippingDetails.transporterId, "Transporter", res))) return;
+    }
+
+    // Validate items
+    if (value?.productDetails?.items && value?.productDetails?.items?.length > 0) {
+      for (const item of value?.productDetails.items) {
         if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
-        if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+        if (item?.uomId && !(await checkIdExist(uomModel, item?.uomId, "UOM", res))) return;
+        if (item?.taxId && !(await checkIdExist(taxModel, item?.taxId, "Tax", res))) return;
       }
+    }
 
-      // Recalculate totals
-      value.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
-      value.netAmount = (value.grossAmount || 0) - (value.discountAmount || 0) + (value.taxAmount || 0) + (value.roundOff || 0);
+    // Validate additional charges
+    if (value?.additionalCharges?.items && value?.additionalCharges?.items?.length > 0) {
+      for (const item of value.additionalCharges?.items) {
+        if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
+        if (item?.taxId && !(await checkIdExist(taxModel, item?.taxId, "Tax", res))) return;
+      }
     }
 
     value.updatedBy = user?._id || null;
 
-    const response = await updateData(salesCreditNoteModel, { _id: value?.salesCreditNoteId }, value, {});
+    const response = await updateData(salesCreditNoteModel, { _id: new ObjectId(value?.salesCreditNoteId) }, value, {});
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Sales Credit Note"), {}, {}));
@@ -169,13 +239,12 @@ export const getAllSalesCreditNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, activeFilter, companyFilter, statusFilter, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
-
     if (companyId) {
       criteria.companyId = companyId;
     }
@@ -185,30 +254,75 @@ export const getAllSalesCreditNote = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ documentNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }, { reason: { $regex: search, $options: "si" } }];
+      criteria.$or = [{ creditNoteNo: { $regex: search, $options: "si" } }];
     }
 
-    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+    if (activeFilter !== undefined) criteria.isActive = activeFilter === "true";
 
-    if (status) {
-      criteria.status = status;
+    if (statusFilter) {
+      criteria.status = statusFilter;
     }
 
-    applyDateFilter(criteria, startDate as string, endDate as string, "date");
+    applyDateFilter(criteria, startDate as string, endDate as string, "creditNoteDate");
 
     const options = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "supplierId", select: "firstName lastName companyName email phoneNo" },
-        { path: "invoiceId", select: "documentNo" },
-        { path: "items.productId", select: "name itemCode" },
-        { path: "items.taxId", select: "name percentage" },
+        {
+          path: "customerId",
+          select: "firstName lastName companyName email phoneNo address contactType",
+        },
+        { path: "salesId", select: "salesNo" },
+        {
+          path: "productDetails.items.productId",
+          select: "name itemCode sellingPrice",
+        },
+        { path: "productDetails.items.uomId", select: "name" },
+        { path: "additionalCharges.items.chargeId", select: "name type" },
+        { path: "termsAndConditionIds", select: "termsCondition" },
+        { path: "companyId", select: "name" },
+        { path: "salesManId", select: "firstName lastName" },
       ],
       skip: (page - 1) * limit,
       limit,
     };
 
-    const response = await getDataWithSorting(salesCreditNoteModel, criteria, {}, options);
+    let response = await getDataWithSorting(salesCreditNoteModel, criteria, {}, options);
+
+    // Manually extract billing and shipping addresses from the populated customer object
+    response = response.map((scn: any) => {
+      let scnObj = scn.toObject ? scn.toObject() : scn;
+
+      if (scnObj.customerId && scnObj.customerId.address) {
+        const extractAddressFields = (addr: any) => ({
+          addressLine1: addr.addressLine1,
+          country: addr.country,
+          state: addr.state,
+          city: addr.city,
+          pinCode: addr.pinCode,
+          _id: addr._id,
+        });
+
+        // Trim all addresses in the customer's address array
+        scnObj.customerId.address = scnObj.customerId.address.map(extractAddressFields);
+
+        if (scnObj.billingAddress) {
+          const billingStr = scnObj.billingAddress.toString();
+          const billingAddr = scnObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr);
+          if (billingAddr) {
+            scnObj.billingAddress = extractAddressFields(billingAddr);
+          }
+        }
+        if (scnObj.shippingAddress) {
+          const shippingStr = scnObj.shippingAddress.toString();
+          const shippingAddr = scnObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr);
+          if (shippingAddr) {
+            scnObj.shippingAddress = extractAddressFields(shippingAddr);
+          }
+        }
+      }
+      return scnObj;
+    });
     const totalData = await countData(salesCreditNoteModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -235,16 +349,29 @@ export const getOneSalesCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const response = await getFirstMatch(
+    let response: any = await getFirstMatch(
       salesCreditNoteModel,
-      { _id: value?.id, isDeleted: false },
+      { _id: new ObjectId(value?.id), isDeleted: false },
       {},
       {
         populate: [
-          { path: "supplierId", select: "firstName lastName companyName email phoneNo address" },
-          { path: "invoiceId", select: "documentNo date netAmount" },
-          { path: "items.productId", select: "name itemCode sellingPrice mrp" },
-          { path: "items.taxId", select: "name percentage type" },
+          {
+            path: "customerId",
+            select: "firstName lastName companyName email phoneNo address contactType",
+          },
+          { path: "salesId", select: "salesNo" },
+          {
+            path: "productDetails.items.productId",
+            select: "name itemCode sellingPrice hsn gst",
+          },
+          { path: "productDetails.items.uomId", select: "name" },
+          { path: "productDetails.items.taxId", select: "name percentage" },
+          { path: "additionalCharges.items.chargeId", select: "name type" },
+          { path: "additionalCharges.items.taxId", select: "name percentage" },
+          { path: "termsAndConditionIds", select: "termsCondition" },
+          { path: "companyId", select: "name gstNo" },
+          { path: "accountLedgerId", select: "name" },
+          { path: "salesManId", select: "firstName lastName" },
         ],
       },
     );
@@ -253,7 +380,98 @@ export const getOneSalesCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Sales Credit Note"), {}, {}));
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Credit Note"), response, {}));
+    let scnObj = response.toObject ? response.toObject() : response;
+
+    if (scnObj.customerId && scnObj.customerId.address) {
+      const extractAddressFields = (addr: any) => ({
+        addressLine1: addr.addressLine1,
+        country: addr.country,
+        state: addr.state,
+        city: addr.city,
+        pinCode: addr.pinCode,
+        _id: addr._id,
+      });
+
+      // Trim all addresses in the customer's address array
+      scnObj.customerId.address = scnObj.customerId.address.map(extractAddressFields);
+
+      if (scnObj.billingAddress) {
+        const billingStr = scnObj.billingAddress.toString();
+        const billingAddr = scnObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr);
+        if (billingAddr) {
+          scnObj.billingAddress = extractAddressFields(billingAddr);
+        }
+      }
+      if (scnObj.shippingAddress) {
+        const shippingStr = scnObj.shippingAddress.toString();
+        const shippingAddr = scnObj.customerId.address.find((addr: any) => addr._id && addr._id.toString() === shippingStr);
+        if (shippingAddr) {
+          scnObj.shippingAddress = extractAddressFields(shippingAddr);
+        }
+      }
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Credit Note"), scnObj, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const getSalesCreditNoteDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+    const { customerFilter, search, companyFilter, statusFilter } = req.query;
+
+    let criteria: any = { isDeleted: false };
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
+    if (customerFilter) {
+      criteria.customerId = customerFilter;
+    }
+
+    if (statusFilter) {
+      criteria.status = statusFilter;
+    }
+
+    if (search) {
+      criteria.$or = [{ creditNoteNo: { $regex: search, $options: "si" } }];
+    }
+
+    const options: any = {
+      sort: { creditNoteDate: -1 },
+      limit: search ? 50 : 1000,
+      populate: [{ path: "customerId", select: "firstName lastName companyName" }],
+    };
+
+    const response = await getDataWithSorting(
+      salesCreditNoteModel,
+      criteria,
+      {
+        creditNoteNo: 1,
+        creditNoteDate: 1,
+        "summary.netAmount": 1,
+      },
+      options,
+    );
+
+    const dropdownData = response.map((item: any) => ({
+      _id: item._id,
+      name: item.creditNoteNo,
+      creditNoteNo: item.creditNoteNo,
+      creditNoteDate: item.creditNoteDate,
+      netAmount: item.summary?.netAmount || 0,
+    }));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Credit Note Dropdown"), dropdownData, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

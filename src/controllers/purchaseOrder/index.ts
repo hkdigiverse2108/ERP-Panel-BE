@@ -1,31 +1,7 @@
 import { apiResponse, HTTP_STATUS, ORDER_STATUS } from "../../common";
-import {
-  contactModel,
-  purchaseOrderModel,
-  productModel,
-  companyModel,
-  termsConditionModel,
-  uomModel,
-} from "../../database";
-import {
-  checkCompany,
-  checkIdExist,
-  countData,
-  createOne,
-  getDataWithSorting,
-  getFirstMatch,
-  reqInfo,
-  responseMessage,
-  updateData,
-  applyDateFilter,
-  generateSequenceNumber,
-} from "../../helper";
-import {
-  addPurchaseOrderSchema,
-  deletePurchaseOrderSchema,
-  editPurchaseOrderSchema,
-  getPurchaseOrderSchema,
-} from "../../validation/purchaseOrder";
+import { contactModel, purchaseOrderModel, productModel, companyModel, termsConditionModel, uomModel } from "../../database";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
+import { addPurchaseOrderSchema, deletePurchaseOrderSchema, editPurchaseOrderSchema, getPurchaseOrderSchema } from "../../validation/purchaseOrder";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -37,87 +13,33 @@ export const addPurchaseOrder = async (req, res) => {
     const { error, value } = addPurchaseOrderSchema.validate(req.body);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     value.companyId = await checkCompany(user, value);
 
-    if (!value.companyId)
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            responseMessage?.fieldIsRequired("Company Id"),
-            {},
-            {},
-          ),
-        );
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Validate supplier exists and verify billing address if provided
-    const supplier = await getFirstMatch(
-      contactModel,
-      { _id: value?.supplierId, isDeleted: false },
-      {},
-      {},
-    );
+    const supplier = await getFirstMatch(contactModel, { _id: value?.supplierId, isDeleted: false }, {}, {});
     if (!supplier) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            responseMessage?.getDataNotFound("Supplier"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Supplier"), {}, {}));
     }
 
     if (value.billingAddress) {
-      const isBillingValid = supplier?.address?.find(
-        (addr: any) =>
-          addr._id && addr._id.toString() === value.billingAddress.toString(),
-      );
+      const isBillingValid = supplier?.address?.find((addr: any) => addr._id && addr._id.toString() === value.billingAddress.toString());
       if (!isBillingValid) {
-        return res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.BAD_REQUEST,
-              "Invalid Billing Address ID",
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Billing Address ID", {}, {}));
       }
     }
 
     // Validate products exist
     for (const item of value.items) {
-      if (!(await checkIdExist(productModel, item?.productId, "Product", res)))
-        return;
+      if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
     }
 
     for (const item of value.termsAndConditionIds) {
-      if (
-        !(await checkIdExist(
-          termsConditionModel,
-          item,
-          "terms And Condition ",
-          res,
-        ))
-      )
-        return;
+      if (!(await checkIdExist(termsConditionModel, item, "terms And Condition ", res))) return;
     }
 
     if (!value.orderNo) {
@@ -135,40 +57,13 @@ export const addPurchaseOrder = async (req, res) => {
     const response = await createOne(purchaseOrderModel, value);
 
     if (!response) {
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            responseMessage?.addDataError,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.addDataSuccess("Purchase Order"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Purchase Order"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -180,100 +75,34 @@ export const editPurchaseOrder = async (req, res) => {
     const { error, value } = editPurchaseOrderSchema.validate(req.body);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const isExist = await getFirstMatch(
-      purchaseOrderModel,
-      { _id: value?.purchaseOrderId, isDeleted: false },
-      {},
-      {},
-    );
+    const isExist = await getFirstMatch(purchaseOrderModel, { _id: value?.purchaseOrderId, isDeleted: false }, {}, {});
 
     if (!isExist) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("Purchase Order"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Purchase Order"), {}, {}));
     }
 
     // Validate supplier if being changed or Validate addresses if provided
     let supplierForAddress = null;
-    if (
-      value.supplierId &&
-      value.supplierId !== isExist.supplierId.toString()
-    ) {
-      supplierForAddress = await getFirstMatch(
-        contactModel,
-        { _id: value.supplierId, isDeleted: false },
-        {},
-        {},
-      );
+    if (value.supplierId && value.supplierId !== isExist.supplierId.toString()) {
+      supplierForAddress = await getFirstMatch(contactModel, { _id: value.supplierId, isDeleted: false }, {}, {});
       if (!supplierForAddress) {
-        return res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.BAD_REQUEST,
-              responseMessage?.getDataNotFound("Supplier"),
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Supplier"), {}, {}));
       }
     } else if (value.billingAddress) {
-      supplierForAddress = await getFirstMatch(
-        contactModel,
-        { _id: isExist.supplierId, isDeleted: false },
-        {},
-        {},
-      );
+      supplierForAddress = await getFirstMatch(contactModel, { _id: isExist.supplierId, isDeleted: false }, {}, {});
       if (!supplierForAddress) {
-        return res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.BAD_REQUEST,
-              responseMessage?.getDataNotFound("Supplier"),
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Supplier"), {}, {}));
       }
     }
 
     if (supplierForAddress) {
       if (value.billingAddress) {
-        const isBillingValid = supplierForAddress?.address?.find(
-          (addr: any) =>
-            addr._id && addr._id.toString() === value.billingAddress.toString(),
-        );
+        const isBillingValid = supplierForAddress?.address?.find((addr: any) => addr._id && addr._id.toString() === value.billingAddress.toString());
         if (!isBillingValid) {
-          return res
-            .status(HTTP_STATUS.BAD_REQUEST)
-            .json(
-              new apiResponse(
-                HTTP_STATUS.BAD_REQUEST,
-                "Invalid Billing Address ID",
-                {},
-                {},
-              ),
-            );
+          return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Billing Address ID", {}, {}));
         }
       }
     }
@@ -281,58 +110,23 @@ export const editPurchaseOrder = async (req, res) => {
     // Validate products if items are being updated
     if (value.items && value.items.length > 0) {
       for (const item of value.items) {
-        if (
-          !(await checkIdExist(productModel, item?.productId, "Product", res))
-        )
-          return;
+        if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
         // if (!(await checkIdExist(uomModel, item?.uomId, "UOM", res))) return;
       }
     }
 
     value.updatedBy = user?._id || null;
 
-    const response = await updateData(
-      purchaseOrderModel,
-      { _id: value?.purchaseOrderId },
-      value,
-      {},
-    );
+    const response = await updateData(purchaseOrderModel, { _id: value?.purchaseOrderId }, value, {});
 
     if (!response) {
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            responseMessage?.updateDataError("Purchase Order"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Purchase Order"), {}, {}));
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.updateDataSuccess("Purchase Order"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Purchase Order"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -343,75 +137,26 @@ export const deletePurchaseOrder = async (req, res) => {
     const { error, value } = deletePurchaseOrderSchema.validate(req.params);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (
-      !(await checkIdExist(
-        purchaseOrderModel,
-        value?.id,
-        "Purchase Order",
-        res,
-      ))
-    )
-      return;
+    if (!(await checkIdExist(purchaseOrderModel, value?.id, "Purchase Order", res))) return;
 
     const payload = {
       isDeleted: true,
       updatedBy: user?._id || null,
     };
 
-    const response = await updateData(
-      purchaseOrderModel,
-      { _id: new ObjectId(value?.id) },
-      payload,
-      {},
-    );
+    const response = await updateData(purchaseOrderModel, { _id: new ObjectId(value?.id) }, payload, {});
 
     if (!response) {
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            responseMessage?.deleteDataError("Purchase Order"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Purchase Order"), {}, {}));
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.deleteDataSuccess("Purchase Order"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Purchase Order"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -420,17 +165,7 @@ export const getAllPurchaseOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let {
-      page,
-      limit,
-      search,
-      statusFilter,
-      startDate,
-      endDate,
-      activeFilter,
-      companyFilter,
-      supplierFilter,
-    } = req.query;
+    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, supplierFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -459,20 +194,14 @@ export const getAllPurchaseOrder = async (req, res) => {
       criteria.status = statusFilter;
     }
 
-    applyDateFilter(
-      criteria,
-      startDate as string,
-      endDate as string,
-      "orderDate",
-    );
+    applyDateFilter(criteria, startDate as string, endDate as string, "orderDate");
 
     const options = {
       sort: { createdAt: -1 },
       populate: [
         {
           path: "supplierId",
-          select:
-            "firstName lastName companyName email phoneNo address contactType",
+          select: "firstName lastName companyName email phoneNo address contactType",
         },
         { path: "items.productId", select: "name itemCode" },
         { path: "companyId", select: "name" },
@@ -482,12 +211,7 @@ export const getAllPurchaseOrder = async (req, res) => {
       limit,
     };
 
-    let response = await getDataWithSorting(
-      purchaseOrderModel,
-      criteria,
-      {},
-      options,
-    );
+    let response = await getDataWithSorting(purchaseOrderModel, criteria, {}, options);
 
     // Manually extract billing address from the populated supplier object
     response = response.map((po: any) => {
@@ -508,9 +232,7 @@ export const getAllPurchaseOrder = async (req, res) => {
 
         if (poObj.billingAddress) {
           const billingStr = poObj.billingAddress.toString();
-          const billingAddr = poObj.supplierId.address.find(
-            (addr: any) => addr._id && addr._id.toString() === billingStr,
-          );
+          const billingAddr = poObj.supplierId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr);
           if (billingAddr) {
             poObj.billingAddress = extractAddressFields(billingAddr);
           }
@@ -528,28 +250,10 @@ export const getAllPurchaseOrder = async (req, res) => {
       totalPages,
     };
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("Purchase Order"),
-          { purchaseOrder_data: response, state, totalData },
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Order"), { purchaseOrder_data: response, state, totalData }, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -559,16 +263,7 @@ export const getOnePurchaseOrder = async (req, res) => {
     const { error, value } = getPurchaseOrderSchema.validate(req.params);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     const response = await getFirstMatch(
@@ -579,8 +274,7 @@ export const getOnePurchaseOrder = async (req, res) => {
         populate: [
           {
             path: "supplierId",
-            select:
-              "firstName lastName companyName email phoneNo address contactType",
+            select: "firstName lastName companyName email phoneNo address contactType",
           },
           {
             path: "items.productId",
@@ -593,16 +287,7 @@ export const getOnePurchaseOrder = async (req, res) => {
     );
 
     if (!response) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("Purchase Order"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Purchase Order"), {}, {}));
     }
 
     let poObj = response.toObject ? response.toObject() : response;
@@ -622,37 +307,17 @@ export const getOnePurchaseOrder = async (req, res) => {
 
       if (poObj.billingAddress) {
         const billingStr = poObj.billingAddress.toString();
-        const billingAddr = poObj.supplierId.address.find(
-          (addr: any) => addr._id && addr._id.toString() === billingStr,
-        );
+        const billingAddr = poObj.supplierId.address.find((addr: any) => addr._id && addr._id.toString() === billingStr);
         if (billingAddr) {
           poObj.billingAddress = extractAddressFields(billingAddr);
         }
       }
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("Purchase Order"),
-          poObj,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Order"), poObj, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -662,14 +327,7 @@ export const getPurchaseOrderDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let {
-      supplierId,
-      supplierFilter,
-      status,
-      statusFilter,
-      search,
-      companyFilter,
-    } = req.query;
+    let { supplierId, supplierFilter, status, statusFilter, search, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -701,49 +359,22 @@ export const getPurchaseOrderDropdown = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       limit: search ? 50 : 1000,
-      populate: [
-        { path: "supplierId", select: "firstName lastName companyName" },
-      ],
+      populate: [{ path: "supplierId", select: "firstName lastName companyName" }],
     };
 
-    const response = await getDataWithSorting(
-      purchaseOrderModel,
-      criteria,
-      {},
-      options,
-    );
+    const response = await getDataWithSorting(purchaseOrderModel, criteria, {}, options);
 
     const dropdownData = response.map((item: any) => ({
       _id: item._id,
       orderNo: item.orderNo,
-      supplierName:
-        item.supplierId?.companyName ||
-        `${item.supplierId?.firstName || ""} ${item.supplierId?.lastName || ""}`.trim(),
+      supplierName: item.supplierId?.companyName || `${item.supplierId?.firstName || ""} ${item.supplierId?.lastName || ""}`.trim(),
       date: item.orderDate,
       netAmount: item.summary?.netAmount,
     }));
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("Purchase Order Dropdown"),
-          dropdownData,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Order Dropdown"), dropdownData, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };

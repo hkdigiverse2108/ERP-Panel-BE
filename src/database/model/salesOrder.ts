@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { ISalesOrder } from "../../types/sales";
-import { baseSchemaFields, baseSchemaOptions, commonAdditionalCharge, transactionSummarySchema, salesItemSchema, commonShippingSchema } from "./base";
+import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema, transactionSummarySchema, salesItemSchema, commonShippingSchema } from "./base";
 import { PAYMENT_TERMS_ENUM, SALES_ORDER_STATUS, TAX_TYPE } from "../../common";
 
 const salesOrderItemSchema = new Schema(
@@ -26,7 +26,7 @@ const SalesOrderSchema = new Schema<ISalesOrder>(
     selectedEstimateId: { type: Schema.Types.ObjectId, ref: "estimate" },
     items: [salesOrderItemSchema],
     transectionSummary: { type: transactionSummarySchema },
-    additionalCharges: { type: [commonAdditionalCharge] },
+    additionalCharges: { type: [commonAdditionalChargeSchema] },
     termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
     status: { type: String, enum: Object.values(SALES_ORDER_STATUS), default: SALES_ORDER_STATUS.PENDING },
     shippingDetails: { type: commonShippingSchema },
