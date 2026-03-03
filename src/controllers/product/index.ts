@@ -154,11 +154,11 @@ export const getAllProduct = async (req, res) => {
     let criteria: any = { isDeleted: false };
 
     // Company scoping: company users see their own products + super admin products (companyId is null)
-    if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
-      criteria.$or = [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }];
-    } else if (userType === USER_TYPES.SUPER_ADMIN && companyFilter) {
-      criteria.$or = [{ companyId: companyFilter }, { companyId: null }, { companyId: { $exists: false } }];
-    }
+    // if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+    //   criteria.$or = [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }];
+    // } else if (userType === USER_TYPES.SUPER_ADMIN && companyFilter) {
+    //   criteria.$or = [{ companyId: companyFilter }, { companyId: null }, { companyId: { $exists: false } }];
+    // }
 
     if (search) {
       const searchCriteria = [{ name: { $regex: search, $options: "si" } }];
@@ -416,32 +416,6 @@ export const getProductDropdown = async (req, res) => {
 
     if (brandFilter) {
       criteria.brandId = brandFilter;
-    }
-
-    if (user.userType !== USER_TYPES.SUPER_ADMIN) {
-      const stockCriteria: any = {
-        isDeleted: false,
-        companyId: user?.companyId?._id,
-      };
-
-      const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
-
-      const productIds = (stockEntries || []).filter((s: any) => s.productId).map((s: any) => new ObjectId(s.productId.toString()));
-
-      criteria._id = { $in: productIds };
-    }
-
-    if (companyFilter) {
-      const stockCriteria: any = {
-        isDeleted: false,
-        companyId: companyFilter,
-      };
-
-      const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
-
-      const productIds = (stockEntries || []).filter((s: any) => s.productId).map((s: any) => new ObjectId(s.productId.toString()));
-
-      criteria._id = { $in: productIds };
     }
 
     if (search) {
