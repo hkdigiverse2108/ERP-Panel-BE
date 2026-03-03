@@ -110,7 +110,7 @@ export const login = async (req, res) => {
       await userModel.findOneAndUpdate({ _id: response?._id }, { otp, otpExpireTime }, { new: true });
     }
 
-    const isAdmin = value.loginSource === LOGIN_SOURCES.ADMIN_PANEL && response?.userType === USER_TYPES.ADMIN;
+    const isAdmin = (value.loginSource === LOGIN_SOURCES.ADMIN_PANEL && response?.userType === USER_TYPES.ADMIN) || (value.loginSource === LOGIN_SOURCES.ADMIN_PANEL && response?.userType === USER_TYPES.EMPLOYEE);
 
     if (isAdmin) {
       const company = await getFirstMatch(companyModel, { _id: response?.companyId }, {}, {});
