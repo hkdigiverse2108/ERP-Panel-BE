@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
-import { PAYMENT_MODE, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE } from "../../common";
+import { PAYMENT_MODE, PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE } from "../../common";
 
 const posPaymentSchema = new mongoose.Schema(
   {
@@ -25,6 +25,8 @@ const posPaymentSchema = new mongoose.Schema(
 
     isNonGST: { type: Boolean, default: false },
     remark: { type: String },
+
+    status: { type: String, enum: Object.values(PAYMENT_STATUS), default: PAYMENT_STATUS.CLEARED },
     ...baseSchemaFields,
   },
   baseSchemaOptions,
