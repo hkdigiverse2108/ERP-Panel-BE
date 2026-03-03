@@ -132,7 +132,7 @@ export const editProductSchema = Joi.object().keys({
   // salesTaxId: objectId().optional(),
   // isPurchaseTaxIncluding: Joi.boolean().optional(),
   // isSalesTaxIncluding: Joi.boolean().optional(),
-  cessPercentage: Joi.number().min(0).optional(),
+  cessPercentage: Joi.number().min(0).optional().allow("", null),
 
   manageMultipleBatch: Joi.boolean().optional(),
   isExpiryProductSaleable: Joi.boolean().optional(),
