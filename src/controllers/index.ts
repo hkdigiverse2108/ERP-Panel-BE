@@ -60,3 +60,4 @@ export * as journalVoucherController from "./journalVoucher";
 export * as dashboardController from "./dashboard";
 export * as bankTransactionController from "./bankTransaction";
 export * as companyDriveController from "./companyDrive";
+export * as productTypeController from "./productType";

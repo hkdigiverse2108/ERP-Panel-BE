@@ -61,6 +61,7 @@ import { journalVoucherRouter } from "./journalVoucher";
 import { dashboardRouter } from "./dashboard";
 import { bankTransactionRouter } from "./bankTransaction";
 import { companyDriveRouter } from "./companyDrive";
+import { productTypeRouter } from "./productType";
 
 const router = Router();
 
@@ -123,7 +124,6 @@ router.use("/bill-of-live-product", billOfLiveProductRouter);
 router.use("/settings", settingsRouter);
 router.use("/journal-voucher", journalVoucherRouter);
 
-
 // === For Super Admin
 router.use("/account-group", accountGroupRouter);
 router.use("/account", accountRouter);
@@ -138,5 +138,6 @@ router.use("/login-log", loginLogRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/bank-transaction", bankTransactionRouter);
 router.use("/company-drive", companyDriveRouter);
+router.use("/product-type", productTypeRouter);
 
 export { router };

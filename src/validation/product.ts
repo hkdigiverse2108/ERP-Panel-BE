@@ -10,6 +10,7 @@ export const addProductSchema = Joi.object().keys({
   subCategoryId: objectId().optional(),
   brandId: objectId().optional(),
   subBrandId: objectId().optional(),
+  productTypeId: objectId().optional(),
 
   productType: Joi.string()
     .valid(...Object.values(PRODUCT_TYPE))
@@ -98,6 +99,7 @@ export const editProductSchema = Joi.object().keys({
   subCategoryId: objectId().optional(),
   brandId: objectId().optional(),
   subBrandId: objectId().optional(),
+  productTypeId: objectId().optional(),
 
   productType: Joi.string()
     .valid(...Object.values(PRODUCT_TYPE))

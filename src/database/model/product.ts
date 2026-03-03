@@ -17,15 +17,10 @@ const productSchema = new Schema<IProduct>(
     subCategoryId: { type: Schema.Types.ObjectId, ref: "category" },
     brandId: { type: Schema.Types.ObjectId, ref: "brand" },
     subBrandId: { type: Schema.Types.ObjectId, ref: "brand" },
+    productTypeId: { type: Schema.Types.ObjectId, ref: "product-type" },
 
     hsnCode: { type: String },
     sku: { type: String },
-
-    // purchaseTaxId: { type: Schema.Types.ObjectId, ref: "tax" },
-    // salesTaxId: { type: Schema.Types.ObjectId, ref: "tax" },
-
-    // isPurchaseTaxIncluding: { type: Boolean, default: false },
-    // isSalesTaxIncluding: { type: Boolean, default: false },
 
     cessPercentage: { type: Number, default: 0 },
 
@@ -68,7 +63,7 @@ const productSchema = new Schema<IProduct>(
     onlinePrice: { type: Number, default: 0 },
     additionalInfo: { type: String },
   },
-  baseSchemaOptions
+  baseSchemaOptions,
 );
 
 export const productModel = mongoose.model<IProduct>("product", productSchema);

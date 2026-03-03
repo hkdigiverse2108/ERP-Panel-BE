@@ -58,3 +58,4 @@ export * from "./journalVoucher";
 export * from "./dashboard";
 export * from "./bankTransaction";
 export * from "./companyDrive";
+export * from "./productType";

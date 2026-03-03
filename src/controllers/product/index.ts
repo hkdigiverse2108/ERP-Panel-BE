@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
-import { branchModel, companyModel, productModel, stockModel, uomModel } from "../../database";
+import { branchModel, companyModel, productModel, productTypeModel, stockModel, uomModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation";
 
@@ -22,6 +22,7 @@ export const addProduct = async (req, res) => {
     if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
 
     if (value?.branchId && !(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
+    if (value?.productTypeId && !(await checkIdExist(productTypeModel, value?.productTypeId, "Product Type", res))) return;
 
     let duplicateCriteria: any = { name: value?.name, isDeleted: false };
     if (value?.companyId) duplicateCriteria.companyId = value.companyId;
@@ -64,7 +65,7 @@ export const editProduct = async (req, res) => {
 
     if (value?.branchId && !(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
 
-    if (value?.uomId && !(await checkIdExist(uomModel, value?.uomId, "UOM", res))) return;
+    if (value?.productTypeId && !(await checkIdExist(productTypeModel, value?.productTypeId, "Product Type", res))) return;
 
     let isExist = await getFirstMatch(productModel, { _id: value?.productId, isDeleted: false }, {}, {});
 
@@ -148,7 +149,7 @@ export const getAllProduct = async (req, res) => {
     const userType = user?.userType;
 
     const companyId = user?.companyId?._id;
-    const { page, limit, search, startDate, endDate, activeFilter, companyFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter } = req.query;
+    const { page, limit, search, startDate, endDate, activeFilter, companyFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, productTypeIdFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -184,6 +185,34 @@ export const getAllProduct = async (req, res) => {
     if (salesTaxIdFilter) criteria.salesTaxId = salesTaxIdFilter;
 
     if (productTypeFilter) criteria.productType = productTypeFilter;
+
+    if (productTypeIdFilter) criteria.productTypeId = new ObjectId(productTypeIdFilter);
+
+    if (user.userType !== USER_TYPES.SUPER_ADMIN) {
+      const stockCriteria: any = {
+        isDeleted: false,
+        companyId: user?.companyId?._id,
+      };
+
+      const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
+
+      const productIds = (stockEntries || []).filter((s: any) => s.productId).map((s: any) => new ObjectId(s.productId.toString()));
+
+      criteria._id = { $in: productIds };
+    }
+
+    if (companyFilter) {
+      const stockCriteria: any = {
+        isDeleted: false,
+        companyId: companyFilter,
+      };
+
+      const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
+
+      const productIds = (stockEntries || []).filter((s: any) => s.productId).map((s: any) => new ObjectId(s.productId.toString()));
+
+      criteria._id = { $in: productIds };
+    }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 

@@ -377,3 +377,8 @@ export const SALES_CREDIT_NOTE_PRODUCT_TYPE = {
   EXPIRY: "expiry",
   ALL: "all",
 } as const;
+
+export const PAYMENT_STATUS = {
+  CLEARED: "cleared",
+  UNCLEAR: "unclear",
+} as const;
