@@ -6,7 +6,7 @@ const journalVoucherEntrySchema = Joi.object().keys({
     accountId: objectId().required(),
     debit: Joi.number().default(0),
     credit: Joi.number().default(0),
-    description: Joi.string().optional(),
+    description: Joi.string().optional().allow("", null),
 });
 
 export const createJournalVoucherSchema = Joi.object().keys({
