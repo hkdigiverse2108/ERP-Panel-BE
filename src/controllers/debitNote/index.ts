@@ -1,30 +1,9 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { debitNoteModel, accountModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addDebitNoteSchema, deleteDebitNoteSchema, editDebitNoteSchema, getDebitNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
-
-const generateVoucherNumber = async (companyId) => {
-  const lastRecord = await debitNoteModel
-    .findOne({ voucherNumber: { $regex: /^DN-\d+$/ }, companyId: companyId })
-    .sort({ createdAt: -1 })
-    .select("voucherNumber")
-    .lean();
-
-  let nextNumber = 1;
-
-  if (lastRecord?.voucherNumber) {
-    const parts = lastRecord.voucherNumber.split("-");
-    const lastNumber = Number(parts[1]);
-
-    if (!isNaN(lastNumber)) {
-      nextNumber = lastNumber + 1;
-    }
-  }
-
-  return `DN-${nextNumber}`;
-};
 
 export const addDebitNote = async (req, res) => {
   reqInfo(req);
@@ -49,7 +28,7 @@ export const addDebitNote = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
     }
 
-    value.voucherNumber = await generateVoucherNumber(value.companyId);
+    value.voucherNumber = await generateSequenceNumber({ model: debitNoteModel, prefix: "DN", fieldName: "voucherNumber", companyId: value.companyId });
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 

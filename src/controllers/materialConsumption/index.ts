@@ -3,43 +3,6 @@ import { branchModel, materialConsumptionModel, productModel, stockModel } from 
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addMaterialConsumptionSchema, deleteMaterialConsumptionSchema, editMaterialConsumptionSchema, getMaterialConsumptionSchema } from "../../validation";
 
-export const generateConsumptionNo = async (companyId?: string | null) => {
-  const latest = await getFirstMatch(
-    materialConsumptionModel,
-    {
-      ...(companyId ? { companyId } : {}),
-      isDeleted: false,
-    },
-    {},
-    { sort: { createdAt: -1 } },
-  );
-
-  let nextNumber = 1;
-  if (latest?.number) {
-    const match = String(latest.number).match(/(\d+)\s*$/);
-    if (match) nextNumber = parseInt(match[1], 10) + 1;
-  }
-
-  let candidate = `Con-${nextNumber}`;
-  while (
-    await getFirstMatch(
-      materialConsumptionModel,
-      {
-        number: candidate,
-        isDeleted: false,
-        ...(companyId ? { companyId } : {}),
-      },
-      {},
-      {},
-    )
-  ) {
-    nextNumber += 1;
-    candidate = `Con-${nextNumber}`;
-  }
-
-  return candidate;
-};
-
 export const addMaterialConsumption = async (req, res) => {
   reqInfo(req);
   try {

@@ -1,24 +1,9 @@
 import { apiResponse, HTTP_STATUS, VOUCHAR_TYPE } from "../../common";
 import { contactModel, accountModel, voucherModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addVoucherSchema, deleteVoucherSchema, editVoucherSchema, getVoucherSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
-
-// Generate unique voucher number based on type
-const generateVoucherNo = async (companyId: any, type: string): Promise<string> => {
-  const count = await voucherModel.countDocuments({ companyId, type, isDeleted: false });
-  const prefixMap: { [key: string]: string } = {
-    [VOUCHAR_TYPE.PAYMENT]: "PAY",
-    [VOUCHAR_TYPE.RECEIPT]: "REC",
-    [VOUCHAR_TYPE.EXPENSE]: "EXP",
-    [VOUCHAR_TYPE.JOURNAL]: "JRN",
-    [VOUCHAR_TYPE.CONTRA]: "CNT",
-  };
-  const prefix = prefixMap[type] || "VCH";
-  const number = String(count + 1).padStart(6, "0");
-  return `${prefix}${number}`;
-};
 
 export const addVoucher = async (req, res) => {
   reqInfo(req);
@@ -54,7 +39,15 @@ export const addVoucher = async (req, res) => {
 
     // Generate voucher number if not provided
     if (!value.voucherNo) {
-      value.voucherNo = await generateVoucherNo(value.companyId, value.type);
+      const prefixMap: { [key: string]: string } = {
+        [VOUCHAR_TYPE.PAYMENT]: "PAY",
+        [VOUCHAR_TYPE.RECEIPT]: "REC",
+        [VOUCHAR_TYPE.EXPENSE]: "EXP",
+        [VOUCHAR_TYPE.JOURNAL]: "JRN",
+        [VOUCHAR_TYPE.CONTRA]: "CNT",
+      };
+      const prefix = prefixMap[value.type] || "VCH";
+      value.voucherNo = await generateSequenceNumber({ model: voucherModel, prefix: prefix, fieldName: "voucherNo", companyId: value.companyId });
     }
 
     value.createdBy = user?._id || null;
