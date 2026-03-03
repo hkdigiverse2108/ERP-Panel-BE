@@ -11,7 +11,7 @@ const stockVerificationItemSchema = Joi.object({
   systemQty: Joi.number().min(0).default(0),
   physicalQty: Joi.number().min(0).required(),
   differenceQty: Joi.number().default(0),
-  approvedQty: Joi.number().optional(),
+  // approvedQty: Joi.number().optional(),
 
   differenceAmount: Joi.number().default(0),
 });
@@ -23,11 +23,11 @@ export const addStockVerificationSchema = Joi.object({
   totalProducts: Joi.number().optional(),
   totalPhysicalQty: Joi.number().optional(),
   totalDifferenceAmount: Joi.number().optional(),
-  totalApprovedQty: Joi.number().optional(),
+  // totalApprovedQty: Joi.number().optional(),
 
   status: Joi.string()
     .valid(...Object.values(APPROVAL_STATUS))
-    .default(APPROVAL_STATUS.PENDING),
+    .default(APPROVAL_STATUS.APPROVED),
 
   ...baseApiSchema,
 });
@@ -41,7 +41,7 @@ export const editStockVerificationSchema = Joi.object({
   totalProducts: Joi.number().optional(),
   totalPhysicalQty: Joi.number().optional(),
   totalDifferenceAmount: Joi.number().optional(),
-  totalApprovedQty: Joi.number().optional(),
+  // totalApprovedQty: Joi.number().optional(),
 
   status: Joi.string()
     .valid(...Object.values(APPROVAL_STATUS))
