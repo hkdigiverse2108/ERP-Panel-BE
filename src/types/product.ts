@@ -12,6 +12,7 @@ export interface IProduct extends IBase {
   subCategoryId?: Schema.Types.ObjectId;
   brandId?: Schema.Types.ObjectId;
   subBrandId?: Schema.Types.ObjectId;
+  productTypeId?: Schema.Types.ObjectId;
 
   // Product Type
   productType: "finished" | "raw_material" | "semi_finished" | "service" | "non_inventory";
@@ -81,4 +82,8 @@ export interface IProduct extends IBase {
   // autoGenerateItemCode?: boolean; //  Not in schema
   // Status
   // status?: "active" | "inactive"; //  Commented in schema
+}
+
+export interface IProductType extends IBase {
+  name: string;
 }

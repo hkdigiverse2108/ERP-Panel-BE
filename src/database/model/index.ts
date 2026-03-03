@@ -64,3 +64,4 @@ export * from "./journalVoucher";
 export * from "./bankTransaction";
 export * from "./companyDrive";
 export * from "./estimate";
+export * from "./productType";
