@@ -9,7 +9,6 @@ const voucherEntrySchema = Joi.object().keys({
 });
 
 export const addVoucherSchema = Joi.object().keys({
-  voucherNo: Joi.string().optional(), // Auto-generated if not provided
   date: Joi.date().required(),
   type: Joi.string()
     .valid(...Object.values(VOUCHAR_TYPE))
@@ -23,7 +22,6 @@ export const addVoucherSchema = Joi.object().keys({
 
 export const editVoucherSchema = Joi.object().keys({
   voucherId: objectId().required(),
-  voucherNo: Joi.string().optional(),
   date: Joi.date().optional(),
   type: Joi.string()
     .valid(...Object.values(VOUCHAR_TYPE))
@@ -42,4 +40,3 @@ export const deleteVoucherSchema = Joi.object().keys({
 export const getVoucherSchema = Joi.object().keys({
   id: objectId().required(),
 });
-

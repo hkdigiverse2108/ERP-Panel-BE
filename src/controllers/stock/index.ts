@@ -1,8 +1,7 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, materialConsumptionModel, productModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation";
-import { generateConsumptionNo } from "../materialConsumption";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -154,7 +153,7 @@ export const bulkStockAdjustment = async (req, res) => {
 
     if (processedItems.length) {
       const companyId = user?.companyId?._id || null;
-      const consumptionNo = await generateConsumptionNo(companyId);
+      const consumptionNo = await generateSequenceNumber({ model: materialConsumptionModel, prefix: "CON", fieldName: "number", companyId: companyId });
       const totalAmount = processedItems.reduce((sum, item: any) => {
         const itemTotal = item?.totalPrice ?? (item?.qty || 0) * (item?.price || 0);
         return sum + itemTotal;
@@ -234,7 +233,6 @@ export const getAllStock = async (req, res) => {
       stockMatchCriteria.companyId = user?.companyId?._id;
     }
 
-    console.log(stockMatchCriteria);
 
     const stockAggregationPipeline: any[] = [
       { $match: stockMatchCriteria },

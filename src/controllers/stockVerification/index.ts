@@ -1,15 +1,7 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { stockVerificationModel, productModel, categoryModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addStockVerificationSchema, deleteStockVerificationSchema, editStockVerificationSchema, getStockVerificationSchema } from "../../validation";
-
-// Generate unique stock verification number
-const generateStockVerificationNo = async (companyId): Promise<string> => {
-  const count = await stockVerificationModel.countDocuments({ companyId });
-  const prefix = "SV";
-  const number = String(count + 1).padStart(6, "0");
-  return `${prefix}${number}`;
-};
 
 export const addStockVerification = async (req, res) => {
   reqInfo(req);
@@ -32,21 +24,7 @@ export const addStockVerification = async (req, res) => {
       }
     }
 
-    let stockVerificationNo = await generateStockVerificationNo(value.companyId);
-
-    while (true) {
-      const isExist = await getFirstMatch(stockVerificationModel, { companyId: value.companyId, isDeleted: false, stockVerificationNo }, {}, {});
-
-      if (!isExist) break;
-
-      const match = stockVerificationNo.match(/^([A-Z]+)(\d+)$/);
-      if (!match) throw new Error("Invalid stockVerificationNo format");
-
-      const [, text, numStr] = match;
-      const nextNumber = String(Number(numStr) + 1).padStart(numStr.length, "0");
-
-      stockVerificationNo = `${text}${nextNumber}`;
-    }
+    let stockVerificationNo = await generateSequenceNumber({ model: stockVerificationModel, prefix: "SV", fieldName: "stockVerificationNo", companyId: value.companyId });
 
     value.stockVerificationNo = stockVerificationNo;
     value.createdBy = user?._id || null;
