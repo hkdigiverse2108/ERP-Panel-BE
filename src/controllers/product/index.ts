@@ -24,7 +24,9 @@ export const addProduct = async (req, res) => {
     if (value?.branchId && !(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     if (value?.productTypeId && !(await checkIdExist(productTypeModel, value?.productTypeId, "Product Type", res))) return;
 
-    let isExist = await getFirstMatch(productModel, { $or: [{ name: value?.name }], isDeleted: false }, {}, {});
+    let duplicateCriteria: any = { name: value?.name, isDeleted: false };
+    if (value?.companyId) duplicateCriteria.companyId = value.companyId;
+    let isExist = await getFirstMatch(productModel, duplicateCriteria, {}, {});
 
     if (isExist) {
       let errorText = "";
@@ -50,12 +52,14 @@ export const editProduct = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const userCompanyId = user?.companyId?._id;
 
     const { error, value } = editProductSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const companyId = value?.companyId || user?.companyId?._id;
+    const companyId = value?.companyId || userCompanyId;
 
     if (companyId && !(await checkIdExist(companyModel, companyId, "Company", res))) return;
 
@@ -67,7 +71,18 @@ export const editProduct = async (req, res) => {
 
     if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
 
-    isExist = await getFirstMatch(productModel, { isDeleted: false, $or: [{ name: value?.name }], _id: { $ne: value?.productId } }, {}, {});
+    // Ownership check: non-super-admin can only edit their own company's products
+    if (userType !== USER_TYPES.SUPER_ADMIN && userCompanyId) {
+      const productCompanyId = isExist?.companyId?.toString();
+      if (productCompanyId && productCompanyId !== userCompanyId.toString()) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Product"), {}, {}));
+      }
+    }
+
+    // Duplicate name check scoped to company
+    let duplicateCriteria: any = { isDeleted: false, name: value?.name, _id: { $ne: value?.productId } };
+    if (companyId) duplicateCriteria.companyId = companyId;
+    isExist = await getFirstMatch(productModel, duplicateCriteria, {}, {});
 
     if (isExist) {
       let errorText = "";
@@ -92,6 +107,9 @@ export const deleteProduct = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+
     const { error, value } = deleteProductSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -99,6 +117,14 @@ export const deleteProduct = async (req, res) => {
     const isExist = await getFirstMatch(productModel, { _id: value?.id, isDeleted: false }, {}, {});
 
     if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
+
+    // Ownership check: non-super-admin can only delete their own company's products
+    if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+      const productCompanyId = isExist?.companyId?.toString();
+      if (productCompanyId && productCompanyId !== companyId.toString()) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Product"), {}, {}));
+      }
+    }
 
     const payload = {
       updatedBy: user?._id || null,
@@ -127,10 +153,18 @@ export const getAllProduct = async (req, res) => {
 
     let criteria: any = { isDeleted: false };
 
+    // Company scoping: company users see their own products + super admin products (companyId is null)
+    if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+      criteria.$or = [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }];
+    } else if (userType === USER_TYPES.SUPER_ADMIN && companyFilter) {
+      criteria.$or = [{ companyId: companyFilter }, { companyId: null }, { companyId: { $exists: false } }];
+    }
+
     if (search) {
       const searchCriteria = [{ name: { $regex: search, $options: "si" } }];
       if (criteria.$or) {
-        criteria.$or = [...criteria.$or, ...searchCriteria];
+        criteria.$and = [{ $or: criteria.$or }, { $or: searchCriteria }];
+        delete criteria.$or;
       } else {
         criteria.$or = searchCriteria;
       }
@@ -305,24 +339,31 @@ export const getAllProduct = async (req, res) => {
 export const getProductDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    let { user } = req?.headers,
-      stockCriteria: any = { isDeleted: false, isActive: true };
-
+    let { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
 
     const { productType, search, companyFilter, categoryFilter, brandFilter, isNewProduct, stockFilter } = req.query;
 
-    if (companyId) stockCriteria.companyId = companyId;
-    if (companyFilter) stockCriteria.companyId = companyFilter;
-
-    if (stockFilter == "true") {
-      stockCriteria.qty = { $gt: 0 };
+    // Determine the effective company ID for filtering
+    let effectiveCompanyId = companyId;
+    if (companyFilter && userType === USER_TYPES.SUPER_ADMIN) {
+      effectiveCompanyId = companyFilter;
     }
 
+    // --- Stock filtering (only when NOT a new product) ---
     let productIdsWithStock: string[] = [];
     const stockByProductId = new Map<string, any>();
 
-    if (!isNewProduct) {
+    if (isNewProduct !== "true") {
+      let stockCriteria: any = { isDeleted: false, isActive: true };
+
+      if (effectiveCompanyId) stockCriteria.companyId = effectiveCompanyId;
+
+      if (stockFilter === "true") {
+        stockCriteria.qty = { $gt: 0 };
+      }
+
       const stockResponse = await getDataWithSorting(
         stockModel,
         stockCriteria,
@@ -348,12 +389,20 @@ export const getProductDropdown = async (req, res) => {
       });
     }
 
+    // --- Product filtering ---
     let criteria: any = {
       isDeleted: false,
       isActive: true,
     };
 
-    if (!isNewProduct && productIdsWithStock.length > 0) {
+    // Company scoping: company users see their own products + super admin products (companyId is null)
+    if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+      criteria.$or = [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }];
+    } else if (userType === USER_TYPES.SUPER_ADMIN && companyFilter) {
+      criteria.$or = [{ companyId: companyFilter }, { companyId: null }, { companyId: { $exists: false } }];
+    }
+
+    if (isNewProduct !== "true" && productIdsWithStock.length > 0) {
       criteria._id = { $in: productIdsWithStock };
     }
 
@@ -369,8 +418,40 @@ export const getProductDropdown = async (req, res) => {
       criteria.brandId = brandFilter;
     }
 
+    if (user.userType !== USER_TYPES.SUPER_ADMIN) {
+      const stockCriteria: any = {
+        isDeleted: false,
+        companyId: user?.companyId?._id,
+      };
+
+      const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
+
+      const productIds = (stockEntries || []).filter((s: any) => s.productId).map((s: any) => new ObjectId(s.productId.toString()));
+
+      criteria._id = { $in: productIds };
+    }
+
+    if (companyFilter) {
+      const stockCriteria: any = {
+        isDeleted: false,
+        companyId: companyFilter,
+      };
+
+      const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
+
+      const productIds = (stockEntries || []).filter((s: any) => s.productId).map((s: any) => new ObjectId(s.productId.toString()));
+
+      criteria._id = { $in: productIds };
+    }
+
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
+      const searchCondition = [{ name: { $regex: search, $options: "si" } }];
+      if (criteria.$or) {
+        criteria.$and = [{ $or: criteria.$or }, { $or: searchCondition }];
+        delete criteria.$or;
+      } else {
+        criteria.$or = searchCondition;
+      }
     }
 
     const response = await getDataWithSorting(
@@ -423,7 +504,13 @@ export const getOneProduct = async (req, res) => {
 
     const response = await getFirstMatch(
       productModel,
-      { _id: value?.id, isDeleted: false },
+      {
+        _id: value?.id,
+        isDeleted: false,
+        ...(userType !== USER_TYPES.SUPER_ADMIN && companyId
+          ? { $or: [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }] }
+          : {}),
+      },
       {},
       {
         populate: [
