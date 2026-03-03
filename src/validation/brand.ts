@@ -3,7 +3,7 @@ import { baseApiSchema, objectId } from "./common";
 
 export const addBrandSchema = Joi.object({
   name: Joi.string().trim().required(),
-  code: Joi.string().trim().uppercase().optional(),
+  code: Joi.string().trim().uppercase().optional().allow("", null),
   description: Joi.string().allow("").optional(),
   parentBrandId: objectId().optional().allow("", null),
   image: Joi.string().allow("").optional(),
@@ -13,7 +13,7 @@ export const addBrandSchema = Joi.object({
 export const editBrandSchema = Joi.object({
   brandId: objectId().required(),
   name: Joi.string().trim().optional(),
-  code: Joi.string().trim().uppercase().optional(),
+  code: Joi.string().trim().uppercase().optional().allow("", null),
   description: Joi.string().allow("").optional(),
   parentBrandId: objectId().optional().allow("", null),
   image: Joi.string().allow("").optional(),

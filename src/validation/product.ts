@@ -32,7 +32,7 @@ export const addProductSchema = Joi.object().keys({
   onlinePrice: Joi.number().min(0).default(0).optional(),
   minimumQty: Joi.number().min(0).default(0).optional(),
   openingQty: Joi.number().min(0).default(0).optional(),
-  masterQty: Joi.number().min(0).default(0).optional(),
+  masterQty: Joi.number().min(0).default(0).optional().allow("", null),
 
   hsnCode: Joi.string().optional(),
   sku: Joi.string().optional(),
@@ -40,7 +40,7 @@ export const addProductSchema = Joi.object().keys({
   // salesTaxId: objectId().optional(),
   // isPurchaseTaxIncluding: Joi.boolean().default(false).optional(),
   // isSalesTaxIncluding: Joi.boolean().default(false).optional(),
-  cessPercentage: Joi.number().min(0).default(0).optional(),
+  cessPercentage: Joi.number().min(0).default(0).optional().allow("", null),
 
   manageMultipleBatch: Joi.boolean().default(false).optional(),
   isExpiryProductSaleable: Joi.boolean().default(true).optional(),
@@ -69,7 +69,7 @@ export const addProductSchema = Joi.object().keys({
   ingredients: Joi.array().items(Joi.string()).optional(),
   description: Joi.string().optional(),
   shortDescription: Joi.string().optional(),
-  netWeight: Joi.number().min(0).optional(),
+  netWeight: Joi.number().min(0).optional().allow("", null),
 
   nutrition: Joi.array()
     .items(
@@ -124,7 +124,7 @@ export const editProductSchema = Joi.object().keys({
 
   minimumQty: Joi.number().min(0).optional(),
   openingQty: Joi.number().min(0).optional(),
-  masterQty: Joi.number().min(0).optional(),
+  masterQty: Joi.number().min(0).optional().allow("", null),
 
   hsnCode: Joi.string().optional(),
   sku: Joi.string().optional(),
@@ -149,7 +149,7 @@ export const editProductSchema = Joi.object().keys({
   ingredients: Joi.array().items(Joi.string()).optional(),
   description: Joi.string().optional(),
   shortDescription: Joi.string().optional(),
-  netWeight: Joi.number().min(0).optional(),
+  netWeight: Joi.number().min(0).optional().allow("", null),
 
   nutrition: Joi.array()
     .items(
