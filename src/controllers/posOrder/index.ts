@@ -1,71 +1,8 @@
-import {
-  apiResponse,
-  HTTP_STATUS,
-  PAY_LATER_STATUS,
-  PAYMENT_MODE,
-  POS_ORDER_STATUS,
-  POS_PAYMENT_STATUS,
-  POS_PAYMENT_TYPE,
-  POS_VOUCHER_TYPE,
-  VOUCHAR_TYPE,
-  REDEEM_CREDIT_TYPE,
-  REDEEM_CREDIT_MODEL,
-} from "../../common";
-import {
-  contactModel,
-  productModel,
-  taxModel,
-  branchModel,
-  InvoiceModel,
-  PosOrderModel,
-  PosCashControlModel,
-  voucherModel,
-  additionalChargeModel,
-  accountGroupModel,
-  PosPaymentModel,
-  userModel,
-  stockModel,
-  couponModel,
-  loyaltyPointsModel,
-  returnPosOrderModel,
-} from "../../database";
-import {
-  applyDateFilter,
-  checkCompany,
-  checkIdExist,
-  checkStockQty,
-  countData,
-  createOne,
-  generateSequenceNumber,
-  getDataWithSorting,
-  getFirstMatch,
-  reqInfo,
-  responseMessage,
-  updateData,
-} from "../../helper";
-import {
-  addPosOrderSchema,
-  deletePosOrderSchema,
-  editPosOrderSchema,
-  getPosOrderSchema,
-  holdPosOrderSchema,
-  releasePosOrderSchema,
-  convertToInvoiceSchema,
-  getPosCashControlSchema,
-  updatePosCashControlSchema,
-  getCustomerLoyaltyPointsSchema,
-  redeemLoyaltyPointsSchema,
-  getCombinedPaymentsSchema,
-  getCustomerPosDetailsSchema,
-} from "../../validation";
-import {
-  applyCoupon,
-  applyLoyalty,
-  applyRedeemCredit,
-  revertCoupon,
-  revertLoyalty,
-  revertRedeemCredit,
-} from "./helper";
+import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS } from "../../common";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel } from "../../database";
+import { applyDateFilter, checkCompany, checkIdExist, checkStockQty, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
+import { applyCoupon, applyLoyalty, applyRedeemCredit, revertCoupon, revertLoyalty, revertRedeemCredit } from "./helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -77,67 +14,28 @@ export const addPosOrder = async (req, res) => {
     const { error, value } = addPosOrderSchema.validate(req.body);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     value.companyId = await checkCompany(user, value);
 
-    if (!value.companyId)
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            responseMessage?.fieldIsRequired("Company Id"),
-            {},
-            {},
-          ),
-        );
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    if (
-      value.branchId &&
-      !(await checkIdExist(branchModel, value.branchId, "Branch", res))
-    )
-      return;
-    if (
-      value.salesManId &&
-      !(await checkIdExist(userModel, value.salesManId, "Sales Man", res))
-    )
-      return;
-    if (
-      value.couponId &&
-      !(await checkIdExist(couponModel, value.couponId, "Coupon", res))
-    )
-      return;
+    if (value.branchId && !(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
+    if (value.salesManId && !(await checkIdExist(userModel, value.salesManId, "Sales Man", res))) return;
+    if (value.couponId && !(await checkIdExist(couponModel, value.couponId, "Coupon", res))) return;
 
     // Get customer name if customer provided
     if (value.customerId) {
-      const customer = await getFirstMatch(
-        contactModel,
-        { _id: value.customerId, isDeleted: false },
-        {},
-        {},
-      );
+      const customer = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
       if (customer) {
-        value.customerName =
-          customer.companyName ||
-          `${customer.firstName} ${customer.lastName || ""}`.trim();
+        value.customerName = customer.companyName || `${customer.firstName} ${customer.lastName || ""}`.trim();
       }
     }
 
     // Validate products exist
     for (const item of value.items) {
-      if (!(await checkIdExist(productModel, item?.productId, "Product", res)))
-        return;
+      if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
       if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
     }
 
@@ -145,26 +43,29 @@ export const addPosOrder = async (req, res) => {
     if (!(await checkStockQty(value.items, value.companyId, res))) return;
 
     for (const item of value.additionalCharges) {
-      if (
-        !(await checkIdExist(
-          additionalChargeModel,
-          item?.chargeId,
-          "Additional Charge",
-          res,
-        ))
-      )
-        return;
-      if (
-        !(await checkIdExist(
-          accountGroupModel,
-          item.accountGroupId,
-          "Account Group",
-          res,
-        ))
-      )
-        return;
+      if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
+      if (!(await checkIdExist(accountGroupModel, item.accountGroupId, "Account Group", res))) return;
       if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
     }
+
+    // --- Link Open Cash Register ---
+    const openRegister = await getFirstMatch(
+      PosCashRegisterModel,
+      {
+        companyId: value.companyId,
+        branchId: value.branchId,
+        status: CASH_REGISTER_STATUS.OPEN,
+        isDeleted: false,
+      },
+      {},
+      {},
+    );
+
+    if (!openRegister) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "No open cash register found. Please open a cash register before creating a POS order.", {}, {}));
+    }
+    value.posCashRegisterId = openRegister._id;
+    // -------------------------------
 
     value.orderNo = await generateSequenceNumber({
       model: PosOrderModel,
@@ -183,37 +84,18 @@ export const addPosOrder = async (req, res) => {
 
     // Calculate paid amount from multiple payments if provided
     if (value?.multiplePayments && value?.multiplePayments?.length > 0) {
-      value.paidAmount = value.multiplePayments.reduce(
-        (acc, curr) => acc + (curr.amount || 0),
-        0,
-      );
+      value.paidAmount = value.multiplePayments.reduce((acc, curr) => acc + (curr.amount || 0), 0);
     }
 
     if (value.redeemCreditId && value.redeemCreditAmount > 0) {
-      const redeemResponse = await applyRedeemCredit(
-        value.redeemCreditId,
-        value.redeemCreditType,
-        value.redeemCreditAmount,
-        value.customerId,
-      );
+      const redeemResponse = await applyRedeemCredit(value.redeemCreditId, value.redeemCreditType, value.redeemCreditAmount, value.customerId);
       if (redeemResponse !== "Redeem credit applied successfully") {
-        return res
-          .status(HTTP_STATUS.NOT_IMPLEMENTED)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.NOT_IMPLEMENTED,
-              redeemResponse,
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, redeemResponse, {}, {}));
       }
 
       // Map to model name for refPath
-      if (value.redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE)
-        value.redeemCreditType = REDEEM_CREDIT_MODEL.CREDIT_NOTE;
-      else if (value.redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT)
-        value.redeemCreditType = REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT;
+      if (value.redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE) value.redeemCreditType = REDEEM_CREDIT_MODEL.CREDIT_NOTE;
+      else if (value.redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) value.redeemCreditType = REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT;
     }
 
     // Set payment status based on paid amount
@@ -235,8 +117,7 @@ export const addPosOrder = async (req, res) => {
     // Handle Pay Later status
     if (dueAmount > 0) {
       value.payLater = value.payLater || {};
-      value.payLater.status =
-        paidAmount > 0 ? PAY_LATER_STATUS.PARTIAL : PAY_LATER_STATUS.OPEN;
+      value.payLater.status = paidAmount > 0 ? PAY_LATER_STATUS.PARTIAL : PAY_LATER_STATUS.OPEN;
     } else {
       if (value.payLater) {
         value.payLater.status = PAY_LATER_STATUS.SETTLED;
@@ -245,58 +126,23 @@ export const addPosOrder = async (req, res) => {
     }
 
     if (value.couponId) {
-      const couponResponse = await applyCoupon(
-        value.couponId,
-        value.customerId,
-        value.totalAmount,
-      );
+      const couponResponse = await applyCoupon(value.couponId, value.customerId, value.totalAmount);
       if (couponResponse !== "Coupon applied successfully") {
-        return res
-          .status(HTTP_STATUS.NOT_IMPLEMENTED)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.NOT_IMPLEMENTED,
-              couponResponse,
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, couponResponse, {}, {}));
       }
     }
 
     if (value.loyaltyId) {
-      const loyaltyResponse = await applyLoyalty(
-        value.loyaltyId,
-        value.customerId,
-        value.totalAmount,
-      );
+      const loyaltyResponse = await applyLoyalty(value.loyaltyId, value.customerId, value.totalAmount);
       if (loyaltyResponse !== "Loyalty redeemed successfully") {
-        return res
-          .status(HTTP_STATUS.NOT_IMPLEMENTED)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.NOT_IMPLEMENTED,
-              loyaltyResponse,
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, loyaltyResponse, {}, {}));
       }
     }
 
     const response = await createOne(PosOrderModel, value);
 
     if (!response) {
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            responseMessage?.addDataError,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
     // --- Stock Management Logic ---
@@ -316,20 +162,9 @@ export const addPosOrder = async (req, res) => {
 
     // --- Loyalty Points Logic ---
     if (response.status !== POS_ORDER_STATUS.CANCELLED && response.customerId) {
-      const loyaltyConfig = await getFirstMatch(
-        loyaltyPointsModel,
-        { companyId: response.companyId },
-        {},
-        {},
-      );
-      if (
-        loyaltyConfig &&
-        loyaltyConfig.amount > 0 &&
-        loyaltyConfig.points > 0
-      ) {
-        const pointsToEarn =
-          Math.floor(response.totalAmount / loyaltyConfig.amount) *
-          loyaltyConfig.points;
+      const loyaltyConfig = await getFirstMatch(loyaltyPointsModel, { companyId: response.companyId }, {}, {});
+      if (loyaltyConfig && loyaltyConfig.amount > 0 && loyaltyConfig.points > 0) {
+        const pointsToEarn = Math.floor(response.totalAmount / loyaltyConfig.amount) * loyaltyConfig.points;
         if (pointsToEarn > 0) {
           await contactModel.findByIdAndUpdate(response.customerId, {
             $inc: { loyaltyPoints: pointsToEarn },
@@ -364,8 +199,7 @@ export const addPosOrder = async (req, res) => {
         }
       }
     } else {
-      const otherPaidAmount =
-        (response.paidAmount || 0) - (value.redeemCreditAmount || 0);
+      const otherPaidAmount = (response.paidAmount || 0) - (value.redeemCreditAmount || 0);
       if (otherPaidAmount > 0) {
         const paymentData = {
           companyId: response.companyId,
@@ -389,28 +223,10 @@ export const addPosOrder = async (req, res) => {
       }
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.addDataSuccess("POS Order"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("POS Order"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error?.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -422,69 +238,45 @@ export const editPosOrder = async (req, res) => {
     const { error, value } = editPosOrderSchema.validate(req.body);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const isExist = await getFirstMatch(
-      PosOrderModel,
-      { _id: value?.posOrderId, isDeleted: false },
-      {},
-      {},
-    );
+    const isExist = await getFirstMatch(PosOrderModel, { _id: value?.posOrderId, isDeleted: false }, {}, {});
 
     if (!isExist) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("POS Order"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
 
-    if (
-      value.couponId &&
-      !(await checkIdExist(couponModel, value.couponId, "Coupon", res))
-    )
-      return;
+    // Check if the associated cash register is closed
+    if (isExist.posCashRegisterId) {
+      const register = await PosCashRegisterModel.findById(isExist.posCashRegisterId);
+      if (register && register.status === CASH_REGISTER_STATUS.CLOSED) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "This order cannot be edited because its associated cash register has been closed.", {}, {}));
+      }
+    } else {
+      // Fallback for orders without posCashRegisterId (Historical data)
+      const register = await PosCashRegisterModel.findOne({
+        companyId: isExist.companyId,
+        branchId: isExist.branchId,
+        createdAt: { $lte: isExist.createdAt },
+        isDeleted: false,
+      }).sort({ createdAt: -1 });
 
-    if (
-      value.salesManId &&
-      !(await checkIdExist(userModel, value.salesManId, "Sales Man", res))
-    )
-      return;
+      if (register && register.status === CASH_REGISTER_STATUS.CLOSED) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "This order cannot be edited because its associated cash register has been closed.", {}, {}));
+      }
+    }
+
+    if (value.couponId && !(await checkIdExist(couponModel, value.couponId, "Coupon", res))) return;
+
+    if (value.salesManId && !(await checkIdExist(userModel, value.salesManId, "Sales Man", res))) return;
 
     // Validate customer if being changed
-    if (
-      value.customerId &&
-      value.customerId !== isExist.customerId?.toString()
-    ) {
-      if (
-        !(await checkIdExist(contactModel, value.customerId, "Customer", res))
-      )
-        return;
-      const customer = await getFirstMatch(
-        contactModel,
-        { _id: value.customerId, isDeleted: false },
-        {},
-        {},
-      );
+    if (value.customerId && value.customerId !== isExist.customerId?.toString()) {
+      if (!(await checkIdExist(contactModel, value.customerId, "Customer", res))) return;
+      const customer = await getFirstMatch(contactModel, { _id: value.customerId, isDeleted: false }, {}, {});
       if (customer) {
-        value.customerName =
-          customer.companyName ||
-          `${customer.firstName} ${customer.lastName || ""}`.trim();
+        value.customerName = customer.companyName || `${customer.firstName} ${customer.lastName || ""}`.trim();
       }
     }
 
@@ -492,72 +284,38 @@ export const editPosOrder = async (req, res) => {
 
     if (value?.items) {
       for (const item of value?.items) {
-        if (
-          !(await checkIdExist(productModel, item?.productId, "Product", res))
-        )
-          return;
+        if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
         if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
       }
 
       // Check stock qty
-      if (
-        !(await checkStockQty(
-          value.items,
-          isExist.companyId,
-          res,
-          isExist.items,
-        ))
-      )
-        return;
+      if (!(await checkStockQty(value.items, isExist.companyId, res, isExist.items))) return;
     }
 
     if (value?.additionalCharges) {
       for (const item of value.additionalCharges) {
-        if (
-          !(await checkIdExist(
-            additionalChargeModel,
-            item?.chargeId,
-            "Additional Charge",
-            res,
-          ))
-        )
-          return;
-        if (
-          !(await checkIdExist(
-            accountGroupModel,
-            item.accountGroupId,
-            "Account Group",
-            res,
-          ))
-        )
-          return;
+        if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
+        if (!(await checkIdExist(accountGroupModel, item.accountGroupId, "Account Group", res))) return;
         if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
       }
     }
 
     // Update hold date if status is being changed to hold
-    if (
-      value.status === POS_ORDER_STATUS.HOLD &&
-      isExist.status !== POS_ORDER_STATUS.HOLD
-    ) {
+    if (value.status === POS_ORDER_STATUS.HOLD && isExist.status !== POS_ORDER_STATUS.HOLD) {
       value.holdDate = new Date();
     }
 
     value.updatedBy = user?._id || null;
 
     // Handle payment logic for edit
-    const totalAmount =
-      value.totalAmount !== undefined ? value.totalAmount : isExist.totalAmount;
+    const totalAmount = value.totalAmount !== undefined ? value.totalAmount : isExist.totalAmount;
     const oldPaidAmount = isExist.paidAmount || 0;
 
     let newPaidAmount = oldPaidAmount;
     let paymentDiff = 0;
 
     if (value.multiplePayments && value.multiplePayments.length > 0) {
-      paymentDiff = value.multiplePayments.reduce(
-        (acc, curr) => acc + (curr.amount || 0),
-        0,
-      );
+      paymentDiff = value.multiplePayments.reduce((acc, curr) => acc + (curr.amount || 0), 0);
       newPaidAmount = oldPaidAmount + paymentDiff;
       value.paidAmount = newPaidAmount;
     } else if (value.paidAmount !== undefined) {
@@ -582,8 +340,7 @@ export const editPosOrder = async (req, res) => {
       value.payLater = {
         ...(isExist.payLater || {}),
         ...(value.payLater || {}),
-        status:
-          newPaidAmount > 0 ? PAY_LATER_STATUS.PARTIAL : PAY_LATER_STATUS.OPEN,
+        status: newPaidAmount > 0 ? PAY_LATER_STATUS.PARTIAL : PAY_LATER_STATUS.OPEN,
       };
     } else {
       value.payLater = {
@@ -594,24 +351,10 @@ export const editPosOrder = async (req, res) => {
       };
     }
 
-    const response = await updateData(
-      PosOrderModel,
-      { _id: value?.posOrderId },
-      value,
-      {},
-    );
+    const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, value, {});
 
     if (!response) {
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            responseMessage?.updateDataError("POS Order"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("POS Order"), {}, {}));
     }
 
     // --- Stock Management Logic ---
@@ -650,18 +393,11 @@ export const editPosOrder = async (req, res) => {
     // -------------------------------
 
     // --- Loyalty Points Logic ---
-    const loyaltyConfig = await getFirstMatch(
-      loyaltyPointsModel,
-      { companyId: response.companyId, isActive: true },
-      {},
-      {},
-    );
+    const loyaltyConfig = await getFirstMatch(loyaltyPointsModel, { companyId: response.companyId, isActive: true }, {}, {});
     if (loyaltyConfig && loyaltyConfig.amount > 0 && loyaltyConfig.points > 0) {
       // 1. Revert old points if it was active
       if (wasActive && isExist.customerId) {
-        const oldPoints =
-          Math.floor(isExist.totalAmount / loyaltyConfig.amount) *
-          loyaltyConfig.points;
+        const oldPoints = Math.floor(isExist.totalAmount / loyaltyConfig.amount) * loyaltyConfig.points;
         if (oldPoints > 0) {
           await contactModel.findByIdAndUpdate(isExist.customerId, {
             $inc: { loyaltyPoints: -oldPoints },
@@ -671,9 +407,7 @@ export const editPosOrder = async (req, res) => {
 
       // 2. Apply new points if it is now active
       if (isActive && response.customerId) {
-        const newPoints =
-          Math.floor(response.totalAmount / loyaltyConfig.amount) *
-          loyaltyConfig.points;
+        const newPoints = Math.floor(response.totalAmount / loyaltyConfig.amount) * loyaltyConfig.points;
         if (newPoints > 0) {
           await contactModel.findByIdAndUpdate(response.customerId, {
             $inc: { loyaltyPoints: newPoints },
@@ -732,28 +466,10 @@ export const editPosOrder = async (req, res) => {
       }
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.updateDataSuccess("POS Order"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("POS Order"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -764,35 +480,32 @@ export const deletePosOrder = async (req, res) => {
     const { error, value } = deletePosOrderSchema.validate(req.params);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const isExist = await getFirstMatch(
-      PosOrderModel,
-      { _id: value?.id, isDeleted: false },
-      {},
-      {},
-    );
+    const isExist = await getFirstMatch(PosOrderModel, { _id: value?.id, isDeleted: false }, {}, {});
     if (!isExist) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("POS Order"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+    }
+
+    // Check if the associated cash register is closed
+    if (isExist.posCashRegisterId) {
+      const register = await PosCashRegisterModel.findById(isExist.posCashRegisterId);
+      if (register && register.status === CASH_REGISTER_STATUS.CLOSED) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "This order cannot be deleted because its associated cash register has been closed.", {}, {}));
+      }
+    } else {
+      // Fallback for orders without posCashRegisterId (Historical data)
+      const register = await PosCashRegisterModel.findOne({
+        companyId: isExist.companyId,
+        branchId: isExist.branchId,
+        createdAt: { $lte: isExist.createdAt },
+        isDeleted: false,
+      }).sort({ createdAt: -1 });
+
+      if (register && register.status === CASH_REGISTER_STATUS.CLOSED) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "This order cannot be deleted because its associated cash register has been closed.", {}, {}));
+      }
     }
 
     // Prevent deletion if return orders exist
@@ -801,16 +514,7 @@ export const deletePosOrder = async (req, res) => {
       isDeleted: false,
     });
     if (hasReturns) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "Cannot delete order with active returns. Please delete the return order first.",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Cannot delete order with active returns. Please delete the return order first.", {}, {}));
     }
 
     // -----------------------------------------------------------
@@ -843,11 +547,7 @@ export const deletePosOrder = async (req, res) => {
         await revertLoyalty(isExist.loyaltyId, isExist.customerId);
       }
       if (isExist.redeemCreditId && isExist.redeemCreditAmount > 0) {
-        await revertRedeemCredit(
-          isExist.redeemCreditId,
-          isExist.redeemCreditType,
-          isExist.redeemCreditAmount,
-        );
+        await revertRedeemCredit(isExist.redeemCreditId, isExist.redeemCreditType, isExist.redeemCreditAmount);
       }
     } else {
       // otherwise just softdelete it
@@ -855,55 +555,20 @@ export const deletePosOrder = async (req, res) => {
         isDeleted: true,
         updatedBy: user?._id || null,
       };
-      response = await updateData(
-        PosOrderModel,
-        { _id: new ObjectId(value?.id) },
-        payload,
-        {},
-      );
+      response = await updateData(PosOrderModel, { _id: new ObjectId(value?.id) }, payload, {});
 
       // Soft delete associated payments
-      await PosPaymentModel.updateMany(
-        { posOrderId: new ObjectId(value?.id) },
-        { isDeleted: true, updatedBy: user?._id || null },
-      );
+      await PosPaymentModel.updateMany({ posOrderId: new ObjectId(value?.id) }, { isDeleted: true, updatedBy: user?._id || null });
     }
 
     if (!response) {
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            responseMessage?.deleteDataError("POS Order"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("POS Order"), {}, {}));
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.deleteDataSuccess("POS Order"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Order"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -913,13 +578,7 @@ export const posOrderDropDown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    const {
-      customerFilter,
-      branchFilter,
-      companyFilter,
-      duePaymentFilter,
-      search,
-    } = req.query;
+    const { customerFilter, branchFilter, companyFilter, duePaymentFilter, search } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -957,28 +616,10 @@ export const posOrderDropDown = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(100);
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("POS Order Dropdown"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Order Dropdown"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -987,24 +628,7 @@ export const getAllPosOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let {
-      page,
-      limit,
-      search,
-      activeFilter,
-      companyFilter,
-      statusFilter,
-      customerFilter,
-      duePaymentFilter,
-      paymentStatusFilter,
-      methodFilter,
-      branchFilter,
-      tableNoFilter,
-      orderTypeFilter,
-      startDate,
-      endDate,
-      lastBillFilter,
-    } = req.query;
+    let { page, limit, search, activeFilter, companyFilter, statusFilter, customerFilter, duePaymentFilter, paymentStatusFilter, methodFilter, branchFilter, tableNoFilter, orderTypeFilter, startDate, endDate, lastBillFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -1030,10 +654,7 @@ export const getAllPosOrder = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [
-        { orderNo: { $regex: search, $options: "si" } },
-        { tableNo: { $regex: search, $options: "si" } },
-      ];
+      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { tableNo: { $regex: search, $options: "si" } }];
     }
 
     if (statusFilter) {
@@ -1078,24 +699,14 @@ export const getAllPosOrder = async (req, res) => {
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "additionalCharges.chargeId", select: "name" },
         { path: "additionalCharges.accountGroupId", select: "name" },
+        { path: "posCashRegisterId", select: "registerNo status" },
       ],
       ...(lastBillFilter !== "true" && { skip: (page - 1) * limit, limit }),
     };
 
-    const response = await getDataWithSorting(
-      PosOrderModel,
-      criteria,
-      {},
-      options,
-    );
+    const response = await getDataWithSorting(PosOrderModel, criteria, {}, options);
 
-    const productIds: any = [
-      ...new Set(
-        response.flatMap((order) =>
-          order?.items?.map((i) => i.productId?._id?.toString()),
-        ),
-      ),
-    ];
+    const productIds: any = [...new Set(response.flatMap((order) => order?.items?.map((i) => i.productId?._id?.toString())))];
 
     const stockData = await stockModel
       .find(
@@ -1115,8 +726,7 @@ export const getAllPosOrder = async (req, res) => {
 
     response.forEach((order) => {
       order.items.forEach((item) => {
-        item.productId.salesTaxId =
-          taxMap[item.productId?._id?.toString()] || null;
+        item.productId.salesTaxId = taxMap[item.productId?._id?.toString()] || null;
       });
     });
 
@@ -1130,28 +740,10 @@ export const getAllPosOrder = async (req, res) => {
       totalPages,
     };
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("POS Order"),
-          { posOrder_data: response, totalData, state },
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Order"), { posOrder_data: response, totalData, state }, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -1161,16 +753,7 @@ export const getOnePosOrder = async (req, res) => {
     const { error, value } = getPosOrderSchema.validate(req.params);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     const response = await getFirstMatch(
@@ -1188,28 +771,19 @@ export const getOnePosOrder = async (req, res) => {
           },
           {
             path: "items.productId",
-            select:
-              "-isDeleted -isActive -createdAt -updatedAt -createdBy -updatedBy -images -nutrition",
+            select: "-isDeleted -isActive -createdAt -updatedAt -createdBy -updatedBy -images -nutrition",
           },
           { path: "invoiceId", select: "documentNo" },
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "additionalCharges.chargeId", select: "name" },
           { path: "additionalCharges.accountGroupId", select: "name" },
+          { path: "posCashRegisterId", select: "name status" },
         ],
       },
     );
 
     if (!response) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("POS Order"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
 
     const productIds = response?.items?.map((item) => item?.productId?._id);
@@ -1277,28 +851,10 @@ export const getOnePosOrder = async (req, res) => {
       }),
     };
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("POS Order"),
-          updatedResponse,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Order"), updatedResponse, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -1315,11 +871,7 @@ export const getAllHoldOrders = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [
-        { orderNo: { $regex: search, $options: "si" } },
-        { customerName: { $regex: search, $options: "si" } },
-        { tableNo: { $regex: search, $options: "si" } },
-      ];
+      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }, { tableNo: { $regex: search, $options: "si" } }];
     }
 
     const options = {
@@ -1329,24 +881,17 @@ export const getAllHoldOrders = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "salesManId", select: "fullName" },
         { path: "customerId", select: "firstName lastName companyName" },
+        { path: "posCashRegisterId", select: "registerNo status" },
         {
           path: "items.productId",
-          select:
-            "-isDeleted -isActive -createdAt -updatedAt -createdBy -updatedBy -images -nutrition",
+          select: "-isDeleted -isActive -createdAt -updatedAt -createdBy -updatedBy -images -nutrition",
         },
       ],
       limit: 100,
     };
-    const response = await getDataWithSorting(
-      PosOrderModel,
-      criteria,
-      {},
-      options,
-    );
+    const response = await getDataWithSorting(PosOrderModel, criteria, {}, options);
 
-    const productIds = response
-      ?.map((order) => order?.items?.map((item) => item?.productId?._id))
-      .flat();
+    const productIds = response?.map((order) => order?.items?.map((item) => item?.productId?._id)).flat();
 
     const stockResponse = await getDataWithSorting(
       stockModel,
@@ -1398,8 +943,7 @@ export const getAllHoldOrders = async (req, res) => {
               landingCost: stock?.landingCost ?? product.landingCost,
               mrp: stock?.mrp ?? product.mrp,
               sellingPrice: stock?.sellingPrice ?? product.sellingPrice,
-              sellingDiscount:
-                stock?.sellingDiscount ?? product.sellingDiscount,
+              sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
               sellingMargin: stock?.sellingMargin ?? product.sellingMargin,
               purchaseTaxId: stock?.purchaseTaxId,
               salesTaxId: stock?.salesTaxId,
@@ -1414,28 +958,10 @@ export const getAllHoldOrders = async (req, res) => {
       return order;
     });
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("Hold Orders"),
-          updatedResponse,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Hold Orders"), updatedResponse, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -1446,68 +972,24 @@ export const getCustomerPosDetails = async (req, res) => {
     const { error, value } = getCustomerPosDetailsSchema.validate(req.params);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
     const { id } = value;
 
-    const select =
-      "firstName lastName  email phoneNo whatsappNo productDetails loyaltyPoints remarks status";
+    const select = "firstName lastName  email phoneNo whatsappNo productDetails loyaltyPoints remarks status";
 
-    const customer = await getFirstMatch(
-      contactModel,
-      { _id: id, isDeleted: false },
-      select,
-      {},
-    );
+    const customer = await getFirstMatch(contactModel, { _id: id, isDeleted: false }, select, {});
     if (!customer) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("Customer"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Customer"), {}, {}));
     }
 
-    const posOrders = await getDataWithSorting(
-      PosOrderModel,
-      { customerId: id, isDeleted: false },
-      {},
-      { sort: { createdAt: -1 } },
-    );
+    const posOrders = await getDataWithSorting(PosOrderModel, { customerId: id, isDeleted: false }, {}, { sort: { createdAt: -1 } });
 
-    const totalDueAmount = posOrders.reduce(
-      (acc, item) => acc + Number(item.dueAmount || 0),
-      0,
-    );
-    const totalPaidAmount = posOrders.reduce(
-      (acc, item) => acc + Number(item.paidAmount || 0),
-      0,
-    );
-    const totalPurchaseAmount = posOrders.reduce(
-      (acc, item) => acc + Number(item.totalAmount || 0),
-      0,
-    );
+    const totalDueAmount = posOrders.reduce((acc, item) => acc + Number(item.dueAmount || 0), 0);
+    const totalPaidAmount = posOrders.reduce((acc, item) => acc + Number(item.paidAmount || 0), 0);
+    const totalPurchaseAmount = posOrders.reduce((acc, item) => acc + Number(item.totalAmount || 0), 0);
 
-    const {
-      totalAmount = 0,
-      orderNo = "-",
-      _id = "-",
-      paymentMethod = "-",
-      createdAt = "-",
-    } = posOrders?.[0] ?? {};
+    const { totalAmount = 0, orderNo = "-", _id = "-", paymentMethod = "-", createdAt = "-" } = posOrders?.[0] ?? {};
 
     const lastBill = { _id, totalAmount, orderNo, paymentMethod, createdAt };
 
@@ -1519,27 +1001,16 @@ export const getCustomerPosDetails = async (req, res) => {
       return acc;
     }, {});
 
-    const mostPurchasedProductId = Object.keys(allPurchasedProduct).reduce(
-      (maxProductId, productId) => {
-        if (
-          !maxProductId ||
-          allPurchasedProduct[productId] > allPurchasedProduct[maxProductId]
-        ) {
-          return productId;
-        }
-        return maxProductId;
-      },
-      null,
-    );
+    const mostPurchasedProductId = Object.keys(allPurchasedProduct).reduce((maxProductId, productId) => {
+      if (!maxProductId || allPurchasedProduct[productId] > allPurchasedProduct[maxProductId]) {
+        return productId;
+      }
+      return maxProductId;
+    }, null);
 
     let mostPurchasedProduct;
     if (mostPurchasedProductId) {
-      mostPurchasedProduct = await getFirstMatch(
-        productModel,
-        { _id: mostPurchasedProductId, isDeleted: false },
-        "name",
-        {},
-      );
+      mostPurchasedProduct = await getFirstMatch(productModel, { _id: mostPurchasedProductId, isDeleted: false }, "name", {});
     }
 
     return res.status(HTTP_STATUS.OK).json(
@@ -1559,16 +1030,7 @@ export const getCustomerPosDetails = async (req, res) => {
     );
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -1579,49 +1041,37 @@ export const releasePosOrder = async (req, res) => {
     const { error, value } = releasePosOrderSchema.validate(req.body);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const isExist = await getFirstMatch(
-      PosOrderModel,
-      { _id: value?.posOrderId, isDeleted: false },
-      {},
-      {},
-    );
+    const isExist = await getFirstMatch(PosOrderModel, { _id: value?.posOrderId, isDeleted: false }, {}, {});
 
     if (!isExist) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("POS Order"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+    }
+
+    // Check if the associated cash register is closed
+    if (isExist.posCashRegisterId) {
+      const register = await PosCashRegisterModel.findById(isExist.posCashRegisterId);
+      if (register && register.status === CASH_REGISTER_STATUS.CLOSED) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "This order cannot be released because its associated cash register has been closed.", {}, {}));
+      }
+    } else {
+      // Fallback for orders without posCashRegisterId (Historical data)
+      const register = await PosCashRegisterModel.findOne({
+        companyId: isExist.companyId,
+        branchId: isExist.branchId,
+        createdAt: { $lte: isExist.createdAt },
+        isDeleted: false,
+      }).sort({ createdAt: -1 });
+
+      if (register && register.status === CASH_REGISTER_STATUS.CLOSED) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "This order cannot be released because its associated cash register has been closed.", {}, {}));
+      }
     }
 
     if (isExist.status !== POS_ORDER_STATUS.HOLD) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "Order is not on hold",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Order is not on hold", {}, {}));
     }
 
     const payload = {
@@ -1629,48 +1079,16 @@ export const releasePosOrder = async (req, res) => {
       updatedBy: user?._id || null,
     };
 
-    const response = await updateData(
-      PosOrderModel,
-      { _id: value?.posOrderId },
-      payload,
-      {},
-    );
+    const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, payload, {});
 
     if (!response) {
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            responseMessage?.updateDataError("POS Order"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("POS Order"), {}, {}));
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          "POS Order released from hold successfully",
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order released from hold successfully", response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -1683,31 +1101,13 @@ export const getPosCashControl = async (req, res) => {
     const { error, value } = getPosCashControlSchema.validate(req.query);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     const { branchId, date } = value;
 
     if (!companyId) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            responseMessage?.getDataNotFound("Company"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
     }
 
     // Validate Branch
@@ -1735,12 +1135,7 @@ export const getPosCashControl = async (req, res) => {
       // Get yesterday's closing cash as today's opening cash
       const yesterday = new Date(targetDate);
       yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayCash = await getFirstMatch(
-        PosCashControlModel,
-        { companyId, branchId, date: yesterday, isDeleted: false },
-        {},
-        {},
-      );
+      const yesterdayCash = await getFirstMatch(PosCashControlModel, { companyId, branchId, date: yesterday, isDeleted: false }, {}, {});
 
       const cashControlData = {
         companyId,
@@ -1759,28 +1154,10 @@ export const getPosCashControl = async (req, res) => {
       cashControl = await createOne(PosCashControlModel, cashControlData);
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("POS Cash Control"),
-          cashControl,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Cash Control"), cashControl, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -1793,44 +1170,17 @@ export const updatePosCashControl = async (req, res) => {
     const { error, value } = updatePosCashControlSchema.validate(req.body);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     const { branchId, date, openingCash, actualCash, notes, isClosed } = value;
 
     if (!companyId) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            responseMessage?.getDataNotFound("Company"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
     }
 
     if (!branchId) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "Branch ID is required",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Branch ID is required", {}, {}));
     }
 
     // Validate Branch
@@ -1841,12 +1191,7 @@ export const updatePosCashControl = async (req, res) => {
     targetDate.setHours(0, 0, 0, 0);
 
     // Find existing cash control
-    let cashControl = await getFirstMatch(
-      PosCashControlModel,
-      { companyId, branchId, date: targetDate, isDeleted: false },
-      {},
-      {},
-    );
+    let cashControl = await getFirstMatch(PosCashControlModel, { companyId, branchId, date: targetDate, isDeleted: false }, {}, {});
 
     if (!cashControl) {
       // Create new if doesn't exist
@@ -1869,8 +1214,7 @@ export const updatePosCashControl = async (req, res) => {
         updatedBy: user?._id || null,
       };
 
-      if (openingCash !== undefined)
-        updateDataPayload.openingCash = openingCash;
+      if (openingCash !== undefined) updateDataPayload.openingCash = openingCash;
       if (actualCash !== undefined) updateDataPayload.actualCash = actualCash;
       if (notes !== undefined) updateDataPayload.notes = notes;
       if (isClosed !== undefined) {
@@ -1918,51 +1262,20 @@ export const updatePosCashControl = async (req, res) => {
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]);
 
-      const totalExpenses =
-        expensesResult.length > 0 ? expensesResult[0].total : 0;
+      const totalExpenses = expensesResult.length > 0 ? expensesResult[0].total : 0;
 
-      const opening =
-        updateDataPayload.openingCash !== undefined
-          ? updateDataPayload.openingCash
-          : cashControl.openingCash;
+      const opening = updateDataPayload.openingCash !== undefined ? updateDataPayload.openingCash : cashControl.openingCash;
       updateDataPayload.expectedCash = opening + totalSales - totalExpenses;
-      updateDataPayload.closingCash =
-        updateDataPayload.actualCash !== undefined
-          ? updateDataPayload.actualCash
-          : cashControl.actualCash;
-      updateDataPayload.difference =
-        updateDataPayload.expectedCash - updateDataPayload.closingCash;
+      updateDataPayload.closingCash = updateDataPayload.actualCash !== undefined ? updateDataPayload.actualCash : cashControl.actualCash;
+      updateDataPayload.difference = updateDataPayload.expectedCash - updateDataPayload.closingCash;
 
-      cashControl = await updateData(
-        PosCashControlModel,
-        { _id: cashControl._id },
-        updateDataPayload,
-        {},
-      );
+      cashControl = await updateData(PosCashControlModel, { _id: cashControl._id }, updateDataPayload, {});
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.updateDataSuccess("POS Cash Control"),
-          cashControl,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("POS Cash Control"), cashControl, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -1975,16 +1288,7 @@ export const getCombinedPayments = async (req, res) => {
     const { error, value } = getCombinedPaymentsSchema.validate(req.query);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     let { page, limit, search, startDate, endDate, branchId } = value;
@@ -1993,16 +1297,7 @@ export const getCombinedPayments = async (req, res) => {
     limit = Number(limit);
 
     if (!companyId) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            responseMessage?.getDataNotFound("Company"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
     }
 
     let criteria: any = {
@@ -2014,10 +1309,7 @@ export const getCombinedPayments = async (req, res) => {
     };
 
     if (search) {
-      criteria.$or = [
-        { voucherNo: { $regex: search, $options: "si" } },
-        { notes: { $regex: search, $options: "si" } },
-      ];
+      criteria.$or = [{ voucherNo: { $regex: search, $options: "si" } }, { notes: { $regex: search, $options: "si" } }];
     }
 
     if (startDate && endDate) {
@@ -2038,12 +1330,7 @@ export const getCombinedPayments = async (req, res) => {
       limit,
     };
 
-    const response = await getDataWithSorting(
-      voucherModel,
-      criteria,
-      {},
-      options,
-    );
+    const response = await getDataWithSorting(voucherModel, criteria, {}, options);
     const totalData = await countData(voucherModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -2054,28 +1341,10 @@ export const getCombinedPayments = async (req, res) => {
       totalPages,
     };
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("Payments"),
-          { payments_data: response, state },
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payments"), { payments_data: response, state }, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -2087,36 +1356,13 @@ export const convertToInvoice = async (req, res) => {
     const { error, value } = convertToInvoiceSchema.validate(req.body);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const posOrder = await getFirstMatch(
-      PosOrderModel,
-      { _id: value?.posOrderId, isDeleted: false },
-      {},
-      {},
-    );
+    const posOrder = await getFirstMatch(PosOrderModel, { _id: value?.posOrderId, isDeleted: false }, {}, {});
 
     if (!posOrder) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("POS Order"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
 
     if (!posOrder.customerId) {
@@ -2131,16 +1377,7 @@ export const convertToInvoice = async (req, res) => {
         {},
       );
       if (!walkInCustomer) {
-        return res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.BAD_REQUEST,
-              "Please create a default 'Walk-in Customer' contact for POS orders",
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Please create a default 'Walk-in Customer' contact for POS orders", {}, {}));
       }
       posOrder.customerId = walkInCustomer._id;
       posOrder.customerName = walkInCustomer.companyName || "Walk-in Customer";
@@ -2170,16 +1407,7 @@ export const convertToInvoice = async (req, res) => {
     const invoice = await createOne(InvoiceModel, invoiceData);
 
     if (!invoice) {
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            "Failed to create invoice",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, "Failed to create invoice", {}, {}));
     }
 
     // Update POS order with invoice ID and mark as completed
@@ -2194,28 +1422,10 @@ export const convertToInvoice = async (req, res) => {
       {},
     );
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          "POS Order converted to invoice successfully",
-          { posOrder, invoice },
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order converted to invoice successfully", { posOrder, invoice }, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -2226,16 +1436,7 @@ export const quickAddProduct = async (req, res) => {
     const { productName } = req.body;
 
     if (!productName) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "Product name is required",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Product name is required", {}, {}));
     }
 
     const { user } = req?.headers;
@@ -2263,11 +1464,7 @@ export const quickAddProduct = async (req, res) => {
     );
 
     if (!product) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(HTTP_STATUS.NOT_FOUND, "Product not found", {}, {}),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "Product not found", {}, {}));
     }
 
     // Return product in POS-friendly format
@@ -2283,21 +1480,10 @@ export const quickAddProduct = async (req, res) => {
       stock: product.stock || 0,
     };
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(new apiResponse(HTTP_STATUS.OK, "Product found", posProduct, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Product found", posProduct, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -2307,49 +1493,17 @@ export const holdPosOrder = async (req, res) => {
     const { user } = req?.headers;
     const { error, value } = holdPosOrderSchema.validate(req.body);
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const isExist = await getFirstMatch(
-      PosOrderModel,
-      { _id: value?.posOrderId, isDeleted: false },
-      {},
-      {},
-    );
+    const isExist = await getFirstMatch(PosOrderModel, { _id: value?.posOrderId, isDeleted: false }, {}, {});
 
     if (!isExist) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("POS Order"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
     }
 
     if (isExist?.status === POS_ORDER_STATUS.HOLD) {
-      return res
-        .status(HTTP_STATUS.CONFLICT)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.CONFLICT,
-            responseMessage?.posAlreadyOnHold,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.posAlreadyOnHold, {}, {}));
     }
 
     const payload = {
@@ -2358,47 +1512,14 @@ export const holdPosOrder = async (req, res) => {
       updatedBy: user?._id || null,
     };
 
-    const response = await updateData(
-      PosOrderModel,
-      { _id: value?.posOrderId },
-      payload,
-      {},
-    );
+    const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, payload, {});
 
-    if (!response)
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            responseMessage?.updateDataError("Hold POS Order"),
-            {},
-            {},
-          ),
-        );
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Hold POS Order"), {}, {}));
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          "POS Order put on hold successfully",
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order put on hold successfully", response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -2408,55 +1529,22 @@ export const getCustomerLoyaltyPoints = async (req, res) => {
     const { error, value } = getCustomerLoyaltyPointsSchema.validate(req.query);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     const { customerId } = value;
 
     if (!customerId) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "Customer ID is required",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Customer ID is required", {}, {}));
     }
 
     // Validate customer
-    if (!(await checkIdExist(contactModel, customerId, "Customer", res)))
-      return;
+    if (!(await checkIdExist(contactModel, customerId, "Customer", res))) return;
 
-    const customer = await getFirstMatch(
-      contactModel,
-      { _id: customerId, isDeleted: false },
-      {},
-      {},
-    );
+    const customer = await getFirstMatch(contactModel, { _id: customerId, isDeleted: false }, {}, {});
 
     if (!customer) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("Customer"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Customer"), {}, {}));
     }
 
     return res.status(HTTP_STATUS.OK).json(
@@ -2472,16 +1560,7 @@ export const getCustomerLoyaltyPoints = async (req, res) => {
     );
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -2493,93 +1572,37 @@ export const redeemLoyaltyPoints = async (req, res) => {
     const { error, value } = redeemLoyaltyPointsSchema.validate(req.body);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     const { customerId, pointsToRedeem, discountAmount } = value;
 
     if (!customerId) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "Customer ID is required",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Customer ID is required", {}, {}));
     }
 
     if (!pointsToRedeem || pointsToRedeem <= 0) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "Points to redeem must be greater than 0",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Points to redeem must be greater than 0", {}, {}));
     }
 
     // Validate customer
-    if (!(await checkIdExist(contactModel, customerId, "Customer", res)))
-      return;
+    if (!(await checkIdExist(contactModel, customerId, "Customer", res))) return;
 
-    const customer = await getFirstMatch(
-      contactModel,
-      { _id: customerId, isDeleted: false },
-      {},
-      {},
-    );
+    const customer = await getFirstMatch(contactModel, { _id: customerId, isDeleted: false }, {}, {});
 
     if (!customer) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("Customer"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Customer"), {}, {}));
     }
 
     const currentPoints = customer.loyaltyPoints || 0;
 
     if (currentPoints < pointsToRedeem) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "Insufficient loyalty points",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Insufficient loyalty points", {}, {}));
     }
 
     // Deduct loyalty points
     const newPoints = currentPoints - pointsToRedeem;
-    const updatedCustomer = await updateData(
-      contactModel,
-      { _id: customerId },
-      { loyaltyPoints: newPoints, updatedBy: user?._id || null },
-      {},
-    );
+    const updatedCustomer = await updateData(contactModel, { _id: customerId }, { loyaltyPoints: newPoints, updatedBy: user?._id || null }, {});
 
     return res.status(HTTP_STATUS.OK).json(
       new apiResponse(
@@ -2596,15 +1619,6 @@ export const redeemLoyaltyPoints = async (req, res) => {
     );
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };

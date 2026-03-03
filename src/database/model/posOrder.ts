@@ -45,6 +45,7 @@ const posOrderSchema = new Schema(
   {
     ...baseSchemaFields,
     orderNo: { type: String, required: true, index: true },
+    posCashRegisterId: { type: Schema.Types.ObjectId, ref: "pos-cash-register", default: null },
 
     customerId: { type: Schema.Types.ObjectId, ref: "contact" },
     orderType: { type: String, enum: Object.values(POS_ORDER_TYPE), default: POS_ORDER_TYPE.WALK_IN },
