@@ -1,11 +1,11 @@
 import mongoose, { Schema } from "mongoose";
 import { PRODUCT_EXPIRY_TYPE, PRODUCT_TYPE } from "../../common";
 import { IProduct } from "../../types";
-import { baseCommonFields, baseSchemaOptions } from "./base";
+import { baseSchemaFields, baseSchemaOptions } from "./base";
 
 const productSchema = new Schema<IProduct>(
   {
-    ...baseCommonFields,
+    ...baseSchemaFields,
     images: [{ type: String }],
     itemCode: { type: String, index: true },
     productType: { type: String, enum: Object.values(PRODUCT_TYPE), default: PRODUCT_TYPE.FINISHED },
