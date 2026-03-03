@@ -238,8 +238,6 @@ export const transactionDetails = async (req, res) => {
       })(),
     ]);
 
-    // console.log("Criteria Used:", { commonCriteria, dateCriteria, voucherDateCriteria, purchaseDateCriteria });
-    // console.log("Raw Aggregation Data:", { salesData, purchaseData, salesReturnData, expenseData, inventoryData, cashFlowData });
 
     const s: any = results[0][0] || {};
     const p: any = results[1][0] || {};

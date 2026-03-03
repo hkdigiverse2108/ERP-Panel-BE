@@ -233,7 +233,6 @@ export const getAllStock = async (req, res) => {
       stockMatchCriteria.companyId = user?.companyId?._id;
     }
 
-    console.log(stockMatchCriteria);
 
     const stockAggregationPipeline: any[] = [
       { $match: stockMatchCriteria },

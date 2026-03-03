@@ -69,7 +69,7 @@ export const editPosCashRegister = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Cash Register"), {}, {}));
     }
 
-    if (value.status === CASH_REGISTER_STATUS.CLOSED) {
+    if (isExist?.status === CASH_REGISTER_STATUS.CLOSED) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Register is already closed", {}, {}));
     }
 

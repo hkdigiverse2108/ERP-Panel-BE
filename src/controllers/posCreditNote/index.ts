@@ -1,36 +1,8 @@
-import {
-  posCreditNoteModel,
-  PosPaymentModel,
-  stockModel,
-} from "../../database";
-import {
-  apiResponse,
-  HTTP_STATUS,
-  REDEEM_CREDIT_TYPE,
-  POS_PAYMENT_TYPE,
-} from "../../common";
-import {
-  countData,
-  getDataWithSorting,
-  getFirstMatch,
-  reqInfo,
-  responseMessage,
-  updateData,
-  applyDateFilter,
-  checkIdExist,
-} from "../../helper";
-import {
-  getPosCreditNoteSchema,
-  deletePosCreditNoteSchema,
-  checkRedeemCreditSchema,
-  refundPosCreditSchema,
-  getCreditNoteDropdownSchema,
-} from "../../validation";
-import {
-  returnPosOrderModel,
-  PosCashRegisterModel,
-  bankModel,
-} from "../../database";
+import { posCreditNoteModel, PosPaymentModel, stockModel } from "../../database";
+import { apiResponse, HTTP_STATUS, REDEEM_CREDIT_TYPE, POS_PAYMENT_TYPE } from "../../common";
+import { countData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkIdExist } from "../../helper";
+import { getPosCreditNoteSchema, deletePosCreditNoteSchema, checkRedeemCreditSchema, refundPosCreditSchema, getCreditNoteDropdownSchema } from "../../validation";
+import { returnPosOrderModel, PosCashRegisterModel, bankModel } from "../../database";
 import { CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS } from "../../common";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -40,16 +12,7 @@ export const checkRedeemCredit = async (req, res) => {
   try {
     const { error, value } = checkRedeemCreditSchema.validate(req.body);
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     const { code, type, customerId } = value;
@@ -57,35 +20,12 @@ export const checkRedeemCredit = async (req, res) => {
     let data: any = null;
 
     if (type === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
-      data = await getFirstMatch(
-        posCreditNoteModel,
-        { creditNoteNo: code, isDeleted: false },
-        {},
-        {},
-      );
+      data = await getFirstMatch(posCreditNoteModel, { creditNoteNo: code, isDeleted: false }, {}, {});
       if (!data) {
-        return res
-          .status(HTTP_STATUS.NOT_FOUND)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.NOT_FOUND,
-              "Credit Note not found",
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "Credit Note not found", {}, {}));
       }
       if (customerId && data.customerId?.toString() !== customerId) {
-        return res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.BAD_REQUEST,
-              "Credit Note does not belong to this customer",
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Credit Note does not belong to this customer", {}, {}));
       }
       redeemableAmount = data.creditsRemaining || 0;
     } else if (type === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
@@ -100,43 +40,16 @@ export const checkRedeemCredit = async (req, res) => {
         {},
       );
       if (!data) {
-        return res
-          .status(HTTP_STATUS.NOT_FOUND)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.NOT_FOUND,
-              "Advance Payment not found",
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "Advance Payment not found", {}, {}));
       }
       if (customerId && data.partyId?.toString() !== customerId) {
-        return res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.BAD_REQUEST,
-              "Advance Payment does not belong to this customer",
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Advance Payment does not belong to this customer", {}, {}));
       }
       redeemableAmount = data.amount || 0;
     }
 
     if (redeemableAmount <= 0) {
-      return res
-        .status(HTTP_STATUS.OK)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.OK,
-            "No redeemable credit available",
-            { redeemableAmount: 0 },
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "No redeemable credit available", { redeemableAmount: 0 }, {}));
     }
 
     return res.status(HTTP_STATUS.OK).json(
@@ -155,16 +68,7 @@ export const checkRedeemCredit = async (req, res) => {
     );
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -174,103 +78,34 @@ export const refundPosCredit = async (req, res) => {
     const { user } = req?.headers;
     const { error, value } = refundPosCreditSchema.validate(req.body);
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const {
-      posCreditNoteId,
-      refundViaCash,
-      refundViaBank,
-      bankAccountId,
-      refundDescription,
-    } = value;
+    const { posCreditNoteId, refundViaCash, refundViaBank, bankAccountId, refundDescription } = value;
     const totalRefund = (refundViaCash || 0) + (refundViaBank || 0);
 
     if (totalRefund <= 0) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "Refund amount must be greater than zero",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Refund amount must be greater than zero", {}, {}));
     }
 
-    const creditNote = await getFirstMatch(
-      posCreditNoteModel,
-      { _id: posCreditNoteId, isDeleted: false },
-      {},
-      {},
-    );
+    const creditNote = await getFirstMatch(posCreditNoteModel, { _id: posCreditNoteId, isDeleted: false }, {}, {});
     if (!creditNote) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage.getDataNotFound("Credit Note"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Credit Note"), {}, {}));
     }
 
     if (creditNote.creditsRemaining !== totalRefund) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            `Credit Note amount and refund amount must be equal`,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Credit Note amount and refund amount must be equal`, {}, {}));
     }
 
     if (creditNote.creditsRemaining < totalRefund) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            `Insufficient credits. Available: ${creditNote.creditsRemaining}`,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Insufficient credits. Available: ${creditNote.creditsRemaining}`, {}, {}));
     }
 
     if (refundViaBank > 0 && !bankAccountId) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "Bank Account Id is required for bank refund",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Bank Account Id is required for bank refund", {}, {}));
     }
 
-    if (
-      bankAccountId &&
-      !(await checkIdExist(bankModel, bankAccountId, "Bank Account", res))
-    )
-      return;
+    if (bankAccountId && !(await checkIdExist(bankModel, bankAccountId, "Bank Account", res))) return;
 
     // Update Credit Note
     const updatedCreditNote = await posCreditNoteModel.findOneAndUpdate(
@@ -283,10 +118,7 @@ export const refundPosCredit = async (req, res) => {
     );
 
     if (updatedCreditNote && updatedCreditNote.creditsRemaining <= 0) {
-      await posCreditNoteModel.updateOne(
-        { _id: posCreditNoteId },
-        { status: POS_CREDIT_NOTE_STATUS.USED },
-      );
+      await posCreditNoteModel.updateOne({ _id: posCreditNoteId }, { status: POS_CREDIT_NOTE_STATUS.USED });
     }
 
     // Update Return POS Order
@@ -299,14 +131,9 @@ export const refundPosCredit = async (req, res) => {
         $set: { updatedBy: user?._id || null },
       };
       if (bankAccountId) returnUpdate.$set.bankAccountId = bankAccountId;
-      if (refundDescription)
-        returnUpdate.$set.refundDescription = refundDescription;
+      if (refundDescription) returnUpdate.$set.refundDescription = refundDescription;
 
-      await returnPosOrderModel.findOneAndUpdate(
-        { _id: creditNote.returnPosOrderId },
-        returnUpdate,
-        { new: true },
-      );
+      await returnPosOrderModel.findOneAndUpdate({ _id: creditNote.returnPosOrderId }, returnUpdate, { new: true });
     }
 
     // Update Cash Register
@@ -333,28 +160,10 @@ export const refundPosCredit = async (req, res) => {
       );
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          "Credit Note refunded successfully",
-          updatedCreditNote,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Credit Note refunded successfully", updatedCreditNote, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error?.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -364,15 +173,7 @@ export const getAllPosCreditNote = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let {
-      page,
-      limit,
-      search,
-      customerFilter,
-      startDate,
-      endDate,
-      companyFilter,
-    } = req.query;
+    let { page, limit, search, customerFilter, startDate, endDate, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -383,10 +184,7 @@ export const getAllPosCreditNote = async (req, res) => {
     if (companyFilter) criteria.companyId = new ObjectId(companyFilter);
 
     if (search) {
-      criteria.$or = [
-        { creditNoteNo: { $regex: search, $options: "si" } },
-        { notes: { $regex: search, $options: "si" } },
-      ];
+      criteria.$or = [{ creditNoteNo: { $regex: search, $options: "si" } }, { notes: { $regex: search, $options: "si" } }];
     }
 
     applyDateFilter(criteria, startDate as string, endDate as string);
@@ -402,19 +200,17 @@ export const getAllPosCreditNote = async (req, res) => {
         },
         {
           path: "returnPosOrderId",
-          select: "returnOrderNo items total",
-          populate: { path: "items.productId", select: "hsnCode name" },
+          select: "returnOrderNo posOrderId items total",
+          populate: [
+            { path: "items.productId", select: "hsnCode name" },
+            { path: "posOrderId", select: "orderNo" },
+          ],
         },
         { path: "companyId", select: "name" },
       ],
     };
 
-    const response = await getDataWithSorting(
-      posCreditNoteModel,
-      criteria,
-      {},
-      options,
-    );
+    const response = await getDataWithSorting(posCreditNoteModel, criteria, {}, options);
     const totalData = await countData(posCreditNoteModel, criteria);
 
     return res.status(HTTP_STATUS.OK).json(
@@ -431,16 +227,7 @@ export const getAllPosCreditNote = async (req, res) => {
     );
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error?.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -449,16 +236,7 @@ export const getOnePosCreditNote = async (req, res) => {
   try {
     const { error, value } = getPosCreditNoteSchema.validate(req.params);
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     const response = await getFirstMatch(
@@ -469,24 +247,23 @@ export const getOnePosCreditNote = async (req, res) => {
         populate: [
           {
             path: "customerId",
-            select:
-              "firstName lastName companyName email phoneNo address.city address.state",
+            select: "firstName lastName companyName email phoneNo address.city address.state",
           },
 
           {
             path: "returnPosOrderId",
-            select: "returnOrderNo items total",
-            populate: { path: "items.productId", select: "hsnCode name" },
+            select: "returnOrderNo items total posOrderId",
+            populate: [
+              { path: "items.productId", select: "hsnCode name" },
+              { path: "posOrderId", select: "orderNo" },
+            ],
           },
           { path: "companyId", select: "name" },
         ],
       },
     );
 
-    const productIds = response?.returnPosOrderId?.items?.map(
-      (item) => item?.productId?._id,
-    );
-    console.log("productIds", productIds);
+    const productIds = response?.returnPosOrderId?.items?.map((item) => item?.productId?._id);
     const stockResponse = await getDataWithSorting(
       stockModel,
       {
@@ -518,7 +295,6 @@ export const getOnePosCreditNote = async (req, res) => {
       acc[stock.productId.toString()] = stock;
       return acc;
     }, {});
-    console.log("response -", response);
 
     const updatedResponse = {
       ...response,
@@ -530,8 +306,7 @@ export const getOnePosCreditNote = async (req, res) => {
             const stock = stockMap[product._id.toString()];
             item.productId = {
               ...product,
-              sellingDiscount:
-                stock?.sellingDiscount ?? product.sellingDiscount,
+              sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
               purchaseTaxId: stock?.purchaseTaxId,
               salesTaxId: stock?.salesTaxId,
               isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
@@ -544,43 +319,14 @@ export const getOnePosCreditNote = async (req, res) => {
       },
     };
 
-    console.log("updatedResponse", updatedResponse);
-
     if (!response) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("POS Credit Note"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Credit Note"), {}, {}));
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("POS Credit Note"),
-          { response, updatedResponse },
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Credit Note"), { response, updatedResponse }, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error?.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -590,79 +336,24 @@ export const deletePosCreditNote = async (req, res) => {
     const { user } = req?.headers;
     const { error, value } = deletePosCreditNoteSchema.validate(req.params);
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const isExist = await getFirstMatch(
-      posCreditNoteModel,
-      { _id: value?.id, isDeleted: false },
-      {},
-      {},
-    );
+    const isExist = await getFirstMatch(posCreditNoteModel, { _id: value?.id, isDeleted: false }, {}, {});
     if (!isExist) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("POS Credit Note"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Credit Note"), {}, {}));
     }
 
-    const response = await updateData(
-      posCreditNoteModel,
-      { _id: value?.id },
-      { isDeleted: true, updatedBy: user?._id || null },
-      {},
-    );
+    const response = await updateData(posCreditNoteModel, { _id: value?.id }, { isDeleted: true, updatedBy: user?._id || null }, {});
 
     if (!response) {
-      return res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.INTERNAL_SERVER_ERROR,
-            responseMessage?.deleteDataError("POS Credit Note"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.deleteDataError("POS Credit Note"), {}, {}));
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.deleteDataSuccess("POS Credit Note"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Credit Note"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error?.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -672,16 +363,7 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
     const { user } = req?.headers;
     const { error, value } = getCreditNoteDropdownSchema.validate(req.query);
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     const { customerFilter, typeFilter, companyFilter } = value;
@@ -689,28 +371,19 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
     let companyId = companyFilter || user?.companyId?._id;
     let response: any[] = [];
 
-    if (
-      typeFilter === REDEEM_CREDIT_TYPE.CREDIT_NOTE ||
-      typeFilter === REDEEM_CREDIT_TYPE.CREDIT_NOTE
-    ) {
+    if (typeFilter === REDEEM_CREDIT_TYPE.CREDIT_NOTE || typeFilter === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
       let criteria: any = { isDeleted: false, creditsRemaining: { $gt: 0 } };
       if (companyId) criteria.companyId = new ObjectId(companyId);
       if (customerFilter) criteria.customerId = new ObjectId(customerFilter);
 
-      const data = await posCreditNoteModel
-        .find(criteria)
-        .select("creditNoteNo customerId")
-        .sort({ createdAt: -1 });
+      const data = await posCreditNoteModel.find(criteria).select("creditNoteNo customerId").sort({ createdAt: -1 });
 
       response = data.map((item) => ({
         id: item._id,
         no: item.creditNoteNo,
         customerId: item.customerId,
       }));
-    } else if (
-      typeFilter === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT ||
-      typeFilter === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT
-    ) {
+    } else if (typeFilter === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT || typeFilter === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
       let criteria: any = {
         isDeleted: false,
         paymentType: POS_PAYMENT_TYPE.ADVANCE,
@@ -718,9 +391,7 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
       if (companyId) criteria.companyId = new ObjectId(companyId);
       if (customerFilter) criteria.partyId = new ObjectId(customerFilter);
 
-      const data = await PosPaymentModel.find(criteria)
-        .select("paymentNo partyId")
-        .sort({ createdAt: -1 });
+      const data = await PosPaymentModel.find(criteria).select("paymentNo partyId").sort({ createdAt: -1 });
 
       response = data.map((item) => ({
         id: item._id,
@@ -729,27 +400,9 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
       }));
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("POS Credit Note"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Credit Note"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error?.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
