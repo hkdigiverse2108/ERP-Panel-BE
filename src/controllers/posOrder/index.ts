@@ -298,7 +298,7 @@ export const addPosOrder = async (req, res) => {
       const loyaltyResponse = await applyLoyalty(
         value.loyaltyId,
         value.customerId,
-        value.totalAmount,
+        Number(value.totalMrp),
       );
       if (loyaltyResponse !== "Loyalty redeemed successfully") {
         return res
