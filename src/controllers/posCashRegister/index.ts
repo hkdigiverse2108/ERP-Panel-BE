@@ -78,7 +78,17 @@ export const editPosCashRegister = async (req, res) => {
     }
 
     if (value.status === CASH_REGISTER_STATUS.CLOSED) {
-      const isPosHoldOrderExist = await getFirstMatch(PosOrderModel, { createdAt: { $gte: isExist?.createdAt }, status: POS_ORDER_STATUS.HOLD, isDeleted: false, companyId: isExist?.companyId }, {}, {});
+      const isPosHoldOrderExist = await getFirstMatch(
+        PosOrderModel,
+        {
+          posCashRegisterId: isExist?._id,
+          status: POS_ORDER_STATUS.HOLD,
+          isDeleted: false,
+          companyId: isExist?.companyId,
+        },
+        {},
+        {},
+      );
       if (isPosHoldOrderExist) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "First Settle the all hold orders", {}, {}));
       }

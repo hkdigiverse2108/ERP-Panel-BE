@@ -12,7 +12,7 @@ export interface IStockVerificationItem {
   systemQty: number;
   physicalQty: number;
   differenceQty: number;
-  approvedQty?: number;
+  // approvedQty?: number;
   differenceAmount: number;
 }
 
@@ -27,6 +27,6 @@ export interface IStockVerification extends IBase {
   totalProducts: number;
   totalPhysicalQty: number;
   totalDifferenceAmount: number;
-  totalApprovedQty?: number;
+  // totalApprovedQty?: number;
   status: "pending" | "approved" | "rejected";
 }

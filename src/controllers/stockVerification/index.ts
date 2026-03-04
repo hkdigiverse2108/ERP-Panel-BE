@@ -1,5 +1,5 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
-import { stockVerificationModel, productModel, categoryModel } from "../../database";
+import { apiResponse, APPROVAL_STATUS, HTTP_STATUS } from "../../common";
+import { stockVerificationModel, productModel, categoryModel, stockModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addStockVerificationSchema, deleteStockVerificationSchema, editStockVerificationSchema, getStockVerificationSchema } from "../../validation";
 
@@ -24,9 +24,8 @@ export const addStockVerification = async (req, res) => {
       }
     }
 
-    let stockVerificationNo = await generateSequenceNumber({ model: stockVerificationModel, prefix: "SV", fieldName: "stockVerificationNo", companyId: value.companyId });
+    value.stockVerificationNo = await generateSequenceNumber({ model: stockVerificationModel, prefix: "SV", fieldName: "stockVerificationNo", companyId: value.companyId });
 
-    value.stockVerificationNo = stockVerificationNo;
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
@@ -34,6 +33,20 @@ export const addStockVerification = async (req, res) => {
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+    }
+
+    if (response.status === APPROVAL_STATUS.APPROVED) {
+      for (const item of response.items) {
+        await stockModel.findOneAndUpdate(
+          {
+            productId: item.productId,
+            companyId: response.companyId,
+            branchId: response.branchId,
+            isDeleted: false,
+          },
+          { $set: { qty: item.physicalQty } },
+        );
+      }
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock Verification"), response, {}));
@@ -72,6 +85,20 @@ export const editStockVerification = async (req, res) => {
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Stock Verification"), {}, {}));
+    }
+
+    if (response.status === APPROVAL_STATUS.APPROVED) {
+      for (const item of response.items) {
+        await stockModel.findOneAndUpdate(
+          {
+            productId: item.productId,
+            companyId: response.companyId,
+            branchId: response.branchId,
+            isDeleted: false,
+          },
+          { $set: { qty: item.physicalQty } },
+        );
+      }
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Verification"), response, {}));
@@ -144,9 +171,10 @@ export const getAllStockVerification = async (req, res) => {
       let start = new Date(startDate as string);
       let end = new Date(endDate as string);
       end.setHours(23, 59, 59, 999);
-      applyDateFilter(criteria, start.toISOString(), end.toISOString(), "verificationDate");
+      applyDateFilter(criteria, start.toISOString(), end.toISOString());
     }
 
+    console.log(criteria);
     const options: any = {
       sort: { createdAt: -1 },
       populate: [
