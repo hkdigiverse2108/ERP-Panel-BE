@@ -34,7 +34,7 @@ export const addUserSchema = Joi.object().keys({
   email: Joi.string().email().lowercase().optional(),
   phoneNo: commonContactSchema.required(),
   password: Joi.string().required(),
-  role: objectId().required(),
+  role: objectId().optional(),
   userType: Joi.string()
     .valid(...Object.values(USER_TYPES))
     .required(),
