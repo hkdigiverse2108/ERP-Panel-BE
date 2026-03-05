@@ -300,19 +300,19 @@ export const getAllPosCashRegister = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    const { error, value } = getAllPosCashRegisterSchema.validate(req.query);
-    if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
-    }
+    // const { error, value } = getAllPosCashRegisterSchema.validate(req.query);
+    // if (error) {
+    //   return res
+    //     .status(HTTP_STATUS.BAD_REQUEST)
+    //     .json(
+    //       new apiResponse(
+    //         HTTP_STATUS.BAD_REQUEST,
+    //         error?.details[0]?.message,
+    //         {},
+    //         {},
+    //       ),
+    //     );
+    // }
 
     let {
       page,
@@ -322,7 +322,7 @@ export const getAllPosCashRegister = async (req, res) => {
       statusFilter,
       startDate,
       endDate,
-    } = value;
+    } = req.query;
     page = Number(page);
     limit = Number(limit);
 
