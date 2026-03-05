@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import http from "http";
@@ -8,6 +8,7 @@ import { connectDb } from "./database/connection";
 import { router } from "./routes";
 import path from "path";
 import { HTTP_STATUS } from "./common";
+import { socketServer } from "./helper/socket";
 import { initCronJobs } from "./helper";
 
 const app = express();
@@ -48,6 +49,7 @@ app.use((_, res) => {
   });
 });
 
-
 let server = new http.Server(app);
+export const socket = socketServer(server);
+
 export default server;
