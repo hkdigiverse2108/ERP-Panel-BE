@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { feedbackModel, InvoiceModel, contactModel } from "../../database";
+import { feedbackModel, PosOrderModel, contactModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addFeedbackSchema, deleteFeedbackSchema, editFeedbackSchema, getFeedbackSchema } from "../../validation/feedback";
 
@@ -21,7 +21,7 @@ export const addFeedback = async (req, res) => {
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Validate invoice if provided
-    if (value.invoiceId && !(await checkIdExist(InvoiceModel, value.invoiceId, "Invoice", res))) return;
+    if (value.orderId && !(await checkIdExist(PosOrderModel, value.orderId, "Order", res))) return;
 
     // Validate customer if provided
     if (value.customerId && !(await checkIdExist(contactModel, value.customerId, "Customer", res))) return;
@@ -60,8 +60,8 @@ export const editFeedback = async (req, res) => {
     }
 
     // Validate invoice if being changed
-    if (value.invoiceId && value.invoiceId !== isExist.invoiceId?.toString()) {
-      if (!(await checkIdExist(InvoiceModel, value.invoiceId, "Invoice", res))) return;
+    if (value.orderId && value.orderId !== isExist.orderId?.toString()) {
+      if (!(await checkIdExist(PosOrderModel, value.orderId, "Order", res))) return;
     }
 
     // Validate customer if being changed

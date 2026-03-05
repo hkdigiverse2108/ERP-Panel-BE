@@ -2,7 +2,7 @@ import Joi from "joi";
 import { objectId } from "./common";
 
 export const addFeedbackSchema = Joi.object().keys({
-  invoiceId: objectId().optional().allow("", null),
+  orderId: objectId().optional().allow("", null),
   customerId: objectId().optional().allow("", null),
   rating: Joi.number().min(1).max(5).required(),
   comment: Joi.string().optional().allow("", null),
@@ -11,7 +11,7 @@ export const addFeedbackSchema = Joi.object().keys({
 
 export const editFeedbackSchema = Joi.object().keys({
   feedbackId: objectId().required(),
-  invoiceId: objectId().optional().allow("", null),
+  orderId: objectId().optional().allow("", null),
   customerId: objectId().optional().allow("", null),
   rating: Joi.number().min(1).max(5).optional(),
   comment: Joi.string().optional().allow("", null),
