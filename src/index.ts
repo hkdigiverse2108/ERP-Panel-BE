@@ -9,6 +9,7 @@ import { router } from "./routes";
 import path from "path";
 import { HTTP_STATUS } from "./common";
 import { socketServer } from "./helper/socket";
+import { initCronJobs } from "./helper";
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
 connectDb();
+initCronJobs();
 
 const health = (_, res) => {
   return res.status(200).json({

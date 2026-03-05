@@ -133,7 +133,7 @@ export const getAllCoupon = async (req, res) => {
     page = Number(page) || 1;
     limit = Number(limit) || 10;
 
-    let criteria: any = { isDeleted: false };
+    let criteria: any = { isDeleted: false, status: { $ne: COUPON_STATUS.EXPIRED } };
 
     if (companyId) {
       criteria.companyId = companyId;
