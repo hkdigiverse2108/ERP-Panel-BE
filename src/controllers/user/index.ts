@@ -54,22 +54,21 @@ export const addUser = async (req, res) => {
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
     if (value?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $push: { userIds: response?._id } }, {});
-
-    if (user?.role?.name === USER_ROLES.SUPER_ADMIN || user?.role?.name === USER_ROLES.ADMIN) {
-      if (user?.role?.name === USER_ROLES.ADMIN) {
+    if (user?.userType === USER_TYPES.SUPER_ADMIN || user?.userType === USER_TYPES.ADMIN) {
+      if (user?.userType === USER_TYPES.ADMIN) {
         let allPermissions = await getData(permissionModel, { userId: user?._id }, {}, {});
         for (let permission of allPermissions) {
           let module = await getFirstMatch(moduleModel, { _id: permission?.moduleId, isActive: true, isDeleted: false, default: true }, {}, {});
           let permissionData = {
             moduleId: new ObjectId(module?._id),
             userId: new ObjectId(response?._id),
-            view: module?.view,
-            add: module?.add,
-            edit: module?.edit,
-            delete: module?.delete,
+            view: permission?.view,
+            add: permission?.add,
+            edit: permission?.edit,
+            delete: permission?.delete,
             isActive: true,
           };
-          await updateData(permissionModel, { userId: new ObjectId(response?._id), moduleId: new ObjectId(module._id) }, permissionData, { upsert: true, new: true });
+          if(module?._id && response?._id) await updateData(permissionModel, { userId: new ObjectId(response?._id), moduleId: new ObjectId(module?._id) }, permissionData, { upsert: true, new: true });
         }
       } else {
         let allModules = await getData(moduleModel, { isActive: true, isDeleted: false, default: true }, {}, {});
@@ -77,10 +76,10 @@ export const addUser = async (req, res) => {
           let permissionData = {
             moduleId: new ObjectId(module?._id),
             userId: new ObjectId(response?._id),
-            view: module?.view,
-            add: module?.add,
-            edit: module?.edit,
-            delete: module?.delete,
+            view: module?.hasView,
+            add: module?.hasAdd,
+            edit: module?.hasEdit,
+            delete: module?.hasDelete,
             isActive: true,
           };
           await updateData(permissionModel, { userId: new ObjectId(response?._id), moduleId: new ObjectId(module._id) }, permissionData, { upsert: true, new: true });
