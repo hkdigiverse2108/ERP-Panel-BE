@@ -628,7 +628,7 @@ export const getAllPosOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, statusFilter, customerFilter, duePaymentFilter, paymentStatusFilter, methodFilter, branchFilter, tableNoFilter, orderTypeFilter, startDate, endDate, lastBillFilter } = req.query;
+    let { page, limit, search, activeFilter, companyFilter, statusFilter, customerFilter, duePaymentFilter, paymentStatusFilter, methodFilter, branchFilter, tableNoFilter, orderTypeFilter, startDate, endDate, lastBillFilter, orderListFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -679,6 +679,10 @@ export const getAllPosOrder = async (req, res) => {
 
     if (tableNoFilter) {
       criteria.tableNo = tableNoFilter;
+    }
+
+    if (orderListFilter == "true") {
+      criteria.status = { $ne: POS_ORDER_STATUS.HOLD };
     }
 
     applyDateFilter(criteria, startDate as string, endDate as string);
