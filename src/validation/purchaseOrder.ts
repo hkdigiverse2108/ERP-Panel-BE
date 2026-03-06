@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId, transectionSummarySchema } from "./common";
+import { baseApiSchema, objectId, transactionSummarySchema } from "./common";
 import { ORDER_STATUS, TAX_TYPE } from "../common";
 
 const purchaseOrderItemSchema = Joi.object({
@@ -39,7 +39,7 @@ export const addPurchaseOrderSchema = Joi.object({
   totalTax: Joi.string().optional().allow("", null),
   total: Joi.string().optional().allow("", null),
 
-  summary: transectionSummarySchema.optional(),
+  summary: transactionSummarySchema.optional(),
 
   status: Joi.string()
     .valid(...Object.values(ORDER_STATUS))
@@ -75,7 +75,7 @@ export const editPurchaseOrderSchema = Joi.object({
   totalTax: Joi.string().optional().allow("", null),
   total: Joi.string().optional().allow("", null),
 
-  summary: transectionSummarySchema.optional(),
+  summary: transactionSummarySchema.optional(),
 
   status: Joi.string()
     .valid(...Object.values(ORDER_STATUS))

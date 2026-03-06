@@ -1,7 +1,7 @@
 import Joi from "joi";
 import {
   objectId,
-  transectionSummarySchema,
+  transactionSummarySchema,
   commonAdditionalChargeSchema,
   commonShippingSchema,
 } from "./common";
@@ -41,7 +41,7 @@ export const addSalesOrderSchema = Joi.object().keys({
   salesManId: objectId().optional().allow("", null),
   selectedEstimateId: objectId().optional().allow("", null),
   items: Joi.array().items(salesOrderItemSchema).min(1).required(),
-  transectionSummary: transectionSummarySchema.required(),
+  transactionSummary: transactionSummarySchema.required(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   status: Joi.string()
@@ -70,7 +70,7 @@ export const editSalesOrderSchema = Joi.object().keys({
   salesManId: objectId().optional().allow("", null),
   selectedEstimateId: objectId().optional().allow("", null),
   items: Joi.array().items(salesOrderItemSchema).optional(),
-  transectionSummary: transectionSummarySchema.optional(),
+  transactionSummary: transactionSummarySchema.optional(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   status: Joi.string()

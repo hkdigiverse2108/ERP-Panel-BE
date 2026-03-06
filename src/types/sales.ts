@@ -9,7 +9,7 @@ export interface ISalesDocument extends IBase {
   salesManId?: Schema.Types.ObjectId;
   items: any[];
 
-  transectionSummary: any;
+  transactionSummary: any;
   additionalCharges: any;
 
   notes?: string[];

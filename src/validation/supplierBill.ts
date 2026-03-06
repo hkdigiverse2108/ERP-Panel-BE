@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId, transectionSummarySchema, commonAdditionalChargeSchema } from "./common";
+import { baseApiSchema, objectId, transactionSummarySchema, commonAdditionalChargeSchema } from "./common";
 import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS, PAYMENT_TERMS_ENUM } from "../common";
 
 const supplierBillItemSchema = Joi.object({
@@ -71,7 +71,7 @@ export const addSupplierBillSchema = Joi.object({
     item: Joi.array().items(supplierBillReturnItemSchema).optional(),
     totalQty: Joi.number().optional(),
     total: Joi.number().optional(),
-    summary: transectionSummarySchema.optional(),
+    summary: transactionSummarySchema.optional(),
   }).optional(),
 
   additionalCharges: Joi.object({
@@ -82,7 +82,7 @@ export const addSupplierBillSchema = Joi.object({
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().allow("").optional(),
 
-  summary: transectionSummarySchema.optional(),
+  summary: transactionSummarySchema.optional(),
 
   paidAmount: Joi.number().min(0).default(0),
   balanceAmount: Joi.number().min(0).default(0),
@@ -132,7 +132,7 @@ export const editSupplierBillSchema = Joi.object({
     item: Joi.array().items(supplierBillReturnItemSchema).optional(),
     totalQty: Joi.number().optional(),
     total: Joi.number().optional(),
-    summary: transectionSummarySchema.optional(),
+    summary: transactionSummarySchema.optional(),
   }).optional(),
 
   additionalCharges: Joi.object({
@@ -143,7 +143,7 @@ export const editSupplierBillSchema = Joi.object({
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().allow("").optional(),
 
-  summary: transectionSummarySchema.optional(),
+  summary: transactionSummarySchema.optional(),
 
   paidAmount: Joi.number().min(0).optional(),
   balanceAmount: Joi.number().min(0).optional(),

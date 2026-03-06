@@ -25,7 +25,7 @@ export const commonContactSchema = Joi.object().keys({
     .optional(),
 });
 
-export const transectionSummarySchema = Joi.object().keys({
+export const transactionSummarySchema = Joi.object().keys({
   flatDiscount: Joi.number().default(0).optional(),
   grossAmount: Joi.number().default(0).optional(),
   discountAmount: Joi.number().default(0).optional(),

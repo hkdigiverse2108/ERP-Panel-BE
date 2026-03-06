@@ -506,14 +506,14 @@ export const getDeliveryChallanDropdown = async (req, res) => {
       populate: [{ path: "customerId", select: "firstName lastName companyName" }],
     };
 
-    const response = await getDataWithSorting(deliveryChallanModel, criteria, { deliveryChallanNo: 1, date: 1, transectionSummary: 1 }, options);
+    const response = await getDataWithSorting(deliveryChallanModel, criteria, { deliveryChallanNo: 1, date: 1, transactionSummary: 1 }, options);
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
       name: item.deliveryChallanNo,
       deliveryChallanNo: item.deliveryChallanNo,
       date: item.date,
-      netAmount: item.transectionSummary?.netAmount || 0,
+      netAmount: item.transactionSummary?.netAmount || 0,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan Dropdown"), dropdownData, {}));

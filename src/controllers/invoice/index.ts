@@ -92,24 +92,24 @@ export const addInvoice = async (req, res) => {
     }
 
     // Calculate totals if not provided
-    if (!value.transectionSummary) {
-      value.transectionSummary = {};
+    if (!value.transactionSummary) {
+      value.transactionSummary = {};
     }
-    if (value.transectionSummary.grossAmount === undefined) {
-      value.transectionSummary.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
+    if (value.transactionSummary.grossAmount === undefined) {
+      value.transactionSummary.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
     }
-    if (value.transectionSummary.netAmount === undefined || value.transectionSummary.netAmount === null) {
-      value.transectionSummary.netAmount = (value.transectionSummary.grossAmount || 0) - (value.transectionSummary.discountAmount || 0) + (value.transectionSummary.taxAmount || 0) + (value.transectionSummary.roundOff || 0);
+    if (value.transactionSummary.netAmount === undefined || value.transactionSummary.netAmount === null) {
+      value.transactionSummary.netAmount = (value.transactionSummary.grossAmount || 0) - (value.transactionSummary.discountAmount || 0) + (value.transactionSummary.taxAmount || 0) + (value.transactionSummary.roundOff || 0);
     }
 
     // Calculate balance amount
-    value.balanceAmount = (value.transectionSummary.netAmount || 0) - (value.paidAmount || 0);
+    value.balanceAmount = (value.transactionSummary.netAmount || 0) - (value.paidAmount || 0);
 
     // Set payment status based on paid amount
     if (!value.paymentStatus) {
       if (value.paidAmount === 0) {
         value.paymentStatus = "unpaid";
-      } else if (value.paidAmount >= value.transectionSummary.netAmount) {
+      } else if (value.paidAmount >= value.transactionSummary.netAmount) {
         value.paymentStatus = "paid";
       } else {
         value.paymentStatus = "partial";
@@ -245,15 +245,15 @@ export const editInvoice = async (req, res) => {
       }
 
       // Recalculate totals
-      if (!value.transectionSummary) {
-        value.transectionSummary = isExist.transectionSummary || {};
+      if (!value.transactionSummary) {
+        value.transactionSummary = isExist.transactionSummary || {};
       }
-      value.transectionSummary.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
-      value.transectionSummary.netAmount = (value.transectionSummary.grossAmount || 0) - (value.transectionSummary.discountAmount || 0) + (value.transectionSummary.taxAmount || 0) + (value.transectionSummary.roundOff || 0);
+      value.transactionSummary.grossAmount = value.items.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
+      value.transactionSummary.netAmount = (value.transactionSummary.grossAmount || 0) - (value.transactionSummary.discountAmount || 0) + (value.transactionSummary.taxAmount || 0) + (value.transactionSummary.roundOff || 0);
     }
 
     // Recalculate balance and payment status
-    const reqNetAmount = value.transectionSummary?.netAmount ?? isExist.transectionSummary?.netAmount ?? 0;
+    const reqNetAmount = value.transactionSummary?.netAmount ?? isExist.transactionSummary?.netAmount ?? 0;
     value.balanceAmount = reqNetAmount - (value.paidAmount !== undefined ? value.paidAmount : isExist.paidAmount);
     if (value.paidAmount !== undefined) {
       const paidAmt = value.paidAmount;
@@ -580,7 +580,7 @@ export const getInvoiceDropdown = async (req, res) => {
       populate: [{ path: "customerId", select: "firstName lastName companyName" }],
     };
 
-    const response = await getDataWithSorting(InvoiceModel, criteria, { invoiceNo: 1, customerName: 1, date: 1, transectionSummary: 1, balanceAmount: 1 }, options);
+    const response = await getDataWithSorting(InvoiceModel, criteria, { invoiceNo: 1, customerName: 1, date: 1, transactionSummary: 1, balanceAmount: 1 }, options);
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
@@ -588,7 +588,7 @@ export const getInvoiceDropdown = async (req, res) => {
       invoiceNo: item.invoiceNo,
       customerName: item.customerName,
       date: item.date,
-      netAmount: item.transectionSummary?.netAmount || 0,
+      netAmount: item.transactionSummary?.netAmount || 0,
       balanceAmount: item.balanceAmount,
     }));
 
