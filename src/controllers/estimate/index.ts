@@ -219,7 +219,7 @@ export const getAllEstimate = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, status, startDate, endDate, companyFilter, activeFilter } = req.query;
+    let { page, limit, search, startDate, endDate, companyFilter, activeFilter, customerFilter, statusFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -237,12 +237,16 @@ export const getAllEstimate = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
-    if (search) {
-      criteria.$or = [{ estimateNo: { $regex: search, $options: "si" } }];
+    if (customerFilter) {
+      criteria.customerId = customerFilter;
     }
 
-    if (status) {
-      criteria.status = status;
+    if (statusFilter) {
+      criteria.status = statusFilter;
+    }
+
+    if (search) {
+      criteria.$or = [{ estimateNo: { $regex: search, $options: "si" } }];
     }
 
     applyDateFilter(criteria, startDate as string, endDate as string, "date");
