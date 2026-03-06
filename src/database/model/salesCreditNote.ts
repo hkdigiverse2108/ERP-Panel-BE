@@ -24,18 +24,10 @@ export interface ISalesCreditNote extends IBase {
 
   salesManId?: Schema.Types.ObjectId;
 
-  productDetails: {
-    items: any[];
-    totalQty: number;
-    totalFreeQty: number;
-    totalTax: number;
-    totalAmount: number;
-  };
+  productDetails: any[];
 
-  additionalCharges: {
-    items: any[];
-    total: number;
-  };
+  additionalCharges: any[];
+
 
   termsAndConditionIds: Schema.Types.ObjectId[];
   notes?: string;
@@ -115,18 +107,11 @@ const salesCreditNoteSchema = new Schema<ISalesCreditNote>(
       ref: "employee",
     },
 
-    productDetails: {
-      items: [salesCreditNoteItemSchema],
-      totalQty: { type: Number, default: 0 },
-      totalFreeQty: { type: Number, default: 0 },
-      totalTax: { type: Number, default: 0 },
-      totalAmount: { type: Number, default: 0 },
-    },
+    productDetails: [salesCreditNoteItemSchema],
 
-    additionalCharges: {
-      items: [commonAdditionalChargeSchema],
-      total: { type: Number, default: 0 },
-    },
+
+    additionalCharges: [commonAdditionalChargeSchema],
+
 
     termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
     notes: { type: String },

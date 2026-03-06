@@ -34,18 +34,9 @@ export const addSalesCreditNoteSchema = Joi.object({
     .default(SALES_CREDIT_NOTE_PRODUCT_TYPE.ALL),
   salesManId: objectId().optional(),
 
-  productDetails: Joi.object({
-    items: Joi.array().items(salesCreditNoteItemSchema).optional(),
-    totalQty: Joi.number().optional(),
-    totalFreeQty: Joi.number().optional(),
-    totalTax: Joi.number().optional(),
-    totalAmount: Joi.number().optional(),
-  }).optional(),
+  productDetails: Joi.array().items(salesCreditNoteItemSchema).optional(),
 
-  additionalCharges: Joi.object({
-    items: Joi.array().items(commonAdditionalChargeSchema).optional(),
-    total: Joi.number().optional(),
-  }).optional(),
+  additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().allow("").optional(),
@@ -78,18 +69,11 @@ export const editSalesCreditNoteSchema = Joi.object({
     .optional(),
   salesManId: objectId().optional(),
 
-  productDetails: Joi.object({
-    items: Joi.array().items(salesCreditNoteItemSchema).optional(),
-    totalQty: Joi.number().optional(),
-    totalFreeQty: Joi.number().optional(),
-    totalTax: Joi.number().optional(),
-    totalAmount: Joi.number().optional(),
-  }).optional(),
+  productDetails: Joi.array().items(salesCreditNoteItemSchema).optional(),
 
-  additionalCharges: Joi.object({
-    items: Joi.array().items(commonAdditionalChargeSchema).optional(),
-    total: Joi.number().optional(),
-  }).optional(),
+
+  additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
+
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().allow("").optional(),
