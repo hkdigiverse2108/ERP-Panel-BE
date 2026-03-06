@@ -1004,17 +1004,7 @@ export const getShortHoldOrders = async (req, res) => {
 
     const response = await getDataWithSorting(PosOrderModel, criteria, selectedFields, options);
 
-    // Map to a simpler structure if needed, or just return as is
-    const shortResponse = response.map((order: any) => ({
-      _id: order._id,
-      orderNo: order.orderNo,
-      holdDate: order.holdDate || order.createdAt,
-      totalAmount: order.totalAmount,
-      contactName: order.customerId ? `${order.customerId.firstName} ${order.customerId.lastName || ''}`.trim() : '-',
-      contactNo: order.customerId?.phoneNo?.phoneNo || order.customerId?.telephoneNo || '-',
-    }));
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Hold Orders Short"), shortResponse, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Hold Orders"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
