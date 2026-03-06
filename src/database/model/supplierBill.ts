@@ -66,17 +66,10 @@ const supplierBillSchema = new Schema<ISupplierBill>(
     taxType: { type: String },
     invoiceAmount: { type: String },
 
-    productDetails: {
-      item: [supplierBillItemSchema],
-      totalQty: { type: Number },
-      totalTax: { type: Number },
-      total: { type: Number },
-    },
+    productDetails: [supplierBillItemSchema],
 
     returnProductDetails: {
       item: [supplierBillReturnItemSchema],
-      totalQty: { type: Number },
-      total: { type: Number },
       summary: {
         grossAmount: Number,
         taxAmount: Number,
@@ -85,10 +78,7 @@ const supplierBillSchema = new Schema<ISupplierBill>(
       },
     },
 
-    additionalCharges: {
-      item: [commonAdditionalChargeSchema],
-      total: { type: Number },
-    },
+    additionalCharges: [commonAdditionalChargeSchema],
 
     termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
     notes: { type: String },

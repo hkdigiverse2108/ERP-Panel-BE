@@ -25,7 +25,7 @@ const SalesOrderSchema = new Schema<ISalesOrder>(
     salesManId: { type: Schema.Types.ObjectId, ref: "user" },
     selectedEstimateId: { type: Schema.Types.ObjectId, ref: "estimate" },
     items: [salesOrderItemSchema],
-    transectionSummary: { type: transactionSummarySchema },
+    transactionSummary: { type: transactionSummarySchema },
     additionalCharges: { type: [commonAdditionalChargeSchema] },
     termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
     status: { type: String, enum: Object.values(SALES_ORDER_STATUS), default: SALES_ORDER_STATUS.PENDING },

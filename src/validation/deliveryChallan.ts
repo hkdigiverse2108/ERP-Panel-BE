@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { commonAdditionalChargeSchema, objectId, transectionSummarySchema } from "./common";
+import { commonAdditionalChargeSchema, objectId, transactionSummarySchema } from "./common";
 import { DELIVERY_CHALLAN_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE } from "../common";
 
 const deliveryChallanItemSchema = Joi.object().keys({
@@ -32,7 +32,7 @@ export const addDeliveryChallanSchema = Joi.object().keys({
   createdFrom: Joi.string().valid(...Object.values(["invoice", "sales-order", ""])).optional().allow("", null),
   taxType: Joi.string().valid(...Object.values(TAX_TYPE)).optional().allow("", null),
   shippingDetails: Joi.object().optional(),
-  transectionSummary: transectionSummarySchema.optional(),
+  transactionSummary: transactionSummarySchema.optional(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   items: Joi.array().items(deliveryChallanItemSchema).min(1).required(),
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
@@ -52,7 +52,7 @@ export const editDeliveryChallanSchema = Joi.object().keys({
   createdFrom: Joi.string().valid(...Object.values(["invoice", "sales-order", ""])).optional().allow("", null),
   taxType: Joi.string().valid(...Object.values(TAX_TYPE)).optional().allow("", null),
   shippingDetails: Joi.object().optional(),
-  transectionSummary: transectionSummarySchema.optional(),
+  transactionSummary: transactionSummarySchema.optional(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   items: Joi.array().items(deliveryChallanItemSchema).optional(),
   termsAndConditionIds: Joi.array().items(objectId()).optional(),

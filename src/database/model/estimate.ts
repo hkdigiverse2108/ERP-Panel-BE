@@ -24,7 +24,7 @@ const EstimateSchema = new Schema<IEstimate>(
     termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
     reverseCharge: { type: Boolean, default: false },
     status: { type: String, enum: Object.values(ESTIMATE_STATUS), default: ESTIMATE_STATUS.PENDING },
-    transectionSummary: { type: transactionSummarySchema },
+    transactionSummary: { type: transactionSummarySchema },
     additionalCharges: { type: [commonAdditionalChargeSchema] },
     paymentTerms: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
     taxType: { type: String, enum: Object.values(TAX_TYPE), default: TAX_TYPE.DEFAULT },

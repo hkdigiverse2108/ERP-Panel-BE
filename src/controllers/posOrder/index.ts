@@ -782,6 +782,7 @@ export const getOnePosOrder = async (req, res) => {
           {
             path: "items.productId",
             select: "-isDeleted -isActive -createdAt -updatedAt -createdBy -updatedBy -images -nutrition",
+            populate: [{ path: "brandId", select: "name" }, { path: "categoryId", select: "name" }],
           },
           { path: "invoiceId", select: "documentNo" },
           { path: "additionalCharges.taxId", select: "name percentage" },
@@ -890,7 +891,7 @@ export const getAllHoldOrders = async (req, res) => {
         { path: "branchId", select: "name" },
         { path: "companyId", select: "name" },
         { path: "salesManId", select: "fullName" },
-        { path: "customerId", select: "firstName lastName companyName" },
+        { path: "customerId", select: "firstName lastName companyName phoneNo" },
         { path: "posCashRegisterId", select: "registerNo status" },
         {
           path: "items.productId",
@@ -969,6 +970,41 @@ export const getAllHoldOrders = async (req, res) => {
     });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Hold Orders"), updatedResponse, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const getShortHoldOrders = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+    const { search } = req.query;
+
+    let criteria: any = { isDeleted: false, status: POS_ORDER_STATUS.HOLD };
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (search) {
+      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }, { tableNo: { $regex: search, $options: "si" } }];
+    }
+
+    const options = {
+      sort: { holdDate: -1 },
+      populate: [
+        { path: "customerId", select: "firstName lastName phoneNo " },
+      ],
+      limit: 100,
+    };
+
+    const selectedFields = { orderNo: 1, holdDate: 1, totalAmount: 1, customerId: 1, createdAt: 1 };
+
+    const response = await getDataWithSorting(PosOrderModel, criteria, selectedFields, options);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Hold Orders"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

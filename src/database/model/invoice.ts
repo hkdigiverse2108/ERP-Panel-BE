@@ -26,7 +26,7 @@ const invoiceSchema = new Schema<IInvoice>({
     taxType: { type: String, enum: Object.values(TAX_TYPE) },
     shippingDetails: { type: commonShippingSchema },
     items: [invoiceItemSchema],
-    transectionSummary: { type: transactionSummarySchema },
+    transactionSummary: { type: transactionSummarySchema },
     additionalCharges: { type: [commonAdditionalChargeSchema] },
     paidAmount: { type: Number, default: 0 },
     payType: { type: String, enum: Object.values(PAY_TYPE) },

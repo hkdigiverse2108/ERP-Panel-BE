@@ -12,20 +12,28 @@ export const edit_permission_by_id = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     let { modules, userId } = value;
-    let updatedRoleDetails: any = [];
-    for (let roleDetails of modules) {
-      let updateDataObj = {
-        moduleId: new ObjectId(roleDetails._id),
-        add: roleDetails.add,
-        edit: roleDetails.edit,
-        view: roleDetails.view,
-        delete: roleDetails.delete,
-        isActive: roleDetails.isActive,
-      };
 
-      let updateRoleDetails = await updateData(permissionModel, { userId: new ObjectId(userId), moduleId: new ObjectId(roleDetails._id) }, updateDataObj, { upsert: true, new: true });
-      updatedRoleDetails.push(updateRoleDetails);
+    const bulkOps = modules.map((roleDetails: any) => ({
+      updateOne: {
+        filter: { userId: new ObjectId(userId), moduleId: new ObjectId(roleDetails._id) },
+        update: {
+          $set: {
+            add: roleDetails.add,
+            edit: roleDetails.edit,
+            view: roleDetails.view,
+            delete: roleDetails.delete,
+            isActive: roleDetails.isActive,
+          }
+        },
+        upsert: true
+      }
+    }));
+
+    if (bulkOps.length > 0) {
+      await permissionModel.bulkWrite(bulkOps);
     }
+
+    let updatedRoleDetails = await permissionModel.find({ userId: new ObjectId(userId) });
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("role details"), updatedRoleDetails, {}));
   } catch (error) {
     console.error(error);
@@ -46,17 +54,18 @@ export const get_permission_by_userId = async (req, res) => {
     let userData = await getFirstMatch(userModel, { _id: new ObjectId(userId), isDeleted: false }, {}, {});
     if (!userData) return res.status(HTTP_STATUS.METHOD_NOT_ALLOWED).json(new apiResponse(HTTP_STATUS.METHOD_NOT_ALLOWED, responseMessage.getDataNotFound("user"), {}, {}));
 
-    userId = user.userType === USER_TYPES.ADMIN ? user?._id : userId;
-
     let userPermissionData = await getData(permissionModel, { userId: new ObjectId(userId), isDeleted: false, isActive: true }, {}, {});
     if (!userPermissionData) return res.status(HTTP_STATUS.METHOD_NOT_ALLOWED).json(new apiResponse(HTTP_STATUS.METHOD_NOT_ALLOWED, responseMessage.getDataNotFound("user permissions"), {}, {}));
 
     if (search) {
       match.$or = [{ tabName: { $regex: search, $options: "si" } }, { displayName: { $regex: search, $options: "si" } }, { tabUrl: { $regex: search, $options: "si" } }];
     }
+
+    // Restrict visible modules to those the requesting Admin has access to
     if (user.userType === USER_TYPES.ADMIN) {
+      let adminPermissionData = await getData(permissionModel, { userId: new ObjectId(user._id), isDeleted: false, isActive: true }, {}, {});
       let moduleIds = [];
-      for (let e of userPermissionData) {
+      for (let e of adminPermissionData) {
         if (e.view === true || e.add === true || e.edit === true || e.delete === true) {
           moduleIds.push(new ObjectId(e.moduleId));
         }
@@ -132,9 +141,11 @@ export const get_permission_by_userId_child = async (req, res) => {
       match.$or = [{ tabName: { $regex: search, $options: "si" } }, { displayName: { $regex: search, $options: "si" } }, { tabUrl: { $regex: search, $options: "si" } }];
     }
 
+    // Restrict visible modules to those the requesting Admin has access to
     if (user.userType != USER_TYPES.SUPER_ADMIN) {
+      let requestingUserPermissions = await getData(permissionModel, { userId: new ObjectId(user._id), isDeleted: false, isActive: true }, {}, {});
       let moduleIds = [];
-      for (let e of userPermissionData) {
+      for (let e of requestingUserPermissions) {
         if (e.view === true || e.add === true || e.edit === true || e.delete === true) {
           moduleIds.push(new ObjectId(e.moduleId));
         }

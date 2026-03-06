@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId, transectionSummarySchema, commonAdditionalChargeSchema, commonShippingSchema } from "./common";
+import { baseApiSchema, objectId, transactionSummarySchema, commonAdditionalChargeSchema, commonShippingSchema } from "./common";
 import { PURCHASE_DEBIT_NOTE_STATUS, SALES_CREDIT_NOTE_PRODUCT_TYPE } from "../common";
 
 const salesCreditNoteItemSchema = Joi.object({
@@ -34,23 +34,14 @@ export const addSalesCreditNoteSchema = Joi.object({
     .default(SALES_CREDIT_NOTE_PRODUCT_TYPE.ALL),
   salesManId: objectId().optional(),
 
-  productDetails: Joi.object({
-    items: Joi.array().items(salesCreditNoteItemSchema).optional(),
-    totalQty: Joi.number().optional(),
-    totalFreeQty: Joi.number().optional(),
-    totalTax: Joi.number().optional(),
-    totalAmount: Joi.number().optional(),
-  }).optional(),
+  productDetails: Joi.array().items(salesCreditNoteItemSchema).optional(),
 
-  additionalCharges: Joi.object({
-    items: Joi.array().items(commonAdditionalChargeSchema).optional(),
-    total: Joi.number().optional(),
-  }).optional(),
+  additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().allow("").optional(),
   shippingDetails: commonShippingSchema.optional(),
-  summary: transectionSummarySchema.optional(),
+  summary: transactionSummarySchema.optional(),
 
   status: Joi.string()
     .valid(...Object.values(PURCHASE_DEBIT_NOTE_STATUS))
@@ -78,23 +69,16 @@ export const editSalesCreditNoteSchema = Joi.object({
     .optional(),
   salesManId: objectId().optional(),
 
-  productDetails: Joi.object({
-    items: Joi.array().items(salesCreditNoteItemSchema).optional(),
-    totalQty: Joi.number().optional(),
-    totalFreeQty: Joi.number().optional(),
-    totalTax: Joi.number().optional(),
-    totalAmount: Joi.number().optional(),
-  }).optional(),
+  productDetails: Joi.array().items(salesCreditNoteItemSchema).optional(),
 
-  additionalCharges: Joi.object({
-    items: Joi.array().items(commonAdditionalChargeSchema).optional(),
-    total: Joi.number().optional(),
-  }).optional(),
+
+  additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
+
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().allow("").optional(),
   shippingDetails: commonShippingSchema.optional(),
-  summary: transectionSummarySchema.optional(),
+  summary: transactionSummarySchema.optional(),
 
   status: Joi.string()
     .valid(...Object.values(PURCHASE_DEBIT_NOTE_STATUS))

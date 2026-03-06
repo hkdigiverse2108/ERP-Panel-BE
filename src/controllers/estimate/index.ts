@@ -219,7 +219,7 @@ export const getAllEstimate = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, status, startDate, endDate, companyFilter } = req.query;
+    let { page, limit, search, startDate, endDate, companyFilter, activeFilter, customerFilter, statusFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -229,16 +229,24 @@ export const getAllEstimate = async (req, res) => {
       criteria.companyId = companyId;
     }
 
+    if (activeFilter) {
+      criteria.isActive = activeFilter;
+    }
+
     if (companyFilter) {
       criteria.companyId = companyFilter;
     }
 
-    if (search) {
-      criteria.$or = [{ estimateNo: { $regex: search, $options: "si" } }];
+    if (customerFilter) {
+      criteria.customerId = customerFilter;
     }
 
-    if (status) {
-      criteria.status = status;
+    if (statusFilter) {
+      criteria.status = statusFilter;
+    }
+
+    if (search) {
+      criteria.$or = [{ estimateNo: { $regex: search, $options: "si" } }];
     }
 
     applyDateFilter(criteria, startDate as string, endDate as string, "date");
@@ -424,7 +432,7 @@ export const getEstimateDropdown = async (req, res) => {
 
     const options = {
       sort: { createdAt: -1 },
-      select: "estimateNo date netAmount transectionSummary status",
+      select: "estimateNo date netAmount transactionSummary status",
       populate: [{ path: "customerId", select: "firstName lastName companyName" }],
     };
 
