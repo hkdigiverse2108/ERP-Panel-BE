@@ -133,7 +133,7 @@ export const addPosOrder = async (req, res) => {
     }
 
     if (value.loyaltyId) {
-      const loyaltyResponse = await applyLoyalty(value.loyaltyId, value.customerId, value.totalAmount);
+      const loyaltyResponse = await applyLoyalty(value.loyaltyId, value.customerId, Number(value.totalMrp));
       if (loyaltyResponse !== "Loyalty redeemed successfully") {
         return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, loyaltyResponse, {}, {}));
       }
@@ -628,7 +628,7 @@ export const getAllPosOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, statusFilter, customerFilter, duePaymentFilter, paymentStatusFilter, methodFilter, branchFilter, tableNoFilter, orderTypeFilter, startDate, endDate, lastBillFilter } = req.query;
+    let { page, limit, search, activeFilter, companyFilter, statusFilter, customerFilter, duePaymentFilter, paymentStatusFilter, methodFilter, branchFilter, tableNoFilter, orderTypeFilter, startDate, endDate, lastBillFilter, orderListFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -681,6 +681,10 @@ export const getAllPosOrder = async (req, res) => {
       criteria.tableNo = tableNoFilter;
     }
 
+    if (orderListFilter == "true") {
+      criteria.status = { $ne: POS_ORDER_STATUS.HOLD };
+    }
+
     applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options = {
@@ -715,18 +719,24 @@ export const getAllPosOrder = async (req, res) => {
           companyId: criteria.companyId,
           isDeleted: false,
         },
-        { productId: 1, salesTaxId: 1 },
+        { productId: 1, salesTaxId: 1, purchaseTaxId: 1, isSalesTaxIncluding: 1, isPurchaseTaxIncluding: 1 },
       )
-      .populate("salesTaxId", "name percentage");
+      .populate("salesTaxId", "name percentage")
+      .populate("purchaseTaxId", "name percentage");
 
     const taxMap = {};
     for (const s of stockData) {
-      taxMap[s.productId.toString()] = s.salesTaxId;
+      taxMap[s.productId.toString()] = { salesTaxId: s.salesTaxId, purchaseTaxId: s.purchaseTaxId, isSalesTaxIncluding: s.isSalesTaxIncluding, isPurchaseTaxIncluding: s.isPurchaseTaxIncluding };
     }
 
     response.forEach((order) => {
       order.items.forEach((item) => {
-        item.productId.salesTaxId = taxMap[item.productId?._id?.toString()] || null;
+        if (!item.productId) return;
+        const tax = taxMap[item.productId?._id?.toString()];
+        item.productId.salesTaxId = tax?.salesTaxId || null;
+        item.productId.purchaseTaxId = tax?.purchaseTaxId || null;
+        item.productId.isSalesTaxIncluding = tax?.isSalesTaxIncluding ?? null;
+        item.productId.isPurchaseTaxIncluding = tax?.isPurchaseTaxIncluding ?? null;
       });
     });
 
@@ -1092,6 +1102,8 @@ export const releasePosOrder = async (req, res) => {
   }
 };
 
+// ================================== Not used functions ==================================
+
 export const getPosCashControl = async (req, res) => {
   reqInfo(req);
   try {
@@ -1347,8 +1359,6 @@ export const getCombinedPayments = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-
-// ================================== Not used functions ==================================
 export const convertToInvoice = async (req, res) => {
   reqInfo(req);
   try {

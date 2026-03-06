@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import http from "http";
@@ -8,10 +8,12 @@ import { connectDb } from "./database/connection";
 import { router } from "./routes";
 import path from "path";
 import { HTTP_STATUS } from "./common";
+import { socketServer } from "./helper/socket";
+import { initCronJobs } from "./helper";
 
 const app = express();
 
-app.use("/public", express.static(path.join(__dirname, "..", ".." , "public")));
+app.use("/public", express.static(path.join(__dirname, "..", "..", "public")));
 
 app.use(cors());
 app.use(express.json());
@@ -19,6 +21,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
 connectDb();
+initCronJobs();
 
 const health = (_, res) => {
   return res.status(200).json({
@@ -46,6 +49,7 @@ app.use((_, res) => {
   });
 });
 
-
 let server = new http.Server(app);
+export const socket = socketServer(server);
+
 export default server;

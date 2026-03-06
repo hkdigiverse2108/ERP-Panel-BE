@@ -10,6 +10,7 @@ import {
   RETURN_POS_ORDER_TYPE,
   PAYMENT_MODE,
   CASH_REGISTER_STATUS,
+  POS_PAYMENT_METHOD,
 } from "../../common";
 import {
   accountModel,
@@ -17,7 +18,6 @@ import {
   InvoiceModel,
   PosOrderModel,
   PosPaymentModel,
-  productModel,
   returnPosOrderModel,
   salesCreditNoteModel,
   stockModel,
@@ -203,12 +203,16 @@ export const transactionDetails = async (req, res) => {
         ]);
         return [productCount, stockInfo];
       })(),
-      // 🔹 Cash In Hand (strictly from pos-cashRegister)
-      PosCashRegisterModel.aggregate([
-        { $match: { ...commonCriteria, status: CASH_REGISTER_STATUS.OPEN } },
+      // 🔹 Cash In Hand (strictly from pos-payment cash entries)
+      PosPaymentModel.aggregate([
         {
-          $group: { _id: null, totalCash: { $sum: "$totalCashLeftInDrawer" } },
+          $match: {
+            ...dateCriteria,
+            paymentMode: PAYMENT_MODE.CASH,
+            voucherType: POS_VOUCHER_TYPE.SALES,
+          },
         },
+        { $group: { _id: null, totalCash: { $sum: "$amount" } } },
       ]),
       // 🔹 Bank Accounts Balance
       accountModel.aggregate([
@@ -237,7 +241,6 @@ export const transactionDetails = async (req, res) => {
         return { totalPaid: (vPay[0]?.total || 0) + (pPay[0]?.total || 0) };
       })(),
     ]);
-
 
     const s: any = results[0][0] || {};
     const p: any = results[1][0] || {};
