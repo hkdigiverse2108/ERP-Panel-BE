@@ -200,6 +200,8 @@ export const getAllUser = async (req, res) => {
     let roleIds = roles?.map((role) => new ObjectId(role._id));
     criteria.role = { $nin: roleIds };
 
+    criteria._id = { $ne: user?._id };
+
     if (branchFilter) {
       criteria.branchId = branchFilter;
     }

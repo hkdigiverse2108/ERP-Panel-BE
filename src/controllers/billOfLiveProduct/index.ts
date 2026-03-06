@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { billOfLiveProductModel, productModel, recipeModel } from "../../database";
+import { billOfLiveProductModel, productModel, recipeModel, stockModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addBillOfLiveProductSchema, deleteBillOfLiveProductSchema, editBillOfLiveProductSchema, getBillOfLiveProductSchema } from "../../validation";
 
@@ -47,6 +47,26 @@ export const addBillOfLiveProduct = async (req, res) => {
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+    }
+
+    // Update stock quantities
+    if (value?.productDetails?.length) {
+      for (const product of value.productDetails) {
+        // Decrease ingredient stock (raw materials consumed)
+        if (product?.ingredients?.length) {
+          for (const ingredient of product.ingredients) {
+            await stockModel.findOneAndUpdate(
+              { productId: ingredient.productId, companyId: value.companyId, isDeleted: false },
+              { $inc: { qty: -(ingredient.useQty || 0) } }
+            );
+          }
+        }
+        // Increase created product stock (finished goods produced)
+        await stockModel.findOneAndUpdate(
+          { productId: product.productId, companyId: value.companyId, isDeleted: false },
+          { $inc: { qty: product.qty || 0 } }
+        );
+      }
     }
 
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Bill Of Live Product"), response, {}));
@@ -111,6 +131,46 @@ export const editBillOfLiveProductById = async (req, res) => {
 
     value.updatedBy = user?._id || null;
 
+    // Reverse old stock changes
+    if (isBillExist?.productDetails?.length) {
+      for (const oldProduct of isBillExist.productDetails) {
+        // Restore old ingredient stock (add back what was consumed)
+        if (oldProduct?.ingredients?.length) {
+          for (const oldIngredient of oldProduct.ingredients) {
+            await stockModel.findOneAndUpdate(
+              { productId: oldIngredient.productId, companyId: value.companyId, isDeleted: false },
+              { $inc: { qty: oldIngredient.useQty || 0 } }
+            );
+          }
+        }
+        // Remove old created product stock (subtract what was produced)
+        await stockModel.findOneAndUpdate(
+          { productId: oldProduct.productId, companyId: value.companyId, isDeleted: false },
+          { $inc: { qty: -(oldProduct.qty || 0) } }
+        );
+      }
+    }
+
+    // Apply new stock changes
+    if (value?.productDetails?.length) {
+      for (const newProduct of value.productDetails) {
+        // Decrease ingredient stock (raw materials consumed)
+        if (newProduct?.ingredients?.length) {
+          for (const newIngredient of newProduct.ingredients) {
+            await stockModel.findOneAndUpdate(
+              { productId: newIngredient.productId, companyId: value.companyId, isDeleted: false },
+              { $inc: { qty: -(newIngredient.useQty || 0) } }
+            );
+          }
+        }
+        // Increase created product stock (finished goods produced)
+        await stockModel.findOneAndUpdate(
+          { productId: newProduct.productId, companyId: value.companyId, isDeleted: false },
+          { $inc: { qty: newProduct.qty || 0 } }
+        );
+      }
+    }
+
     const response = await updateData(billOfLiveProductModel, { _id: new ObjectId(value.billOfLiveProductId), isDeleted: false }, value, {});
 
     if (!response) {
@@ -138,6 +198,26 @@ export const deleteBillOfLiveProductById = async (req, res) => {
 
     if (!billOfLiveProduct) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Bill Of Live Product"), {}, {}));
+    }
+
+    // Reverse stock changes on delete
+    if (billOfLiveProduct?.productDetails?.length) {
+      for (const product of billOfLiveProduct.productDetails) {
+        // Restore ingredient stock (add back what was consumed)
+        if (product?.ingredients?.length) {
+          for (const ingredient of product.ingredients) {
+            await stockModel.findOneAndUpdate(
+              { productId: ingredient.productId, companyId: billOfLiveProduct.companyId, isDeleted: false },
+              { $inc: { qty: ingredient.useQty || 0 } }
+            );
+          }
+        }
+        // Remove created product stock (subtract what was produced)
+        await stockModel.findOneAndUpdate(
+          { productId: product.productId, companyId: billOfLiveProduct.companyId, isDeleted: false },
+          { $inc: { qty: -(product.qty || 0) } }
+        );
+      }
     }
 
     const response = await updateData(billOfLiveProductModel, { _id: value.id }, { isDeleted: true, updatedBy: user?._id || null }, {});
@@ -296,3 +376,4 @@ export const getBillOfLiveProductDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+

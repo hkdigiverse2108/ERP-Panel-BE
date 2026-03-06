@@ -1,10 +1,11 @@
-import { apiResponse, generateHash, generateToken, getOtpExpireTime, getUniqueOtp, HTTP_STATUS, LOGIN_SOURCES, USER_ROLES, USER_TYPES } from "../../common";
+import { apiResponse, generateHash, generateToken, getOtpExpireTime, getUniqueOtp, HTTP_STATUS, LOGIN_SOURCES, SOCKET_EVENTS, USER_ROLES, USER_TYPES } from "../../common";
 import { companyModel, roleModel, userModel } from "../../database";
 import { checkIdExist, createOne, emailVerificationMail, findAllAndPopulateWithSorting, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { loginSchema, registerSchema, resendOtpSchema, resetPasswordSchema, verifyOtpSchema } from "../../validation";
 
 import bcryptjs from "bcryptjs";
 import { createLoginLogEntry } from "../loginLog";
+import { sendNotification } from "../../helper/socket";
 
 export const register = async (req, res) => {
   reqInfo(req);
@@ -88,17 +89,26 @@ export const login = async (req, res) => {
     if (!comparePassword) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
 
     // ========================  Check For Login Sources ========================
-    if (value.loginSource === LOGIN_SOURCES.SUPER_ADMIN_PANEL && response.userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
 
-    if (value.loginSource === LOGIN_SOURCES.ADMIN_PANEL && response.userType !== USER_TYPES.ADMIN) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
+    const isSourceSuperAdminPanel = value?.loginSource === LOGIN_SOURCES.SUPER_ADMIN_PANEL;
+    const isSourceAdminPanel = value?.loginSource === LOGIN_SOURCES.ADMIN_PANEL;
+    const isSourceWebsite = value?.loginSource === LOGIN_SOURCES.WEBSITE;
 
-    if (value.loginSource === LOGIN_SOURCES.WEBSITE && response.userType !== USER_TYPES.USER) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
+    const isTypeSuperAdmin = response?.userType === USER_TYPES.SUPER_ADMIN;
+    const isTypeAdmin = response?.userType === USER_TYPES.ADMIN;
+    const isTypeEmployee = response.userType === USER_TYPES.EMPLOYEE;
+    const isTypeUser = response.userType === USER_TYPES.USER;
+
+    if (isSourceSuperAdminPanel && !isTypeSuperAdmin) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
+
+    if (isSourceAdminPanel && !isTypeAdmin && !isTypeEmployee) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
+
+    if (isSourceWebsite && !isTypeUser) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
 
     if (response.isActive === false) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accountBlock, {}, {}));
 
     // OTP Generation For Super Admin
-    const isSuperAdmin = value.loginSource === LOGIN_SOURCES.SUPER_ADMIN_PANEL && response?.userType === USER_TYPES.SUPER_ADMIN;
-    if (isSuperAdmin) {
+    if (isSourceSuperAdminPanel && isTypeSuperAdmin) {
       const otp = await getUniqueOtp();
 
       if (response?.email) {
@@ -110,9 +120,7 @@ export const login = async (req, res) => {
       await userModel.findOneAndUpdate({ _id: response?._id }, { otp, otpExpireTime }, { new: true });
     }
 
-    const isAdmin = value.loginSource === LOGIN_SOURCES.ADMIN_PANEL && response?.userType === USER_TYPES.ADMIN;
-
-    if (isAdmin) {
+    if (isSourceAdminPanel && (isTypeAdmin || isTypeEmployee)) {
       const company = await getFirstMatch(companyModel, { _id: response?.companyId }, {}, {});
       if (!company) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidUserPasswordEmail, {}, {}));
@@ -137,6 +145,14 @@ export const login = async (req, res) => {
       ...rest,
       token,
     };
+
+    await sendNotification({
+      companyId: response?.companyId?._id,
+      title: "New User Login",
+      message: `${response.fullName || "User"} logged in`,
+      eventType: SOCKET_EVENTS.NOTIFICATION_NEW,
+      meta: { type: "login", action: "created", userId: String((response as any)?._id), userName: response?.fullName },
+    });
 
     // let criteria: any = {
     //   isActive: true,
@@ -215,11 +231,11 @@ export const login = async (req, res) => {
     // });
 
     // newUserPermissionData.sort((a, b) => a.number - b.number);
-    if (response?.userType !== USER_ROLES.SUPER_ADMIN) {
+    if (!isTypeSuperAdmin) {
       createLoginLogEntry(req, response, "LOGIN", `${response?.companyId?.name || "Company"} Logged In`);
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, isSuperAdmin ? responseMessage?.otpSendSuccess : responseMessage?.loginSuccess, response, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, isSourceSuperAdminPanel && isTypeSuperAdmin ? responseMessage?.otpSendSuccess : responseMessage?.loginSuccess, response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

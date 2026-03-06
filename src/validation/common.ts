@@ -19,7 +19,7 @@ export const baseApiSchema = {
 };
 
 export const commonContactSchema = Joi.object().keys({
-  countryCode: Joi.string().optional(),
+  countryCode: Joi.string().optional().allow("", null),
   phoneNo: Joi.string()
     .pattern(/^\d{6,15}$/)
     .optional(),
@@ -54,4 +54,3 @@ export const commonShippingSchema = Joi.object().keys({
   vehicleNo: Joi.string().allow("").optional(),
   weight: Joi.number().optional(),
 });
- 
