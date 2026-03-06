@@ -4,8 +4,7 @@ import { posOrderController } from "../controllers";
 const router = express.Router();
 
 router.get("/all", posOrderController.getAllPosOrder);
-router.get("/hold", posOrderController.getAllHoldOrders);
-router.get("/hold-short", posOrderController.getShortHoldOrders);
+router.get("/hold", posOrderController.getShortHoldOrders);
 router.get("/dropdown", posOrderController.posOrderDropDown);
 router.post("/add", posOrderController.addPosOrder);
 router.put("/edit", posOrderController.editPosOrder);
