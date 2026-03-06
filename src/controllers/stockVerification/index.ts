@@ -174,7 +174,6 @@ export const getAllStockVerification = async (req, res) => {
       applyDateFilter(criteria, start.toISOString(), end.toISOString());
     }
 
-    console.log(criteria);
     const options: any = {
       sort: { createdAt: -1 },
       populate: [
