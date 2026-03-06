@@ -995,7 +995,7 @@ export const getShortHoldOrders = async (req, res) => {
     const options = {
       sort: { holdDate: -1 },
       populate: [
-        { path: "customerId", select: "firstName lastName companyName phoneNo telephoneNo" },
+        { path: "customerId", select: "firstName lastName phoneNo " },
       ],
       limit: 100,
     };
