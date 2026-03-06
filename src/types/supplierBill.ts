@@ -6,12 +6,16 @@ export interface ISupplierBillItem {
   productId: Schema.Types.ObjectId;
   qty: number;
   freeQty?: number;
+  uomId?: Schema.Types.ObjectId;
+  unit?: string;
+  unitCost?: number;
   mrp?: number;
   sellingPrice?: number;
-  unitCost?: number;
   discount1?: number;
   discount2?: number;
-  taxAmount?: number;
+  taxable?: number;
+  taxId?: Schema.Types.ObjectId;
+  tax?: string;
   landingCost?: number;
   margin?: number;
   total?: number;
@@ -20,10 +24,14 @@ export interface ISupplierBillItem {
 export interface ISupplierBillReturnItem {
   productId: Schema.Types.ObjectId;
   qty: number;
+  uomId?: Schema.Types.ObjectId;
+  unit?: string;
   unitCost?: number;
   discount1?: number;
   discount2?: number;
-  tax?: number;
+  taxable?: number;
+  taxId?: Schema.Types.ObjectId;
+  tax?: string;
   landingCost?: number;
   total?: number;
 }
@@ -52,12 +60,7 @@ export interface ISupplierBill extends IBase {
   taxType?: string;
   invoiceAmount?: string;
 
-  productDetails?: {
-    item: ISupplierBillItem[];
-    totalQty?: number;
-    totalTax?: number;
-    total?: number;
-  };
+  productDetails?: ISupplierBillItem[];
 
   returnProductDetails?: {
     item: ISupplierBillReturnItem[];
@@ -66,10 +69,7 @@ export interface ISupplierBill extends IBase {
     summary?: ITransactionSummary;
   };
 
-  additionalCharges?: {
-    item: IAdditionalCharge[];
-    total?: number;
-  };
+  additionalCharges?: IAdditionalCharge[];
 
   termsAndConditionIds?: Schema.Types.ObjectId[];
   notes?: string;

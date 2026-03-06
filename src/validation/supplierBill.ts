@@ -60,12 +60,7 @@ export const addSupplierBillSchema = Joi.object({
   taxType: Joi.string().optional(),
   invoiceAmount: Joi.string().optional(),
 
-  productDetails: Joi.object({
-    item: Joi.array().items(supplierBillItemSchema).optional(),
-    totalQty: Joi.number().optional(),
-    totalTax: Joi.number().optional(),
-    total: Joi.number().optional(),
-  }).optional(),
+  productDetails: Joi.array().items(supplierBillItemSchema).optional(),
 
   returnProductDetails: Joi.object({
     item: Joi.array().items(supplierBillReturnItemSchema).optional(),
@@ -74,10 +69,7 @@ export const addSupplierBillSchema = Joi.object({
     summary: transactionSummarySchema.optional(),
   }).optional(),
 
-  additionalCharges: Joi.object({
-    item: Joi.array().items(commonAdditionalChargeSchema).optional(),
-    total: Joi.number().optional(),
-  }).optional(),
+  additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().allow("").optional(),
@@ -121,12 +113,7 @@ export const editSupplierBillSchema = Joi.object({
   taxType: Joi.string().optional(),
   invoiceAmount: Joi.string().optional(),
 
-  productDetails: Joi.object({
-    item: Joi.array().items(supplierBillItemSchema).optional(),
-    totalQty: Joi.number().optional(),
-    totalTax: Joi.number().optional(),
-    total: Joi.number().optional(),
-  }).optional(),
+  productDetails: Joi.array().items(supplierBillItemSchema).optional(),
 
   returnProductDetails: Joi.object({
     item: Joi.array().items(supplierBillReturnItemSchema).optional(),
@@ -135,10 +122,7 @@ export const editSupplierBillSchema = Joi.object({
     summary: transactionSummarySchema.optional(),
   }).optional(),
 
-  additionalCharges: Joi.object({
-    item: Joi.array().items(commonAdditionalChargeSchema).optional(),
-    total: Joi.number().optional(),
-  }).optional(),
+  additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().allow("").optional(),

@@ -43,8 +43,8 @@ export const addSupplierBill = async (req, res) => {
     }
 
     // Validate products exist if provided
-    if (value?.productDetails?.item && value?.productDetails?.item?.length > 0) {
-      for (const item of value?.productDetails.item) {
+    if (value?.productDetails && value?.productDetails?.length > 0) {
+      for (const item of value?.productDetails) {
         if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
       }
     }
@@ -55,8 +55,8 @@ export const addSupplierBill = async (req, res) => {
       }
     }
 
-    if (value?.additionalCharges?.item && value.additionalCharges?.item?.length > 0) {
-      for (const item of value.additionalCharges?.item) {
+    if (value?.additionalCharges && value.additionalCharges?.length > 0) {
+      for (const item of value.additionalCharges) {
         if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
       }
     }
@@ -142,8 +142,8 @@ export const editSupplierBill = async (req, res) => {
     }
 
     // Validate products if items are being updated
-    if (value?.productDetails?.item && value?.productDetails?.item?.length > 0) {
-      for (const item of value?.productDetails?.item) {
+    if (value?.productDetails && value?.productDetails?.length > 0) {
+      for (const item of value?.productDetails) {
         if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
       }
     }
@@ -248,7 +248,7 @@ export const getAllSupplierBill = async (req, res) => {
         },
         // { path: "purchaseOrderId", select: "orderNo" },
         {
-          path: "productDetails.item.productId",
+          path: "productDetails.productId",
           select: "name itemCode purchasePrice",
         },
         {
@@ -256,11 +256,11 @@ export const getAllSupplierBill = async (req, res) => {
           select: "name itemCode",
         },
         {
-          path: "productDetails.item.uomId",
+          path: "productDetails.uomId",
           select: "name",
         },
         {
-          path: "productDetails.item.taxId",
+          path: "productDetails.taxId",
           select: "name percentage",
         },
         {
@@ -272,11 +272,11 @@ export const getAllSupplierBill = async (req, res) => {
           select: "name percentage",
         },
         {
-          path: "additionalCharges.item.taxId",
+          path: "additionalCharges.taxId",
           select: "name percentage",
         },
         {
-          path: "additionalCharges.item.chargeId",
+          path: "additionalCharges.chargeId",
           select: "name type",
         },
         { path: "termsAndConditionIds", select: "termsCondition" },
@@ -358,24 +358,16 @@ export const getOneSupplierBill = async (req, res) => {
             ],
           },
           {
-            path: "productDetails.item.uomId",
+            path: "productDetails.uomId",
             select: "name",
           },
           {
-            path: "productDetails.item.taxId",
+            path: "productDetails.taxId",
             select: "name percentage",
           },
           {
-            path: "productDetails.item.productId",
+            path: "productDetails.productId",
             select: "name itemCode purchasePrice hsn gst",
-          },
-          {
-            path: "productDetails.item.uomId",
-            select: "name",
-          },
-          {
-            path: "productDetails.item.taxId",
-            select: "name percentage",
           },
           {
             path: "returnProductDetails.item.productId",
@@ -389,7 +381,8 @@ export const getOneSupplierBill = async (req, res) => {
             path: "returnProductDetails.item.taxId",
             select: "name percentage",
           },
-          { path: "additionalCharges.item.chargeId", select: " name type" },
+          { path: "additionalCharges.chargeId", select: "name type" },
+          { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "termsAndConditionIds", select: "termsCondition" },
           { path: "companyId", select: "name gstNo" },
         ],
