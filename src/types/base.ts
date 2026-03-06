@@ -11,7 +11,7 @@ export interface IBase extends Document {
   updatedAt: Date;
 }
 
-export interface ITransectionSummary {
+export interface ITransactionSummary {
   flatDiscount: number;
   grossAmount: number;
   discountAmount: number;

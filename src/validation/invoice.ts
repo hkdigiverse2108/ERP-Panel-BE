@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { objectId, transectionSummarySchema, commonAdditionalChargeSchema } from "./common";
+import { objectId, transactionSummarySchema, commonAdditionalChargeSchema } from "./common";
 import { INVOICE_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE, INVOICE_CREATED_FROM, PAY_TYPE } from "../common";
 
 const invoiceItemSchema = Joi.object().keys({
@@ -34,7 +34,7 @@ export const addInvoiceSchema = Joi.object().keys({
   taxType: Joi.string().valid(...Object.values(TAX_TYPE)).optional().allow("", null),
   shippingDetails: Joi.object().optional(),
   items: Joi.array().items(invoiceItemSchema).min(1).required(),
-  transectionSummary: transectionSummarySchema.optional(),
+  transactionSummary: transactionSummarySchema.optional(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   paidAmount: Joi.number().min(0).default(0).optional(),
   balanceAmount: Joi.number().min(0).default(0).optional(),
@@ -64,7 +64,7 @@ export const editInvoiceSchema = Joi.object().keys({
   taxType: Joi.string().valid(...Object.values(TAX_TYPE)).optional().allow("", null),
   shippingDetails: Joi.object().optional(),
   items: Joi.array().items(invoiceItemSchema).optional(),
-  transectionSummary: transectionSummarySchema.optional(),
+  transactionSummary: transactionSummarySchema.optional(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   paidAmount: Joi.number().min(0).optional(),
   balanceAmount: Joi.number().min(0).optional(),

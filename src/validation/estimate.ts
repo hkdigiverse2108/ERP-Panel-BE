@@ -2,7 +2,7 @@ import Joi from "joi";
 import {
   commonAdditionalChargeSchema,
   objectId,
-  transectionSummarySchema,
+  transactionSummarySchema,
   commonShippingSchema,
 } from "./common";
 import {
@@ -38,7 +38,7 @@ export const addEstimateSchema = Joi.object().keys({
   items: Joi.array().items(estimateItemSchema).min(1).required(),
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   reverseCharge: Joi.boolean().default(false).optional(),
-  transectionSummary: transectionSummarySchema.required(),
+  transactionSummary: transactionSummarySchema.required(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   paymentTerms: Joi.string()
     .valid(...Object.values(PAYMENT_TERMS_ENUM))
@@ -63,7 +63,7 @@ export const editEstimateSchema = Joi.object().keys({
   items: Joi.array().items(estimateItemSchema).optional(),
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   reverseCharge: Joi.boolean().optional(),
-  transectionSummary: transectionSummarySchema.optional(),
+  transactionSummary: transactionSummarySchema.optional(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   paymentTerms: Joi.string()
     .valid(...Object.values(PAYMENT_TERMS_ENUM))

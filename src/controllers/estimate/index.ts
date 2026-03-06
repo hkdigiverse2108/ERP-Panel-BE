@@ -424,7 +424,7 @@ export const getEstimateDropdown = async (req, res) => {
 
     const options = {
       sort: { createdAt: -1 },
-      select: "estimateNo date netAmount transectionSummary status",
+      select: "estimateNo date netAmount transactionSummary status",
       populate: [{ path: "customerId", select: "firstName lastName companyName" }],
     };
 

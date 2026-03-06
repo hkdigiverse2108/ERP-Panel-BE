@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId, transectionSummarySchema, commonAdditionalChargeSchema, commonShippingSchema } from "./common";
+import { baseApiSchema, objectId, transactionSummarySchema, commonAdditionalChargeSchema, commonShippingSchema } from "./common";
 import { PURCHASE_DEBIT_NOTE_STATUS, SALES_CREDIT_NOTE_PRODUCT_TYPE } from "../common";
 
 const salesCreditNoteItemSchema = Joi.object({
@@ -50,7 +50,7 @@ export const addSalesCreditNoteSchema = Joi.object({
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().allow("").optional(),
   shippingDetails: commonShippingSchema.optional(),
-  summary: transectionSummarySchema.optional(),
+  summary: transactionSummarySchema.optional(),
 
   status: Joi.string()
     .valid(...Object.values(PURCHASE_DEBIT_NOTE_STATUS))
@@ -94,7 +94,7 @@ export const editSalesCreditNoteSchema = Joi.object({
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().allow("").optional(),
   shippingDetails: commonShippingSchema.optional(),
-  summary: transectionSummarySchema.optional(),
+  summary: transactionSummarySchema.optional(),
 
   status: Joi.string()
     .valid(...Object.values(PURCHASE_DEBIT_NOTE_STATUS))

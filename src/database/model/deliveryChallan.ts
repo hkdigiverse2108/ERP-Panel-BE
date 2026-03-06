@@ -32,7 +32,7 @@ const deliveryChallanSchema = new Schema<IDeliveryChallan>(
     taxType: { type: String, enum: Object.values(TAX_TYPE), default: TAX_TYPE.DEFAULT },
     shippingDetails: { type: commonShippingSchema },
     items: [itemsSchema],
-    transectionSummary: { type: transactionSummarySchema },
+    transactionSummary: { type: transactionSummarySchema },
     additionalCharges: { type: [commonAdditionalChargeSchema] },
     reverseCharge: { type: Boolean, default: false },
     status: { type: String, enum: Object.values(DELIVERY_CHALLAN_STATUS), default: DELIVERY_CHALLAN_STATUS.DELIVERED },
