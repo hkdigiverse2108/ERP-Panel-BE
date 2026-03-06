@@ -64,8 +64,6 @@ export const addSupplierBillSchema = Joi.object({
 
   returnProductDetails: Joi.object({
     item: Joi.array().items(supplierBillReturnItemSchema).optional(),
-    totalQty: Joi.number().optional(),
-    total: Joi.number().optional(),
     summary: transactionSummarySchema.optional(),
   }).optional(),
 
@@ -117,8 +115,6 @@ export const editSupplierBillSchema = Joi.object({
 
   returnProductDetails: Joi.object({
     item: Joi.array().items(supplierBillReturnItemSchema).optional(),
-    totalQty: Joi.number().optional(),
-    total: Joi.number().optional(),
     summary: transactionSummarySchema.optional(),
   }).optional(),
 

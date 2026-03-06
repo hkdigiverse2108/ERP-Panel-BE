@@ -64,8 +64,6 @@ export interface ISupplierBill extends IBase {
 
   returnProductDetails?: {
     item: ISupplierBillReturnItem[];
-    totalQty?: number;
-    total?: number;
     summary?: ITransactionSummary;
   };
 
