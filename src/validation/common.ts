@@ -22,7 +22,7 @@ export const commonContactSchema = Joi.object().keys({
   countryCode: Joi.string().optional().allow("", null),
   phoneNo: Joi.string()
     .pattern(/^\d{6,15}$/)
-    .optional(),
+    .optional().allow("", null),
 });
 
 export const transactionSummarySchema = Joi.object().keys({
