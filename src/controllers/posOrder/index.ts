@@ -782,6 +782,7 @@ export const getOnePosOrder = async (req, res) => {
           {
             path: "items.productId",
             select: "-isDeleted -isActive -createdAt -updatedAt -createdBy -updatedBy -images -nutrition",
+            populate: [{ path: "brandId", select: "name" }, { path: "categoryId", select: "name" }],
           },
           { path: "invoiceId", select: "documentNo" },
           { path: "additionalCharges.taxId", select: "name percentage" },
