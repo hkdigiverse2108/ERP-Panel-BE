@@ -70,8 +70,6 @@ const supplierBillSchema = new Schema<ISupplierBill>(
 
     returnProductDetails: {
       item: [supplierBillReturnItemSchema],
-      totalQty: { type: Number },
-      total: { type: Number },
       summary: {
         grossAmount: Number,
         taxAmount: Number,
