@@ -583,7 +583,7 @@ export const posOrderDropDown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    const { customerFilter, branchFilter, companyFilter, duePaymentFilter, search } = req.query;
+    const { customerFilter, branchFilter, companyFilter, duePaymentFilter, search, returnableFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -609,6 +609,10 @@ export const posOrderDropDown = async (req, res) => {
 
     if (search) {
       criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }];
+    }
+
+    if (returnableFilter === true || returnableFilter === "true") {
+      criteria.status = POS_ORDER_STATUS.COMPLETED;
     }
 
     const response = await PosOrderModel.find(criteria, {
