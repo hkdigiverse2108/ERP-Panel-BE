@@ -17,6 +17,7 @@ export const checkRedeemCredit = async (req, res) => {
 
     const { code, type, customerId } = value;
     let redeemableAmount = 0;
+    let totalAmount = 0;
     let data: any = null;
 
     if (type === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
@@ -27,6 +28,7 @@ export const checkRedeemCredit = async (req, res) => {
       if (customerId && data.customerId?.toString() !== customerId) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Credit Note does not belong to this customer", {}, {}));
       }
+      totalAmount = data.totalAmount || 0;
       redeemableAmount = data.creditsRemaining || 0;
     } else if (type === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
       data = await getFirstMatch(
@@ -60,6 +62,7 @@ export const checkRedeemCredit = async (req, res) => {
           id: data._id,
           code: code,
           type: type,
+          totalAmount: totalAmount,
           redeemableAmount: redeemableAmount,
           date: data.createdAt,
         },
