@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { baseApiSchema, objectId, commonAdditionalChargeSchema } from "./common";
 import { RETURN_POS_ORDER_TYPE } from "../common";
 
 const returnPosOrderItemSchema = Joi.object({
@@ -23,6 +23,10 @@ export const addReturnPosOrderSchema = Joi.object({
   refundViaBank: Joi.number().min(0).optional(),
   bankAccountId: objectId().optional().allow(null),
   refundDescription: Joi.string().optional().allow("", null),
+  additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
+  roundOff: Joi.number().optional(),
+  flatDiscount: Joi.number().optional(),
+  discountAmount: Joi.number().optional(),
   ...baseApiSchema,
 });
 
@@ -41,6 +45,10 @@ export const editReturnPosOrderSchema = Joi.object({
   refundViaBank: Joi.number().min(0).optional(),
   bankAccountId: objectId().optional().allow(null),
   refundDescription: Joi.string().optional().allow("", null),
+  additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
+  roundOff: Joi.number().optional(),
+  flatDiscount: Joi.number().optional(),
+  discountAmount: Joi.number().optional(),
   ...baseApiSchema,
 });
 

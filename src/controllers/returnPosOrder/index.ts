@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS } from "../../common";
-import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, PosPaymentModel } from "../../database";
+import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, PosPaymentModel, additionalChargeModel, taxModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkStockQty } from "../../helper";
 import { addReturnPosOrderSchema, editReturnPosOrderSchema, getReturnPosOrderSchema, deleteReturnPosOrderSchema, returnPosOrderDropDownSchema } from "../../validation";
 
@@ -24,6 +24,13 @@ export const addReturnPosOrder = async (req, res) => {
 
     for (const item of value.items) {
       if (!(await checkIdExist(productModel, item.productId, "Product", res))) return;
+    }
+
+    if (value.additionalCharges) {
+      for (const item of value.additionalCharges) {
+        if (!(await checkIdExist(additionalChargeModel, item.chargeId, "Additional Charge", res))) return;
+        if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+      }
     }
 
     const originalOrder = await PosOrderModel.findOne({ _id: value.posOrderId, isDeleted: false });
@@ -139,8 +146,16 @@ export const editReturnPosOrder = async (req, res) => {
       for (const item of value.items) {
         if (!(await checkIdExist(productModel, item.productId, "Product", res))) return;
       }
+    }
 
-      // Check stock qty
+    if (value.additionalCharges) {
+      for (const item of value.additionalCharges) {
+        if (!(await checkIdExist(additionalChargeModel, item.chargeId, "Additional Charge", res))) return;
+        if (item.taxId && !(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
+      }
+    }
+
+    if (value.items) {
       // We pass value.items as "new" and isExist.items as "old"
       // The helper will check if (New qty - Old qty) > Available Stock
       // Note: In return orders, reducing 'qty' means DECREASING stock,

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema } from "./base";
 import { RETURN_POS_ORDER_TYPE } from "../../common";
 
 const returnPosOrderSchema = new mongoose.Schema(
@@ -18,7 +18,6 @@ const returnPosOrderSchema = new mongoose.Schema(
         _id: false,
       },
     ],
-    total: { type: Number },
     type: { type: String, enum: Object.values(RETURN_POS_ORDER_TYPE), default: RETURN_POS_ORDER_TYPE.SALES_RETURN },
     reason: { type: String },
 
@@ -26,6 +25,11 @@ const returnPosOrderSchema = new mongoose.Schema(
     refundViaBank: { type: Number, default: 0 },
     bankAccountId: { type: mongoose.Schema.Types.ObjectId, ref: "bank" },
     refundDescription: { type: String },
+    additionalCharges: [commonAdditionalChargeSchema],
+    roundOff: { type: Number, default: 0 },
+    flatDiscount: { type: Number, default: 0 },
+    discountAmount: { type: Number, default: 0 },
+    total: { type: Number },
     ...baseSchemaFields,
   },
   baseSchemaOptions,
