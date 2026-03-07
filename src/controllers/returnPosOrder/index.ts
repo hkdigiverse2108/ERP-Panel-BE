@@ -77,7 +77,7 @@ export const addReturnPosOrder = async (req, res) => {
     });
 
     const allReturns = await returnPosOrderModel.find({ posOrderId: originalOrder._id, isDeleted: false });
-    totalReturnedAmount = allReturns.reduce((acc, curr) => acc + (Number(curr.total) || 0), 0);
+    totalReturnedAmount = allReturns.reduce((acc, curr) => acc + (Number(curr.netAmount) || 0), 0);
 
     originalOrder.totalReturnedQty = totalReturnedQty;
     originalOrder.returnedAmount = totalReturnedAmount;
@@ -223,7 +223,7 @@ export const editReturnPosOrder = async (req, res) => {
     });
 
     const allReturns = await returnPosOrderModel.find({ posOrderId: originalOrder._id, isDeleted: false });
-    totalReturnedAmount = allReturns.reduce((acc, curr) => acc + (Number(curr.total) || 0), 0);
+    totalReturnedAmount = allReturns.reduce((acc, curr) => acc + (Number(curr.netAmount) || 0), 0);
 
     originalOrder.totalReturnedQty = totalReturnedQty;
     originalOrder.returnedAmount = totalReturnedAmount;

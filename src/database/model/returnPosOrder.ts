@@ -13,8 +13,8 @@ const returnPosOrderSchema = new mongoose.Schema(
       {
         productId: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
         qty: { type: Number },
-        price: { type: Number },
-        total: { type: Number },
+        mrp: { type: Number },
+        netAmount: { type: Number },
         _id: false,
       },
     ],

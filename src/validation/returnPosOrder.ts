@@ -5,8 +5,8 @@ import { RETURN_POS_ORDER_TYPE } from "../common";
 const returnPosOrderItemSchema = Joi.object({
   productId: objectId().required(),
   qty: Joi.number().min(0.01).required(),
-  price: Joi.number().min(0).required(),
-  total: Joi.number().min(0).required(),
+  mrp: Joi.number().min(0).required(),
+  netAmount: Joi.number().min(0).required(),
 });
 
 export const addReturnPosOrderSchema = Joi.object({

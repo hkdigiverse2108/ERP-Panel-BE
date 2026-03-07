@@ -6,7 +6,6 @@ export const addRecipeSchema = Joi.object({
   ...baseApiSchema,
   name: Joi.string().required(),
   date: Joi.date().required(),
-  number: Joi.string().required(),
   type: Joi.string()
     .valid(...Object.values(RECIPE_TYPE))
     .required(),

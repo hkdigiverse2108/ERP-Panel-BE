@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
 import { companyModel, productModel, recipeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addRecipeSchema, deleteRecipeSchema, editRecipeSchema, getRecipeSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -17,9 +17,14 @@ export const addRecipe = async (req, res) => {
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    const existingRecipe = await getFirstMatch(recipeModel, { companyId: value.companyId, number: value.number, isDeleted: false }, {}, {});
-
-    if (existingRecipe) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Recipe No"), {}, {}));
+    value.number = generateSequenceNumber(
+      {
+        model: recipeModel,
+        prefix: "RC",
+        fieldName: "Recipe Number",
+        companyId: value.companyId,
+      }
+    );
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
