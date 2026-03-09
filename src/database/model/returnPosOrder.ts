@@ -1,6 +1,20 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema } from "./base";
 import { RETURN_POS_ORDER_TYPE } from "../../common";
+
+// export const posItemSchema = new Schema(
+//   {
+//     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
+//     qty: { type: Number },
+//     mrp: { type: Number },
+//     discountAmount: { type: Number, default: 0 },
+//     additionalDiscountAmount: { type: Number, default: 0 },
+//     unitCost: { type: Number },
+//     netAmount: { type: Number },
+//     returnedQty: { type: Number, default: 0 },
+//   },
+//   { _id: false },
+// );
 
 const returnPosOrderSchema = new mongoose.Schema(
   {
