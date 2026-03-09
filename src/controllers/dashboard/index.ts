@@ -1060,6 +1060,7 @@ export const topExpenses = async (req, res) => {
           expenseCount: 1,
         },
       },
+      { $match: { _id: { $ne: null } } },
       { $sort: { totalAmount: -1 } },
       { $limit: Number(limit) },
     ]);

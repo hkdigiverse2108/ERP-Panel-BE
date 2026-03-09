@@ -19,6 +19,11 @@ const posCashRegisterSchema = new Schema(
     salesReturn: { type: Number, default: 0 },
     cashRefund: { type: Number, default: 0 },
     bankRefund: { type: Number, default: 0 },
+    numberOfBills: { type: Number, default: 0 },
+    numberOfItems: { type: Number, default: 0 },
+    totalDiscount: { type: Number, default: 0 },
+    taxAmount: { type: Number, default: 0 },
+
 
     creditAdvanceRedeemed: { type: Number, default: 0 },
     payLater: { type: Number, default: 0 },

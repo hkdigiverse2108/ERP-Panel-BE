@@ -22,6 +22,7 @@ export const addPosPaymentSchema = Joi.object({
   bankId: objectId().optional(),
   totalAmount: Joi.number().min(0).optional(),
   paidAmount: Joi.number().min(0).optional(),
+  paymentDate: Joi.date().optional(),
   pendingAmount: Joi.number().optional(),
   kasar: Joi.number().optional(),
   amount: Joi.number().min(0).required(),
@@ -48,6 +49,7 @@ export const editPosPaymentSchema = Joi.object({
   bankId: objectId().optional(),
   totalAmount: Joi.number().min(0).optional(),
   paidAmount: Joi.number().min(0).optional(),
+  paymentDate: Joi.date().optional(),
   pendingAmount: Joi.number().optional(),
   kasar: Joi.number().optional(),
   amount: Joi.number().min(0).optional(),
@@ -77,5 +79,6 @@ export const getAllPosPaymentSchema = Joi.object({
     .optional(),
   startDate: Joi.date().optional(),
   endDate: Joi.date().optional(),
+  paymentDate: Joi.date().optional(),
   ...baseApiSchema,
 });

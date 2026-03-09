@@ -65,7 +65,7 @@ export const addCashControl = async (req, res) => {
         status: CASH_REGISTER_STATUS.OPEN,
         isDeleted: false,
       },
-      { _id: 1 },
+      { _id: 1, openingCash: 1 },
       {},
     );
 
@@ -99,6 +99,21 @@ export const addCashControl = async (req, res) => {
           ),
         );
     }
+
+    // // update the pos register 
+    // const updateRegister = await updateData(PosCashRegisterModel, { _id: openRegister._id }, { openingCash: (Number(openRegister.openingCash) || 0) + (Number(value.amount) || 0) }, {});
+    // if (!updateRegister) {
+    //   return res
+    //     .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+    //     .json(
+    //       new apiResponse(
+    //         HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    //         responseMessage?.updateDataError("Pos Register"),
+    //         {},
+    //         {},
+    //       ),
+    //     );
+    // }
 
     return res
       .status(HTTP_STATUS.OK)
