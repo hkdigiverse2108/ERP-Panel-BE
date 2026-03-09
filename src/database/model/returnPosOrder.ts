@@ -20,6 +20,7 @@ const returnPosOrderSchema = new mongoose.Schema(
   {
     returnOrderNo: { type: String, required: true, index: true },
     posOrderId: { type: mongoose.Schema.Types.ObjectId, ref: "pos-order" },
+    posCashRegisterId: { type: mongoose.Schema.Types.ObjectId, ref: "pos-cash-register", default: null },
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: "contact" },
     salesManId: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null },
     items: [returnPosItemSchema],

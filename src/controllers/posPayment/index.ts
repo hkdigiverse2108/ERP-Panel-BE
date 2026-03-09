@@ -1,5 +1,5 @@
-import { PosPaymentModel, PosOrderModel, contactModel } from "../../database";
-import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE } from "../../common";
+import { PosPaymentModel, PosOrderModel, contactModel, PosCashRegisterModel } from "../../database";
+import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, CASH_REGISTER_STATUS } from "../../common";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, generateSequenceNumber, applyDateFilter } from "../../helper";
 import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema, getAllPosPaymentSchema } from "../../validation";
 
@@ -18,6 +18,23 @@ export const addPosPayment = async (req, res) => {
 
     if (value.posOrderId && !(await checkIdExist(PosOrderModel, value.posOrderId, "POS Order", res))) return;
     if (value.partyId && !(await checkIdExist(contactModel, value.partyId, "Party", res))) return;
+
+    // --- Link Open Cash Register ---
+    const openRegister = await getFirstMatch(
+      PosCashRegisterModel,
+      {
+        companyId: value.companyId,
+        status: CASH_REGISTER_STATUS.OPEN,
+        isDeleted: false,
+      },
+      {},
+      {},
+    );
+
+    if (openRegister) {
+      value.posCashRegisterId = openRegister._id;
+    }
+    // -------------------------------
 
     let prefix = "PAY";
     if (value.voucherType === POS_VOUCHER_TYPE.SALES) prefix = "SAL";

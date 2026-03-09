@@ -30,6 +30,8 @@ export const addReturnPosOrderSchema = Joi.object({
   roundOff: Joi.number().optional(),
   flatDiscount: Joi.number().optional(),
   discountAmount: Joi.number().optional(),
+
+  posCashRegisterId: objectId().optional().allow(null),
   ...baseApiSchema,
 });
 
@@ -52,6 +54,8 @@ export const editReturnPosOrderSchema = Joi.object({
   roundOff: Joi.number().optional(),
   flatDiscount: Joi.number().optional(),
   discountAmount: Joi.number().optional(),
+
+  posCashRegisterId: objectId().optional().allow(null),
   ...baseApiSchema,
 });
 

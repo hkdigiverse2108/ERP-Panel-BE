@@ -28,6 +28,8 @@ export const addPosPaymentSchema = Joi.object({
   amount: Joi.number().min(0).required(),
   isNonGST: Joi.boolean().default(false).optional(),
   remark: Joi.string().optional().allow("", null),
+
+  posCashRegisterId: objectId().optional().allow(null),
   ...baseApiSchema,
 });
 
@@ -55,6 +57,8 @@ export const editPosPaymentSchema = Joi.object({
   amount: Joi.number().min(0).optional(),
   isNonGST: Joi.boolean().optional(),
   remark: Joi.string().optional().allow("", null),
+
+  posCashRegisterId: objectId().optional().allow(null),
   ...baseApiSchema,
 });
 

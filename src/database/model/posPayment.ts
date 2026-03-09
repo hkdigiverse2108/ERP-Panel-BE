@@ -10,6 +10,7 @@ const posPaymentSchema = new mongoose.Schema(
 
     partyId: { type: mongoose.Schema.Types.ObjectId, ref: "contact" },
     posOrderId: { type: mongoose.Schema.Types.ObjectId, ref: "pos-order" },
+    posCashRegisterId: { type: mongoose.Schema.Types.ObjectId, ref: "pos-cash-register", default: null },
     // salesId: { type: mongoose.Schema.Types.ObjectId, ref: "pos-order" },
     paymentMode: { type: String, enum: Object.values(PAYMENT_MODE), default: PAYMENT_MODE.CASH },
 
