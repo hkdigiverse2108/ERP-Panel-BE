@@ -1,4 +1,4 @@
-import { COUPON_DISCOUNT_TYPE, COUPON_STATUS, LOYALTY_TYPE, REDEEM_CREDIT_TYPE, POS_CREDIT_NOTE_STATUS, POS_PAYMENT_TYPE } from "../../common";
+import { COUPON_DISCOUNT_TYPE, COUPON_STATUS, LOYALTY_TYPE, REDEEM_CREDIT_TYPE, POS_CREDIT_NOTE_STATUS, POS_PAYMENT_TYPE, REDEEM_CREDIT_MODEL } from "../../common";
 import { couponModel, loyaltyModel, posCreditNoteModel, PosPaymentModel } from "../../database";
 import { getFirstMatch } from "../../helper";
 import mongoose from "mongoose";
@@ -93,7 +93,7 @@ export const applyCoupon = async (couponId: string, customerId: string, totalAmo
 
 export const applyRedeemCredit = async (redeemCreditId: string, redeemCreditType: string, redeemCreditAmount: number, customerId: string, posOrderId?: string) => {
   try {
-    if (redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
+    if (redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE || redeemCreditType === REDEEM_CREDIT_MODEL.CREDIT_NOTE) {
       const creditNote = await getFirstMatch(posCreditNoteModel, { _id: redeemCreditId, isDeleted: false }, {}, {});
       if (!creditNote) {
         return `Credit Note not found`;
@@ -113,7 +113,7 @@ export const applyRedeemCredit = async (redeemCreditId: string, redeemCreditType
       if (updatedCreditNote && updatedCreditNote.creditsRemaining <= 0) {
         await posCreditNoteModel.updateOne({ _id: redeemCreditId }, { status: POS_CREDIT_NOTE_STATUS.USED });
       }
-    } else if (redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
+    } else if (redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT || redeemCreditType === REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT) {
       const advancePayment = await getFirstMatch(PosPaymentModel, { _id: redeemCreditId, isDeleted: false, paymentType: POS_PAYMENT_TYPE.ADVANCE }, {}, {});
       if (!advancePayment) {
         return `Advance Payment not found`;
@@ -228,7 +228,7 @@ export const revertCoupon = async (couponId: string, customerId: string) => {
 
 export const revertRedeemCredit = async (redeemCreditId: string, redeemCreditType: string, redeemCreditAmount: number, posOrderId?: string) => {
   try {
-    if (redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
+    if (redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE || redeemCreditType === REDEEM_CREDIT_MODEL.CREDIT_NOTE) {
       const updatePayload: any = {
         $inc: { creditsUsed: -redeemCreditAmount, creditsRemaining: redeemCreditAmount },
         $set: { status: POS_CREDIT_NOTE_STATUS.AVAILABLE },
@@ -236,7 +236,7 @@ export const revertRedeemCredit = async (redeemCreditId: string, redeemCreditTyp
       if (posOrderId) updatePayload.$pull = { usedOnOrderIds: posOrderId };
 
       await posCreditNoteModel.updateOne({ _id: new ObjectId(redeemCreditId) as any }, updatePayload);
-    } else if (redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
+    } else if (redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT || redeemCreditType === REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT) {
       await PosPaymentModel.updateOne({ _id: new ObjectId(redeemCreditId) }, { $inc: { amount: redeemCreditAmount } });
     }
   } catch (error) {
