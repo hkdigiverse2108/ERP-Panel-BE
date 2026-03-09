@@ -75,6 +75,7 @@ export const checkRedeemCredit = async (req, res) => {
   }
 };
 
+// TODO: check this function
 export const refundPosCredit = async (req, res) => {
   reqInfo(req);
   try {
