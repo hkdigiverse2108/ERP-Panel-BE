@@ -22,6 +22,7 @@ const posPaymentSchema = new mongoose.Schema(
     pendingAmount: { type: Number, default: 0 },
     kasar: { type: Number, default: 0 },
     amount: { type: Number },
+    paymentDate: { type: Date },
 
     isNonGST: { type: Boolean, default: false },
     remark: { type: String },

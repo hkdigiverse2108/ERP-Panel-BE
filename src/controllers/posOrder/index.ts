@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel } from "../../database";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel, posCreditNoteModel } from "../../database";
 import { applyDateFilter, checkCompany, checkIdExist, checkStockQty, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
 import { applyCoupon, applyLoyalty, applyRedeemCredit, revertCoupon, revertLoyalty, revertRedeemCredit } from "./helper";
@@ -159,6 +159,11 @@ export const addPosOrder = async (req, res) => {
       }
     }
     // -------------------------------
+    // --- Link Credit Note to Order ---
+    if (response && value.redeemCreditId && value.redeemCreditType === REDEEM_CREDIT_MODEL.CREDIT_NOTE) {
+      await posCreditNoteModel.updateOne({ _id: value.redeemCreditId }, { $addToSet: { usedOnOrderIds: response._id } });
+    }
+    // ---------------------------------
 
     // --- Loyalty Points Logic ---
     if (response.status !== POS_ORDER_STATUS.CANCELLED && response.customerId) {
@@ -433,7 +438,7 @@ export const editPosOrder = async (req, res) => {
               paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
               paymentNo: await generateSequenceNumber({
                 model: PosPaymentModel,
-                prefix: "RCP",
+                prefix: "SAL",
                 fieldName: "paymentNo",
                 companyId: response.companyId,
               }),
@@ -455,7 +460,7 @@ export const editPosOrder = async (req, res) => {
           paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
           paymentNo: await generateSequenceNumber({
             model: PosPaymentModel,
-            prefix: "RCP",
+            prefix: "SAL",
             fieldName: "paymentNo",
             companyId: response.companyId,
           }),
@@ -547,7 +552,7 @@ export const deletePosOrder = async (req, res) => {
         await revertLoyalty(isExist.loyaltyId, isExist.customerId);
       }
       if (isExist.redeemCreditId && isExist.redeemCreditAmount > 0) {
-        await revertRedeemCredit(isExist.redeemCreditId, isExist.redeemCreditType, isExist.redeemCreditAmount);
+        await revertRedeemCredit(isExist.redeemCreditId, isExist.redeemCreditType, isExist.redeemCreditAmount, isExist._id);
       }
     } else {
       // otherwise just softdelete it
@@ -578,7 +583,7 @@ export const posOrderDropDown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    const { customerFilter, branchFilter, companyFilter, duePaymentFilter, search } = req.query;
+    const { customerFilter, branchFilter, companyFilter, duePaymentFilter, search, returnableFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -604,6 +609,10 @@ export const posOrderDropDown = async (req, res) => {
 
     if (search) {
       criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }];
+    }
+
+    if (returnableFilter === true || returnableFilter === "true") {
+      criteria.status = POS_ORDER_STATUS.COMPLETED;
     }
 
     const response = await PosOrderModel.find(criteria, {

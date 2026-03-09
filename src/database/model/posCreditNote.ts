@@ -10,7 +10,10 @@ const posCreditNoteSchema = new mongoose.Schema(
 
         totalAmount: { type: Number, },
         creditsUsed: { type: Number, default: 0 },
+        refundedAmount: { type: Number, default: 0 },
         creditsRemaining: { type: Number, },
+
+        usedOnOrderIds: { type: [mongoose.Schema.Types.ObjectId], ref: "pos-order" },
 
         notes: { type: String },
         status: { type: String, enum: POS_CREDIT_NOTE_STATUS, default: POS_CREDIT_NOTE_STATUS.AVAILABLE },

@@ -270,7 +270,7 @@ export const getContactDropdown = async (req, res) => {
     const response = await getData(
       contactModel,
       criteria,
-      { firstName: 1, lastName: 1, dob: 1, email: 1, phoneNo: 1, whatsappNo: 1, contactType: 1, customerType: 1, "address.addressLine1": 1, "address.city": 1, "address.state": 1, "address.country": 1, "address.pinCode": 1 },
+      { firstName: 1, lastName: 1, dob: 1, email: 1, phoneNo: 1, whatsappNo: 1, contactType: 1, customerType: 1, "address.addressLine1": 1, "address.city": 1, "address.state": 1, "address.country": 1, "address.pinCode": 1, "address._id": 1 },
       {
         sort: { companyName: 1, firstName: 1 },
         limit: search ? 50 : 1000,

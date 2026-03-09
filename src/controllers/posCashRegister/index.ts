@@ -631,21 +631,37 @@ export const getCashRegisterDetails = async (req, res) => {
     const startTime = openRegister.createdAt;
     const companyObjectId = new mongoose.Types.ObjectId(companyId);
 
-    // 1. Opening Cash from cashControl
-    const openingCashData = await CashControlModel.findOne({
-      registerId: registerId,
-      type: CASH_CONTROL_TYPE.OPENING,
-      isDeleted: false,
-    });
-    const openingCash = openingCashData?.amount || 0;
+    // 1. Opening Cash and Added Cash from cashControl
+    const cashControlData = await CashControlModel.aggregate([
+      {
+        $match: {
+          registerId: registerId,
+          isDeleted: false,
+          type: { $in: [CASH_CONTROL_TYPE.OPENING, CASH_CONTROL_TYPE.ADD] },
+        },
+      },
+      {
+        $group: {
+          _id: "$type",
+          total: { $sum: "$amount" },
+        },
+      },
+    ]);
 
-    // 2. Payments from posPayment
+    let openingCash = 0;
+    let cashAdded = 0;
+    cashControlData.forEach((c) => {
+      if (c._id === CASH_CONTROL_TYPE.OPENING) openingCash = c.total;
+      if (c._id === CASH_CONTROL_TYPE.ADD) cashAdded = c.total;
+    });
+
+    // 2. Payments from posPayment (Sales only)
     const paymentsData = await PosPaymentModel.aggregate([
       {
         $match: {
           companyId: companyObjectId,
+          posCashRegisterId: registerId,
           voucherType: POS_VOUCHER_TYPE.SALES,
-          createdAt: { $gte: startTime },
           isDeleted: false,
         },
       },
@@ -677,7 +693,7 @@ export const getCashRegisterDetails = async (req, res) => {
       {
         $match: {
           companyId: companyObjectId,
-          createdAt: { $gte: startTime },
+          posCashRegisterId: registerId,
           isDeleted: false,
         },
       },
@@ -697,12 +713,12 @@ export const getCashRegisterDetails = async (req, res) => {
       bankRefund: refundsData[0]?.bankRefund || 0,
     };
 
-    // 4. Pos Order Summary (Total Sales & Pay Later)
+    // 4. Pos Order Summary (Total Sales, Pay Later, Counts, Discounts, Tax)
     const posOrdersSummary = await PosOrderModel.aggregate([
       {
         $match: {
           companyId: companyObjectId,
-          createdAt: { $gte: startTime },
+          posCashRegisterId: registerId,
           isDeleted: false,
           status: { $ne: POS_ORDER_STATUS.CANCELLED },
         },
@@ -712,6 +728,10 @@ export const getCashRegisterDetails = async (req, res) => {
           _id: null,
           totalSales: { $sum: "$totalAmount" },
           totalPayLater: { $sum: "$dueAmount" },
+          numberOfBills: { $sum: 1 },
+          numberOfItems: { $sum: "$totalQty" },
+          totalDiscount: { $sum: "$totalDiscount" },
+          taxAmount: { $sum: "$totalTaxAmount" },
         },
       },
     ]);
@@ -721,7 +741,7 @@ export const getCashRegisterDetails = async (req, res) => {
       {
         $match: {
           companyId: companyObjectId,
-          createdAt: { $gte: startTime },
+          posCashRegisterId: registerId,
           isDeleted: false,
           voucherType: {
             $in: [POS_VOUCHER_TYPE.EXPENSE, POS_VOUCHER_TYPE.PURCHASE],
@@ -730,7 +750,7 @@ export const getCashRegisterDetails = async (req, res) => {
       },
       {
         $group: {
-          _id: "$voucherType",
+          _id: { voucherType: "$voucherType", paymentMode: "$paymentMode" },
           total: { $sum: "$amount" },
         },
       },
@@ -738,10 +758,21 @@ export const getCashRegisterDetails = async (req, res) => {
 
     let expense = 0;
     let purchasePayment = 0;
+    let cashExpense = 0;
+    let cashPurchase = 0;
+
     otherPayments.forEach((p) => {
-      if (p._id === POS_VOUCHER_TYPE.EXPENSE) expense = p.total;
-      if (p._id === POS_VOUCHER_TYPE.PURCHASE) purchasePayment = p.total;
+      if (p._id.voucherType === POS_VOUCHER_TYPE.EXPENSE) {
+        expense += p.total;
+        if (p._id.paymentMode === PAYMENT_MODE.CASH) cashExpense += p.total;
+      }
+      if (p._id.voucherType === POS_VOUCHER_TYPE.PURCHASE) {
+        purchasePayment += p.total;
+        if (p._id.paymentMode === PAYMENT_MODE.CASH) cashPurchase += p.total;
+      }
     });
+
+    const totalCashInDrawer = openingCash + cashAdded + payments.cashPayment - refunds.cashRefund - cashExpense - cashPurchase;
 
     const result = {
       registerId: openRegister._id,
@@ -749,7 +780,7 @@ export const getCashRegisterDetails = async (req, res) => {
       status: openRegister.status,
       createdAt: openRegister.createdAt,
       summary: {
-        openingCash: openingCash,
+        openingCash: openingCash + cashAdded,
         ...payments,
         ...refunds,
         creditAdvanceRedeemed: openRegister.creditAdvanceRedeemed || 0,
@@ -757,6 +788,11 @@ export const getCashRegisterDetails = async (req, res) => {
         expense: expense,
         purchasePayment: purchasePayment,
         totalSales: posOrdersSummary[0]?.totalSales || 0,
+        numberOfBills: posOrdersSummary[0]?.numberOfBills || 0,
+        numberOfItems: posOrdersSummary[0]?.numberOfItems || 0,
+        totalDiscount: posOrdersSummary[0]?.totalDiscount || 0,
+        taxAmount: posOrdersSummary[0]?.taxAmount || 0,
+        totalCashInDrawer: totalCashInDrawer,
       },
     };
 

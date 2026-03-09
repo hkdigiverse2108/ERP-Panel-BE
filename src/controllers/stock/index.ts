@@ -4,7 +4,7 @@ import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumbe
 import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
-
+// TODO: need to add validation for stock
 export const addStock = async (req, res) => {
   reqInfo(req);
   try {

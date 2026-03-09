@@ -17,6 +17,7 @@ export const checkRedeemCredit = async (req, res) => {
 
     const { code, type, customerId } = value;
     let redeemableAmount = 0;
+    let totalAmount = 0;
     let data: any = null;
 
     if (type === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
@@ -27,6 +28,7 @@ export const checkRedeemCredit = async (req, res) => {
       if (customerId && data.customerId?.toString() !== customerId) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Credit Note does not belong to this customer", {}, {}));
       }
+      totalAmount = data.totalAmount || 0;
       redeemableAmount = data.creditsRemaining || 0;
     } else if (type === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
       data = await getFirstMatch(
@@ -60,6 +62,7 @@ export const checkRedeemCredit = async (req, res) => {
           id: data._id,
           code: code,
           type: type,
+          totalAmount: totalAmount,
           redeemableAmount: redeemableAmount,
           date: data.createdAt,
         },
@@ -111,7 +114,7 @@ export const refundPosCredit = async (req, res) => {
     const updatedCreditNote = await posCreditNoteModel.findOneAndUpdate(
       { _id: posCreditNoteId },
       {
-        $inc: { creditsUsed: totalRefund, creditsRemaining: -totalRefund },
+        $inc: { refundedAmount: totalRefund, creditsRemaining: -totalRefund },
         $set: { updatedBy: user?._id || null },
       },
       { new: true },
@@ -207,6 +210,7 @@ export const getAllPosCreditNote = async (req, res) => {
           ],
         },
         { path: "companyId", select: "name" },
+        { path: "usedOnOrderIds", select: "orderNo" },
       ],
     };
 
@@ -259,6 +263,7 @@ export const getOnePosCreditNote = async (req, res) => {
             ],
           },
           { path: "companyId", select: "name" },
+          { path: "usedOnOrderIds", select: "orderNo" },
         ],
       },
     );
@@ -371,8 +376,8 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
     let companyId = companyFilter || user?.companyId?._id;
     let response: any[] = [];
 
-    if (typeFilter === REDEEM_CREDIT_TYPE.CREDIT_NOTE || typeFilter === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
-      let criteria: any = { isDeleted: false, creditsRemaining: { $gt: 0 } };
+    if (typeFilter === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
+      let criteria: any = { isDeleted: false, creditsRemaining: { $gt: 0 }, status: POS_CREDIT_NOTE_STATUS.AVAILABLE };
       if (companyId) criteria.companyId = new ObjectId(companyId);
       if (customerFilter) criteria.customerId = new ObjectId(customerFilter);
 
@@ -383,10 +388,11 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
         no: item.creditNoteNo,
         customerId: item.customerId,
       }));
-    } else if (typeFilter === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT || typeFilter === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
+    } else if (typeFilter === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
       let criteria: any = {
         isDeleted: false,
         paymentType: POS_PAYMENT_TYPE.ADVANCE,
+        amount: { $gt: 0 },
       };
       if (companyId) criteria.companyId = new ObjectId(companyId);
       if (customerFilter) criteria.partyId = new ObjectId(customerFilter);
