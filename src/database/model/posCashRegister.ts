@@ -61,7 +61,7 @@ const posCashRegisterSchema = new Schema(
       default: 0,
     },
 
-    totalCashLeftInDrawer: {
+    totalCashInDrawer: {
       type: Number,
     },
 

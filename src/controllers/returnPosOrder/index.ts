@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL } from "../../common";
 import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, PosPaymentModel, additionalChargeModel, taxModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkStockQty } from "../../helper";
 import { addReturnPosOrderSchema, editReturnPosOrderSchema, getReturnPosOrderSchema, deleteReturnPosOrderSchema, returnPosOrderDropDownSchema } from "../../validation";
@@ -88,6 +88,13 @@ export const addReturnPosOrder = async (req, res) => {
       originalOrder.status = POS_ORDER_STATUS.PARTIALLY_RETURNED;
     } else {
       originalOrder.status = POS_ORDER_STATUS.COMPLETED;
+    }
+
+    // Defensive check: Ensure redeemCreditType is mapped to model name for validation
+    if (originalOrder.redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
+      originalOrder.redeemCreditType = REDEEM_CREDIT_MODEL.CREDIT_NOTE;
+    } else if (originalOrder.redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
+      originalOrder.redeemCreditType = REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT;
     }
 
     originalOrder.markModified("items");
@@ -234,6 +241,13 @@ export const editReturnPosOrder = async (req, res) => {
       originalOrder.status = POS_ORDER_STATUS.PARTIALLY_RETURNED;
     } else {
       originalOrder.status = POS_ORDER_STATUS.COMPLETED; // Revert to completed or whatever appropriate status
+    }
+
+    // Defensive check: Ensure redeemCreditType is mapped to model name for validation
+    if (originalOrder.redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
+      originalOrder.redeemCreditType = REDEEM_CREDIT_MODEL.CREDIT_NOTE;
+    } else if (originalOrder.redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
+      originalOrder.redeemCreditType = REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT;
     }
 
     originalOrder.markModified("items");
@@ -795,6 +809,13 @@ export const deleteReturnPosOrder = async (req, res) => {
         originalOrder.status = POS_ORDER_STATUS.PARTIALLY_RETURNED;
       } else {
         originalOrder.status = POS_ORDER_STATUS.COMPLETED;
+      }
+
+      // Defensive check: Ensure redeemCreditType is mapped to model name for validation
+      if (originalOrder.redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
+        originalOrder.redeemCreditType = REDEEM_CREDIT_MODEL.CREDIT_NOTE;
+      } else if (originalOrder.redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
+        originalOrder.redeemCreditType = REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT;
       }
 
       originalOrder.markModified("items");

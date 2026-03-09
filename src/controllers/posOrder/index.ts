@@ -356,6 +356,12 @@ export const editPosOrder = async (req, res) => {
       };
     }
 
+    // Map to model name for refPath validation
+    if (value.redeemCreditType) {
+      if (value.redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE) value.redeemCreditType = REDEEM_CREDIT_MODEL.CREDIT_NOTE;
+      else if (value.redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) value.redeemCreditType = REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT;
+    }
+
     const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, value, {});
 
     if (!response) {

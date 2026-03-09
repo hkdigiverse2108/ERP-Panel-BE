@@ -39,7 +39,7 @@ export const editPosCashRegisterSchema = Joi.object({
   bankAccountId: objectId().optional().allow(null),
   bankTransferAmount: Joi.number().min(0).optional(),
   cashFlow: Joi.number().optional(),
-  totalCashLeftInDrawer: Joi.number().min(0).optional(),
+  totalCashInDrawer: Joi.number().min(0).optional(),
   physicalDrawerCash: Joi.number().min(0).optional(),
   closingNote: Joi.string().optional().allow("", null),
   status: Joi.string()

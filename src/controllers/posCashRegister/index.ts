@@ -660,7 +660,8 @@ export const getCashRegisterDetails = async (req, res) => {
       {
         $match: {
           companyId: companyObjectId,
-          posCashRegisterId: registerId,
+          // posCashRegisterId: registerId,
+          createdAt: { $gte: startTime },
           voucherType: POS_VOUCHER_TYPE.SALES,
           isDeleted: false,
         },
@@ -688,12 +689,17 @@ export const getCashRegisterDetails = async (req, res) => {
       if (p._id === PAYMENT_MODE.UPI) payments.upiPayment = p.total;
     });
 
+
+    console.log("payments", payments);
+    console.log("paymentsData", paymentsData);
+
     // 3. Refunds from returnPosOrder
     const refundsData = await returnPosOrderModel.aggregate([
       {
         $match: {
           companyId: companyObjectId,
-          posCashRegisterId: registerId,
+          // posCashRegisterId: registerId,
+          createdAt: { $gte: startTime },
           isDeleted: false,
         },
       },

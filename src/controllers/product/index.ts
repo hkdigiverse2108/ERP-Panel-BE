@@ -150,6 +150,7 @@ export const getAllProduct = async (req, res) => {
 
     const companyId = user?.companyId?._id;
     const { page, limit, search, startDate, endDate, activeFilter, companyFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, productTypeIdFilter } = req.query;
+    const effectiveCompanyId = companyFilter || (userType !== USER_TYPES.SUPER_ADMIN ? companyId : null);
 
     let criteria: any = { isDeleted: false };
 
@@ -204,7 +205,7 @@ export const getAllProduct = async (req, res) => {
     if (companyFilter) {
       const stockCriteria: any = {
         isDeleted: false,
-        companyId: companyFilter,
+        companyId: new ObjectId(companyFilter as string),
       };
 
       const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
@@ -246,13 +247,13 @@ export const getAllProduct = async (req, res) => {
 
         if (linkedStockIds.length > 0) {
           stockCriteria._id = { $in: linkedStockIds.map((id: any) => new ObjectId(id.toString())) };
-          if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
-            stockCriteria.companyId = companyId;
+          if (effectiveCompanyId) {
+            stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
           }
         } else {
           stockCriteria.productId = product._id;
-          if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
-            stockCriteria.companyId = companyId;
+          if (effectiveCompanyId) {
+            stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
           }
         }
 
@@ -348,7 +349,7 @@ export const getProductDropdown = async (req, res) => {
     // Determine the effective company ID for filtering
     let effectiveCompanyId = companyId;
     if (companyFilter && userType === USER_TYPES.SUPER_ADMIN) {
-      effectiveCompanyId = companyFilter;
+      effectiveCompanyId = new ObjectId(companyFilter as string);
     }
 
     // --- Stock filtering (only when NOT a new product) ---
