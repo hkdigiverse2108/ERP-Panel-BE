@@ -438,7 +438,7 @@ export const editPosOrder = async (req, res) => {
               paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
               paymentNo: await generateSequenceNumber({
                 model: PosPaymentModel,
-                prefix: "RCP",
+                prefix: "SAL",
                 fieldName: "paymentNo",
                 companyId: response.companyId,
               }),
@@ -460,7 +460,7 @@ export const editPosOrder = async (req, res) => {
           paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
           paymentNo: await generateSequenceNumber({
             model: PosPaymentModel,
-            prefix: "RCP",
+            prefix: "SAL",
             fieldName: "paymentNo",
             companyId: response.companyId,
           }),
