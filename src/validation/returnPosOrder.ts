@@ -6,6 +6,9 @@ const returnPosOrderItemSchema = Joi.object({
   productId: objectId().required(),
   qty: Joi.number().min(0.01).required(),
   mrp: Joi.number().min(0).required(),
+  discountAmount: Joi.number().min(0).default(0).optional(),
+  additionalDiscountAmount: Joi.number().min(0).default(0).optional(),
+  unitCost: Joi.number().min(0).required(),
   netAmount: Joi.number().min(0).required(),
 });
 
