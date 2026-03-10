@@ -34,7 +34,8 @@ const invoiceSchema = new Schema<IInvoice>({
     paymentStatus: { type: String, enum: Object.values(INVOICE_PAYMENT_STATUS), default: INVOICE_PAYMENT_STATUS.UNPAID },
     salesManId: { type: Schema.Types.ObjectId, ref: 'user' },
     termsAndConditionIds: { type: [Schema.Types.ObjectId], ref: 'terms-condition' },
-    status: { type: String, enum: Object.values(INVOICE_STATUS), default: INVOICE_STATUS.INVOICED }
+    status: { type: String, enum: Object.values(INVOICE_STATUS), default: INVOICE_STATUS.INVOICED },
+    notes: { type: String },
 }, baseSchemaOptions);
 
 export const InvoiceModel = mongoose.model<IInvoice>('invoice', invoiceSchema);

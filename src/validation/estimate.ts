@@ -48,6 +48,7 @@ export const addEstimateSchema = Joi.object().keys({
     .valid(...Object.values(TAX_TYPE)),
   sez: Joi.string().optional().allow("", null),
   shippingDetails: commonShippingSchema.optional(),
+  notes: Joi.string().optional().allow("", null),
 });
 
 export const editEstimateSchema = Joi.object().keys({
@@ -73,6 +74,7 @@ export const editEstimateSchema = Joi.object().keys({
     .valid(...Object.values(TAX_TYPE)),
   sez: Joi.string().optional().allow("", null),
   shippingDetails: commonShippingSchema.optional(),
+  notes: Joi.string().optional().allow("", null),
 });
 
 export const deleteEstimateSchema = Joi.object().keys({

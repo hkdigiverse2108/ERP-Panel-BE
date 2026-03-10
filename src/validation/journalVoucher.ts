@@ -17,6 +17,7 @@ export const createJournalVoucherSchema = Joi.object().keys({
     totalDebit: Joi.number().default(0),
     totalCredit: Joi.number().default(0),
     status: Joi.string().valid(...Object.values(JOURNAL_VOUCHER_STATUS)).default(JOURNAL_VOUCHER_STATUS.DRAFT),
+    notes: Joi.string().optional().allow("", null),
 });
 
 export const updateJournalVoucherSchema = Joi.object().keys({
@@ -29,6 +30,7 @@ export const updateJournalVoucherSchema = Joi.object().keys({
     totalDebit: Joi.number().default(0),
     totalCredit: Joi.number().default(0),
     status: Joi.string().valid(...Object.values(JOURNAL_VOUCHER_STATUS)).default(JOURNAL_VOUCHER_STATUS.DRAFT),
+    notes: Joi.string().optional().allow("", null),
 });
 
 export const deleteJournalVoucherSchema = Joi.object().keys({

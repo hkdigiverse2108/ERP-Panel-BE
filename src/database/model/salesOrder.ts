@@ -30,6 +30,7 @@ const SalesOrderSchema = new Schema<ISalesOrder>(
     termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
     status: { type: String, enum: Object.values(SALES_ORDER_STATUS), default: SALES_ORDER_STATUS.PENDING },
     shippingDetails: { type: commonShippingSchema },
+    notes: { type: String },
   },
   baseSchemaOptions,
 );

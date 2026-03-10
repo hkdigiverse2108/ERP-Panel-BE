@@ -30,6 +30,7 @@ const EstimateSchema = new Schema<IEstimate>(
     taxType: { type: String, enum: Object.values(TAX_TYPE), default: TAX_TYPE.DEFAULT },
     sez: { type: String },
     shippingDetails: { type: commonShippingSchema },
+    notes: { type: String },
   },
   baseSchemaOptions,
 );
