@@ -266,6 +266,11 @@ export const POS_PAYMENT_TYPE = {
   ADVANCE: "advance",
 } as const;
 
+export const EXPENSE_TYPE = {
+  PRODUCT: "product",
+  SERVICE: "service",
+} as const;
+
 export const POS_RECEIPT_TYPE = {
   AGAINST_BILL: "against_bill",
   ADVANCE: "advance",

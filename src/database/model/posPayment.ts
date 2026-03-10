@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
-import { PAYMENT_MODE, PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE } from "../../common";
+import { EXPENSE_TYPE, PAYMENT_MODE, PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE } from "../../common";
 
 const posPaymentSchema = new mongoose.Schema(
   {
@@ -22,6 +22,9 @@ const posPaymentSchema = new mongoose.Schema(
     paidAmount: { type: Number, default: 0 },
     pendingAmount: { type: Number, default: 0 },
     kasar: { type: Number, default: 0 },
+    taxId: { type: mongoose.Schema.Types.ObjectId, ref: "tax" },
+    expenseType: { type: String, enum: Object.values(EXPENSE_TYPE), default: EXPENSE_TYPE.PRODUCT },
+    discountAmount: { type: Number, default: 0 },
     amount: { type: Number },
     date: { type: Date },
 

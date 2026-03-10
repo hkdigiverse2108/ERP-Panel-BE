@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
-import { PAYMENT_MODE, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE } from "../common";
+import { EXPENSE_TYPE, PAYMENT_MODE, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE } from "../common";
 
 export const addPosPaymentSchema = Joi.object({
   voucherType: Joi.string()
@@ -28,6 +28,9 @@ export const addPosPaymentSchema = Joi.object({
   amount: Joi.number().min(0).required(),
   isNonGST: Joi.boolean().default(false).optional(),
   remark: Joi.string().optional().allow("", null),
+  taxId: objectId().optional(),
+  expenseType: Joi.string().valid(...Object.values(EXPENSE_TYPE)).optional(),
+  discountAmount: Joi.number().optional(),
 
   posCashRegisterId: objectId().optional().allow(null),
   ...baseApiSchema,
@@ -57,6 +60,9 @@ export const editPosPaymentSchema = Joi.object({
   amount: Joi.number().min(0).optional(),
   isNonGST: Joi.boolean().optional(),
   remark: Joi.string().optional().allow("", null),
+  taxId: objectId().optional(),
+  expenseType: Joi.string().valid(...Object.values(EXPENSE_TYPE)).optional(),
+  discountAmount: Joi.number().optional(),
 
   posCashRegisterId: objectId().optional().allow(null),
   ...baseApiSchema,
