@@ -171,6 +171,10 @@ export const resetPassword = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
+    if (value.newPassword !== value.confirmPassword) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Password do not match."), {}, {}));
+    }
+
     let response = await getFirstMatch(
       userModel,
       { email: value?.email, isDeleted: false },
