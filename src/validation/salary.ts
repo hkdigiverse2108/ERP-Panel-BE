@@ -1,10 +1,9 @@
 import Joi from "joi";
-import { objectId } from "./common";
+import { baseApiSchema, objectId } from "./common";
 import { EXPENSEDATA_TYPE } from "../common";
 
 export const addSalarySchema = Joi.object().keys({
     amount: Joi.number().required(),
-    companyId: objectId().optional(),
     file: Joi.string().optional().allow("", null),
     description: Joi.string().optional().allow("", null),
     partyId: objectId().required(), // Employee ID
@@ -13,11 +12,11 @@ export const addSalarySchema = Joi.object().keys({
     fromDate: Joi.date().required(),
     toDate: Joi.date().required(),
     total: Joi.number().required(),
+    ...baseApiSchema
 });
 
 export const editSalarySchema = Joi.object().keys({
     salaryId: objectId().required(),
-    companyId: objectId().optional(),
     amount: Joi.number().optional(),
     file: Joi.string().optional().allow("", null),
     description: Joi.string().optional().allow("", null),
@@ -27,6 +26,7 @@ export const editSalarySchema = Joi.object().keys({
     fromDate: Joi.date().optional(),
     toDate: Joi.date().optional(),
     total: Joi.number().optional(),
+    ...baseApiSchema
 });
 
 export const deleteSalarySchema = Joi.object().keys({
