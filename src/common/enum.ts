@@ -363,3 +363,8 @@ export const ADJUSTMENT_TYPE = {
   PAYIN: "payin",
   RECEIVER: "receiver",
 } as const;
+
+export const EXPENSEDATA_TYPE = {
+  INCOME: "income",
+  EXPENSE: "expense",
+} as const;

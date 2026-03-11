@@ -35,11 +35,11 @@ export interface IAdjustmentNote {
   description?: string;
   type: 'payin' | 'receiver';
   file?: string;
-  phoneNumber?: string;
+  phoneNo?: string;
 }
 
 const adjustmentNoteSchema = new Schema<IAdjustmentNote>({
-  ...baseSchemaFields,  
+  ...baseSchemaFields,
   voucherNumber: { type: String },
   date: { type: Date },
   amount: { type: Number, min: 0 },
@@ -47,10 +47,10 @@ const adjustmentNoteSchema = new Schema<IAdjustmentNote>({
   description: { type: String },
   type: { type: String, enum: Object.values(ADJUSTMENT_TYPE) },
   file: { type: String },
-  phoneNumber: {
+  phoneNo: {
     countryCode: { type: String },
-    phoneNumber: { type: Number },
-  }
+    phoneNo: { type: Number },
+  },
 }, baseSchemaOptions);
 
 export const adjustmentNoteModel = mongoose.model<IAdjustmentNote>("adjustment-note", adjustmentNoteSchema);

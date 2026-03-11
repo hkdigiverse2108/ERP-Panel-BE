@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { baseApiSchema, commonContactSchema, objectId } from "./common";
 import { ADJUSTMENT_TYPE } from "../common";
 
 export const addDebitNoteSchema = Joi.object().keys({
@@ -7,10 +7,7 @@ export const addDebitNoteSchema = Joi.object().keys({
   bankAccountId: objectId().required(),
   amount: Joi.number().min(0).required(),
   description: Joi.string().max(200).optional().allow("", null),
-  phoneNumber: {
-    countryCode: Joi.string().optional(),
-    phoneNumber: Joi.string().optional(),
-  },
+  phoneNumber: commonContactSchema,
   type: Joi.string().valid(...Object.values(ADJUSTMENT_TYPE)).required(),
   file: Joi.string().optional(),
   ...baseApiSchema,
@@ -22,10 +19,7 @@ export const editDebitNoteSchema = Joi.object().keys({
   bankAccountId: objectId().optional(),
   amount: Joi.number().min(0).optional(),
   description: Joi.string().max(200).optional().allow("", null),
-  phoneNumber: {
-    countryCode: Joi.string().optional(),
-    phoneNumber: Joi.string().optional(),
-  },
+  phoneNumber: commonContactSchema,
   type: Joi.string().valid(...Object.values(ADJUSTMENT_TYPE)).optional(),
   file: Joi.string().optional(),
   ...baseApiSchema,

@@ -30,3 +30,4 @@ export * from "./settings";
 export * from "./journalVoucher";
 export * from "./bankTransaction";
 export * from "./supplierBill";
+export * from "./expense";
