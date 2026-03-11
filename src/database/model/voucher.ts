@@ -15,17 +15,11 @@ const voucherSchema = new Schema<IVoucher>(
     },
 
     partyId: { type: Schema.Types.ObjectId, ref: "contact" },
-    bankAccountId: { type: Schema.Types.ObjectId, ref: "account" },
-
     amount: { type: Number, default: 0 },
 
     entries: [
       {
-        accountId: {
-          type: Schema.Types.ObjectId,
-          ref: "account",
-          required: true,
-        },
+        // account reference removed
         debit: { type: Number, default: 0 },
         credit: { type: Number, default: 0 },
       },

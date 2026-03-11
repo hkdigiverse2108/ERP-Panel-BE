@@ -20,8 +20,6 @@ import { categoryRouter } from "./category";
 import { bankRouter } from "./bank";
 import { materialRouter } from "./material";
 import { materialConsumptionRouter } from "./materialConsumption";
-import { accountGroupRouter } from "./accountGroup";
-import { accountRouter } from "./account";
 // import { paymentTermRouter } from "./paymentTerm";
 import { locationRouter } from "./location";
 import { uomRouter } from "./uom";
@@ -62,6 +60,8 @@ import { dashboardRouter } from "./dashboard";
 import { bankTransactionRouter } from "./bankTransaction";
 import { companyDriveRouter } from "./companyDrive";
 import { productTypeRouter } from "./productType";
+import { expenseRouter } from "./expense";
+import { salaryRouter } from "./salary";
 
 const router = Router();
 
@@ -104,7 +104,8 @@ router.use("/sales-credit-note", salesCreditNoteRouter);
 router.use("/voucher", voucherRouter);
 router.use("/payment", voucherRouter);
 router.use("/receipt", voucherRouter);
-router.use("/expense", voucherRouter);
+router.use("/expense", expenseRouter);
+router.use("/salary", salaryRouter);
 router.use("/coupon", couponRouter);
 router.use("/discount", discountRouter);
 router.use("/feedback", feedbackRouter);
@@ -125,8 +126,6 @@ router.use("/settings", settingsRouter);
 router.use("/journal-voucher", journalVoucherRouter);
 
 // === For Super Admin
-router.use("/account-group", accountGroupRouter);
-router.use("/account", accountRouter);
 router.use("/company", companyRouter);
 router.use("/branch", branchRouter);
 router.use("/announcement", announcementRouter);

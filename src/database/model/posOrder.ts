@@ -21,7 +21,6 @@ export const posAdditionalChargeSchema = new Schema(
     chargeId: { type: Schema.Types.ObjectId, ref: "additional-charge" },
     value: { type: Number },
     taxId: { type: Schema.Types.ObjectId, ref: "tax" },
-    accountGroupId: { type: Schema.Types.ObjectId, ref: "account-group" },
     totalAmount: { type: Number },
   },
   { _id: false },

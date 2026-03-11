@@ -19,7 +19,6 @@ const invoiceSchema = new Schema<IInvoice>({
     billingAddress: { type: Schema.Types.ObjectId },
     shippingAddress: { type: Schema.Types.ObjectId },
     paymentTerms: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
-    accountLedgerId: { type: Schema.Types.ObjectId, ref: 'account-group' },
     createdFrom: { type: String, enum: Object.values(INVOICE_CREATED_FROM) },
     salesOrderIds: [{ type: Schema.Types.ObjectId, ref: 'sales-order' }],
     deliveryChallanIds: [{ type: Schema.Types.ObjectId, ref: 'delivery-challan' }],
@@ -34,7 +33,8 @@ const invoiceSchema = new Schema<IInvoice>({
     paymentStatus: { type: String, enum: Object.values(INVOICE_PAYMENT_STATUS), default: INVOICE_PAYMENT_STATUS.UNPAID },
     salesManId: { type: Schema.Types.ObjectId, ref: 'user' },
     termsAndConditionIds: { type: [Schema.Types.ObjectId], ref: 'terms-condition' },
-    status: { type: String, enum: Object.values(INVOICE_STATUS), default: INVOICE_STATUS.INVOICED }
+    status: { type: String, enum: Object.values(INVOICE_STATUS), default: INVOICE_STATUS.INVOICED },
+    notes: { type: String },
 }, baseSchemaOptions);
 
 export const InvoiceModel = mongoose.model<IInvoice>('invoice', invoiceSchema);

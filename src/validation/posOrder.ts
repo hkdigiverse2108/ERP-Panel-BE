@@ -19,7 +19,6 @@ const posAdditionalChargeSchema = Joi.object({
   chargeId: objectId().optional().allow(null),
   value: Joi.number().min(0).optional(),
   taxId: objectId().optional().allow(null),
-  accountGroupId: objectId().optional().allow(null),
   totalAmount: Joi.number().min(0).optional(),
 });
 
@@ -88,6 +87,7 @@ export const addPosOrderSchema = Joi.object({
     .optional()
     .allow(null),
 
+  posCashRegisterId: objectId().optional().allow(null),
   ...baseApiSchema,
 });
 
@@ -150,6 +150,7 @@ export const editPosOrderSchema = Joi.object().keys({
     .optional()
     .allow(null),
 
+  posCashRegisterId: objectId().optional().allow(null),
   ...baseApiSchema,
 });
 

@@ -10,7 +10,7 @@ const journalVoucherSchema = new Schema<IJournalVoucher>({
     description: { type: String },
     entries: [
         {
-            accountId: { type: Schema.Types.ObjectId, ref: 'account', required: true },
+            // account reference removed
             debit: { type: Number, default: 0 },
             credit: { type: Number, default: 0 },
             description: { type: String }
@@ -18,7 +18,8 @@ const journalVoucherSchema = new Schema<IJournalVoucher>({
     ],
     totalDebit: { type: Number, default: 0 },
     totalCredit: { type: Number, default: 0 },
-    status: { type: String, enum: Object.values(JOURNAL_VOUCHER_STATUS), default: JOURNAL_VOUCHER_STATUS.DRAFT }
+    status: { type: String, enum: Object.values(JOURNAL_VOUCHER_STATUS), default: JOURNAL_VOUCHER_STATUS.DRAFT },
+    notes: { type: String },
 }, baseSchemaOptions);
 
 export const JournalVoucherModel = mongoose.model<IJournalVoucher>('journal-voucher', journalVoucherSchema);

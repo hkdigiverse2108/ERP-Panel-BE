@@ -12,7 +12,7 @@ export interface ISalesDocument extends IBase {
   transactionSummary: any;
   additionalCharges: any;
 
-  notes?: string[];
+  notes?: string;
   termsAndConditionIds?: Schema.Types.ObjectId[];
   status: string;
   reverseCharge: boolean;

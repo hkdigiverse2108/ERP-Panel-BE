@@ -3,7 +3,7 @@ import { objectId } from "./common";
 import { JOURNAL_VOUCHER_STATUS } from "../common";
 
 const journalVoucherEntrySchema = Joi.object().keys({
-    accountId: objectId().required(),
+    // account reference removed
     debit: Joi.number().default(0),
     credit: Joi.number().default(0),
     description: Joi.string().optional().allow("", null),
@@ -17,6 +17,7 @@ export const createJournalVoucherSchema = Joi.object().keys({
     totalDebit: Joi.number().default(0),
     totalCredit: Joi.number().default(0),
     status: Joi.string().valid(...Object.values(JOURNAL_VOUCHER_STATUS)).default(JOURNAL_VOUCHER_STATUS.DRAFT),
+    notes: Joi.string().optional().allow("", null),
 });
 
 export const updateJournalVoucherSchema = Joi.object().keys({
@@ -29,6 +30,7 @@ export const updateJournalVoucherSchema = Joi.object().keys({
     totalDebit: Joi.number().default(0),
     totalCredit: Joi.number().default(0),
     status: Joi.string().valid(...Object.values(JOURNAL_VOUCHER_STATUS)).default(JOURNAL_VOUCHER_STATUS.DRAFT),
+    notes: Joi.string().optional().allow("", null),
 });
 
 export const deleteJournalVoucherSchema = Joi.object().keys({

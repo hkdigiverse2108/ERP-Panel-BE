@@ -1,5 +1,5 @@
-import { PosPaymentModel, PosOrderModel, contactModel } from "../../database";
-import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE } from "../../common";
+import { PosPaymentModel, PosOrderModel, contactModel, PosCashRegisterModel, taxModel } from "../../database";
+import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, CASH_REGISTER_STATUS } from "../../common";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, generateSequenceNumber, applyDateFilter } from "../../helper";
 import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema, getAllPosPaymentSchema } from "../../validation";
 
@@ -19,6 +19,23 @@ export const addPosPayment = async (req, res) => {
     if (value.posOrderId && !(await checkIdExist(PosOrderModel, value.posOrderId, "POS Order", res))) return;
     if (value.partyId && !(await checkIdExist(contactModel, value.partyId, "Party", res))) return;
 
+    // --- Link Open Cash Register ---
+    const openRegister = await getFirstMatch(
+      PosCashRegisterModel,
+      {
+        companyId: value.companyId,
+        status: CASH_REGISTER_STATUS.OPEN,
+        isDeleted: false,
+      },
+      {},
+      {},
+    );
+
+    if (openRegister) {
+      value.posCashRegisterId = openRegister._id;
+    }
+    // -------------------------------
+
     let prefix = "PAY";
     if (value.voucherType === POS_VOUCHER_TYPE.SALES) prefix = "SAL";
     else if (value.voucherType === POS_VOUCHER_TYPE.PURCHASE) prefix = "PMT";
@@ -35,7 +52,6 @@ export const addPosPayment = async (req, res) => {
       posOrder.multiplePayments.push({
         amount: value.amount,
         method: value.paymentMode,
-        accountId: value.accountId,
       });
 
       posOrder.paidAmount = (posOrder.paidAmount || 0) + value.amount;
@@ -58,6 +74,14 @@ export const addPosPayment = async (req, res) => {
         posOrder.dueAmount = posOrder.totalAmount;
       }
       await updateData(PosOrderModel, { _id: value.posOrderId }, posOrder, {});
+    }
+
+    if (value.taxId) {
+      const tax = await getFirstMatch(taxModel, { _id: value.taxId, isDeleted: false }, {}, {});
+      if (!tax) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Tax"), {}, {}));
+      }
+      value.taxId = tax._id;
     }
 
     value.createdBy = user?._id || null;
@@ -108,7 +132,6 @@ export const editPosPayment = async (req, res) => {
       posOrder.multiplePayments.push({
         amount: value.amount,
         method: value.paymentMode,
-        accountId: value.accountId,
       });
 
       posOrder.paidAmount = (posOrder.paidAmount || 0) + value.amount;
@@ -131,6 +154,14 @@ export const editPosPayment = async (req, res) => {
         posOrder.dueAmount = posOrder.totalAmount;
       }
       await updateData(PosOrderModel, { _id: value.posOrderId }, posOrder, {});
+    }
+
+    if (value.taxId) {
+      const tax = await getFirstMatch(taxModel, { _id: value.taxId, isDeleted: false }, {}, {});
+      if (!tax) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Tax"), {}, {}));
+      }
+      value.taxId = tax._id;
     }
 
     value.updatedBy = user?._id || null;
@@ -180,9 +211,9 @@ export const getAllPosPayment = async (req, res) => {
         { path: "posOrderId", select: "orderNo totalAmount createdAt paidAmount" },
         { path: "partyId", select: "firstName lastName companyName" },
         { path: "purchaseBillId", select: "documentNo totalAmount" },
-        { path: "accountId", select: "name" },
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
+        { path: "taxId", select: "name percentage" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -215,9 +246,9 @@ export const getOnePosPayment = async (req, res) => {
           { path: "posOrderId", select: "orderNo totalAmount items" },
           { path: "partyId", select: "firstName lastName companyName email phoneNo" },
           { path: "purchaseBillId", select: "documentNo totalAmount" },
-          { path: "accountId", select: "name" },
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
+          { path: "taxId", select: "name percentage" },
         ],
       },
     );

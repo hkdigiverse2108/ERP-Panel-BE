@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, accountGroupModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel, posCreditNoteModel } from "../../database";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel, posCreditNoteModel } from "../../database";
 import { applyDateFilter, checkCompany, checkIdExist, checkStockQty, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
 import { applyCoupon, applyLoyalty, applyRedeemCredit, revertCoupon, revertLoyalty, revertRedeemCredit } from "./helper";
@@ -44,7 +44,6 @@ export const addPosOrder = async (req, res) => {
 
     for (const item of value.additionalCharges) {
       if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
-      if (!(await checkIdExist(accountGroupModel, item.accountGroupId, "Account Group", res))) return;
       if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
     }
 
@@ -186,6 +185,7 @@ export const addPosOrder = async (req, res) => {
             companyId: response.companyId,
             branchId: response.branchId,
             posOrderId: response._id,
+            posCashRegisterId: response.posCashRegisterId,
             partyId: response.customerId,
             amount: payment.amount,
             paymentMode: payment.method,
@@ -210,6 +210,7 @@ export const addPosOrder = async (req, res) => {
           companyId: response.companyId,
           branchId: response.branchId,
           posOrderId: response._id,
+          posCashRegisterId: response.posCashRegisterId,
           partyId: response.customerId,
           amount: otherPaidAmount,
           paymentMode: value.paymentMethod || PAYMENT_MODE.CASH,
@@ -300,7 +301,6 @@ export const editPosOrder = async (req, res) => {
     if (value?.additionalCharges) {
       for (const item of value.additionalCharges) {
         if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
-        if (!(await checkIdExist(accountGroupModel, item.accountGroupId, "Account Group", res))) return;
         if (!(await checkIdExist(taxModel, item.taxId, "Tax", res))) return;
       }
     }
@@ -437,6 +437,7 @@ export const editPosOrder = async (req, res) => {
               companyId: response.companyId,
               branchId: response.branchId,
               posOrderId: response._id,
+              posCashRegisterId: response.posCashRegisterId,
               partyId: response.customerId,
               amount: payment.amount,
               paymentMode: payment.method,
@@ -459,6 +460,7 @@ export const editPosOrder = async (req, res) => {
           companyId: response.companyId,
           branchId: response.branchId,
           posOrderId: response._id,
+          posCashRegisterId: response.posCashRegisterId,
           partyId: response.customerId,
           amount: paymentDiff,
           paymentMode: value.paymentMethod || PAYMENT_MODE.CASH,
@@ -717,7 +719,6 @@ export const getAllPosOrder = async (req, res) => {
         { path: "invoiceId", select: "documentNo" },
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "additionalCharges.chargeId", select: "name" },
-        { path: "additionalCharges.accountGroupId", select: "name" },
         { path: "posCashRegisterId", select: "registerNo status" },
       ],
       ...(lastBillFilter !== "true" && { skip: (page - 1) * limit, limit }),
@@ -802,7 +803,6 @@ export const getOnePosOrder = async (req, res) => {
           { path: "invoiceId", select: "documentNo" },
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "additionalCharges.chargeId", select: "name" },
-          { path: "additionalCharges.accountGroupId", select: "name" },
           { path: "posCashRegisterId", select: "name status" },
         ],
       },

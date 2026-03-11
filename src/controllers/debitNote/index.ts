@@ -1,5 +1,5 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
-import { debitNoteModel, accountModel } from "../../database";
+import { ADJUSTMENT_TYPE, apiResponse, HTTP_STATUS } from "../../common";
+import { adjustmentNoteModel, bankModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addDebitNoteSchema, deleteDebitNoteSchema, editDebitNoteSchema, getDebitNoteSchema } from "../../validation";
 
@@ -20,19 +20,19 @@ export const addDebitNote = async (req, res) => {
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    // Validate accounts
-    if (!(await checkIdExist(accountModel, value.fromAccountId, "From Account", res))) return;
-    if (!(await checkIdExist(accountModel, value.toAccountId, "To Account", res))) return;
+    if (!(await checkIdExist(bankModel, value?.bankAccountId, "Bank", res))) return;
 
-    if (value.fromAccountId.toString() === value.toAccountId.toString()) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
+    if (value?.file) {
+      if (!value?.file?.match(/\.(png|jpg|jpeg)$/)) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fileIsNotValid("File"), {}, {}));
+      }
     }
 
-    value.voucherNumber = await generateSequenceNumber({ model: debitNoteModel, prefix: "DN", fieldName: "voucherNumber", companyId: value.companyId });
+    value.voucherNumber = await generateSequenceNumber({ model: adjustmentNoteModel, prefix: "DN", fieldName: "voucherNumber", companyId: value.companyId });
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
-    const response = await createOne(debitNoteModel, value);
+    const response = await createOne(adjustmentNoteModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -56,36 +56,23 @@ export const editDebitNote = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const isExist = await getFirstMatch(debitNoteModel, { _id: value?.debitNoteId, isDeleted: false }, {}, {});
+    const isExist = await getFirstMatch(adjustmentNoteModel, { _id: value?.debitNoteId, isDeleted: false, type: ADJUSTMENT_TYPE.RECEIVER }, {}, {});
 
     if (!isExist) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Debit Note"), {}, {}));
     }
 
-    // Validate accounts if being changed
-    if (value.fromAccountId && value.fromAccountId !== isExist.fromAccountId.toString()) {
-      if (!(await checkIdExist(accountModel, value.fromAccountId, "From Account", res))) return;
-    }
+    if (!(await checkIdExist(bankModel, value?.bankAccountId, "Bank", res))) return;
 
-    if (value.toAccountId && value.toAccountId !== isExist.toAccountId.toString()) {
-      if (!(await checkIdExist(accountModel, value.toAccountId, "To Account", res))) return;
-    }
-
-    if (value.fromAccountId && value.toAccountId && value?.fromAccountId?.toString() === value?.toAccountId?.toString()) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
-    }
-
-    if (value.fromAccountId && !value.toAccountId && value.fromAccountId === isExist.toAccountId.toString()) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
-    }
-
-    if (value.toAccountId && !value.fromAccountId && value.toAccountId === isExist.fromAccountId.toString()) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
+    if (value?.file) {
+      if (!value?.file?.match(/\.(png|jpg|jpeg)$/)) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fileIsNotValid("File"), {}, {}));
+      }
     }
 
     value.updatedBy = user?._id || null;
 
-    const response = await updateData(debitNoteModel, { _id: value?.debitNoteId }, value, {});
+    const response = await updateData(adjustmentNoteModel, { _id: value?.debitNoteId }, value, {});
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Debit Note"), {}, {}));
@@ -108,14 +95,14 @@ export const deleteDebitNote = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!(await checkIdExist(debitNoteModel, value?.id, "Debit Note", res))) return;
+    if (!(await checkIdExist(adjustmentNoteModel, value?.id, "Debit Note", res))) return;
 
     const payload = {
       isDeleted: true,
       updatedBy: user?._id || null,
     };
 
-    const response = await updateData(debitNoteModel, { _id: new ObjectId(value?.id) }, payload, {});
+    const response = await updateData(adjustmentNoteModel, { _id: new ObjectId(value?.id) }, payload, {});
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Debit Note"), {}, {}));
@@ -138,7 +125,7 @@ export const getAllDebitNote = async (req, res) => {
     page = Number(page);
     limit = Number(limit);
 
-    let criteria: any = { isDeleted: false };
+    let criteria: any = { isDeleted: false, type: ADJUSTMENT_TYPE.RECEIVER };
     if (companyId) {
       criteria.companyId = companyId;
     }
@@ -157,16 +144,15 @@ export const getAllDebitNote = async (req, res) => {
     const options = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "fromAccountId", select: "name code" },
-        { path: "toAccountId", select: "name code" },
+        { path: "bankAccountId", select: "name" },
         { path: "companyId", select: "name" },
       ],
       skip: (page - 1) * limit,
       limit,
     };
 
-    const response = await getDataWithSorting(debitNoteModel, criteria, {}, options);
-    const totalData = await countData(debitNoteModel, criteria);
+    const response = await getDataWithSorting(adjustmentNoteModel, criteria, {}, options);
+    const totalData = await countData(adjustmentNoteModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
 
@@ -193,14 +179,13 @@ export const getOneDebitNote = async (req, res) => {
     }
 
     const response = await getFirstMatch(
-      debitNoteModel,
+      adjustmentNoteModel,
       { _id: value?.id, isDeleted: false },
       {},
       {
         populate: [
-          { path: "fromAccountId", select: "name code" },
-          { path: "toAccountId", select: "name code" },
           { path: "companyId", select: "name" },
+          { path: "bankAccountId", select: "name" },
         ],
       },
     );

@@ -1,5 +1,5 @@
-import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL } from "../../common";
-import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, PosPaymentModel, additionalChargeModel, taxModel } from "../../database";
+import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS } from "../../common";
+import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, PosPaymentModel, additionalChargeModel, taxModel, PosCashRegisterModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkStockQty } from "../../helper";
 import { addReturnPosOrderSchema, editReturnPosOrderSchema, getReturnPosOrderSchema, deleteReturnPosOrderSchema, returnPosOrderDropDownSchema } from "../../validation";
 
@@ -50,6 +50,23 @@ export const addReturnPosOrder = async (req, res) => {
         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Return quantity ${returnItem.qty} exceeds available to return ${availableToReturn} for selected product`, {}, {}));
       }
     }
+
+    // --- Link Open Cash Register ---
+    const openRegister = await getFirstMatch(
+      PosCashRegisterModel,
+      {
+        companyId: value.companyId,
+        status: CASH_REGISTER_STATUS.OPEN,
+        isDeleted: false,
+      },
+      {},
+      {},
+    );
+
+    if (openRegister) {
+      value.posCashRegisterId = openRegister._id;
+    }
+    // -------------------------------
 
     value.returnOrderNo = await generateSequenceNumber({ model: returnPosOrderModel, prefix: "RETPOS", fieldName: "returnOrderNo", companyId: value.companyId });
 

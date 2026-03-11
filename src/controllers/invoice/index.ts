@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS } from "../../common";
-import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, accountGroupModel, termsConditionModel, deliveryChallanModel } from "../../database";
+import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, termsConditionModel, deliveryChallanModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSchema } from "../../validation";
 
@@ -53,12 +53,6 @@ export const addInvoice = async (req, res) => {
         if (!(await checkIdExist(deliveryChallanModel, dcId, "Delivery Challan", res))) return;
       }
     }
-
-    // Validate sales man if provided
-    if (value.salesManId && !(await checkIdExist(userModel, value.salesManId, "Sales Man", res))) return;
-
-    // Validate account ledger if provided
-    if (value.accountLedgerId && !(await checkIdExist(accountGroupModel, value.accountLedgerId, "Account Ledger", res))) return;
 
     // Validate terms and conditions exist
     if (value.termsAndConditionIds && value.termsAndConditionIds.length > 0) {
@@ -211,11 +205,6 @@ export const editInvoice = async (req, res) => {
     // Validate sales man if being changed
     if (value.salesManId && value.salesManId !== isExist.salesManId?.toString()) {
       if (!(await checkIdExist(userModel, value.salesManId, "Sales Man", res))) return;
-    }
-
-    // Validate account ledger if provided
-    if (value.accountLedgerId && value.accountLedgerId !== isExist.accountLedgerId?.toString()) {
-      if (!(await checkIdExist(accountGroupModel, value.accountLedgerId, "Account Ledger", res))) return;
     }
 
     // Validate terms and conditions exist

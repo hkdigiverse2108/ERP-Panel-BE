@@ -47,6 +47,7 @@ export const addUserSchema = Joi.object().keys({
   target: Joi.number().min(0).optional().allow(null),
   permissions: permissionsSchema,
   designation: Joi.string().optional().allow("", null),
+  profileImage: Joi.string().optional().allow("", null),
   ...baseApiSchema,
 });
 
@@ -70,6 +71,7 @@ export const editUserSchema = Joi.object().keys({
   extraWages: Joi.number().min(0).optional().allow("", null),
   target: Joi.number().min(0).optional().allow("", null),
   permissions: permissionsSchema,
+  profileImage: Joi.string().optional().allow("", null),
   ...baseApiSchema,
 });
 

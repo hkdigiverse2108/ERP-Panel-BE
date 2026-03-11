@@ -1,6 +1,6 @@
 export * from "./base";
 export * from "./account";
-export * from "./debitNote";
+// export * from "./debitNote";
 export * from "./sales";
 export * from "./deliveryChallan";
 export * from "./department";
@@ -30,3 +30,4 @@ export * from "./settings";
 export * from "./journalVoucher";
 export * from "./bankTransaction";
 export * from "./supplierBill";
+export * from "./expense";

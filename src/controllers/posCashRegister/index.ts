@@ -660,8 +660,7 @@ export const getCashRegisterDetails = async (req, res) => {
       {
         $match: {
           companyId: companyObjectId,
-          // posCashRegisterId: registerId,
-          createdAt: { $gte: startTime },
+          $or: [{ posCashRegisterId: registerId }, { posCashRegisterId: null, createdAt: { $gte: startTime } }],
           voucherType: POS_VOUCHER_TYPE.SALES,
           isDeleted: false,
         },
@@ -689,17 +688,12 @@ export const getCashRegisterDetails = async (req, res) => {
       if (p._id === PAYMENT_MODE.UPI) payments.upiPayment = p.total;
     });
 
-
-    console.log("payments", payments);
-    console.log("paymentsData", paymentsData);
-
     // 3. Refunds from returnPosOrder
     const refundsData = await returnPosOrderModel.aggregate([
       {
         $match: {
           companyId: companyObjectId,
-          // posCashRegisterId: registerId,
-          createdAt: { $gte: startTime },
+          $or: [{ posCashRegisterId: registerId }, { posCashRegisterId: null, createdAt: { $gte: startTime } }],
           isDeleted: false,
         },
       },
@@ -724,7 +718,7 @@ export const getCashRegisterDetails = async (req, res) => {
       {
         $match: {
           companyId: companyObjectId,
-          posCashRegisterId: registerId,
+          $or: [{ posCashRegisterId: registerId }, { posCashRegisterId: null, createdAt: { $gte: startTime } }],
           isDeleted: false,
           status: { $ne: POS_ORDER_STATUS.CANCELLED },
         },
@@ -747,7 +741,7 @@ export const getCashRegisterDetails = async (req, res) => {
       {
         $match: {
           companyId: companyObjectId,
-          posCashRegisterId: registerId,
+          $or: [{ posCashRegisterId: registerId }, { posCashRegisterId: null, createdAt: { $gte: startTime } }],
           isDeleted: false,
           voucherType: {
             $in: [POS_VOUCHER_TYPE.EXPENSE, POS_VOUCHER_TYPE.PURCHASE],

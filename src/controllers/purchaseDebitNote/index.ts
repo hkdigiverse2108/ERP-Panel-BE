@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { contactModel, purchaseDebitNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, purchaseOrderModel, accountGroupModel } from "../../database";
+import { contactModel, purchaseDebitNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, purchaseOrderModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addPurchaseDebitNoteSchema, deletePurchaseDebitNoteSchema, editPurchaseDebitNoteSchema, getPurchaseDebitNoteSchema } from "../../validation";
 
@@ -44,9 +44,6 @@ export const addPurchaseDebitNote = async (req, res) => {
 
     // Validate Purchase Order if provided
     if (value?.purchaseId && !(await checkIdExist(purchaseOrderModel, value?.purchaseId, "Purchase Order", res))) return;
-
-    // Validate Account Ledger if provided
-    if (value?.accountLedgerId && !(await checkIdExist(accountGroupModel, value?.accountLedgerId, "Account Ledger", res))) return;
 
     if (value?.termsAndConditionIds) {
       for (const item of value?.termsAndConditionIds) {
@@ -149,10 +146,6 @@ export const editPurchaseDebitNote = async (req, res) => {
 
     if (value?.purchaseId && value?.purchaseId !== isExist?.purchaseId?.toString()) {
       if (!(await checkIdExist(purchaseOrderModel, value?.purchaseId, "Purchase Order", res))) return;
-    }
-
-    if (value?.accountLedgerId && value?.accountLedgerId !== isExist?.accountLedgerId?.toString()) {
-      if (!(await checkIdExist(accountGroupModel, value?.accountLedgerId, "Account Ledger", res))) return;
     }
 
     if (value?.termsAndConditionIds) {
@@ -279,10 +272,8 @@ export const getAllPurchaseDebitNote = async (req, res) => {
         { path: "productDetails.items.taxId", select: "name percentage" },
         { path: "additionalCharges.items.chargeId", select: "name type" },
         { path: "additionalCharges.items.taxId", select: "name percentage" },
-        { path: "termsAndConditionIds", select: "termsCondition" },
         { path: "companyId", select: "name" },
-        { path: "accountLedgerId", select: "name" },
-        
+
       ],
       skip: (page - 1) * limit,
       limit,
@@ -375,9 +366,7 @@ export const getOnePurchaseDebitNote = async (req, res) => {
           { path: "productDetails.items.taxId", select: "name percentage" },
           { path: "additionalCharges.items.chargeId", select: "name type" },
           { path: "additionalCharges.items.taxId", select: "name percentage" },
-          { path: "termsAndConditionIds", select: "termsCondition" },
           { path: "companyId", select: "name gstNo" },
-          { path: "accountLedgerId", select: "name" },
         ],
       },
     );

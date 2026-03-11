@@ -28,11 +28,6 @@ const additionalChargeSchema = new mongoose.Schema(
 
     isTaxIncluding: { type: Boolean, default: false },
 
-    accountGroupId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "account-group",
-    },
-
     hsnSac: {
       type: String,
       trim: true,

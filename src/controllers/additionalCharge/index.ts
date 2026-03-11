@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { accountGroupModel, additionalChargeModel, taxModel } from "../../database";
+import { additionalChargeModel, taxModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addAdditionalChargeSchema, deleteAdditionalChargeSchema, editAdditionalChargeSchema, getAdditionalChargeSchema } from "../../validation";
 
@@ -16,7 +16,6 @@ export const addAdditionalCharge = async (req, res) => {
     value.companyId = await checkCompany(user, value);
 
     if (!(await checkIdExist(taxModel, value?.taxId, "Tax", res))) return;
-    if (!(await checkIdExist(accountGroupModel, value?.accountGroupId, "account Group", res))) return;
 
     const existingCharge = await getFirstMatch(additionalChargeModel, { name: value.name, type: value.type, isDeleted: false }, {}, {});
 
@@ -121,7 +120,6 @@ export const getAllAdditionalCharge = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "taxId", select: "name taxPercentage" },
-        { path: "accountGroupId", select: "name" },
       ],
     };
 
@@ -164,7 +162,6 @@ export const getAdditionalChargeById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "taxId", select: "name taxPercentage" },
-          { path: "accountGroupId", select: "name" },
         ],
       },
     );
@@ -198,12 +195,11 @@ export const getAdditionalChargeDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       additionalChargeModel,
       criteria,
-      { _id: 1, name: 1, type: 1, defaultValue: 1, taxId: 1, accountGroupId: 1 },
+      { _id: 1, name: 1, type: 1, defaultValue: 1, taxId: 1 },
       {
         sort: { name: 1 },
         populate: [
           { path: "taxId", select: "name taxPercentage" },
-          { path: "accountGroupId", select: "name" },
         ],
       },
     );
@@ -214,7 +210,6 @@ export const getAdditionalChargeDropdown = async (req, res) => {
       type: item.type,
       defaultValue: item.defaultValue,
       taxId: item.taxId,
-      accountGroupId: item.accountGroupId,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Additional Charge"), dropdownData, {}));
