@@ -4,6 +4,7 @@ import { EXPENSEDATA_TYPE } from "../common";
 
 export const addSalarySchema = Joi.object().keys({
     amount: Joi.number().required(),
+    companyId: objectId().optional(),
     file: Joi.string().optional().allow("", null),
     description: Joi.string().optional().allow("", null),
     partyId: objectId().required(), // Employee ID
@@ -16,6 +17,7 @@ export const addSalarySchema = Joi.object().keys({
 
 export const editSalarySchema = Joi.object().keys({
     salaryId: objectId().required(),
+    companyId: objectId().optional(),
     amount: Joi.number().optional(),
     file: Joi.string().optional().allow("", null),
     description: Joi.string().optional().allow("", null),

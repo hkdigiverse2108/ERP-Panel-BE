@@ -127,6 +127,8 @@ export const editSalaryById = async (req, res) => {
 
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
+        await checkCompany(user, value);
+
         value.updatedBy = user?._id || null;
 
         const response = await updateData(ExpenseModel, { _id: new ObjectId(value.salaryId), isDeleted: false, isSalary: true }, value, {});

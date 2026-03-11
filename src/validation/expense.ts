@@ -3,6 +3,7 @@ import { objectId } from "./common";
 import { EXPENSEDATA_TYPE } from "../common";
 
 export const addExpenseSchema = Joi.object().keys({
+    companyId: objectId().optional(),
     amount: Joi.number().required(),
     file: Joi.string().optional().allow("", null),
     description: Joi.string().optional().allow("", null),
@@ -12,6 +13,7 @@ export const addExpenseSchema = Joi.object().keys({
 });
 
 export const editExpenseSchema = Joi.object().keys({
+    companyId: objectId().optional(),
     expenseId: objectId().required(),
     amount: Joi.number().optional(),
     file: Joi.string().optional().allow("", null),

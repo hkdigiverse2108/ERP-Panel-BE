@@ -26,4 +26,3 @@ export const checkCompany = async (user, value) => {
 
   return companyId;
 };
-
