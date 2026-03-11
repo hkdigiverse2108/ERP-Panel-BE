@@ -7,7 +7,7 @@ export const addCreditNoteSchema = Joi.object().keys({
   bankAccountId: objectId().required(),
   amount: Joi.number().min(0).required(),
   description: Joi.string().max(200).optional().allow("", null),
-  phoneNumber: commonContactSchema,
+  phoneNo: commonContactSchema,
   type: Joi.string().valid(...Object.values(ADJUSTMENT_TYPE)).required(),
   file: Joi.string().optional(),
   ...baseApiSchema,

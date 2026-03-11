@@ -60,6 +60,8 @@ import { dashboardRouter } from "./dashboard";
 import { bankTransactionRouter } from "./bankTransaction";
 import { companyDriveRouter } from "./companyDrive";
 import { productTypeRouter } from "./productType";
+import { expenseRouter } from "./expense";
+import { salaryRouter } from "./salary";
 
 const router = Router();
 
@@ -102,7 +104,8 @@ router.use("/sales-credit-note", salesCreditNoteRouter);
 router.use("/voucher", voucherRouter);
 router.use("/payment", voucherRouter);
 router.use("/receipt", voucherRouter);
-router.use("/expense", voucherRouter);
+router.use("/expense", expenseRouter);
+router.use("/salary", salaryRouter);
 router.use("/coupon", couponRouter);
 router.use("/discount", discountRouter);
 router.use("/feedback", feedbackRouter);
