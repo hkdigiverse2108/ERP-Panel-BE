@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
-import { accountModel, JournalVoucherModel } from "../../database";
+import { JournalVoucherModel } from "../../database";
 import { createJournalVoucherSchema, updateJournalVoucherSchema, deleteJournalVoucherSchema, getJournalVoucherSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -17,17 +17,7 @@ export const createJournalVoucher = async (req, res) => {
     value.companyId = await checkCompany(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    const accountIds = value.entries.map((item) => item.accountId);
-    const duplicateAccounts = accountIds.filter((item, index) => accountIds.indexOf(item) !== index);
-    if (duplicateAccounts.length > 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Duplicate Account"), {}, {}));
-    }
-
-    if (value.entries && value.entries.length > 0) {
-      for (const item of value.entries) {
-        if (!(await checkIdExist(accountModel, item?.accountId, "account", res))) return;
-      }
-    }
+    // Account existence logic removed
 
     value.paymentNo = await generateSequenceNumber({ model: JournalVoucherModel, prefix: "JV", fieldName: "paymentNo", companyId: value.companyId });
 
@@ -62,11 +52,7 @@ export const updateJournalVoucher = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Journal Voucher"), {}, {}));
     }
 
-    if (value.entries && value.entries.length > 0) {
-      for (const item of value.entries) {
-        if (!(await checkIdExist(accountModel, item?.accountId, "account", res))) return;
-      }
-    }
+    // Account logic removed
 
     value.updatedBy = user?._id;
 
@@ -136,9 +122,7 @@ export const getAllJournalVoucher = async (req, res) => {
       criteria.$or = [{ paymentNo: { $regex: search, $options: "si" } }, { description: { $regex: search, $options: "si" } }];
     }
 
-    if (accountFilter) {
-      criteria.entries.accountId = accountFilter;
-    }
+    // filter logic removed
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
@@ -151,7 +135,6 @@ export const getAllJournalVoucher = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "entries.accountId", select: "name accountGroup" },
         { path: "companyId", select: "name" },
       ],
     };
@@ -194,7 +177,6 @@ export const getOneJournalVoucher = async (req, res) => {
       {},
       {
         populate: [
-          { path: "entries.accountId", select: "name accountGroup" },
           { path: "companyId", select: "name" },
         ],
       },

@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { contactModel, salesCreditNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, accountGroupModel, employeeModel, SalesOrderModel, InvoiceModel, userModel } from "../../database";
+import { contactModel, salesCreditNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, employeeModel, SalesOrderModel, InvoiceModel, userModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addSalesCreditNoteSchema, deleteSalesCreditNoteSchema, editSalesCreditNoteSchema, getSalesCreditNoteSchema } from "../../validation";
 
@@ -44,9 +44,6 @@ export const addSalesCreditNote = async (req, res) => {
 
     // Validate Sales Order if provided
     if (value?.salesId && !(await checkIdExist(InvoiceModel, value?.salesId, "Sales", res))) return;
-
-    // Validate Account Ledger if provided
-    if (value?.accountLedgerId && !(await checkIdExist(accountGroupModel, value?.accountLedgerId, "Account Ledger", res))) return;
 
     // Validate Salesman if provided
     if (value?.salesManId && !(await checkIdExist(userModel, value?.salesManId, "Salesman", res))) return;
@@ -152,10 +149,6 @@ export const editSalesCreditNote = async (req, res) => {
 
     if (value?.salesId && value?.salesId !== isExist?.salesId?.toString()) {
       if (!(await checkIdExist(SalesOrderModel, value?.salesId, "Sales Order", res))) return;
-    }
-
-    if (value?.accountLedgerId && value?.accountLedgerId !== isExist?.accountLedgerId?.toString()) {
-      if (!(await checkIdExist(accountGroupModel, value?.accountLedgerId, "Account Ledger", res))) return;
     }
 
     if (value?.salesManId && value?.salesManId !== isExist?.salesManId?.toString()) {
@@ -290,7 +283,6 @@ export const getAllSalesCreditNote = async (req, res) => {
         { path: "termsAndConditionIds", select: "termsCondition" },
         { path: "companyId", select: "name" },
         { path: "salesManId", select: "firstName lastName" },
-        { path: "accountLedgerId", select: "name" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -385,9 +377,7 @@ export const getOneSalesCreditNote = async (req, res) => {
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "termsAndConditionIds", select: "termsCondition" },
           { path: "companyId", select: "name gstNo" },
-          { path: "accountLedgerId", select: "name" },
           { path: "salesManId", select: "firstName lastName" },
-          { path: "accountLedgerId", select: "name" },
           { path: "shippingDetails.transporterId", select: "firstName lastName" },
         ],
       },

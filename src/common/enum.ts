@@ -58,35 +58,6 @@ export const PAYMENT_MODE = {
   CHEQUE: "cheque",
 } as const;
 
-export const ACCOUNT_TYPE = {
-  BANK: "bank",
-  CASH: "cash",
-  OTHER: "other",
-  ADDITIONAL_CHARGE: "additional_charge",
-  TRANSPORT: "transport",
-  CUSTOMER: "customers",
-  SUPPLIER: "suppliers",
-  ACCOUNT_CUSTOM: "account_custom",
-} as const;
-
-export const ACCOUNT_NATURE = {
-  ASSETS: "assets",
-  LIABILITIES: "liabilities",
-  INCOME: "income",
-  EXPENSES: "expenses",
-} as const;
-
-export const ACCOUNT_GROUP_TYPE = {
-  SALES: "sales",
-  SALES_RETURN: "sales_return",
-  PURCHASE: "purchase",
-  PURCHASE_RETURN: "purchase_return",
-  LIABILITIES: "liabilities",
-  ASSETS: "assets",
-  INCOME: "income",
-  EXPENSES: "expenses",
-} as const;
-
 export const CONTACT_TYPE = {
   CUSTOMER: "customer",
   SUPPLIER: "supplier",
@@ -386,4 +357,9 @@ export const SALES_CREDIT_NOTE_PRODUCT_TYPE = {
 export const PAYMENT_STATUS = {
   CLEARED: "cleared",
   UNCLEAR: "unclear",
+} as const;
+
+export const ADJUSTMENT_TYPE = {
+  PAYIN: "payin",
+  RECEIVER: "receiver",
 } as const;

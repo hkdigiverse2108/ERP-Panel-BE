@@ -1,6 +1,6 @@
 export * from "./base";
 export * from "./account";
-export * from "./debitNote";
+// export * from "./debitNote";
 export * from "./sales";
 export * from "./deliveryChallan";
 export * from "./department";

@@ -18,8 +18,6 @@ export * as categoryController from "./category";
 export * as bankController from "./bank";
 export * as materialController from "./material";
 export * as materialConsumptionController from "./materialConsumption";
-export * as accountGroupController from "./accountGroup";
-export * as accountController from "./account";
 export * as couponController from "./coupon";
 export * as discountController from "./discount";
 export * as feedbackController from "./feedback";

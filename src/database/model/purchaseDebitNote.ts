@@ -19,7 +19,6 @@ export interface IpurchaseDebitNote {
   purchaseId?: Schema.Types.ObjectId;
   reverseCharge: boolean;
   reason?: string;
-  accountLedgerId?: Schema.Types.ObjectId;
   productDetails: {
     items: any[];
     totalQty: number;
@@ -93,10 +92,6 @@ const purchaseDebitNoteSchema = new Schema<IpurchaseDebitNote>(
     },
     reverseCharge: { type: Boolean, default: false },
     reason: { type: String },
-    accountLedgerId: {
-      type: Schema.Types.ObjectId,
-      ref: "account-group",
-    },
     productDetails: {
       items: [purchaseDebitNoteItemSchema],
       totalQty: { type: Number },

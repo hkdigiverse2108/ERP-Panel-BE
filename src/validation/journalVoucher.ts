@@ -3,7 +3,7 @@ import { objectId } from "./common";
 import { JOURNAL_VOUCHER_STATUS } from "../common";
 
 const journalVoucherEntrySchema = Joi.object().keys({
-    accountId: objectId().required(),
+    // account reference removed
     debit: Joi.number().default(0),
     credit: Joi.number().default(0),
     description: Joi.string().optional().allow("", null),

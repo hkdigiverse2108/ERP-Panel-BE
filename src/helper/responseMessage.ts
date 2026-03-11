@@ -70,6 +70,9 @@ export const responseMessage = {
   fieldIsRequired: (message: string): any => {
     return `The ${message} is Required!`;
   },
+  fileIsNotValid: (message: string): any => {
+    return `The ${message} is not valid!`;
+  },
   dataAlreadyExist: (message: any): any => {
     return `Please change ${message}, ${message} is already exists!`;
   },

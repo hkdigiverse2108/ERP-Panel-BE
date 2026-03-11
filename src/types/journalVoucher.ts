@@ -2,7 +2,7 @@ import { Schema } from "mongoose";
 import { IBase } from "./base";
 
 export interface IJournalVoucherEntry {
-    accountId: Schema.Types.ObjectId;
+    // account reference removed
     debit: number;
     credit: number;
     description?: string;

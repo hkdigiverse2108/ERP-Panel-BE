@@ -10,7 +10,7 @@ const journalVoucherSchema = new Schema<IJournalVoucher>({
     description: { type: String },
     entries: [
         {
-            accountId: { type: Schema.Types.ObjectId, ref: 'account', required: true },
+            // account reference removed
             debit: { type: Number, default: 0 },
             credit: { type: Number, default: 0 },
             description: { type: String }

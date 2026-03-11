@@ -1,22 +1,33 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
+import { ADJUSTMENT_TYPE } from "../common";
 
 export const addDebitNoteSchema = Joi.object().keys({
   date: Joi.date().required(),
-  fromAccountId: objectId().required(),
-  toAccountId: objectId().required(),
+  bankAccountId: objectId().required(),
   amount: Joi.number().min(0).required(),
   description: Joi.string().max(200).optional().allow("", null),
+  phoneNumber: {
+    countryCode: Joi.string().optional(),
+    phoneNumber: Joi.string().optional(),
+  },
+  type: Joi.string().valid(...Object.values(ADJUSTMENT_TYPE)).required(),
+  file: Joi.string().optional(),
   ...baseApiSchema,
 });
 
 export const editDebitNoteSchema = Joi.object().keys({
   debitNoteId: objectId().required(),
   date: Joi.date().optional(),
-  fromAccountId: objectId().optional(),
-  toAccountId: objectId().optional(),
+  bankAccountId: objectId().optional(),
   amount: Joi.number().min(0).optional(),
   description: Joi.string().max(200).optional().allow("", null),
+  phoneNumber: {
+    countryCode: Joi.string().optional(),
+    phoneNumber: Joi.string().optional(),
+  },
+  type: Joi.string().valid(...Object.values(ADJUSTMENT_TYPE)).optional(),
+  file: Joi.string().optional(),
   ...baseApiSchema,
 });
 

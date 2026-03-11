@@ -3,7 +3,7 @@ import { objectId } from "./common";
 import { VOUCHAR_TYPE } from "../common";
 
 const voucherEntrySchema = Joi.object().keys({
-  accountId: objectId().required(),
+  // account reference removed
   debit: Joi.number().min(0).default(0).optional(),
   credit: Joi.number().min(0).default(0).optional(),
 });
@@ -14,7 +14,7 @@ export const addVoucherSchema = Joi.object().keys({
     .valid(...Object.values(VOUCHAR_TYPE))
     .required(),
   partyId: objectId().optional().allow("", null), // For Payment/Receipt
-  bankAccountId: objectId().optional().allow("", null), // For Payment/Receipt/Expense
+  // bankAccountId reference removed
   amount: Joi.number().min(0).default(0).optional(),
   entries: Joi.array().items(voucherEntrySchema).min(1).optional(), // For Journal/Contra
   notes: Joi.string().optional().allow("", null),
@@ -27,7 +27,7 @@ export const editVoucherSchema = Joi.object().keys({
     .valid(...Object.values(VOUCHAR_TYPE))
     .optional(),
   partyId: objectId().optional().allow("", null),
-  bankAccountId: objectId().optional().allow("", null),
+  // bankAccountId reference removed
   amount: Joi.number().min(0).optional(),
   entries: Joi.array().items(voucherEntrySchema).optional(),
   notes: Joi.string().optional().allow("", null),

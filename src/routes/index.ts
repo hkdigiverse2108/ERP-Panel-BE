@@ -20,8 +20,6 @@ import { categoryRouter } from "./category";
 import { bankRouter } from "./bank";
 import { materialRouter } from "./material";
 import { materialConsumptionRouter } from "./materialConsumption";
-import { accountGroupRouter } from "./accountGroup";
-import { accountRouter } from "./account";
 // import { paymentTermRouter } from "./paymentTerm";
 import { locationRouter } from "./location";
 import { uomRouter } from "./uom";
@@ -125,8 +123,6 @@ router.use("/settings", settingsRouter);
 router.use("/journal-voucher", journalVoucherRouter);
 
 // === For Super Admin
-router.use("/account-group", accountGroupRouter);
-router.use("/account", accountRouter);
 router.use("/company", companyRouter);
 router.use("/branch", branchRouter);
 router.use("/announcement", announcementRouter);
