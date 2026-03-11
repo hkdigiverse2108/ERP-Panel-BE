@@ -29,6 +29,7 @@ export const resetPasswordSchema = Joi.object().keys({
     .required(),
   oldPassword: Joi.string().required(),
   newPassword: Joi.string().required(),
+  confirmPassword: Joi.string().required(),
 });
 
 export const verifyOtpSchema = Joi.object().keys({

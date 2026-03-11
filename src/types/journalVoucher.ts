@@ -16,4 +16,5 @@ export interface IJournalVoucher extends IBase {
     totalDebit: number;
     totalCredit: number;
     status: 'draft' | 'posted';
+    notes?: string;
 }

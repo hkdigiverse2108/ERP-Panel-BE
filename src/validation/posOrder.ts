@@ -88,6 +88,7 @@ export const addPosOrderSchema = Joi.object({
     .optional()
     .allow(null),
 
+  posCashRegisterId: objectId().optional().allow(null),
   ...baseApiSchema,
 });
 
@@ -150,6 +151,7 @@ export const editPosOrderSchema = Joi.object().keys({
     .optional()
     .allow(null),
 
+  posCashRegisterId: objectId().optional().allow(null),
   ...baseApiSchema,
 });
 

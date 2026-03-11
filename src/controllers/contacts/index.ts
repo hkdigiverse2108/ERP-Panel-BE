@@ -262,7 +262,7 @@ export const getContactDropdown = async (req, res) => {
     // Search filter
     if (search) {
       const searchCriteria = {
-        $or: [{ firstName: { $regex: search, $options: "si" } }, { lastName: { $regex: search, $options: "si" } }, { companyName: { $regex: search, $options: "si" } }, { email: { $regex: search, $options: "si" } }],
+        $or: [{ firstName: { $regex: search, $options: "si" } }, { lastName: { $regex: search, $options: "si" } }, { companyName: { $regex: search, $options: "si" } }, { email: { $regex: search, $options: "si" } }, { "phoneNo.phoneNo": { $regex: search, $options: "si" } }],
       };
       criteria = { ...criteria, ...searchCriteria };
     }

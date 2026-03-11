@@ -49,6 +49,7 @@ export const addSalesOrderSchema = Joi.object().keys({
     .default(SALES_ORDER_STATUS.PENDING)
     .optional(),
   shippingDetails: commonShippingSchema.optional(),
+  notes: Joi.string().optional().allow("", null),
 });
 
 export const editSalesOrderSchema = Joi.object().keys({
@@ -77,6 +78,7 @@ export const editSalesOrderSchema = Joi.object().keys({
     .valid(...Object.values(SALES_ORDER_STATUS))
     .optional(),
   shippingDetails: commonShippingSchema.optional(),
+  notes: Joi.string().optional().allow("", null),
 });
 
 export const deleteSalesOrderSchema = Joi.object().keys({
