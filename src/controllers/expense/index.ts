@@ -14,7 +14,7 @@ export const addExpense = async (req, res) => {
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
         value.companyId = await checkCompany(user, value);
-        value.isSalery = false;
+        value.isSalary = false;
         value.createdBy = user?._id || null;
         value.updatedBy = user?._id || null;
 
@@ -45,7 +45,7 @@ export const getAllExpense = async (req, res) => {
             endDate,
             companyFilter,
             typeFilter,
-            avoidSalery
+            avoidSalary
         } = req.query;
 
         page = parseInt(page) || 1;
@@ -61,14 +61,14 @@ export const getAllExpense = async (req, res) => {
         if (typeFilter) criteria.type = typeFilter;
 
         // avoid salary filter
-        if (avoidSalery === "true") {
-            criteria.isSalery = false;
+        if (avoidSalary === "true" || avoidSalary === true) {
+            criteria.isSalary = false;
         }
 
         // search
         if (search) {
             criteria.$or = [
-                { discreption: { $regex: search, $options: "i" } },
+                { description: { $regex: search, $options: "i" } },
                 { type: { $regex: search, $options: "i" } }
             ];
         }
@@ -93,8 +93,8 @@ export const getAllExpense = async (req, res) => {
             response.map(async (item) => {
                 await item.populate({
                     path: "partyId",
-                    model: item.isSalery ? "user" : "contact",
-                    select: item.isSalery
+                    model: item.isSalary ? "user" : "contact",
+                    select: item.isSalary
                         ? "fullName"
                         : "firstName lastName companyName"
                 });
@@ -148,7 +148,7 @@ export const getExpenseById = async (req, res) => {
 
         const response = await getFirstMatch(
             ExpenseModel,
-            { _id: value.id, isDeleted: false, isSalery: false },
+            { _id: value.id, isDeleted: false, isSalary: false },
             {},
             {
                 populate: [
@@ -179,7 +179,7 @@ export const editExpenseById = async (req, res) => {
 
         value.updatedBy = user?._id || null;
 
-        const response = await updateData(ExpenseModel, { _id: new ObjectId(value.expenseId), isDeleted: false, isSalery: false }, value, {});
+        const response = await updateData(ExpenseModel, { _id: new ObjectId(value.expenseId), isDeleted: false, isSalary: false }, value, {});
 
         if (!response) {
             return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Expense"), {}, {}));
@@ -200,7 +200,7 @@ export const deleteExpenseById = async (req, res) => {
 
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
-        const expense = await getFirstMatch(ExpenseModel, { _id: value.id, isDeleted: false, isSalery: false }, {}, {});
+        const expense = await getFirstMatch(ExpenseModel, { _id: value.id, isDeleted: false, isSalary: false }, {}, {});
 
         if (!expense) {
             return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Expense"), {}, {}));

@@ -4,8 +4,8 @@ import { IBase } from "./base";
 export interface IExpense extends IBase {
     amount: number;
     file: string;
-    discreption: string;
-    isSalery: boolean;
+    description: string;
+    isSalary: boolean;
     partyId: Schema.Types.ObjectId;
     type: string;
     fromDate: Date;

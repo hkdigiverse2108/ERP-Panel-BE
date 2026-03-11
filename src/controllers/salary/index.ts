@@ -14,7 +14,7 @@ export const addSalary = async (req, res) => {
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
         value.companyId = await checkCompany(user, value);
-        value.isSalery = true;
+        value.isSalary = true;
         value.createdBy = user?._id || null;
         value.updatedBy = user?._id || null;
 
@@ -39,7 +39,7 @@ export const getAllSalary = async (req, res) => {
 
         let { page, limit, search, startDate, endDate, companyFilter } = req.query;
 
-        let criteria: any = { isDeleted: false, isSalery: true };
+        let criteria: any = { isDeleted: false, isSalary: true };
 
         if (companyId) {
             criteria.companyId = companyId;
@@ -51,7 +51,7 @@ export const getAllSalary = async (req, res) => {
 
         if (search) {
             criteria.$or = [
-                { discreption: { $regex: search, $options: "si" } },
+                { description: { $regex: search, $options: "si" } },
                 { type: { $regex: search, $options: "si" } }
             ];
         }
@@ -98,7 +98,7 @@ export const getSalaryById = async (req, res) => {
 
         const response = await getFirstMatch(
             ExpenseModel,
-            { _id: value.id, isDeleted: false, isSalery: true },
+            { _id: value.id, isDeleted: false, isSalary: true },
             {},
             {
                 populate: [
@@ -129,7 +129,7 @@ export const editSalaryById = async (req, res) => {
 
         value.updatedBy = user?._id || null;
 
-        const response = await updateData(ExpenseModel, { _id: new ObjectId(value.salaryId), isDeleted: false, isSalery: true }, value, {});
+        const response = await updateData(ExpenseModel, { _id: new ObjectId(value.salaryId), isDeleted: false, isSalary: true }, value, {});
 
         if (!response) {
             return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Salary"), {}, {}));
@@ -150,7 +150,7 @@ export const deleteSalaryById = async (req, res) => {
 
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
-        const salary = await getFirstMatch(ExpenseModel, { _id: value.id, isDeleted: false, isSalery: true }, {}, {});
+        const salary = await getFirstMatch(ExpenseModel, { _id: value.id, isDeleted: false, isSalary: true }, {}, {});
 
         if (!salary) {
             return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Salary"), {}, {}));

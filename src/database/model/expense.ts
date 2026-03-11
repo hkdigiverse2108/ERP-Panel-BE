@@ -7,14 +7,14 @@ const expenseSchema = new Schema<IExpense>({
     ...baseSchemaFields,
     amount: { type: Number },
     file: { type: String },
-    discreption: { type: String },
-    isSalery: { type: Boolean },
-    // if isSalery is true then the partyId will be a from user other wise it will be from the contect.
+    description: { type: String },
+    isSalary: { type: Boolean },
+    // if isSalary is true then the partyId will be a from user other wise it will be from the contect.
     partyId: { type: Schema.Types.ObjectId },
     type: { type: String, enum: Object.values(EXPENSEDATA_TYPE), },
-    incentive: { type: Number }, // 0 if isSalery false other wise user can set the value.
-    fromDate: { type: Date }, // null if isSalery false
-    toDate: { type: Date }, // null if isSalery false
+    incentive: { type: Number }, // 0 if isSalary false other wise user can set the value.
+    fromDate: { type: Date }, // null if isSalary false
+    toDate: { type: Date }, // null if isSalary false
     total: { type: Number },
 }, baseSchemaOptions)
 
