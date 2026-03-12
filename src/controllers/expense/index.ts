@@ -49,8 +49,8 @@ export const getAllExpense = async (req, res) => {
             avoidSalary
         } = req.query;
 
-        page = parseInt(page) || 1;
-        limit = parseInt(limit) || 10;
+        page = parseInt(page);
+        limit = parseInt(limit);
 
         let criteria: any = { isDeleted: false };
 
@@ -80,6 +80,7 @@ export const getAllExpense = async (req, res) => {
         // date filter
         applyDateFilter(criteria, startDate as string, endDate as string);
 
+
         const options: any = {
             sort: { createdAt: -1 },
             skip: (page - 1) * limit,
@@ -95,7 +96,7 @@ export const getAllExpense = async (req, res) => {
         // dynamic populate based on salary
         await Promise.all(
             response.map(async (item) => {
-                await item.populate({
+                await ExpenseModel.populate(item, {
                     path: "partyId",
                     model: item.isSalary ? "user" : "contact",
                     select: item.isSalary
@@ -157,7 +158,6 @@ export const getExpenseById = async (req, res) => {
             {
                 populate: [
                     { path: "companyId", select: "name" },
-                    { path: "partyId", model: "contact", select: "firstName lastName companyName" },
                 ],
             },
         );
@@ -165,6 +165,14 @@ export const getExpenseById = async (req, res) => {
         if (!response) {
             return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Expense"), {}, {}));
         }
+
+        await ExpenseModel.populate(response, {
+            path: "partyId",
+            model: response.isSalary ? "user" : "contact",
+            select: response.isSalary
+                ? "fullName"
+                : "firstName lastName companyName"
+        });
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Expense"), response, {}));
     } catch (error) {
