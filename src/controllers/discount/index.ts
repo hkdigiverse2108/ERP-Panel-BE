@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { discountModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, findAllAndPopulate, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addDiscountSchema, deleteDiscountSchema, editDiscountSchema, getDiscountSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -121,7 +121,7 @@ export const getAllDiscount = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page , limit, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -153,6 +153,12 @@ export const getAllDiscount = async (req, res) => {
         criteria.validTo = { $gte: start };
       }
     }
+    // add populate
+    const populate = [
+      { path: "companyId", select: "name" },
+      { path: "createdBy", select: "fullName" },
+      { path: "updatedBy", select: "fullName" },
+    ];
 
     const options = {
       sort: { createdAt: -1 },
@@ -160,7 +166,7 @@ export const getAllDiscount = async (req, res) => {
       limit,
     };
 
-    const response = await getDataWithSorting(discountModel, criteria, {}, options);
+    const response = await findAllAndPopulate(discountModel, criteria, {}, options, populate);
     const totalData = await countData(discountModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
