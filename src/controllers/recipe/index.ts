@@ -17,7 +17,7 @@ export const addRecipe = async (req, res) => {
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    value.number = generateSequenceNumber(
+    value.number = await generateSequenceNumber(
       {
         model: recipeModel,
         prefix: "RC",
