@@ -4,7 +4,7 @@ import { EXPENSEDATA_TYPE } from "../common";
 
 export const addExpenseSchema = Joi.object().keys({
     amount: Joi.number().required(),
-    file: Joi.string().optional().allow("", null),
+    image: Joi.string().optional().allow("", null),
     description: Joi.string().optional().allow("", null),
     partyId: objectId().optional().allow("", null),
     type: Joi.string().valid(...Object.values(EXPENSEDATA_TYPE)).required(),
@@ -16,7 +16,7 @@ export const addExpenseSchema = Joi.object().keys({
 export const editExpenseSchema = Joi.object().keys({
     expenseId: objectId().required(),
     amount: Joi.number().optional(),
-    file: Joi.string().optional().allow("", null),
+    image: Joi.string().optional().allow("", null),
     description: Joi.string().optional().allow("", null),
     partyId: objectId().optional().allow("", null),
     type: Joi.string().valid(...Object.values(EXPENSEDATA_TYPE)).optional(),

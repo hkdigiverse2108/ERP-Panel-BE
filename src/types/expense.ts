@@ -3,7 +3,7 @@ import { IBase } from "./base";
 
 export interface IExpense extends IBase {
     amount: number;
-    file: string;
+    image: string;
     description: string;
     isSalary: boolean;
     partyId: Schema.Types.ObjectId;

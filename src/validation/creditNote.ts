@@ -9,7 +9,7 @@ export const addCreditNoteSchema = Joi.object().keys({
   description: Joi.string().max(200).optional().allow("", null),
   phoneNo: commonContactSchema,
   type: Joi.string().valid(...Object.values(ADJUSTMENT_TYPE)).required(),
-  file: Joi.string().optional(),
+  image: Joi.string().optional(),
   ...baseApiSchema,
 });
 
@@ -21,7 +21,7 @@ export const editCreditNoteSchema = Joi.object().keys({
   description: Joi.string().max(200).optional().allow("", null),
   phoneNo: commonContactSchema,
   type: Joi.string().valid(...Object.values(ADJUSTMENT_TYPE)).optional(),
-  file: Joi.string().optional(),
+  image: Joi.string().optional(),
   ...baseApiSchema,
 });
 

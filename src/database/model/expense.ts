@@ -6,7 +6,7 @@ import { EXPENSEDATA_TYPE } from "../../common";
 const expenseSchema = new Schema<IExpense>({
     ...baseSchemaFields,
     amount: { type: Number },
-    file: { type: String },
+    image: { type: String },
     description: { type: String },
     isSalary: { type: Boolean },
     // if isSalary is true then the partyId will be a from user other wise it will be from the contect.

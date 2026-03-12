@@ -34,7 +34,7 @@ export interface IAdjustmentNote {
   bankAccountId: Schema.Types.ObjectId;
   description?: string;
   type: 'payin' | 'receiver';
-  file?: string;
+  image?: string;
   phoneNo?: string;
 }
 
@@ -46,7 +46,7 @@ const adjustmentNoteSchema = new Schema<IAdjustmentNote>({
   bankAccountId: { type: Schema.Types.ObjectId, ref: "bank" },
   description: { type: String },
   type: { type: String, enum: Object.values(ADJUSTMENT_TYPE) },
-  file: { type: String },
+  image: { type: String },
   phoneNo: {
     countryCode: { type: String },
     phoneNo: { type: Number },

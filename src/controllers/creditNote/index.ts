@@ -22,9 +22,9 @@ export const addCreditNote = async (req, res) => {
 
     if (!(await checkIdExist(bankModel, value?.bankAccountId, "Bank", res))) return;
 
-    if (value?.file) {
-      if (!value?.file?.match(/\.(png|jpg|jpeg)$/)) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fileIsNotValid("File"), {}, {}));
+    if (value?.image) {
+      if (!value?.image?.match(/\.(png|jpg|jpeg)$/)) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fileIsNotValid("Image"), {}, {}));
       }
     }
 
@@ -64,9 +64,9 @@ export const editCreditNote = async (req, res) => {
 
     if (!(await checkIdExist(bankModel, value?.bankAccountId, "Bank", res))) return;
 
-    if (value?.file) {
-      if (!value?.file?.match(/\.(png|jpg|jpeg)$/)) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fileIsNotValid("File"), {}, {}));
+    if (value?.image) {
+      if (!value?.image?.match(/\.(png|jpg|jpeg)$/)) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fileIsNotValid("Image"), {}, {}));
       }
     }
 
