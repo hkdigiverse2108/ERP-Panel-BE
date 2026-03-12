@@ -45,6 +45,7 @@ export const getAllExpense = async (req, res) => {
             endDate,
             companyFilter,
             typeFilter,
+            activeFilter,
             avoidSalary
         } = req.query;
 
@@ -59,6 +60,9 @@ export const getAllExpense = async (req, res) => {
 
         // type filter
         if (typeFilter) criteria.type = typeFilter;
+
+        // active filter
+        if (activeFilter) criteria.isActive = activeFilter;
 
         // avoid salary filter
         if (avoidSalary === "true" || avoidSalary === true) {

@@ -55,7 +55,7 @@ import { returnPosOrderRouter } from "./returnPosOrder";
 import { posCreditNoteRouter } from "./posCreditNote";
 import { loginLogRouter } from "./loginLog";
 import { settingsRouter } from "./settings";
-import { journalVoucherRouter } from "./journalVoucher";
+// import { journalVoucherRouter } from "./journalVoucher";
 import { dashboardRouter } from "./dashboard";
 import { bankTransactionRouter } from "./bankTransaction";
 import { companyDriveRouter } from "./companyDrive";
@@ -123,7 +123,7 @@ router.use("/material", materialRouter);
 router.use("/material-consumption", materialConsumptionRouter);
 router.use("/bill-of-live-product", billOfLiveProductRouter);
 router.use("/settings", settingsRouter);
-router.use("/journal-voucher", journalVoucherRouter);
+// router.use("/journal-voucher", journalVoucherRouter);
 
 // === For Super Admin
 router.use("/company", companyRouter);

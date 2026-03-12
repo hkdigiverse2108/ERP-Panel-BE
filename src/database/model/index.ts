@@ -58,7 +58,7 @@ export * from "./posCashRegister";
 export * from "./returnPosOrder";
 export * from "./posCreditNote";
 export * from "./loginLog";
-export * from "./journalVoucher";
+// export * from "./journalVoucher";
 export * from "./bankTransaction";
 export * from "./companyDrive";
 export * from "./estimate";

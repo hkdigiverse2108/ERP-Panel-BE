@@ -52,7 +52,7 @@ export * from "./posCashRegister";
 export * from "./returnPosOrder";
 export * from "./posCreditNote";
 export * from "./settings";
-export * from "./journalVoucher";
+// export * from "./journalVoucher";
 export * from "./dashboard";
 export * from "./bankTransaction";
 export * from "./companyDrive";
