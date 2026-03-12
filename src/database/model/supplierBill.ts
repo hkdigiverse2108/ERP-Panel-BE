@@ -55,6 +55,7 @@ const supplierBillSchema = new Schema<ISupplierBill>(
 
     // purchaseOrderId: { type: Schema.Types.ObjectId, ref: "purchase-order" },
     placeOfSupply: { type: String },
+    gstIn: { type: String },
     billingAddress: { type: Schema.Types.ObjectId },
 
     paymentTerm: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },

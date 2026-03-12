@@ -27,6 +27,7 @@ const purchaseOrderSchema = new Schema<IPurchaseOrder>(
     orderDate: { type: Date, required: true },
     orderNo: { type: String },
     placeOfSupply: { type: String },
+    gstIn: { type: String },
     billingAddress: { type: Schema.Types.ObjectId },
     shippingDate: { type: Date },
     shippingNote: { type: String },

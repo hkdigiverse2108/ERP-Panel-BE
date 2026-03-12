@@ -46,6 +46,7 @@ export const addSupplierBillSchema = Joi.object({
   supplierBillDate: Joi.date().required(),
 
   placeOfSupply: Joi.string().optional().allow("", null),
+  gstIn: Joi.string().optional().allow("", null),
   billingAddress: objectId().optional(),
 
   paymentTerm: Joi.string()
@@ -98,6 +99,7 @@ export const editSupplierBillSchema = Joi.object({
   supplierBillDate: Joi.date().optional(),
 
   placeOfSupply: Joi.string().optional().allow("", null),
+  gstIn: Joi.string().optional().allow("", null),
   billingAddress: objectId().optional(),
 
   paymentTerm: Joi.string()
