@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
-import { creditNoteModel, accountModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
+import { ADJUSTMENT_TYPE, apiResponse, HTTP_STATUS } from "../../common";
+import { adjustmentNoteModel, bankModel } from "../../database";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, checkIdExist } from "../../helper";
 import { addCreditNoteSchema, deleteCreditNoteSchema, editCreditNoteSchema, getCreditNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -20,18 +20,19 @@ export const addCreditNote = async (req, res) => {
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    if (!(await checkIdExist(accountModel, value.fromAccountId, "From Account", res))) return;
-    if (!(await checkIdExist(accountModel, value.toAccountId, "To Account", res))) return;
+    if (!(await checkIdExist(bankModel, value?.bankAccountId, "Bank", res))) return;
 
-    if (value.fromAccountId.toString() === value.toAccountId.toString()) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
+    if (value?.image) {
+      if (!value?.image?.match(/\.(png|jpg|jpeg)$/)) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fileIsNotValid("Image"), {}, {}));
+      }
     }
 
-    value.voucherNumber = await generateSequenceNumber({ model: creditNoteModel, prefix: "CN", fieldName: "voucherNumber", companyId: value.companyId });
+    value.voucherNumber = await generateSequenceNumber({ model: adjustmentNoteModel, prefix: "CN", fieldName: "voucherNumber", companyId: value.companyId });
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
-    const response = await createOne(creditNoteModel, value);
+    const response = await createOne(adjustmentNoteModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
@@ -55,36 +56,23 @@ export const editCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const isExist = await getFirstMatch(creditNoteModel, { _id: value?.creditNoteId, isDeleted: false }, {}, {});
+    const isExist = await getFirstMatch(adjustmentNoteModel, { _id: value?.creditNoteId, isDeleted: false }, {}, {});
 
     if (!isExist) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Credit Note"), {}, {}));
     }
 
-    // Validate accounts if being changed
-    if (value.fromAccountId && value.fromAccountId !== isExist.fromAccountId.toString()) {
-      if (!(await checkIdExist(accountModel, value.fromAccountId, "From Account", res))) return;
-    }
+    if (!(await checkIdExist(bankModel, value?.bankAccountId, "Bank", res))) return;
 
-    if (value.toAccountId && value.toAccountId !== isExist.toAccountId.toString()) {
-      if (!(await checkIdExist(accountModel, value.toAccountId, "To Account", res))) return;
-    }
-
-    if (value.fromAccountId && value.toAccountId && value?.fromAccountId?.toString() === value?.toAccountId?.toString()) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
-    }
-
-    if (value.fromAccountId && !value.toAccountId && value.fromAccountId === isExist.toAccountId.toString()) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
-    }
-
-    if (value.toAccountId && !value.fromAccountId && value.toAccountId === isExist.fromAccountId.toString()) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsSame("From Account and To Account"), {}, {}));
+    if (value?.image) {
+      if (!value?.image?.match(/\.(png|jpg|jpeg)$/)) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fileIsNotValid("Image"), {}, {}));
+      }
     }
 
     value.updatedBy = user?._id || null;
 
-    const response = await updateData(creditNoteModel, { _id: value?.creditNoteId }, value, {});
+    const response = await updateData(adjustmentNoteModel, { _id: value?.creditNoteId }, value, {});
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Credit Note"), {}, {}));
@@ -107,14 +95,14 @@ export const deleteCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!(await checkIdExist(creditNoteModel, value?.id, "Credit Note", res))) return;
+    if (!(await checkIdExist(adjustmentNoteModel, value?.id, "Credit Note", res))) return;
 
     const payload = {
       isDeleted: true,
       updatedBy: user?._id || null,
     };
 
-    const response = await updateData(creditNoteModel, { _id: new ObjectId(value?.id) }, payload, {});
+    const response = await updateData(adjustmentNoteModel, { _id: new ObjectId(value?.id) }, payload, {});
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Credit Note"), {}, {}));
@@ -137,7 +125,7 @@ export const getAllCreditNote = async (req, res) => {
     page = Number(page);
     limit = Number(limit);
 
-    let criteria: any = { isDeleted: false };
+    let criteria: any = { isDeleted: false, type: ADJUSTMENT_TYPE.PAYIN };
     if (companyId) {
       criteria.companyId = companyId;
     }
@@ -157,16 +145,15 @@ export const getAllCreditNote = async (req, res) => {
     const options = {
       sort: { createdAt: -1 },
       populate: [
-        { path: "fromAccountId", select: "name code" },
-        { path: "toAccountId", select: "name code" },
+        { path: "bankAccountId", select: "name" },
         { path: "companyId", select: "name" },
       ],
       skip: (page - 1) * limit,
       limit,
     };
 
-    const response = await getDataWithSorting(creditNoteModel, criteria, {}, options);
-    const totalData = await countData(creditNoteModel, criteria);
+    const response = await getDataWithSorting(adjustmentNoteModel, criteria, {}, options);
+    const totalData = await countData(adjustmentNoteModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
 
@@ -193,13 +180,12 @@ export const getOneCreditNote = async (req, res) => {
     }
 
     const response = await getFirstMatch(
-      creditNoteModel,
-      { _id: value?.id, isDeleted: false },
+      adjustmentNoteModel,
+      { _id: value?.id, isDeleted: false, type: ADJUSTMENT_TYPE.PAYIN },
       {},
       {
         populate: [
-          { path: "fromAccountId", select: "name code" },
-          { path: "toAccountId", select: "name code" },
+          { path: "bankAccountId", select: "name" },
           { path: "companyId", select: "name" },
         ],
       },

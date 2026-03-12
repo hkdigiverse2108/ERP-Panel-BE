@@ -49,6 +49,7 @@ export interface ISupplierBill extends IBase {
   referenceBillNo?: string;
   supplierBillDate?: Date;
   placeOfSupply?: string;
+  gstIn?: string;
   billingAddress?: Schema.Types.ObjectId;
 
   paymentTerm?: string;

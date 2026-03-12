@@ -1,7 +1,9 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel, productModel, productTypeModel, stockModel, uomModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, findAllAndPopulateWithSorting } from "../../helper";
 import { addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation";
+import axios from "axios";
+import FormData from "form-data";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -635,5 +637,204 @@ export const getOneProduct = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const detectProduct = async (req, res) => {
+  reqInfo(req);
+  try {
+    let files = req.files ? (req.files as any[]) : [];
+    if (!files || files.length === 0) {
+      if (req.file) {
+        files = [req.file];
+      } else {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "At least one image file is required", {}, {}));
+      }
+    }
+
+    const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append("image", file.buffer, {
+        filename: file.originalname,
+        contentType: file.mimetype,
+      });
+    }
+
+    let results: any[] = [];
+
+    try {
+      const aiResponse = await axios.post("https://train-product.ai-setu.cloud/api/scanimg", formData, {
+        headers: { ...formData.getHeaders() },
+        timeout: 60000,
+      });
+      console.log('aiResponse => ', aiResponse.data);
+
+      const responseData = aiResponse?.data || {};
+      const batchResults = responseData?.results || [];
+
+      let skuMatches: Record<string, number> = {};
+      let allDetections: any[] = [];
+
+      for (const item of batchResults) {
+        if (item.response) {
+          const itemSkuMatches = item.response.sku_matches || {};
+          for (const [sku, conf] of Object.entries(itemSkuMatches)) {
+            skuMatches[sku] = Math.max(skuMatches[sku] || 0, conf as number);
+          }
+          const itemDetections = item.response.detections || [];
+          allDetections = allDetections.concat(itemDetections);
+        }
+      }
+
+      const matchedSkus = Object.keys(skuMatches);
+
+      let products: any[] = [];
+      let productsWithStock: any[] = [];
+      const effectiveCompanyId = companyId || null;
+
+      if (matchedSkus.length > 0) {
+        let criteria: any = {
+          isDeleted: false,
+          sku: { $in: matchedSkus },
+          isActive: true,
+        };
+
+        if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+          criteria.$or = [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }];
+        }
+
+        let populate = [
+          { path: "categoryId", select: "name" },
+          { path: "subCategoryId", select: "name" },
+          { path: "brandId", select: "name" },
+          { path: "subBrandId", select: "name" },
+        ];
+        products = await findAllAndPopulateWithSorting(
+          productModel,
+          criteria,
+          {},
+          {},
+          populate
+        );
+
+        productsWithStock = await Promise.all(
+          products.map(async (product: any) => {
+            const productObj = product.toObject ? product.toObject() : product;
+            const linkedStockIds = (productObj.stockIds || []).filter((id: any) => id);
+
+            let stockCriteria: any = { isDeleted: false };
+
+            if (linkedStockIds.length > 0) {
+              stockCriteria._id = { $in: linkedStockIds.map((id: any) => new ObjectId(id.toString())) };
+              if (effectiveCompanyId) {
+                stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
+              }
+            } else {
+              stockCriteria.productId = product._id;
+              if (effectiveCompanyId) {
+                stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
+              }
+            }
+
+            const stockAggregation = await stockModel.aggregate([
+              { $match: stockCriteria },
+              {
+                $group: {
+                  _id: "$productId",
+                  totalQty: { $sum: "$qty" },
+                  totalMrp: { $sum: "$mrp" },
+                  totalSellingPrice: { $sum: "$sellingPrice" },
+                  totalSellingDiscount: { $sum: "$sellingDiscount" },
+                  totalLandingCost: { $sum: "$landingCost" },
+                  totalPurchasePrice: { $sum: "$purchasePrice" },
+                  totalSellingMargin: { $sum: "$sellingMargin" },
+                  uomId: { $first: "$uomId" },
+                },
+              },
+              {
+                $lookup: {
+                  from: "uoms",
+                  localField: "uomId",
+                  foreignField: "_id",
+                  as: "uomData",
+                },
+              },
+              {
+                $unwind: {
+                  path: "$uomData",
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              {
+                $project: {
+                  uomId: 1,
+                  uomData: {
+                    _id: "$uomData._id",
+                    name: "$uomData.name",
+                    code: "$uomData.code",
+                  },
+                  totalQty: 1,
+                  totalMrp: 1,
+                  totalSellingPrice: 1,
+                  totalSellingDiscount: 1,
+                  totalLandingCost: 1,
+                  totalPurchasePrice: 1,
+                  totalSellingMargin: 1,
+                },
+              },
+            ]);
+
+            const qty = stockAggregation.length > 0 ? stockAggregation[0].totalQty : 0;
+
+            return {
+              ...productObj,
+              mrp: stockAggregation.length > 0 ? stockAggregation[0].totalMrp : (productObj.mrp || 0),
+              sellingPrice: stockAggregation.length > 0 ? stockAggregation[0].totalSellingPrice : (productObj.sellingPrice || 0),
+              sellingDiscount: stockAggregation.length > 0 ? stockAggregation[0].totalSellingDiscount : (productObj.sellingDiscount || 0),
+              landingCost: stockAggregation.length > 0 ? stockAggregation[0].totalLandingCost : (productObj.landingCost || 0),
+              purchasePrice: stockAggregation.length > 0 ? stockAggregation[0].totalPurchasePrice : (productObj.purchasePrice || 0),
+              sellingMargin: stockAggregation.length > 0 ? stockAggregation[0].totalSellingMargin : (productObj.sellingMargin || 0),
+              qty,
+              uomId: stockAggregation.length > 0 ? stockAggregation[0].uomData : null,
+            };
+          }),
+        );
+      }
+
+      // Count occurrences of each SKU from the combined detections array
+      const skuCounts: Record<string, number> = {};
+      for (const det of allDetections) {
+        if (det.matched_sku) {
+          skuCounts[det.matched_sku] = (skuCounts[det.matched_sku] || 0) + 1;
+        }
+      }
+
+      const skuMatchesDetailsArray = productsWithStock.map((p: any) => ({
+        ...p,
+        ai_confidence: skuMatches[p.sku] || 0,
+        detect_qty: skuCounts[p.sku] || 1
+      }));
+
+      // Return unified results block
+      results = [{
+        ...responseData,
+        sku_matches_details: skuMatchesDetailsArray || []
+      }];
+    } catch (err: any) {
+      console.error("Error processing batch image detection", err?.message);
+      results = [{
+        success: false,
+        message: err?.message || "Detection failed for batch images",
+      }];
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, (responseMessage as any)?.getDataSuccess?.("AI Detections") || "Products detected successfully", results, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, (responseMessage as any)?.internalServerError || "Internal server error", {}, error));
   }
 };

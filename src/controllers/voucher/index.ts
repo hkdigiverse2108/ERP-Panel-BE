@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, VOUCHAR_TYPE } from "../../common";
-import { contactModel, accountModel, voucherModel } from "../../database";
+import { contactModel, voucherModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addVoucherSchema, deleteVoucherSchema, editVoucherSchema, getVoucherSchema } from "../../validation";
 
@@ -25,17 +25,7 @@ export const addVoucher = async (req, res) => {
       if (!(await checkIdExist(contactModel, value.partyId, "party", res))) return;
     }
 
-    // Validate bank account for Payment/Receipt/Expense
-    if ((value.type === VOUCHAR_TYPE.PAYMENT || value.type === VOUCHAR_TYPE.RECEIPT || value.type === VOUCHAR_TYPE.EXPENSE) && value.bankAccountId) {
-      if (!(await checkIdExist(accountModel, value.bankAccountId, "Account", res))) return;
-    }
-
-    // Validate account entries for Journal/Contra
-    if ((value.type === VOUCHAR_TYPE.JOURNAL || value.type === VOUCHAR_TYPE.CONTRA) && value.entries && value.entries.length > 0) {
-      for (const entry of value.entries) {
-        if (!(await checkIdExist(accountModel, entry.accountId, "Account", res))) return;
-      }
-    }
+    // Validations removed for bank account and account entries
 
     // Generate voucher number if not provided
     if (!value.voucherNo) {
@@ -90,17 +80,7 @@ export const editVoucher = async (req, res) => {
       if (!(await checkIdExist(contactModel, value.partyId, "party", res))) return;
     }
 
-    // Validate bank account if being changed
-    if (value.bankAccountId && (voucherType === VOUCHAR_TYPE.PAYMENT || voucherType === VOUCHAR_TYPE.RECEIPT || voucherType === VOUCHAR_TYPE.EXPENSE)) {
-      if (!(await checkIdExist(accountModel, value.bankAccountId, "Account", res))) return;
-    }
-
-    // Validate account entries if being updated
-    if ((voucherType === VOUCHAR_TYPE.JOURNAL || voucherType === VOUCHAR_TYPE.CONTRA) && value.entries && value.entries.length > 0) {
-      for (const entry of value.entries) {
-        if (!(await checkIdExist(accountModel, entry.accountId, "Account", res))) return;
-      }
-    }
+    // Validations removed for bank account and account entries
 
     value.updatedBy = user?._id || null;
 
@@ -178,8 +158,6 @@ export const getAllVoucher = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "partyId", select: "firstName lastName companyName" },
-        { path: "bankAccountId", select: "name" },
-        { path: "entries.accountId", select: "name code" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -219,8 +197,6 @@ export const getOneVoucher = async (req, res) => {
       {
         populate: [
           { path: "partyId", select: "firstName lastName companyName email phoneNo address" },
-          { path: "bankAccountId", select: "name code type currentBalance" },
-          { path: "entries.accountId", select: "name code type currentBalance" },
         ],
       },
     );

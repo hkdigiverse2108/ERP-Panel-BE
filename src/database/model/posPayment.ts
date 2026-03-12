@@ -15,7 +15,6 @@ const posPaymentSchema = new mongoose.Schema(
     paymentMode: { type: String, enum: Object.values(PAYMENT_MODE), default: PAYMENT_MODE.CASH },
 
     purchaseBillId: { type: mongoose.Schema.Types.ObjectId, ref: "purchase" },
-    accountId: { type: mongoose.Schema.Types.ObjectId, ref: "account" },
     bankId: { type: mongoose.Schema.Types.ObjectId, ref: "bank" },
 
     totalAmount: { type: Number, default: 0 },
