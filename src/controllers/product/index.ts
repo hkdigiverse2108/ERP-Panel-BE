@@ -657,6 +657,7 @@ export const detectProduct = async (req, res) => {
     const { user } = req.headers;
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    let skuMatchesDetailsArray = [];
 
     const formData = new FormData();
     for (const file of files) {
@@ -673,7 +674,6 @@ export const detectProduct = async (req, res) => {
         headers: { ...formData.getHeaders() },
         timeout: 60000,
       });
-      console.log('aiResponse => ', aiResponse.data);
 
       let responseData = aiResponse?.data || {};
       let rootData = responseData;
@@ -776,16 +776,31 @@ export const detectProduct = async (req, res) => {
             const stockAggregation = await stockModel.aggregate([
               { $match: stockCriteria },
               {
-                $group: {
-                  _id: "$productId",
-                  totalQty: { $sum: "$qty" },
-                  totalMrp: { $sum: "$mrp" },
-                  totalSellingPrice: { $sum: "$sellingPrice" },
-                  totalSellingDiscount: { $sum: "$sellingDiscount" },
-                  totalLandingCost: { $sum: "$landingCost" },
-                  totalPurchasePrice: { $sum: "$purchasePrice" },
-                  totalSellingMargin: { $sum: "$sellingMargin" },
-                  uomId: { $first: "$uomId" },
+                $lookup: {
+                  from: "taxes",
+                  localField: "purchaseTaxId",
+                  foreignField: "_id",
+                  as: "purchaseTax",
+                },
+              },
+              {
+                $unwind: {
+                  path: "$purchaseTax",
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              {
+                $lookup: {
+                  from: "taxes",
+                  localField: "salesTaxId",
+                  foreignField: "_id",
+                  as: "salesTax",
+                },
+              },
+              {
+                $unwind: {
+                  path: "$salesTax",
+                  preserveNullAndEmptyArrays: true,
                 },
               },
               {
@@ -804,41 +819,58 @@ export const detectProduct = async (req, res) => {
               },
               {
                 $project: {
-                  uomId: 1,
+                  _id: 0,
+                  qty: 1,
+                  mrp: 1,
+                  sellingPrice: 1,
+                  sellingDiscount: 1,
+                  landingCost: 1,
+                  purchasePrice: 1,
+                  sellingMargin: 1,
+                  isPurchaseTaxIncluding: 1,
+                  isSalesTaxIncluding: 1,
+                  purchaseTaxId: {
+                    _id: "$purchaseTax._id",
+                    name: "$purchaseTax.name",
+                    percentage: "$purchaseTax.percentage",
+                  },
+                  salesTaxId: {
+                    _id: "$salesTax._id",
+                    name: "$salesTax.name",
+                    percentage: "$salesTax.percentage",
+                  },
                   uomData: {
                     _id: "$uomData._id",
                     name: "$uomData.name",
                     code: "$uomData.code",
                   },
-                  totalQty: 1,
-                  totalMrp: 1,
-                  totalSellingPrice: 1,
-                  totalSellingDiscount: 1,
-                  totalLandingCost: 1,
-                  totalPurchasePrice: 1,
-                  totalSellingMargin: 1,
                 },
               },
+              { $limit: 1 }
             ]);
 
-            const qty = stockAggregation.length > 0 ? stockAggregation[0].totalQty : 0;
+            const stockInfo = stockAggregation.length > 0 ? stockAggregation[0] : null;
 
             return {
               ...productObj,
-              mrp: stockAggregation.length > 0 ? stockAggregation[0].totalMrp : (productObj.mrp || 0),
-              sellingPrice: stockAggregation.length > 0 ? stockAggregation[0].totalSellingPrice : (productObj.sellingPrice || 0),
-              sellingDiscount: stockAggregation.length > 0 ? stockAggregation[0].totalSellingDiscount : (productObj.sellingDiscount || 0),
-              landingCost: stockAggregation.length > 0 ? stockAggregation[0].totalLandingCost : (productObj.landingCost || 0),
-              purchasePrice: stockAggregation.length > 0 ? stockAggregation[0].totalPurchasePrice : (productObj.purchasePrice || 0),
-              sellingMargin: stockAggregation.length > 0 ? stockAggregation[0].totalSellingMargin : (productObj.sellingMargin || 0),
-              qty,
-              uomId: stockAggregation.length > 0 ? stockAggregation[0].uomData : null,
+              mrp: stockInfo ? stockInfo.mrp : (productObj.mrp || 0),
+              sellingPrice: stockInfo ? stockInfo.sellingPrice : (productObj.sellingPrice || 0),
+              sellingDiscount: stockInfo ? stockInfo.sellingDiscount : (productObj.sellingDiscount || 0),
+              landingCost: stockInfo ? stockInfo.landingCost : (productObj.landingCost || 0),
+              purchasePrice: stockInfo ? stockInfo.purchasePrice : (productObj.purchasePrice || 0),
+              sellingMargin: stockInfo ? stockInfo.sellingMargin : (productObj.sellingMargin || 0),
+              qty: stockInfo ? stockInfo.qty : 0,
+              uomId: stockInfo ? stockInfo.uomData : null,
+              purchaseTaxId: (stockInfo && stockInfo.purchaseTaxId && stockInfo.purchaseTaxId._id) ? stockInfo.purchaseTaxId : null,
+              salesTaxId: (stockInfo && stockInfo.salesTaxId && stockInfo.salesTaxId._id) ? stockInfo.salesTaxId : null,
+              isPurchaseTaxIncluding: stockInfo ? stockInfo.isPurchaseTaxIncluding : false,
+              isSalesTaxIncluding: stockInfo ? stockInfo.isSalesTaxIncluding : false,
             };
           }),
         );
       }
 
-      const skuMatchesDetailsArray = productsWithStock.map((p: any) => ({
+      skuMatchesDetailsArray = productsWithStock.map((p: any) => ({
         ...p,
         ai_confidence: skuMatches[p.sku] || 0,
         detect_qty: skuCounts[p.sku] || 1
@@ -847,7 +879,6 @@ export const detectProduct = async (req, res) => {
       // Return unified results block
       results = [{
         ...rootData,
-        sku_matches_details: skuMatchesDetailsArray || []
       }];
     } catch (err: any) {
       console.error("Error processing batch image detection", err?.message);
@@ -857,7 +888,7 @@ export const detectProduct = async (req, res) => {
       }];
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, (responseMessage as any)?.getDataSuccess?.("AI Detections") || "Products detected successfully", results, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, (responseMessage as any)?.getDataSuccess?.("AI Detections") || "Products detected successfully", { results, sku_matches_details: skuMatchesDetailsArray || [] }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, (responseMessage as any)?.internalServerError || "Internal server error", {}, error));
