@@ -1,8 +1,8 @@
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel, posCreditNoteModel } from "../../database";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel, posCreditNoteModel, discountModel } from "../../database";
 import { applyDateFilter, checkCompany, checkIdExist, checkStockQty, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
-import { applyCoupon, applyLoyalty, applyRedeemCredit, revertCoupon, revertLoyalty, revertRedeemCredit } from "./helper";
+import { applyCoupon, applyLoyalty, applyPosDiscount, applyRedeemCredit, revertCoupon, revertDiscount, revertLoyalty, revertRedeemCredit } from "./helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -24,6 +24,7 @@ export const addPosOrder = async (req, res) => {
     if (value.branchId && !(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
     if (value.salesManId && !(await checkIdExist(userModel, value.salesManId, "Sales Man", res))) return;
     if (value.couponId && !(await checkIdExist(couponModel, value.couponId, "Coupon", res))) return;
+    if (value.discountId && !(await checkIdExist(discountModel, value.discountId, "Discount", res))) return;
 
     // Get customer name if customer provided
     if (value.customerId) {
@@ -128,6 +129,13 @@ export const addPosOrder = async (req, res) => {
       const couponResponse = await applyCoupon(value.couponId, value.customerId, value.totalAmount);
       if (couponResponse !== "Coupon applied successfully") {
         return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, couponResponse, {}, {}));
+      }
+    }
+
+    if (value.discountId) {
+      const discountResponse = await applyPosDiscount(value.discountId, value.customerId);
+      if (discountResponse !== "Discount applied successfully") {
+        return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, discountResponse, {}, {}));
       }
     }
 
@@ -555,6 +563,9 @@ export const deletePosOrder = async (req, res) => {
       // --- Revert Coupon, Loyalty Campaign, and Redeem Credit ---
       if (isExist.couponId && isExist.customerId) {
         await revertCoupon(isExist.couponId, isExist.customerId);
+      }
+      if (isExist.discountId && isExist.customerId) {
+        await revertDiscount(isExist.discountId, isExist.customerId);
       }
       if (isExist.loyaltyId && isExist.customerId) {
         await revertLoyalty(isExist.loyaltyId, isExist.customerId);

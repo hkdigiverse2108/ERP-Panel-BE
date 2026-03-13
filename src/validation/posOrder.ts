@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
-import { PAYMENT_MODE, POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS, REDEEM_CREDIT_TYPE, PAYMENT_TERMS_ENUM } from "../common";
+import { DISCOUNT_MODE, PAYMENT_MODE, POS_ORDER_STATUS, POS_ORDER_TYPE, POS_PAYMENT_METHOD, POS_PAYMENT_STATUS, REDEEM_CREDIT_TYPE, PAYMENT_TERMS_ENUM } from "../common";
 
 const multiplePaymentSchema = Joi.object({
   amount: Joi.number().min(0).required(),
@@ -77,6 +77,15 @@ export const addPosOrderSchema = Joi.object({
   couponId: objectId().optional().allow(null),
   couponDiscount: Joi.number().min(0).optional().default(0),
 
+  discountId: objectId().optional().allow(null),
+  discountAmount: Joi.number().min(0).optional().default(0),
+  discountMode: Joi.string().valid(...Object.values(DISCOUNT_MODE)).optional().allow(null),
+  freeProducts: Joi.array().items(Joi.object({
+    productId: objectId().required(),
+    qty: Joi.number().min(1).default(1),
+    mrp: Joi.number().min(0).default(0),
+  })).optional().default([]),
+
   loyaltyId: objectId().optional().allow(null),
   loyaltyDiscount: Joi.number().min(0).optional().default(0),
 
@@ -139,6 +148,15 @@ export const editPosOrderSchema = Joi.object().keys({
   multiplePayments: Joi.array().items(multiplePaymentSchema).default([]).optional(),
   couponId: objectId().optional().allow(null),
   couponDiscount: Joi.number().min(0).optional(),
+
+  discountId: objectId().optional().allow(null),
+  discountAmount: Joi.number().min(0).optional(),
+  discountMode: Joi.string().valid(...Object.values(DISCOUNT_MODE)).optional().allow(null),
+  freeProducts: Joi.array().items(Joi.object({
+    productId: objectId().required(),
+    qty: Joi.number().min(1).default(1),
+    mrp: Joi.number().min(0).default(0),
+  })).optional(),
 
   loyaltyId: objectId().optional().allow(null),
   loyaltyDiscount: Joi.number().min(0).optional(),
