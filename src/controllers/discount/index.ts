@@ -1,9 +1,24 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { discountModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, findAllAndPopulate, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, findAllAndPopulate, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addDiscountSchema, deleteDiscountSchema, editDiscountSchema, getDiscountSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
+
+// Populate paths for discount references
+const discountPopulate = [
+  { path: "companyId", select: "name" },
+  { path: "branchIds", select: "name" },
+  { path: "categoryIds", select: "name" },
+  { path: "subcategoryIds", select: "name" },
+  { path: "brandIds", select: "name" },
+  { path: "productIds", select: "name" },
+  { path: "excludedProductIds", select: "name" },
+  { path: "buyXGetY.getProductIds", select: "name" },
+  { path: "fixedPriceProducts.productId", select: "name" },
+  { path: "createdBy", select: "fullName" },
+  { path: "updatedBy", select: "fullName" },
+];
 
 export const addDiscount = async (req, res) => {
   reqInfo(req);
@@ -20,14 +35,20 @@ export const addDiscount = async (req, res) => {
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    // Validate date range
-    if (new Date(value.validFrom) >= new Date(value.validTo)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Valid From date must be before Valid To date", {}, {}));
+    // Validate date range when end date is set
+    if (value.hasEndDate && value.endDate && new Date(value.startDate) >= new Date(value.endDate)) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Start Date must be before End Date", {}, {}));
     }
 
-    const isExist = await getFirstMatch(discountModel, { companyId: value.companyId, title: value?.title, isDeleted: false }, {}, {});
+    // Check unique title
+    const titleExist = await getFirstMatch(discountModel, { companyId: value.companyId, title: value?.title, isDeleted: false }, {}, {});
+    if (titleExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Title"), {}, {}));
 
-    if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Title"), {}, {}));
+    // Check unique discount code (if provided)
+    if (value.discountCode) {
+      const codeExist = await getFirstMatch(discountModel, { companyId: value.companyId, discountCode: value.discountCode, isDeleted: false }, {}, {});
+      if (codeExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Discount Code"), {}, {}));
+    }
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
@@ -62,13 +83,25 @@ export const editDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Discount"), {}, {}));
     }
 
-    isExist = await getFirstMatch(discountModel, { companyId: isExist?.companyId, title: value?.title, isDeleted: false, _id: { $ne: value?.discountId } }, {}, {});
+    // Check unique title
+    if (value.title) {
+      const titleExist = await getFirstMatch(discountModel, { companyId: isExist?.companyId, title: value?.title, isDeleted: false, _id: { $ne: value?.discountId } }, {}, {});
+      if (titleExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Title"), {}, {}));
+    }
 
-    if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Title"), {}, {}));
+    // Check unique discount code (if being updated)
+    if (value.discountCode) {
+      const codeExist = await getFirstMatch(discountModel, { companyId: isExist?.companyId, discountCode: value.discountCode, isDeleted: false, _id: { $ne: value?.discountId } }, {}, {});
+      if (codeExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Discount Code"), {}, {}));
+    }
 
     // Validate date range if dates are being updated
-    if (value.validFrom && value.validTo && new Date(value.validFrom) >= new Date(value.validTo)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Valid From date must be before Valid To date", {}, {}));
+    const startDate = value.startDate || isExist.startDate;
+    const endDate = value.endDate || isExist.endDate;
+    const hasEndDate = value.hasEndDate !== undefined ? value.hasEndDate : isExist.hasEndDate;
+
+    if (hasEndDate && endDate && new Date(startDate) >= new Date(endDate)) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Start Date must be before End Date", {}, {}));
     }
 
     value.updatedBy = user?._id || null;
@@ -121,7 +154,7 @@ export const getAllDiscount = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, status, startDate, endDate, activeFilter, companyFilter, discountMode, appliesTo, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -138,27 +171,38 @@ export const getAllDiscount = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ title: { $regex: search, $options: "si" } }];
+      criteria.$or = [
+        { title: { $regex: search, $options: "si" } },
+        { discountCode: { $regex: search, $options: "si" } },
+      ];
     }
 
     if (status) {
       criteria.status = status;
     }
 
+    if (discountMode) {
+      criteria.discountMode = discountMode;
+    }
+
+    if (appliesTo) {
+      criteria.appliesTo = appliesTo;
+    }
+
+    if (branchFilter) {
+      criteria.branchIds = new ObjectId(branchFilter);
+    }
+
     if (startDate && endDate) {
       const start = new Date(startDate as string);
       const end = new Date(endDate as string);
       if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.validFrom = { $lte: end };
-        criteria.validTo = { $gte: start };
+        criteria.startDate = { $lte: end };
+        criteria.$and = [
+          { $or: [{ endDate: { $gte: start } }, { endDate: null }, { hasEndDate: false }] },
+        ];
       }
     }
-    // add populate
-    const populate = [
-      { path: "companyId", select: "name" },
-      { path: "createdBy", select: "fullName" },
-      { path: "updatedBy", select: "fullName" },
-    ];
 
     const options = {
       sort: { createdAt: -1 },
@@ -166,7 +210,7 @@ export const getAllDiscount = async (req, res) => {
       limit,
     };
 
-    const response = await findAllAndPopulate(discountModel, criteria, {}, options, populate);
+    const response = await findAllAndPopulate(discountModel, criteria, {}, options, discountPopulate);
     const totalData = await countData(discountModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -193,13 +237,13 @@ export const getOneDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const response = await getFirstMatch(discountModel, { _id: value?.id, isDeleted: false }, {}, {});
+    const response = await findAllAndPopulate(discountModel, { _id: value?.id, isDeleted: false }, {}, {}, discountPopulate);
 
-    if (!response) {
+    if (!response || response.length === 0) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Discount"), {}, {}));
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), response, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), response[0], {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

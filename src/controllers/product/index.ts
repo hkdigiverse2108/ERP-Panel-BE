@@ -228,6 +228,7 @@ export const getAllProduct = async (req, res) => {
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
         { path: "subBrandId", select: "name" },
+        { path: "productTypeId", select: "name" },
         // { path: "purchaseTaxId", select: "name percentage" },
         // { path: "salesTaxId", select: "name percentage" },
       ],
@@ -495,6 +496,7 @@ export const getOneProduct = async (req, res) => {
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
+          { path: "productTypeId", select: "name" },
           // { path: "purchaseTaxId", select: "name percentage" },
           // { path: "salesTaxId", select: "name percentage" },
         ],
@@ -694,7 +696,7 @@ export const detectProduct = async (req, res) => {
             for (const [sku, conf] of Object.entries(itemSkuMatches)) {
               skuMatches[sku] = Math.max(skuMatches[sku] || 0, conf as number);
             }
-            
+
             const itemDetections = item.response.detections || [];
             for (const det of itemDetections) {
               if (det.matched_sku) {
@@ -710,14 +712,14 @@ export const detectProduct = async (req, res) => {
         }
 
         if (rootData.sku_counts) {
-           skuCounts = rootData.sku_counts;
+          skuCounts = rootData.sku_counts;
         } else {
-           const itemDetections = rootData.detections || [];
-           for (const det of itemDetections) {
-             if (det.matched_sku) {
-               skuCounts[det.matched_sku] = (skuCounts[det.matched_sku] || 0) + 1;
-             }
-           }
+          const itemDetections = rootData.detections || [];
+          for (const det of itemDetections) {
+            if (det.matched_sku) {
+              skuCounts[det.matched_sku] = (skuCounts[det.matched_sku] || 0) + 1;
+            }
+          }
         }
       }
 

@@ -105,6 +105,30 @@ export const DISCOUNT_STATUS = {
   INACTIVE: "inactive",
 } as const;
 
+export const DISCOUNT_MODE = {
+  NORMAL: "normal",
+  RANGE_WISE: "range_wise",
+  BUY_X_GET_Y: "buy_x_get_y",
+  PRODUCT_AT_FIX_AMOUNT: "product_at_fix_amount",
+} as const;
+
+export const DISCOUNT_APPLICABLE = {
+  PRODUCT_WISE: "product_wise",
+  ENTIRE_BILL: "entire_bill",
+} as const;
+
+export const DISCOUNT_APPLIES_TO = {
+  SPECIFIC_CATEGORY: "specific_category",
+  SPECIFIC_BRAND: "specific_brand",
+  SPECIFIC_PRODUCTS: "specific_products",
+} as const;
+
+export const MINIMUM_REQUIREMENT = {
+  NONE: "none",
+  MIN_PURCHASE_AMOUNT: "min_purchase_amount",
+  MIN_QUANTITY: "min_quantity",
+} as const;
+
 export const EMPLOYEE_STATUS = {
   ACTIVE: "active",
   INACTIVE: "inactive",
