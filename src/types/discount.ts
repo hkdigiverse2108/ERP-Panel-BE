@@ -16,9 +16,10 @@ export interface IBuyXGetY {
   getDiscountValue: number;
 }
 
-export interface IFixedPriceProduct {
-  productId: Schema.Types.ObjectId;
-  fixedPrice: number;
+export interface IProductAtFixAmount {
+  minimumAmount: number;
+  freeProductIds: Schema.Types.ObjectId[];
+  freeQty: number;
 }
 
 export interface IDiscount extends IBase {
@@ -37,7 +38,7 @@ export interface IDiscount extends IBase {
   discountValue?: number;
   rangeWiseRules?: IRangeWiseRule[];
   buyXGetY?: IBuyXGetY;
-  fixedPriceProducts?: IFixedPriceProduct[];
+  productAtFixAmount?: IProductAtFixAmount;
 
   // Targeting
   appliesTo: "specific_category" | "specific_brand" | "specific_products";

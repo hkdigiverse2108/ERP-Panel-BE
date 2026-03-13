@@ -33,11 +33,12 @@ const buyXGetYSchema = new Schema(
   { _id: false },
 );
 
-// Sub-schema: Fixed Price Products
-const fixedPriceProductSchema = new Schema(
+// Sub-schema: Product at Fix Amount
+const productAtFixAmountSchema = new Schema(
   {
-    productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
-    fixedPrice: { type: Number, required: true },
+    minimumAmount: { type: Number, required: true },
+    freeProductIds: [{ type: Schema.Types.ObjectId, ref: "product" }],
+    freeQty: { type: Number, required: true, default: 1 },
   },
   { _id: false },
 );
@@ -73,7 +74,7 @@ const discountSchema = new Schema<IDiscount>(
     discountValue: { type: Number, default: 0 },
     rangeWiseRules: [rangeWiseRuleSchema],
     buyXGetY: { type: buyXGetYSchema, default: null },
-    fixedPriceProducts: [fixedPriceProductSchema],
+    productAtFixAmount: { type: productAtFixAmountSchema, default: null },
 
     // Targeting — Applies To
     appliesTo: {

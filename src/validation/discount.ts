@@ -26,9 +26,10 @@ const buyXGetYJoi = Joi.object({
   getDiscountValue: Joi.number().min(0).required(),
 });
 
-const fixedPriceProductJoi = Joi.object({
-  productId: objectId().required(),
-  fixedPrice: Joi.number().min(0).required(),
+const productAtFixAmountJoi = Joi.object({
+  minimumAmount: Joi.number().min(0).required(),
+  freeProductIds: Joi.array().items(objectId()).min(1).required(),
+  freeQty: Joi.number().integer().min(1).default(1),
 });
 
 // --- Add Discount ---
@@ -69,10 +70,10 @@ export const addDiscountSchema = Joi.object().keys({
     then: buyXGetYJoi.required(),
     otherwise: buyXGetYJoi.optional().allow(null),
   }),
-  fixedPriceProducts: Joi.when("discountMode", {
+  productAtFixAmount: Joi.when("discountMode", {
     is: DISCOUNT_MODE.PRODUCT_AT_FIX_AMOUNT,
-    then: Joi.array().items(fixedPriceProductJoi).min(1).required(),
-    otherwise: Joi.array().items(fixedPriceProductJoi).optional(),
+    then: productAtFixAmountJoi.required(),
+    otherwise: productAtFixAmountJoi.optional().allow(null),
   }),
 
   // Targeting
@@ -157,7 +158,7 @@ export const editDiscountSchema = Joi.object().keys({
   discountValue: Joi.number().min(0).optional().allow(null),
   rangeWiseRules: Joi.array().items(rangeWiseRuleJoi).optional(),
   buyXGetY: buyXGetYJoi.optional().allow(null),
-  fixedPriceProducts: Joi.array().items(fixedPriceProductJoi).optional(),
+  productAtFixAmount: productAtFixAmountJoi.optional().allow(null),
 
   appliesTo: Joi.string().valid(...Object.values(DISCOUNT_APPLIES_TO)).optional(),
   applyToEntireSelection: Joi.boolean().optional(),
