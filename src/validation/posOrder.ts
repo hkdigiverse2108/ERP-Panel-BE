@@ -19,7 +19,6 @@ const posAdditionalChargeSchema = Joi.object({
   chargeId: objectId().optional().allow(null),
   value: Joi.number().min(0).optional(),
   taxId: objectId().optional().allow(null),
-  accountGroupId: objectId().optional().allow(null),
   totalAmount: Joi.number().min(0).optional(),
 });
 

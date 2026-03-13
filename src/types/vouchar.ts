@@ -8,13 +8,13 @@ export interface IVoucher extends IBase {
 
   // For Payment/Receipt
   partyId?: Schema.Types.ObjectId; // Customer/Supplier
-  bankAccountId?: Schema.Types.ObjectId; // Bank/Cash Ledger
+  // bankAccountId reference removed
 
   amount: number;
 
   // Journal Entries
   entries: {
-    accountId: Schema.Types.ObjectId;
+    // account reference removed
     debit: number;
     credit: number;
   }[];

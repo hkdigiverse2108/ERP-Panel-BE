@@ -341,7 +341,7 @@ export const getAllPosCashRegister = async (req, res) => {
       populate: [
         { path: "branchId", select: "name" },
         { path: "companyId", select: "name" },
-        { path: "salesManId", select: "name" },
+        { path: "salesManId", select: "fullName" },
         { path: "bankAccountId", select: "name" },
       ],
     };
@@ -406,7 +406,7 @@ export const getOnePosCashRegister = async (req, res) => {
         populate: [
           { path: "branchId", select: "name" },
           { path: "companyId", select: "name" },
-          { path: "salesManId", select: "name" },
+          { path: "salesManId", select: "fullName" },
           { path: "bankAccountId", select: "name" },
         ],
       },

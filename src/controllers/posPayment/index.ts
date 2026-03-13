@@ -52,7 +52,6 @@ export const addPosPayment = async (req, res) => {
       posOrder.multiplePayments.push({
         amount: value.amount,
         method: value.paymentMode,
-        accountId: value.accountId,
       });
 
       posOrder.paidAmount = (posOrder.paidAmount || 0) + value.amount;
@@ -133,7 +132,6 @@ export const editPosPayment = async (req, res) => {
       posOrder.multiplePayments.push({
         amount: value.amount,
         method: value.paymentMode,
-        accountId: value.accountId,
       });
 
       posOrder.paidAmount = (posOrder.paidAmount || 0) + value.amount;
@@ -213,7 +211,6 @@ export const getAllPosPayment = async (req, res) => {
         { path: "posOrderId", select: "orderNo totalAmount createdAt paidAmount" },
         { path: "partyId", select: "firstName lastName companyName" },
         { path: "purchaseBillId", select: "documentNo totalAmount" },
-        { path: "accountId", select: "name" },
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "taxId", select: "name percentage" },
@@ -249,7 +246,6 @@ export const getOnePosPayment = async (req, res) => {
           { path: "posOrderId", select: "orderNo totalAmount items" },
           { path: "partyId", select: "firstName lastName companyName email phoneNo" },
           { path: "purchaseBillId", select: "documentNo totalAmount" },
-          { path: "accountId", select: "name" },
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "taxId", select: "name percentage" },

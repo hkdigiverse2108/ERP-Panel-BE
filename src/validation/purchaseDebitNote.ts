@@ -33,7 +33,6 @@ export const addPurchaseDebitNoteSchema = Joi.object({
   purchaseId: objectId().optional(),
   reverseCharge: Joi.boolean().default(false),
   reason: Joi.string().allow("").optional(),
-  accountLedgerId: objectId().optional(),
 
   productDetails: Joi.object({
     items: Joi.array().items(purchaseDebitNoteItemSchema).optional(),
@@ -74,7 +73,6 @@ export const editPurchaseDebitNoteSchema = Joi.object({
   purchaseId: objectId().optional(),
   reverseCharge: Joi.boolean().optional(),
   reason: Joi.string().allow("").optional(),
-  accountLedgerId: objectId().optional(),
 
   productDetails: Joi.object({
     items: Joi.array().items(purchaseDebitNoteItemSchema).optional(),

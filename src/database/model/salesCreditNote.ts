@@ -15,9 +15,6 @@ export interface ISalesCreditNote extends IBase {
 
   salesId?: Schema.Types.ObjectId;
   reverseCharge: boolean;
-  reason?: string;
-
-  accountLedgerId?: Schema.Types.ObjectId;
   sez?: string;
   paymentReminder: boolean;
   productType: string;
@@ -88,12 +85,6 @@ const salesCreditNoteSchema = new Schema<ISalesCreditNote>(
     },
 
     reverseCharge: { type: Boolean, default: false },
-    reason: { type: String },
-
-    accountLedgerId: {
-      type: Schema.Types.ObjectId,
-      ref: "account-group",
-    },
     sez: { type: String },
     paymentReminder: { type: Boolean, default: false },
     productType: {

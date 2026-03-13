@@ -5,16 +5,15 @@ import {
   HTTP_STATUS,
   POS_ORDER_STATUS,
   VOUCHAR_TYPE,
-  ACCOUNT_TYPE,
   POS_VOUCHER_TYPE,
   RETURN_POS_ORDER_TYPE,
   PAYMENT_MODE,
   CASH_REGISTER_STATUS,
   POS_PAYMENT_METHOD,
+  ADJUSTMENT_TYPE,
 } from "../../common";
 import {
-  accountModel,
-  debitNoteModel,
+  adjustmentNoteModel,
   InvoiceModel,
   PosOrderModel,
   PosPaymentModel,
@@ -214,11 +213,8 @@ export const transactionDetails = async (req, res) => {
         },
         { $group: { _id: null, totalCash: { $sum: "$amount" } } },
       ]),
-      // 🔹 Bank Accounts Balance
-      accountModel.aggregate([
-        { $match: { ...commonCriteria, type: ACCOUNT_TYPE.BANK } },
-        { $group: { _id: null, totalBank: { $sum: "$currentBalance" } } },
-      ]),
+      // Bank logic removed
+      (async () => [{ totalBank: 0 }])(),
       // 🔹 Total Paid (Voucher + PosPayment purchase/expense)
       (async () => {
         const [vPay, pPay]: any = await Promise.all([
@@ -1033,15 +1029,15 @@ export const topExpenses = async (req, res) => {
 
     const data = await PosPaymentModel.aggregate([
       { $match: criteria },
-      {
-        $lookup: {
-          from: "accounts",
-          localField: "accountId",
-          foreignField: "_id",
-          as: "account",
-        },
-      },
-      { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+      // {
+      //   $lookup: {
+      //     from: "accounts",
+      //     localField: "accountId",
+      //     foreignField: "_id",
+      //     as: "account",
+      //   },
+      // },
+      // { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
       {
         $group: {
           _id: "$accountId",
@@ -1474,7 +1470,7 @@ export const salesAndPurchaseGraph = async (req, res) => {
       endDate as string,
       dateFields.supplierBill,
     );
-    const dnCriteria = { ...criteria };
+    const dnCriteria = { ...criteria, type: ADJUSTMENT_TYPE.RECEIVER };
     applyDateFilter(
       dnCriteria,
       startDate as string,
@@ -1546,7 +1542,7 @@ export const salesAndPurchaseGraph = async (req, res) => {
         },
       ]),
       // 4. Additional Purchase Returns (from Debit Note)
-      debitNoteModel.aggregate([
+      adjustmentNoteModel.aggregate([
         { $match: dnCriteria },
         {
           $group: {
@@ -1729,36 +1725,36 @@ export const transactionGraph = async (req, res) => {
       ]),
       voucherModel.aggregate([
         { $match: vCriteria },
-        {
-          $lookup: {
-            from: "accounts",
-            localField: "bankAccountId",
-            foreignField: "_id",
-            as: "account",
-          },
-        },
-        { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
-        {
-          $group: {
-            _id: {
-              date: groupByDateStr("date"),
-              method: {
-                $cond: {
-                  if: { $eq: ["$account.type", ACCOUNT_TYPE.CASH] },
-                  then: PAYMENT_MODE.CASH,
-                  else: {
-                    $cond: {
-                      if: { $eq: ["$account.type", ACCOUNT_TYPE.BANK] },
-                      then: PAYMENT_MODE.BANK,
-                      else: "other",
-                    },
-                  },
-                },
-              },
-            },
-            total: { $sum: "$amount" },
-          },
-        },
+        // {
+        //   $lookup: {
+        //     from: "accounts",
+        //     localField: "bankAccountId",
+        //     foreignField: "_id",
+        //     as: "account",
+        //   },
+        // },
+        // { $unwind: { path: "$account", preserveNullAndEmptyArrays: true } },
+        // {
+        //   $group: {
+        //     _id: {
+        //       date: groupByDateStr("date"),
+        //       method: {
+        //         $cond: {
+        //           if: { $eq: ["$account.type", ACCOUNT_TYPE.CASH] },
+        //           then: PAYMENT_MODE.CASH,
+        //           else: {
+        //             $cond: {
+        //               if: { $eq: ["$account.type", ACCOUNT_TYPE.BANK] },
+        //               then: PAYMENT_MODE.BANK,
+        //               else: "other",
+        //             },
+        //           },
+        //         },
+        //       },
+        //     },
+        //     total: { $sum: "$amount" },
+        //   },
+        // },
       ]),
     ]);
 

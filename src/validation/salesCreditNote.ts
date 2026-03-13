@@ -26,7 +26,6 @@ export const addSalesCreditNoteSchema = Joi.object({
   salesId: objectId().optional(),
   reverseCharge: Joi.boolean().default(false),
   reason: Joi.string().allow("").optional(),
-  accountLedgerId: objectId().optional(),
   sez: Joi.string().allow("").optional(),
   paymentReminder: Joi.boolean().default(false),
   productType: Joi.string()
@@ -60,8 +59,6 @@ export const editSalesCreditNoteSchema = Joi.object({
   dueDate: Joi.date().optional(),
   salesId: objectId().optional(),
   reverseCharge: Joi.boolean().optional(),
-  reason: Joi.string().allow("").optional(),
-  accountLedgerId: objectId().optional(),
   sez: Joi.string().allow("").optional(),
   paymentReminder: Joi.boolean().optional(),
   productType: Joi.string()
