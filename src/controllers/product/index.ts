@@ -673,20 +673,51 @@ export const detectProduct = async (req, res) => {
       });
       console.log('aiResponse => ', aiResponse.data);
 
-      const responseData = aiResponse?.data || {};
-      const batchResults = responseData?.results || [];
+      let responseData = aiResponse?.data || {};
+      let rootData = responseData;
+
+      if (Array.isArray(responseData)) {
+        rootData = responseData[0] || {};
+      } else if (Array.isArray(responseData.data)) {
+        rootData = responseData.data[0] || {};
+      } else if (responseData.data) {
+        rootData = responseData.data;
+      }
 
       let skuMatches: Record<string, number> = {};
-      let allDetections: any[] = [];
+      let skuCounts: Record<string, number> = {};
 
-      for (const item of batchResults) {
-        if (item.response) {
-          const itemSkuMatches = item.response.sku_matches || {};
-          for (const [sku, conf] of Object.entries(itemSkuMatches)) {
-            skuMatches[sku] = Math.max(skuMatches[sku] || 0, conf as number);
+      if (rootData.results && Array.isArray(rootData.results)) {
+        for (const item of rootData.results) {
+          if (item.response) {
+            const itemSkuMatches = item.response.sku_matches || {};
+            for (const [sku, conf] of Object.entries(itemSkuMatches)) {
+              skuMatches[sku] = Math.max(skuMatches[sku] || 0, conf as number);
+            }
+            
+            const itemDetections = item.response.detections || [];
+            for (const det of itemDetections) {
+              if (det.matched_sku) {
+                skuCounts[det.matched_sku] = (skuCounts[det.matched_sku] || 0) + 1;
+              }
+            }
           }
-          const itemDetections = item.response.detections || [];
-          allDetections = allDetections.concat(itemDetections);
+        }
+      } else {
+        const itemSkuMatches = rootData.sku_matches || {};
+        for (const [sku, conf] of Object.entries(itemSkuMatches)) {
+          skuMatches[sku] = conf as number;
+        }
+
+        if (rootData.sku_counts) {
+           skuCounts = rootData.sku_counts;
+        } else {
+           const itemDetections = rootData.detections || [];
+           for (const det of itemDetections) {
+             if (det.matched_sku) {
+               skuCounts[det.matched_sku] = (skuCounts[det.matched_sku] || 0) + 1;
+             }
+           }
         }
       }
 
@@ -805,14 +836,6 @@ export const detectProduct = async (req, res) => {
         );
       }
 
-      // Count occurrences of each SKU from the combined detections array
-      const skuCounts: Record<string, number> = {};
-      for (const det of allDetections) {
-        if (det.matched_sku) {
-          skuCounts[det.matched_sku] = (skuCounts[det.matched_sku] || 0) + 1;
-        }
-      }
-
       const skuMatchesDetailsArray = productsWithStock.map((p: any) => ({
         ...p,
         ai_confidence: skuMatches[p.sku] || 0,
@@ -821,7 +844,7 @@ export const detectProduct = async (req, res) => {
 
       // Return unified results block
       results = [{
-        ...responseData,
+        ...rootData,
         sku_matches_details: skuMatchesDetailsArray || []
       }];
     } catch (err: any) {
