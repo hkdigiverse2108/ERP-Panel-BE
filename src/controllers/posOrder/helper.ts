@@ -261,3 +261,4 @@ export const revertLoyalty = async (loyaltyId: string, customerId: string) => {
     console.error("Error in revertLoyalty:", error);
   }
 };
+

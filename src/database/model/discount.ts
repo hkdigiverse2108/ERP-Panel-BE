@@ -104,10 +104,8 @@ const discountSchema = new Schema<IDiscount>(
     usedCount: { type: Number, default: 0 },
 
     // Active Dates
-    startDate: { type: Date, required: true },
-    startTime: { type: String, default: null },
-    endDate: { type: Date, default: null },
-    endTime: { type: String, default: null },
+    startDateTime: { type: Date, required: true },
+    endDateTime: { type: Date, default: null },
     hasEndDate: { type: Boolean, default: false },
 
     // Branch Scoping
@@ -126,6 +124,6 @@ const discountSchema = new Schema<IDiscount>(
 // Indexes
 discountSchema.index({ discountCode: 1 }, { unique: true, sparse: true });
 discountSchema.index({ branchIds: 1 });
-discountSchema.index({ startDate: 1, endDate: 1 });
+discountSchema.index({ startDateTime: 1, endDateTime: 1 });
 
 export const discountModel = mongoose.model<IDiscount>("discount", discountSchema);

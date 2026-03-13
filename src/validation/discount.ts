@@ -119,15 +119,13 @@ export const addDiscountSchema = Joi.object().keys({
   usageLimitPerCustomer: Joi.boolean().default(false),
 
   // Active Dates
-  startDate: Joi.date().required(),
-  startTime: Joi.string().optional().allow(null, ""),
+  startDateTime: Joi.date().required(),
   hasEndDate: Joi.boolean().default(false),
-  endDate: Joi.when("hasEndDate", {
+  endDateTime: Joi.when("hasEndDate", {
     is: true,
     then: Joi.date().required(),
     otherwise: Joi.date().optional().allow(null),
   }),
-  endTime: Joi.string().optional().allow(null, ""),
 
   // Branch Scoping
   branchIds: Joi.array().items(objectId()).optional(),
@@ -175,11 +173,9 @@ export const editDiscountSchema = Joi.object().keys({
   usageLimitTotal: Joi.number().integer().min(1).optional().allow(null),
   usageLimitPerCustomer: Joi.boolean().optional(),
 
-  startDate: Joi.date().optional(),
-  startTime: Joi.string().optional().allow(null, ""),
+  startDateTime: Joi.date().optional(),
   hasEndDate: Joi.boolean().optional(),
-  endDate: Joi.date().optional().allow(null),
-  endTime: Joi.string().optional().allow(null, ""),
+  endDateTime: Joi.date().optional().allow(null),
 
   branchIds: Joi.array().items(objectId()).optional(),
 
@@ -195,4 +191,41 @@ export const deleteDiscountSchema = Joi.object().keys({
 
 export const getDiscountSchema = Joi.object().keys({
   id: objectId().required(),
+});
+
+const orderItemJoi = Joi.object({
+  productId: objectId().required(),
+  qty: Joi.number().min(1).required(),
+  mrp: Joi.number().min(0).required(),
+  unitCost: Joi.number().min(0).optional(),
+  discountAmount: Joi.number().min(0).default(0),
+}).unknown(true);
+
+export const verifyDiscountSchema = Joi.object().keys({
+  discountId: objectId().optional(),
+  discountCode: Joi.string().optional(),
+  branchId: objectId().optional(),
+  customerId: objectId().optional().allow(null),
+  items: Joi.array().items(orderItemJoi).min(1).required(),
+  totalAmount: Joi.number().min(0).required(),
+  totalQty: Joi.number().min(0).optional().default(0),
+}).or("discountId", "discountCode");
+
+// --- Apply Discount (verify + increment usage) ---
+
+export const applyDiscountSchema = Joi.object().keys({
+  discountId: objectId().optional(),
+  discountCode: Joi.string().optional(),
+  branchId: objectId().optional(),
+  customerId: objectId().optional().allow(null),
+  items: Joi.array().items(orderItemJoi).min(1).required(),
+  totalAmount: Joi.number().min(0).required(),
+  totalQty: Joi.number().min(0).optional().default(0),
+}).or("discountId", "discountCode");
+
+// --- Remove Discount (revert usage) ---
+
+export const removeDiscountSchema = Joi.object().keys({
+  discountId: objectId().required(),
+  customerId: objectId().optional().allow(null),
 });

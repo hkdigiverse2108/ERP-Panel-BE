@@ -1,7 +1,7 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
-import { discountModel } from "../../database";
+import { apiResponse, HTTP_STATUS, DISCOUNT_MODE, DISCOUNT_APPLICABLE, DISCOUNT_APPLIES_TO, MINIMUM_REQUIREMENT, DISCOUNT_STATUS, VALUE_TYPE } from "../../common";
+import { discountModel, productModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, findAllAndPopulate, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
-import { addDiscountSchema, deleteDiscountSchema, editDiscountSchema, getDiscountSchema } from "../../validation";
+import { addDiscountSchema, deleteDiscountSchema, editDiscountSchema, getDiscountSchema, verifyDiscountSchema, applyDiscountSchema, removeDiscountSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -36,7 +36,7 @@ export const addDiscount = async (req, res) => {
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Validate date range when end date is set
-    if (value.hasEndDate && value.endDate && new Date(value.startDate) >= new Date(value.endDate)) {
+    if (value.hasEndDate && value.endDateTime && new Date(value.startDateTime) >= new Date(value.endDateTime)) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Start Date must be before End Date", {}, {}));
     }
 
@@ -96,11 +96,11 @@ export const editDiscount = async (req, res) => {
     }
 
     // Validate date range if dates are being updated
-    const startDate = value.startDate || isExist.startDate;
-    const endDate = value.endDate || isExist.endDate;
+    const startDT = value.startDateTime || isExist.startDateTime;
+    const endDT = value.endDateTime || isExist.endDateTime;
     const hasEndDate = value.hasEndDate !== undefined ? value.hasEndDate : isExist.hasEndDate;
 
-    if (hasEndDate && endDate && new Date(startDate) >= new Date(endDate)) {
+    if (hasEndDate && endDT && new Date(startDT) >= new Date(endDT)) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Start Date must be before End Date", {}, {}));
     }
 
@@ -154,7 +154,7 @@ export const getAllDiscount = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, status, startDate, endDate, activeFilter, companyFilter, discountMode, appliesTo, branchFilter } = req.query;
+    let { page, limit, search, status, startDateTime, endDateTime, activeFilter, companyFilter, discountMode, appliesTo, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -193,13 +193,13 @@ export const getAllDiscount = async (req, res) => {
       criteria.branchIds = new ObjectId(branchFilter);
     }
 
-    if (startDate && endDate) {
-      const start = new Date(startDate as string);
-      const end = new Date(endDate as string);
+    if (startDateTime && endDateTime) {
+      const start = new Date(startDateTime as string);
+      const end = new Date(endDateTime as string);
       if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.startDate = { $lte: end };
+        criteria.startDateTime = { $lte: end };
         criteria.$and = [
-          { $or: [{ endDate: { $gte: start } }, { endDate: null }, { hasEndDate: false }] },
+          { $or: [{ endDateTime: { $gte: start } }, { endDateTime: null }, { hasEndDate: false }] },
         ];
       }
     }
@@ -247,5 +247,351 @@ export const getOneDiscount = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+// ─── Discount Eligibility Check (shared by verify & apply) ───
+
+const checkDiscountEligibility = async (discount: any, branchId: string, customerId: string | null, items: any[], totalAmount: number, totalQty: number) => {
+  // 1. Status
+  if (discount.status !== DISCOUNT_STATUS.ACTIVE) {
+    return `Discount is ${discount.status}`;
+  }
+
+  // 2. Date/Time range
+  const now = new Date();
+
+  if (discount.startDateTime) {
+    if (now < new Date(discount.startDateTime)) return "Discount is not yet active";
+  }
+
+  if (discount.hasEndDate && discount.endDateTime) {
+    if (now > new Date(discount.endDateTime)) return "Discount has expired";
+  }
+
+  // 3. Branch scope
+  if (discount.branchIds && discount.branchIds.length > 0 && branchId) {
+    const branchMatch = discount.branchIds.some((b: any) => b.toString() === branchId.toString());
+    if (!branchMatch) return "Discount is not available for this branch";
+  }
+
+  // 4. Minimum requirement
+  if (discount.minimumRequirement === MINIMUM_REQUIREMENT.MIN_PURCHASE_AMOUNT) {
+    if (totalAmount < (discount.minimumPurchaseAmount || 0)) {
+      return `Minimum purchase amount of ${discount.minimumPurchaseAmount} is required`;
+    }
+  } else if (discount.minimumRequirement === MINIMUM_REQUIREMENT.MIN_QUANTITY) {
+    if (totalQty < (discount.minimumQuantity || 0)) {
+      return `Minimum quantity of ${discount.minimumQuantity} items is required`;
+    }
+  }
+
+  // 5. Usage limits
+  if (discount.usageLimitTotal && discount.usedCount >= discount.usageLimitTotal) {
+    return "Discount usage limit reached";
+  }
+
+  if (discount.usageLimitPerCustomer && customerId) {
+    const customerEntry = discount.customerIds ? discount.customerIds.find((item: any) => item.id.toString() === customerId.toString()) : null;
+    if (customerEntry) return "You have already used this discount";
+  }
+
+  return null; // eligible
+};
+
+// ─── Get Qualifying Items ───
+
+const getQualifyingItems = async (discount: any, items: any[]) => {
+  let qualifyingItems = [...items];
+
+  // Filter by appliesTo
+  if (discount.appliesTo === DISCOUNT_APPLIES_TO.SPECIFIC_PRODUCTS) {
+    const productIdSet = new Set((discount.productIds || []).map((id: any) => id.toString()));
+    qualifyingItems = qualifyingItems.filter((item: any) => productIdSet.has(item.productId?.toString()));
+  } else if (discount.appliesTo === DISCOUNT_APPLIES_TO.SPECIFIC_CATEGORY || discount.appliesTo === DISCOUNT_APPLIES_TO.SPECIFIC_BRAND) {
+    // Fetch product details for category/brand matching
+    const productIds = items.map((item: any) => item.productId);
+    const products = await productModel.find({ _id: { $in: productIds }, isDeleted: false }).lean();
+    const productMap = new Map(products.map((p: any) => [p._id.toString(), p]));
+
+    if (discount.appliesTo === DISCOUNT_APPLIES_TO.SPECIFIC_CATEGORY) {
+      const categoryIdSet = new Set((discount.categoryIds || []).map((id: any) => id.toString()));
+      const subcategoryIdSet = new Set((discount.subcategoryIds || []).map((id: any) => id.toString()));
+
+      qualifyingItems = qualifyingItems.filter((item: any) => {
+        const product = productMap.get(item.productId?.toString());
+        if (!product) return false;
+        return categoryIdSet.has(product.categoryId?.toString()) || subcategoryIdSet.has(product.subCategoryId?.toString());
+      });
+    } else {
+      const brandIdSet = new Set((discount.brandIds || []).map((id: any) => id.toString()));
+      qualifyingItems = qualifyingItems.filter((item: any) => {
+        const product = productMap.get(item.productId?.toString());
+        if (!product) return false;
+        return brandIdSet.has(product.brandId?.toString());
+      });
+    }
+  }
+
+  // Exclude specific products
+  if (discount.excludedProductIds && discount.excludedProductIds.length > 0) {
+    const excludeSet = new Set(discount.excludedProductIds.map((id: any) => id.toString()));
+    qualifyingItems = qualifyingItems.filter((item: any) => !excludeSet.has(item.productId?.toString()));
+  }
+
+  // Exclude already discounted
+  if (discount.excludeAlreadyDiscounted) {
+    qualifyingItems = qualifyingItems.filter((item: any) => !(item.discountAmount > 0));
+  }
+
+  return qualifyingItems;
+};
+
+// ─── Calculate Discount Amount ───
+
+const calculateDiscountAmount = (discount: any, qualifyingItems: any[], totalAmount: number) => {
+  let discountAmount = 0;
+
+  if (discount.discountMode === DISCOUNT_MODE.NORMAL) {
+    if (discount.discountApplicable === DISCOUNT_APPLICABLE.ENTIRE_BILL) {
+      if (discount.discountType === VALUE_TYPE.PERCENTAGE) {
+        discountAmount = (totalAmount * (discount.discountValue || 0)) / 100;
+      } else {
+        discountAmount = discount.discountValue || 0;
+      }
+    } else {
+      for (const item of qualifyingItems) {
+        const itemTotal = (item.mrp || item.unitCost || 0) * (item.qty || 1);
+        if (discount.discountType === VALUE_TYPE.PERCENTAGE) {
+          discountAmount += (itemTotal * (discount.discountValue || 0)) / 100;
+        } else {
+          discountAmount += discount.discountValue || 0;
+        }
+      }
+    }
+  } else if (discount.discountMode === DISCOUNT_MODE.RANGE_WISE) {
+    for (const item of qualifyingItems) {
+      const qty = item.qty || 1;
+      const itemTotal = (item.mrp || item.unitCost || 0) * qty;
+      const rule = (discount.rangeWiseRules || []).find((r: any) => qty >= r.minQty && qty <= r.maxQty);
+      if (rule) {
+        if (rule.discountType === VALUE_TYPE.PERCENTAGE) {
+          discountAmount += (itemTotal * rule.discountValue) / 100;
+        } else {
+          discountAmount += rule.discountValue;
+        }
+      }
+    }
+  } else if (discount.discountMode === DISCOUNT_MODE.BUY_X_GET_Y) {
+    const bxgy = discount.buyXGetY;
+    if (bxgy) {
+      for (const item of qualifyingItems) {
+        const qty = item.qty || 0;
+        if (qty >= bxgy.buyQty) {
+          const freeQty = Math.floor(qty / bxgy.buyQty) * bxgy.getQty;
+          const itemPrice = item.mrp || item.unitCost || 0;
+          if (bxgy.getDiscountType === VALUE_TYPE.PERCENTAGE) {
+            discountAmount += (itemPrice * freeQty * bxgy.getDiscountValue) / 100;
+          } else {
+            discountAmount += freeQty * bxgy.getDiscountValue;
+          }
+        }
+      }
+    }
+  } else if (discount.discountMode === DISCOUNT_MODE.PRODUCT_AT_FIX_AMOUNT) {
+    const fixAmount = discount.productAtFixAmount;
+    if (fixAmount && totalAmount >= fixAmount.minimumAmount) {
+      discountAmount = 0; // free product benefit, handled by frontend/POS
+    }
+  }
+
+  // Ensure discount doesn't exceed total
+  discountAmount = Math.min(discountAmount, totalAmount);
+  discountAmount = Math.round(discountAmount * 100) / 100;
+
+  return discountAmount;
+};
+
+// ─── Verify Discount (check eligibility + calculate, no usage increment) ───
+
+export const verifyDiscount = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { error, value } = verifyDiscountSchema.validate(req.body);
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const { discountId, discountCode, branchId, customerId, items, totalAmount, totalQty } = value;
+
+    const criteria: any = { isDeleted: false };
+    if (discountId) {
+      criteria._id = discountId;
+    } else {
+      criteria.discountCode = discountCode;
+    }
+
+    const discount = await getFirstMatch(discountModel, criteria, {}, {});
+    if (!discount) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Discount"), {}, {}));
+    }
+
+    const eligibilityError = await checkDiscountEligibility(discount, branchId, customerId, items || [], totalAmount || 0, totalQty || 0);
+    if (eligibilityError) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, eligibilityError, {}, {}));
+    }
+
+    const qualifyingItems = await getQualifyingItems(discount, items || []);
+
+    if (qualifyingItems.length === 0 && discount.discountMode !== DISCOUNT_MODE.PRODUCT_AT_FIX_AMOUNT) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "No items qualify for this discount", {}, {}));
+    }
+
+    const discountAmount = calculateDiscountAmount(discount, qualifyingItems, totalAmount || 0);
+
+    const result: any = {
+      discountId: discount._id,
+      title: discount.title,
+      discountCode: discount.discountCode,
+      discountMode: discount.discountMode,
+      discountApplicable: discount.discountApplicable,
+      discountAmount,
+      qualifyingItemCount: qualifyingItems.length,
+      finalAmount: (totalAmount || 0) - discountAmount,
+    };
+
+    if (discount.discountMode === DISCOUNT_MODE.PRODUCT_AT_FIX_AMOUNT && discount.productAtFixAmount) {
+      const fixAmount = discount.productAtFixAmount;
+      if ((totalAmount || 0) >= fixAmount.minimumAmount) {
+        result.freeProducts = {
+          freeProductIds: fixAmount.freeProductIds,
+          freeQty: fixAmount.freeQty,
+          minimumAmount: fixAmount.minimumAmount,
+        };
+      }
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Discount verified successfully", result, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));
+  }
+};
+
+// ─── Apply Discount (verify + increment usage) ───
+
+export const applyDiscount = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { error, value } = applyDiscountSchema.validate(req.body);
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const { discountId, discountCode, branchId, customerId, items, totalAmount, totalQty } = value;
+
+    const criteria: any = { isDeleted: false };
+    if (discountId) {
+      criteria._id = discountId;
+    } else {
+      criteria.discountCode = discountCode;
+    }
+
+    const discount = await getFirstMatch(discountModel, criteria, {}, {});
+    if (!discount) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Discount"), {}, {}));
+    }
+
+    const eligibilityError = await checkDiscountEligibility(discount, branchId, customerId, items || [], totalAmount || 0, totalQty || 0);
+    if (eligibilityError) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, eligibilityError, {}, {}));
+    }
+
+    const qualifyingItems = await getQualifyingItems(discount, items || []);
+
+    if (qualifyingItems.length === 0 && discount.discountMode !== DISCOUNT_MODE.PRODUCT_AT_FIX_AMOUNT) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "No items qualify for this discount", {}, {}));
+    }
+
+    const discountAmount = calculateDiscountAmount(discount, qualifyingItems, totalAmount || 0);
+
+    // Increment usage count and track customer
+    if (customerId) {
+      const customerEntry = discount.customerIds ? discount.customerIds.find((item: any) => item.id?.toString() === customerId.toString()) : null;
+      if (customerEntry) {
+        await discountModel.updateOne({ _id: discount._id, "customerIds.id": customerId as any }, { $inc: { "customerIds.$.count": 1, usedCount: 1 } });
+      } else {
+        await discountModel.updateOne({ _id: discount._id }, { $push: { customerIds: { id: customerId, count: 1 } }, $inc: { usedCount: 1 } });
+      }
+    } else {
+      await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: 1 } });
+    }
+
+    const result: any = {
+      discountId: discount._id,
+      title: discount.title,
+      discountCode: discount.discountCode,
+      discountMode: discount.discountMode,
+      discountApplicable: discount.discountApplicable,
+      discountAmount,
+      qualifyingItemCount: qualifyingItems.length,
+      finalAmount: (totalAmount || 0) - discountAmount,
+    };
+
+    if (discount.discountMode === DISCOUNT_MODE.PRODUCT_AT_FIX_AMOUNT && discount.productAtFixAmount) {
+      const fixAmount = discount.productAtFixAmount;
+      if ((totalAmount || 0) >= fixAmount.minimumAmount) {
+        result.freeProducts = {
+          freeProductIds: fixAmount.freeProductIds,
+          freeQty: fixAmount.freeQty,
+          minimumAmount: fixAmount.minimumAmount,
+        };
+      }
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Discount applied successfully", result, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));
+  }
+};
+
+// ─── Remove Discount (decrement usage) ───
+
+export const removeDiscount = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { error, value } = removeDiscountSchema.validate(req.body);
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const { discountId, customerId } = value;
+
+    const discount = await getFirstMatch(discountModel, { _id: discountId }, {}, {});
+    if (!discount) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Discount"), {}, {}));
+    }
+
+    // Decrement usage
+    if (customerId) {
+      const customerEntry = discount.customerIds ? discount.customerIds.find((item: any) => item.id?.toString() === customerId.toString()) : null;
+      if (customerEntry) {
+        if (customerEntry.count > 1) {
+          await discountModel.updateOne({ _id: new ObjectId(discountId) as any, "customerIds.id": new ObjectId(customerId) as any }, { $inc: { "customerIds.$.count": -1, usedCount: -1 } });
+        } else {
+          await discountModel.updateOne({ _id: new ObjectId(discountId) as any }, { $pull: { customerIds: { id: new ObjectId(customerId) as any } }, $inc: { usedCount: -1 } });
+        }
+      } else {
+        await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: -1 } });
+      }
+    } else {
+      await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: -1 } });
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Discount removed successfully", {}, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));
   }
 };

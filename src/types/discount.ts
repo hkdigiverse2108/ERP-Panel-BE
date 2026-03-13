@@ -60,10 +60,8 @@ export interface IDiscount extends IBase {
   usedCount: number;
 
   // Active Dates
-  startDate: Date;
-  startTime?: string;
-  endDate?: Date | null;
-  endTime?: string;
+  startDateTime: Date;
+  endDateTime?: Date | null;
   hasEndDate: boolean;
 
   // Branches
