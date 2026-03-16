@@ -36,10 +36,12 @@ export interface IAdjustmentNote {
   type: 'payin' | 'receiver';
   image?: string;
   phoneNo?: string;
+  personName?: string;
 }
 
 const adjustmentNoteSchema = new Schema<IAdjustmentNote>({
   ...baseSchemaFields,
+  personName: { type: String },
   voucherNumber: { type: String },
   date: { type: Date },
   amount: { type: Number, min: 0 },
