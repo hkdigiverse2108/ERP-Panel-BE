@@ -31,6 +31,7 @@ const SalesOrderSchema = new Schema<ISalesOrder>(
     status: { type: String, enum: Object.values(SALES_ORDER_STATUS), default: SALES_ORDER_STATUS.PENDING },
     shippingDetails: { type: commonShippingSchema },
     notes: { type: String },
+    reverseCharge: { type: Boolean, default: false }
   },
   baseSchemaOptions,
 );
