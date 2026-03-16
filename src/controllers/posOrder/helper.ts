@@ -288,17 +288,21 @@ export const applyPosDiscount = async (discountId: string, customerId: string | 
   }
 };
 
-export const revertDiscount = async (discountId: string, customerId: string) => {
+export const revertDiscount = async (discountId: string, customerId?: string) => {
   try {
     const discount = await getFirstMatch(discountModel, { _id: discountId }, {}, {});
     if (!discount) return;
 
-    const customerEntry = discount.customerIds ? discount.customerIds.find((item: any) => item.id?.toString() === customerId.toString()) : null;
-    if (customerEntry) {
-      if (customerEntry.count > 1) {
-        await discountModel.updateOne({ _id: new ObjectId(discountId) as any, "customerIds.id": new ObjectId(customerId) as any }, { $inc: { "customerIds.$.count": -1, usedCount: -1 } });
+    if (customerId) {
+      const customerEntry = discount.customerIds ? discount.customerIds.find((item: any) => item.id?.toString() === customerId.toString()) : null;
+      if (customerEntry) {
+        if (customerEntry.count > 1) {
+          await discountModel.updateOne({ _id: new ObjectId(discountId) as any, "customerIds.id": new ObjectId(customerId) as any }, { $inc: { "customerIds.$.count": -1, usedCount: -1 } });
+        } else {
+          await discountModel.updateOne({ _id: new ObjectId(discountId) as any }, { $pull: { customerIds: { id: new ObjectId(customerId) as any } }, $inc: { usedCount: -1 } });
+        }
       } else {
-        await discountModel.updateOne({ _id: new ObjectId(discountId) as any }, { $pull: { customerIds: { id: new ObjectId(customerId) as any } }, $inc: { usedCount: -1 } });
+        await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: -1 } });
       }
     } else {
       await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: -1 } });
@@ -307,3 +311,4 @@ export const revertDiscount = async (discountId: string, customerId: string) => 
     console.error("Error in revertDiscount:", error);
   }
 };
+

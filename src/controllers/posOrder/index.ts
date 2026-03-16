@@ -134,6 +134,7 @@ export const addPosOrder = async (req, res) => {
 
     if (value.discountId) {
       const discountResponse = await applyPosDiscount(value.discountId, value.customerId);
+
       if (discountResponse !== "Discount applied successfully") {
         return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, discountResponse, {}, {}));
       }
@@ -364,11 +365,25 @@ export const editPosOrder = async (req, res) => {
       };
     }
 
+    // Handle discount logic for edit
+    if (value.discountId !== undefined && value.discountId?.toString() !== isExist.discountId?.toString()) {
+      if (isExist.discountId) {
+        await revertDiscount(isExist.discountId.toString(), isExist.customerId?.toString());
+      }
+      if (value.discountId) {
+        const discountResponse = await applyPosDiscount(value.discountId, value.customerId || isExist.customerId?.toString());
+        if (discountResponse !== "Discount applied successfully") {
+          return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, discountResponse, {}, {}));
+        }
+      }
+    }
+
     // Map to model name for refPath validation
     if (value.redeemCreditType) {
       if (value.redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE) value.redeemCreditType = REDEEM_CREDIT_MODEL.CREDIT_NOTE;
       else if (value.redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) value.redeemCreditType = REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT;
     }
+
 
     const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, value, {});
 
@@ -588,6 +603,21 @@ export const deletePosOrder = async (req, res) => {
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("POS Order"), {}, {}));
     }
+
+    // --- Revert Coupon, Loyalty Campaign, and Redeem Credit ---
+    if (isExist.couponId && isExist.customerId) {
+      await revertCoupon(isExist.couponId, isExist.customerId);
+    }
+    if (isExist.discountId) {
+      await revertDiscount(isExist.discountId.toString(), isExist.customerId?.toString());
+    }
+    if (isExist.loyaltyId && isExist.customerId) {
+      await revertLoyalty(isExist.loyaltyId, isExist.customerId);
+    }
+    if (isExist.redeemCreditId && isExist.redeemCreditAmount > 0) {
+      await revertRedeemCredit(isExist.redeemCreditId, isExist.redeemCreditType, isExist.redeemCreditAmount, isExist._id);
+    }
+
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Order"), response, {}));
   } catch (error) {

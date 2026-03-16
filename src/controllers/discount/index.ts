@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, DISCOUNT_MODE, DISCOUNT_APPLICABLE, DISCOUNT_APPLIES_TO, MINIMUM_REQUIREMENT, DISCOUNT_STATUS, VALUE_TYPE } from "../../common";
 import { discountModel, productModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, findAllAndPopulate, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, findAllAndPopulate, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addDiscountSchema, deleteDiscountSchema, editDiscountSchema, getDiscountSchema, verifyDiscountSchema, applyDiscountSchema, removeDiscountSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -244,6 +244,92 @@ export const getOneDiscount = async (req, res) => {
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), response[0], {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const getDropdownDiscount = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+    let { search, status, startDateTime, endDateTime, activeFilter, companyFilter, discountMode, appliesTo, branchFilter } = req.query;
+
+    let criteria: any = { isDeleted: false };
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+
+    if (search) {
+      criteria.$or = [
+        { title: { $regex: search, $options: "si" } },
+        { discountCode: { $regex: search, $options: "si" } },
+      ];
+    }
+
+    if (status) {
+      criteria.status = status;
+    }
+
+    if (discountMode) {
+      criteria.discountMode = discountMode;
+    }
+
+    if (appliesTo) {
+      criteria.appliesTo = appliesTo;
+    }
+
+    if (branchFilter) {
+      criteria.branchIds = new ObjectId(branchFilter);
+    }
+
+    if (startDateTime && endDateTime) {
+      const start = new Date(startDateTime as string);
+      const end = new Date(endDateTime as string);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        criteria.startDateTime = { $lte: end };
+        criteria.$and = [
+          { $or: [{ endDateTime: { $gte: start } }, { endDateTime: null }, { hasEndDate: false }] },
+        ];
+      }
+    }
+    // avoid most fields
+    const projection = {
+      discountCode: 1,
+      title: 1,
+      // discountMode: 1,
+      // discountType: 1,
+      // discountValue: 1,
+      // appliesTo: 1,
+      // minimumRequirement: 1,
+      // minimumPurchaseAmount: 1,
+      // minimumQuantity: 1,
+      // branchIds: 1,
+      // customerIds: 1,
+      // productIds: 1,
+      // categoryIds: 1,
+      // brandIds: 1,
+      // customerGroupIds: 1,
+      // status: 1,
+      // isActive: 1,
+      // hasEndDate: 1,
+      // startDateTime: 1,
+      // endDateTime: 1,
+      // createdAt: 1,
+      // updatedAt: 1,
+    };
+
+    const response = await getData(discountModel, criteria, projection, {});
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -515,19 +601,9 @@ export const applyDiscount = async (req, res) => {
 
     const discountAmount = calculateDiscountAmount(discount, qualifyingItems, totalAmount || 0);
 
-    // Increment usage count and track customer
-    if (customerId) {
-      const customerEntry = discount.customerIds ? discount.customerIds.find((item: any) => item.id?.toString() === customerId.toString()) : null;
-      if (customerEntry) {
-        await discountModel.updateOne({ _id: discount._id, "customerIds.id": customerId as any }, { $inc: { "customerIds.$.count": 1, usedCount: 1 } });
-      } else {
-        await discountModel.updateOne({ _id: discount._id }, { $push: { customerIds: { id: customerId, count: 1 } }, $inc: { usedCount: 1 } });
-      }
-    } else {
-      await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: 1 } });
-    }
 
     const result: any = {
+
       discountId: discount._id,
       title: discount.title,
       discountCode: discount.discountCode,
@@ -573,21 +649,8 @@ export const removeDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Discount"), {}, {}));
     }
 
-    // Decrement usage
-    if (customerId) {
-      const customerEntry = discount.customerIds ? discount.customerIds.find((item: any) => item.id?.toString() === customerId.toString()) : null;
-      if (customerEntry) {
-        if (customerEntry.count > 1) {
-          await discountModel.updateOne({ _id: new ObjectId(discountId) as any, "customerIds.id": new ObjectId(customerId) as any }, { $inc: { "customerIds.$.count": -1, usedCount: -1 } });
-        } else {
-          await discountModel.updateOne({ _id: new ObjectId(discountId) as any }, { $pull: { customerIds: { id: new ObjectId(customerId) as any } }, $inc: { usedCount: -1 } });
-        }
-      } else {
-        await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: -1 } });
-      }
-    } else {
-      await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: -1 } });
-    }
+    // Decrement usage logic removed (now handled in order flows)
+
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Discount removed successfully", {}, {}));
   } catch (error) {
