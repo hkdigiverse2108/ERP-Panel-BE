@@ -431,7 +431,7 @@ export const getSalesOrderDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { customerId, status, search, companyFilter } = req.query; // Optional filters
+    const { customerId, statusFilter, search, companyFilter } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -445,11 +445,8 @@ export const getSalesOrderDropdown = async (req, res) => {
       criteria.customerId = customerId;
     }
 
-    if (status) {
-      criteria.status = status;
-    } else {
-      // Default: only show pending orders
-      criteria.status = "pending";
+    if (statusFilter) {
+      criteria.status = statusFilter;
     }
 
     if (search) {
