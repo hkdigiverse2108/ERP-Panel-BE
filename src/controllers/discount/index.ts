@@ -305,6 +305,7 @@ export const getDropdownDiscount = async (req, res) => {
     const projection = {
       discountCode: 1,
       title: 1,
+      autoApply: 1,
       // discountMode: 1,
       // discountType: 1,
       // discountValue: 1,
