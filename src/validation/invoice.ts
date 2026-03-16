@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { objectId, transactionSummarySchema, commonAdditionalChargeSchema } from "./common";
+import { objectId, transactionSummarySchema, commonAdditionalChargeSchema, baseApiSchema } from "./common";
 import { INVOICE_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE, INVOICE_CREATED_FROM, PAY_TYPE } from "../common";
 
 const invoiceItemSchema = Joi.object().keys({
@@ -19,7 +19,7 @@ const invoiceItemSchema = Joi.object().keys({
 });
 
 export const addInvoiceSchema = Joi.object().keys({
-  invoiceNo: Joi.string().optional(), // Auto-generated if not provided
+  // invoiceNo: Joi.string().optional(), // Auto-generated if not provided
   date: Joi.date().required(),
   dueDate: Joi.date().required(),
   customerId: objectId().required(),
@@ -28,6 +28,7 @@ export const addInvoiceSchema = Joi.object().keys({
   placeOfSupply: Joi.string().optional().allow("", null),
   billingAddress: objectId().optional().allow("", null),
   shippingAddress: objectId().optional().allow("", null),
+  reverseCharge: Joi.boolean().optional().allow("", null),
   paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional().allow("", null),
   createdFrom: Joi.string().valid(...Object.values(INVOICE_CREATED_FROM)).optional().allow("", null),
   taxType: Joi.string().valid(...Object.values(TAX_TYPE)).optional().allow("", null),
@@ -43,6 +44,7 @@ export const addInvoiceSchema = Joi.object().keys({
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().optional().allow("", null),
   status: Joi.string().valid(...Object.values(INVOICE_STATUS)).default(INVOICE_STATUS.INVOICED).optional(),
+  ...baseApiSchema
 });
 
 export const editInvoiceSchema = Joi.object().keys({
@@ -55,6 +57,7 @@ export const editInvoiceSchema = Joi.object().keys({
   salesOrderIds: Joi.array().items(objectId()).optional(),
   deliveryChallanIds: Joi.array().items(objectId()).optional(),
   placeOfSupply: Joi.string().optional().allow("", null),
+  reverseCharge: Joi.boolean().optional().allow("", null),
   billingAddress: objectId().optional().allow("", null),
   shippingAddress: objectId().optional().allow("", null),
   paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional().allow("", null),
@@ -72,6 +75,7 @@ export const editInvoiceSchema = Joi.object().keys({
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().optional().allow("", null),
   status: Joi.string().valid(...Object.values(INVOICE_STATUS)).optional(),
+  ...baseApiSchema
 });
 
 export const deleteInvoiceSchema = Joi.object().keys({
