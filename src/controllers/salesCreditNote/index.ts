@@ -232,7 +232,7 @@ export const getAllSalesCreditNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, statusFilter, startDate, endDate } = req.query;
+    let { page, limit, search, activeFilter, companyFilter, statusFilter, startDate, endDate, customerFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -254,6 +254,10 @@ export const getAllSalesCreditNote = async (req, res) => {
 
     if (statusFilter) {
       criteria.status = statusFilter;
+    }
+
+    if (customerFilter) {
+      criteria.customerId = customerFilter;
     }
 
     applyDateFilter(criteria, startDate as string, endDate as string, "creditNoteDate");
