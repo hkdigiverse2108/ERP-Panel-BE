@@ -287,7 +287,7 @@ export const getAllDeliveryChallan = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = await checkCompany(user, res);
-    let { page, limit, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter , customerFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -301,14 +301,18 @@ export const getAllDeliveryChallan = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
+    if (customerFilter) {
+      criteria.customerId = customerFilter;
+    }
+
     if (search) {
       criteria.$or = [{ deliveryChallanNo: { $regex: search, $options: "si" } }];
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
-    if (status) {
-      criteria.status = status;
+    if (statusFilter) {
+      criteria.status = statusFilter;
     }
 
     applyDateFilter(criteria, startDate as string, endDate as string, "date");

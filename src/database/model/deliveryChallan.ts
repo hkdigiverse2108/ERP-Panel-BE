@@ -37,6 +37,7 @@ const deliveryChallanSchema = new Schema<IDeliveryChallan>(
     reverseCharge: { type: Boolean, default: false },
     status: { type: String, enum: Object.values(DELIVERY_CHALLAN_STATUS), default: DELIVERY_CHALLAN_STATUS.DELIVERED },
     termsAndConditionIds: { type: [Schema.Types.ObjectId], ref: 'terms-condition' },
+    notes: { type: String },
   },
   baseSchemaOptions,
 );
