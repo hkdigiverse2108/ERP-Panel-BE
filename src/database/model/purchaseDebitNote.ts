@@ -24,6 +24,7 @@ export interface IpurchaseDebitNote {
   additionalCharges: any[];
 
   termsAndConditionIds: Schema.Types.ObjectId[];
+  exportSez: string;
   notes?: string;
   shippingDetails?: {
     shippingType?: string;
@@ -57,6 +58,7 @@ export const purchaseDebitNoteItemSchema = new Schema(
     discount2: { type: Number, default: 0, min: 0 },
     tax: { type: Number, min: 0 },
     taxId: { type: Schema.Types.ObjectId, ref: "tax" },
+    qty: { type: Number, min: 1 },
     landingCost: { type: Number, min: 0 },
     margin: { type: Number, min: 0 },
     total: { type: Number, min: 0 },
@@ -85,6 +87,7 @@ const purchaseDebitNoteSchema = new Schema<IpurchaseDebitNote>(
       type: Schema.Types.ObjectId,
       ref: "purchase-order",
     },
+    exportSez: { type: String },
     reverseCharge: { type: Boolean, default: false },
     reason: { type: String },
     productDetails: [purchaseDebitNoteItemSchema],
