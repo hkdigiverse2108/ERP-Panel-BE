@@ -34,19 +34,14 @@ export const addPurchaseDebitNoteSchema = Joi.object({
   reverseCharge: Joi.boolean().default(false),
   reason: Joi.string().allow("").optional(),
 
-  productDetails: Joi.object({
-    items: Joi.array().items(purchaseDebitNoteItemSchema).optional(),
-    totalQty: Joi.number().optional(),
-    totalTax: Joi.number().optional(),
-    totalAmount: Joi.number().optional(),
-  }).optional(),
+  productDetails: Joi.array().items(purchaseDebitNoteItemSchema).optional(),
 
-  additionalCharges: Joi.object({
-    items: Joi.array().items(commonAdditionalChargeSchema).optional(),
-    total: Joi.number().optional(),
-  }).optional(),
+  additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
+
+  notes: Joi.string().allow("").optional(),
+
   shippingDetails: commonShippingSchema.optional(),
   summary: transactionSummarySchema.optional(),
 
@@ -74,19 +69,14 @@ export const editPurchaseDebitNoteSchema = Joi.object({
   reverseCharge: Joi.boolean().optional(),
   reason: Joi.string().allow("").optional(),
 
-  productDetails: Joi.object({
-    items: Joi.array().items(purchaseDebitNoteItemSchema).optional(),
-    totalQty: Joi.number().optional(),
-    totalTax: Joi.number().optional(),
-    totalAmount: Joi.number().optional(),
-  }).optional(),
+  productDetails: Joi.array().items(purchaseDebitNoteItemSchema).optional(),
 
-  additionalCharges: Joi.object({
-    items: Joi.array().items(commonAdditionalChargeSchema).optional(),
-    total: Joi.number().optional(),
-  }).optional(),
+  additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
+
+  notes: Joi.string().allow("").optional(),
+
   shippingDetails: commonShippingSchema.optional(),
   summary: transactionSummarySchema.optional(),
 
