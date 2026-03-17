@@ -431,6 +431,20 @@ const getQualifyingItems = async (discount: any, items: any[]) => {
     qualifyingItems = qualifyingItems.filter((item: any) => !(item.discountAmount > 0));
   }
 
+  // Ensure reward products for BUY_X_GET_Y are included if they are in the cart
+  if (discount.discountMode === DISCOUNT_MODE.BUY_X_GET_Y && discount.buyXGetY?.getProductIds?.length > 0) {
+    const rewardProductIdSet = new Set(discount.buyXGetY.getProductIds.map((id: any) => id.toString()));
+    const rewardItemsInCart = items.filter((item: any) => rewardProductIdSet.has(item.productId?.toString()));
+
+    // Add reward items if they are not already in qualifyingItems
+    const existingQualifyingIds = new Set(qualifyingItems.map((item: any) => item.productId?.toString()));
+    for (const rewardItem of rewardItemsInCart) {
+      if (!existingQualifyingIds.has(rewardItem.productId?.toString())) {
+        qualifyingItems.push(rewardItem);
+      }
+    }
+  }
+
   return qualifyingItems;
 };
 
@@ -472,16 +486,43 @@ const calculateDiscountAmount = (discount: any, qualifyingItems: any[], totalAmo
   } else if (discount.discountMode === DISCOUNT_MODE.BUY_X_GET_Y) {
     const bxgy = discount.buyXGetY;
     if (bxgy) {
-      for (const item of qualifyingItems) {
-        const qty = item.qty || 0;
-        if (qty >= bxgy.buyQty) {
-          const freeQty = Math.floor(qty / bxgy.buyQty) * bxgy.getQty;
+      const totalQualifyingQty = qualifyingItems.reduce((sum, item) => sum + (item.qty || 0), 0);
+      const numSets = Math.floor(totalQualifyingQty / bxgy.buyQty);
+      let totalGetQty = numSets * bxgy.getQty;
+
+      if (totalGetQty > 0) {
+        let potentialRewardItems = [];
+
+        if (bxgy.getProductIds && bxgy.getProductIds.length > 0) {
+          // Discount applies to specific products in the cart
+          const rewardProductIdSet = new Set(bxgy.getProductIds.map((id: any) => id.toString()));
+          // Important: reward items must be in the original items list, not just qualifyingItems
+          // However, qualifyingItems usually already includes relevant items. 
+          // Let's assume reward items should also be from the list of items provided (passed through qualifyingItems logic or similar)
+          // Actually, let's use all items from qualifyingItems if they match rewardProductIdSet
+          potentialRewardItems = qualifyingItems.filter((item: any) => rewardProductIdSet.has(item.productId?.toString()));
+        } else {
+          // Discount applies to the same items that qualified
+          potentialRewardItems = [...qualifyingItems];
+        }
+
+        // Sort by price (ascending) to apply discount to cheapest items first (standard practice)
+        potentialRewardItems.sort((a, b) => (a.mrp || a.unitCost || 0) - (b.mrp || b.unitCost || 0));
+
+        let appliedGetQty = 0;
+        for (const item of potentialRewardItems) {
+          if (appliedGetQty >= totalGetQty) break;
+
           const itemPrice = item.mrp || item.unitCost || 0;
+          const itemQtyAvailable = item.qty || 0;
+          const qtyToDiscount = Math.min(itemQtyAvailable, totalGetQty - appliedGetQty);
+
           if (bxgy.getDiscountType === VALUE_TYPE.PERCENTAGE) {
-            discountAmount += (itemPrice * freeQty * bxgy.getDiscountValue) / 100;
+            discountAmount += (itemPrice * qtyToDiscount * bxgy.getDiscountValue) / 100;
           } else {
-            discountAmount += freeQty * bxgy.getDiscountValue;
+            discountAmount += qtyToDiscount * bxgy.getDiscountValue;
           }
+          appliedGetQty += qtyToDiscount;
         }
       }
     }
@@ -547,6 +588,16 @@ export const verifyDiscount = async (req, res) => {
       finalAmount: (totalAmount || 0) - discountAmount,
     };
 
+    if (discount.discountMode === DISCOUNT_MODE.BUY_X_GET_Y && discount.buyXGetY) {
+      result.buyXGetY = {
+        buyQty: discount.buyXGetY.buyQty,
+        getQty: discount.buyXGetY.getQty,
+        getProductIds: discount.buyXGetY.getProductIds,
+        getDiscountType: discount.buyXGetY.getDiscountType,
+        getDiscountValue: discount.buyXGetY.getDiscountValue,
+      };
+    }
+
     if (discount.discountMode === DISCOUNT_MODE.PRODUCT_AT_FIX_AMOUNT && discount.productAtFixAmount) {
       const fixAmount = discount.productAtFixAmount;
       if ((totalAmount || 0) >= fixAmount.minimumAmount) {
@@ -604,7 +655,6 @@ export const applyDiscount = async (req, res) => {
 
 
     const result: any = {
-
       discountId: discount._id,
       title: discount.title,
       discountCode: discount.discountCode,
@@ -614,6 +664,16 @@ export const applyDiscount = async (req, res) => {
       qualifyingItemCount: qualifyingItems.length,
       finalAmount: (totalAmount || 0) - discountAmount,
     };
+
+    if (discount.discountMode === DISCOUNT_MODE.BUY_X_GET_Y && discount.buyXGetY) {
+      result.buyXGetY = {
+        buyQty: discount.buyXGetY.buyQty,
+        getQty: discount.buyXGetY.getQty,
+        getProductIds: discount.buyXGetY.getProductIds,
+        getDiscountType: discount.buyXGetY.getDiscountType,
+        getDiscountValue: discount.buyXGetY.getDiscountValue,
+      };
+    }
 
     if (discount.discountMode === DISCOUNT_MODE.PRODUCT_AT_FIX_AMOUNT && discount.productAtFixAmount) {
       const fixAmount = discount.productAtFixAmount;
