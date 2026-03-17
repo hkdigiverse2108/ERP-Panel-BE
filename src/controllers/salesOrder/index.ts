@@ -242,7 +242,7 @@ export const getAllSalesOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, status, startDate, endDate, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -260,8 +260,8 @@ export const getAllSalesOrder = async (req, res) => {
     }
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
-    if (status) {
-      criteria.status = status;
+    if (statusFilter) {
+      criteria.status = statusFilter;
     }
 
     applyDateFilter(criteria, startDate as string, endDate as string, "date");
@@ -431,7 +431,7 @@ export const getSalesOrderDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { customerId, status, search, companyFilter } = req.query; // Optional filters
+    const { customerId, statusFilter, search, companyFilter } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -445,11 +445,8 @@ export const getSalesOrderDropdown = async (req, res) => {
       criteria.customerId = customerId;
     }
 
-    if (status) {
-      criteria.status = status;
-    } else {
-      // Default: only show pending orders
-      criteria.status = "pending";
+    if (statusFilter) {
+      criteria.status = statusFilter;
     }
 
     if (search) {

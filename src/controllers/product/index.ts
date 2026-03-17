@@ -435,7 +435,7 @@ export const getProductDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       productModel,
       criteria,
-      { _id: 1, name: 1, productType: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1 },
+      { _id: 1, name: 1, productType: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, images: 1 },
       {
         sort: { name: 1 },
       },
@@ -459,6 +459,7 @@ export const getProductDropdown = async (req, res) => {
         isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
         isSalesTaxIncluding: stock?.isSalesTaxIncluding,
         uomId: stock?.uomId,
+        images: product.images ?? [],
       };
     });
 

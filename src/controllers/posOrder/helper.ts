@@ -1,5 +1,5 @@
 import { COUPON_DISCOUNT_TYPE, COUPON_STATUS, LOYALTY_TYPE, REDEEM_CREDIT_TYPE, POS_CREDIT_NOTE_STATUS, POS_PAYMENT_TYPE, REDEEM_CREDIT_MODEL } from "../../common";
-import { couponModel, loyaltyModel, posCreditNoteModel, PosPaymentModel } from "../../database";
+import { couponModel, discountModel, loyaltyModel, posCreditNoteModel, PosPaymentModel } from "../../database";
 import { getFirstMatch } from "../../helper";
 import mongoose from "mongoose";
 
@@ -259,6 +259,56 @@ export const revertLoyalty = async (loyaltyId: string, customerId: string) => {
     }
   } catch (error) {
     console.error("Error in revertLoyalty:", error);
+  }
+};
+
+export const applyPosDiscount = async (discountId: string, customerId: string | null) => {
+  try {
+    const discount = await getFirstMatch(discountModel, { _id: discountId, isDeleted: false }, {}, {});
+    if (!discount) {
+      return "Discount not found";
+    }
+
+    // Increment usage count and track customer
+    if (customerId) {
+      const customerEntry = discount.customerIds ? discount.customerIds.find((item: any) => item.id?.toString() === customerId.toString()) : null;
+      if (customerEntry) {
+        await discountModel.updateOne({ _id: discount._id, "customerIds.id": customerId as any }, { $inc: { "customerIds.$.count": 1, usedCount: 1 } });
+      } else {
+        await discountModel.updateOne({ _id: discount._id }, { $push: { customerIds: { id: customerId, count: 1 } }, $inc: { usedCount: 1 } });
+      }
+    } else {
+      await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: 1 } });
+    }
+
+    return "Discount applied successfully";
+  } catch (error) {
+    console.error("Error in applyPosDiscount:", error);
+    return error;
+  }
+};
+
+export const revertDiscount = async (discountId: string, customerId?: string) => {
+  try {
+    const discount = await getFirstMatch(discountModel, { _id: discountId }, {}, {});
+    if (!discount) return;
+
+    if (customerId) {
+      const customerEntry = discount.customerIds ? discount.customerIds.find((item: any) => item.id?.toString() === customerId.toString()) : null;
+      if (customerEntry) {
+        if (customerEntry.count > 1) {
+          await discountModel.updateOne({ _id: new ObjectId(discountId) as any, "customerIds.id": new ObjectId(customerId) as any }, { $inc: { "customerIds.$.count": -1, usedCount: -1 } });
+        } else {
+          await discountModel.updateOne({ _id: new ObjectId(discountId) as any }, { $pull: { customerIds: { id: new ObjectId(customerId) as any } }, $inc: { usedCount: -1 } });
+        }
+      } else {
+        await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: -1 } });
+      }
+    } else {
+      await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: -1 } });
+    }
+  } catch (error) {
+    console.error("Error in revertDiscount:", error);
   }
 };
 

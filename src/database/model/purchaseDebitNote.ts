@@ -19,17 +19,13 @@ export interface IpurchaseDebitNote {
   purchaseId?: Schema.Types.ObjectId;
   reverseCharge: boolean;
   reason?: string;
-  productDetails: {
-    items: any[];
-    totalQty: number;
-    totalTax: number;
-    totalAmount: number;
-  };
-  additionalCharges: {
-    items: any[];
-    total: number;
-  };
+  productDetails: any[];
+
+  additionalCharges: any[];
+
   termsAndConditionIds: Schema.Types.ObjectId[];
+  exportSez: string;
+  notes?: string;
   shippingDetails?: {
     shippingType?: string;
     shippingDate?: Date;
@@ -62,6 +58,7 @@ export const purchaseDebitNoteItemSchema = new Schema(
     discount2: { type: Number, default: 0, min: 0 },
     tax: { type: Number, min: 0 },
     taxId: { type: Schema.Types.ObjectId, ref: "tax" },
+    qty: { type: Number, min: 1 },
     landingCost: { type: Number, min: 0 },
     margin: { type: Number, min: 0 },
     total: { type: Number, min: 0 },
@@ -90,19 +87,13 @@ const purchaseDebitNoteSchema = new Schema<IpurchaseDebitNote>(
       type: Schema.Types.ObjectId,
       ref: "purchase-order",
     },
+    exportSez: { type: String },
     reverseCharge: { type: Boolean, default: false },
     reason: { type: String },
-    productDetails: {
-      items: [purchaseDebitNoteItemSchema],
-      totalQty: { type: Number },
-      totalTax: { type: Number },
-      totalAmount: { type: Number },
-    },
-    additionalCharges: {
-      items: [commonAdditionalChargeSchema],
-      total: { type: Number },
-    },
+    productDetails: [purchaseDebitNoteItemSchema],
+    additionalCharges: [commonAdditionalChargeSchema],
     termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
+    notes: { type: String },
     shippingDetails: commonShippingSchema,
     summary: transactionSummarySchema,
     status: {

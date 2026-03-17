@@ -18,6 +18,7 @@ const invoiceSchema = new Schema<IInvoice>({
     placeOfSupply: { type: String },
     billingAddress: { type: Schema.Types.ObjectId },
     shippingAddress: { type: Schema.Types.ObjectId },
+    reverseCharge: { type: Boolean, default: false },
     paymentTerms: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
     createdFrom: { type: String, enum: Object.values(INVOICE_CREATED_FROM) },
     salesOrderIds: [{ type: Schema.Types.ObjectId, ref: 'sales-order' }],

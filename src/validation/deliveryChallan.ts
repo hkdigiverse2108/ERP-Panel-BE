@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { commonAdditionalChargeSchema, objectId, transactionSummarySchema } from "./common";
+import { baseApiSchema, commonAdditionalChargeSchema, objectId, transactionSummarySchema } from "./common";
 import { DELIVERY_CHALLAN_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE } from "../common";
 
 const deliveryChallanItemSchema = Joi.object().keys({
@@ -36,7 +36,9 @@ export const addDeliveryChallanSchema = Joi.object().keys({
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   items: Joi.array().items(deliveryChallanItemSchema).min(1).required(),
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
+  notes: Joi.string().optional().allow("", null),
   status: Joi.string().valid(...Object.values(DELIVERY_CHALLAN_STATUS)).default(DELIVERY_CHALLAN_STATUS.DELIVERED),
+  ...baseApiSchema
 });
 
 export const editDeliveryChallanSchema = Joi.object().keys({
@@ -56,7 +58,9 @@ export const editDeliveryChallanSchema = Joi.object().keys({
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
   items: Joi.array().items(deliveryChallanItemSchema).optional(),
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
+  notes: Joi.string().optional().allow("", null),
   status: Joi.string().valid(...Object.values(DELIVERY_CHALLAN_STATUS)).default(DELIVERY_CHALLAN_STATUS.DELIVERED),
+  ...baseApiSchema
 });
 
 export const deleteDeliveryChallanSchema = Joi.object().keys({

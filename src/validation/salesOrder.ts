@@ -4,6 +4,7 @@ import {
   transactionSummarySchema,
   commonAdditionalChargeSchema,
   commonShippingSchema,
+  baseApiSchema,
 } from "./common";
 import { PAYMENT_TERMS_ENUM, SALES_ORDER_STATUS, TAX_TYPE } from "../common";
 
@@ -50,6 +51,8 @@ export const addSalesOrderSchema = Joi.object().keys({
     .optional(),
   shippingDetails: commonShippingSchema.optional(),
   notes: Joi.string().optional().allow("", null),
+  reverseCharge: Joi.boolean().optional(),
+  ...baseApiSchema,
 });
 
 export const editSalesOrderSchema = Joi.object().keys({
@@ -79,6 +82,8 @@ export const editSalesOrderSchema = Joi.object().keys({
     .optional(),
   shippingDetails: commonShippingSchema.optional(),
   notes: Joi.string().optional().allow("", null),
+  reverseCharge: Joi.boolean().optional(),
+  ...baseApiSchema,
 });
 
 export const deleteSalesOrderSchema = Joi.object().keys({

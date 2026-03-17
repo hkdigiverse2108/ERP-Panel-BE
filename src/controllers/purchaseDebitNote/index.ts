@@ -56,8 +56,8 @@ export const addPurchaseDebitNote = async (req, res) => {
     }
 
     // Validate items
-    if (value?.productDetails?.items && value?.productDetails?.items?.length > 0) {
-      for (const item of value?.productDetails.items) {
+    if (value?.productDetails && value?.productDetails?.length > 0) {
+      for (const item of value?.productDetails) {
         if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
         if (item?.uomId && !(await checkIdExist(uomModel, item?.uomId, "UOM", res))) return;
         if (item?.taxId && !(await checkIdExist(taxModel, item?.taxId, "Tax", res))) return;
@@ -65,8 +65,8 @@ export const addPurchaseDebitNote = async (req, res) => {
     }
 
     // Validate additional charges
-    if (value?.additionalCharges?.items && value?.additionalCharges?.items?.length > 0) {
-      for (const item of value.additionalCharges?.items) {
+    if (value?.additionalCharges && value?.additionalCharges?.length > 0) {
+      for (const item of value.additionalCharges) {
         if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
         if (item?.taxId && !(await checkIdExist(taxModel, item?.taxId, "Tax", res))) return;
       }
@@ -159,8 +159,8 @@ export const editPurchaseDebitNote = async (req, res) => {
     }
 
     // Validate items
-    if (value?.productDetails?.items && value?.productDetails?.items?.length > 0) {
-      for (const item of value?.productDetails.items) {
+    if (value?.productDetails && value?.productDetails?.length > 0) {
+      for (const item of value?.productDetails) {
         if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
         if (item?.uomId && !(await checkIdExist(uomModel, item?.uomId, "UOM", res))) return;
         if (item?.taxId && !(await checkIdExist(taxModel, item?.taxId, "Tax", res))) return;
@@ -168,8 +168,8 @@ export const editPurchaseDebitNote = async (req, res) => {
     }
 
     // Validate additional charges
-    if (value?.additionalCharges?.items && value?.additionalCharges?.items?.length > 0) {
-      for (const item of value.additionalCharges?.items) {
+    if (value?.additionalCharges && value?.additionalCharges?.length > 0) {
+      for (const item of value.additionalCharges) {
         if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
         if (item?.taxId && !(await checkIdExist(taxModel, item?.taxId, "Tax", res))) return;
       }
@@ -265,13 +265,13 @@ export const getAllPurchaseDebitNote = async (req, res) => {
         },
         { path: "purchaseId", select: "purchaseNo" },
         {
-          path: "productDetails.items.productId",
+          path: "productDetails.productId",
           select: "name itemCode purchasePrice",
         },
-        { path: "productDetails.items.uomId", select: "name" },
-        { path: "productDetails.items.taxId", select: "name percentage" },
-        { path: "additionalCharges.items.chargeId", select: "name type" },
-        { path: "additionalCharges.items.taxId", select: "name percentage" },
+        { path: "productDetails.uomId", select: "name" },
+        { path: "productDetails.taxId", select: "name percentage" },
+        { path: "additionalCharges.chargeId", select: "name type" },
+        { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "companyId", select: "name" },
 
       ],
@@ -359,13 +359,13 @@ export const getOnePurchaseDebitNote = async (req, res) => {
           },
           { path: "purchaseId", select: "purchaseNo" },
           {
-            path: "productDetails.items.productId",
+            path: "productDetails.productId",
             select: "name itemCode purchasePrice hsn gst",
           },
-          { path: "productDetails.items.uomId", select: "name" },
-          { path: "productDetails.items.taxId", select: "name percentage" },
-          { path: "additionalCharges.items.chargeId", select: "name type" },
-          { path: "additionalCharges.items.taxId", select: "name percentage" },
+          { path: "productDetails.uomId", select: "name" },
+          { path: "productDetails.taxId", select: "name percentage" },
+          { path: "additionalCharges.chargeId", select: "name type" },
+          { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "companyId", select: "name gstNo" },
         ],
       },
