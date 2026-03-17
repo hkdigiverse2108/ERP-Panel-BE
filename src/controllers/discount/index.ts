@@ -53,11 +53,18 @@ export const addDiscount = async (req, res) => {
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
+    // chnage other with auto apply true to false
+    if (value.autoApply) {
+      await discountModel.updateMany({ companyId: value.companyId, autoApply: true }, { autoApply: false });
+    }
+
     const response = await createOne(discountModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
+
+
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Discount"), response, {}));
   } catch (error) {
@@ -105,6 +112,11 @@ export const editDiscount = async (req, res) => {
     }
 
     value.updatedBy = user?._id || null;
+
+    // chnage other with auto apply true to false
+    if (value.autoApply) {
+      await discountModel.updateMany({ companyId: isExist?.companyId, autoApply: true }, { autoApply: false });
+    }
 
     const response = await updateData(discountModel, { _id: value?.discountId }, value, {});
 
