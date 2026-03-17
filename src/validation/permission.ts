@@ -23,7 +23,7 @@ const modulePermissionSchema = Joi.object().keys({
   edit: Joi.boolean().default(false).optional(),
   view: Joi.boolean().default(false).optional(),
   delete: Joi.boolean().default(false).optional(),
-  isActive: Joi.boolean().default(false).optional(),
+  // isActive: Joi.boolean().default(false).optional(),
 }).unknown(true);
 
 export const editPermissionSchema = Joi.object().keys({

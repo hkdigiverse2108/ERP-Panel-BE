@@ -22,7 +22,7 @@ export const edit_permission_by_id = async (req, res) => {
             edit: roleDetails.edit,
             view: roleDetails.view,
             delete: roleDetails.delete,
-            isActive: roleDetails.isActive,
+            // isActive: roleDetails.isActive,
           }
         },
         upsert: true
