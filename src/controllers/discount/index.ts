@@ -601,7 +601,7 @@ export const verifyDiscount = async (req, res) => {
     };
 
     if (discount.discountMode === DISCOUNT_MODE.BUY_X_GET_Y && discount.buyXGetY) {
-      result.buyXGetY = {
+      result.freeProducts = {
         buyQty: discount.buyXGetY.buyQty,
         getQty: discount.buyXGetY.getQty,
         getProductIds: discount.buyXGetY.getProductIds,
@@ -678,7 +678,7 @@ export const applyDiscount = async (req, res) => {
     };
 
     if (discount.discountMode === DISCOUNT_MODE.BUY_X_GET_Y && discount.buyXGetY) {
-      result.buyXGetY = {
+      result.freeProducts = {
         buyQty: discount.buyXGetY.buyQty,
         getQty: discount.buyXGetY.getQty,
         getProductIds: discount.buyXGetY.getProductIds,
