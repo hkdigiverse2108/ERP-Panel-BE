@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { taxModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, checkCompany } from "../../helper";
 import { addTaxSchema, deleteTaxSchema, editTaxSchema, getTaxSchema } from "../../validation";
 
 export const addTax = async (req, res) => {
@@ -11,11 +11,14 @@ export const addTax = async (req, res) => {
     const { error, value } = addTaxSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
+    value.companyId = await checkCompany(user, value);
+
     let existingTax = await getFirstMatch(
       taxModel,
       {
         isDeleted: false,
         name: value.name,
+        companyId: value.companyId ?? null,
       },
       {},
       {},
@@ -51,6 +54,10 @@ export const editTax = async (req, res) => {
 
     if (!existingTax) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Tax"), {}, {}));
 
+    if (!existingTax.companyId && user?.userType !== USER_TYPES.SUPER_ADMIN) {
+      return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+    }
+
     // Check if another Tax with same name already exists (excluding current one)
     if (value.name) {
       let duplicateTax = await getFirstMatch(
@@ -59,6 +66,7 @@ export const editTax = async (req, res) => {
           _id: { $ne: value?.taxId },
           isDeleted: false,
           name: value.name,
+          companyId: existingTax.companyId ?? null,
         },
         {},
         {},
@@ -94,6 +102,10 @@ export const deleteTax = async (req, res) => {
 
     if (!existingTax) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Tax"), {}, {}));
 
+    if (!existingTax.companyId && user?.userType !== USER_TYPES.SUPER_ADMIN) {
+      return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
+    }
+
     const payload = {
       updatedBy: user?._id || null,
       isDeleted: true,
@@ -113,18 +125,19 @@ export const deleteTax = async (req, res) => {
 export const getAllTax = async (req, res) => {
   reqInfo(req);
   try {
-    let { page, limit, search, activeFilter, typeFilter } = req.query;
+    let { page, limit, search, activeFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
+    const { user } = req.headers;
     let criteria: any = { isDeleted: false };
 
-    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
-
-    if (typeFilter) {
-      criteria.type = typeFilter;
+    if (user?.userType !== USER_TYPES.SUPER_ADMIN) {
+      criteria.$or = [{ companyId: null }, { companyId: user?.companyId }];
     }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }];
@@ -132,6 +145,10 @@ export const getAllTax = async (req, res) => {
 
     const options: any = {
       sort: { name: 1 },
+      populate: [
+        { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
+      ],
       skip: (page - 1) * limit,
       limit,
     };
@@ -161,7 +178,24 @@ export const getTaxById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const response = await getFirstMatch(taxModel, { _id: value?.id, isDeleted: false }, {}, {});
+    const { user } = req.headers;
+    let criteria: any = { _id: value?.id, isDeleted: false };
+
+    if (user?.userType !== USER_TYPES.SUPER_ADMIN) {
+      criteria.$or = [{ companyId: null }, { companyId: user?.companyId }];
+    }
+
+    const response = await getFirstMatch(
+      taxModel,
+      criteria,
+      {},
+      {
+        populate: [
+          { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
+        ],
+      },
+    );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Tax"), {}, {}));
 
@@ -175,18 +209,17 @@ export const getTaxById = async (req, res) => {
 export const getTaxDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    const { type } = req.query; // Optional filter by type (purchase/sales)
-
+    const { user } = req.headers;
     let criteria: any = { isDeleted: false, isActive: true };
 
-    if (type) {
-      criteria.type = type;
+    if (user?.userType !== USER_TYPES.SUPER_ADMIN) {
+      criteria.$or = [{ companyId: null }, { companyId: user?.companyId }];
     }
 
     const response = await getDataWithSorting(
       taxModel,
       criteria,
-      { _id: 1, name: 1, percentage: 1, type: 1 },
+      { _id: 1, name: 1, percentage: 1 },
       {
         sort: { name: 1 },
       },
@@ -196,7 +229,6 @@ export const getTaxDropdown = async (req, res) => {
       _id: item._id,
       name: item.name,
       percentage: item.percentage,
-      type: item.type,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Tax"), dropdownData, {}));

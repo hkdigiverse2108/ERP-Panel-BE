@@ -1,10 +1,10 @@
 import mongoose, { Schema } from "mongoose";
-import { baseCommonFields, baseSchemaOptions } from "./base";
+import { baseSchemaFields, baseSchemaOptions } from "./base";
 import { ITax } from "../../types";
 
 const taxSchema = new Schema<ITax>(
   {
-    ...baseCommonFields,
+    ...baseSchemaFields,
     name: { type: String },
     percentage: { type: Number },
   },
