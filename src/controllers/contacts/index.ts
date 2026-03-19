@@ -242,7 +242,7 @@ export const getContactDropdown = async (req, res) => {
     }
 
     if (companyFilter) {
-      criteria.companyId = companyFilter;
+      criteria.companyId = new ObjectId(companyFilter);
     }
 
     // Filter by contact type
