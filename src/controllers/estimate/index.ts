@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, ESTIMATE_STATUS } from "../../common";
 import { contactModel, EstimateModel, productModel, taxModel, termsConditionModel, uomModel, additionalChargeModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { generateSequenceNumber } from "../../helper/generateSequenceNumber";
@@ -226,7 +226,7 @@ export const getAllEstimate = async (req, res) => {
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
-      criteria.companyId = companyId;
+      criteria.companyId = new ObjectId(companyId);
     }
 
     if (activeFilter) {
@@ -234,11 +234,11 @@ export const getAllEstimate = async (req, res) => {
     }
 
     if (companyFilter) {
-      criteria.companyId = companyFilter;
+      criteria.companyId = new ObjectId(companyFilter);
     }
 
     if (customerFilter) {
-      criteria.customerId = customerFilter;
+      criteria.customerId = new ObjectId(customerFilter);
     }
 
     if (statusFilter) {
@@ -314,6 +314,31 @@ export const getAllEstimate = async (req, res) => {
       return estObj;
     });
 
+    // Aggregation for summary statistics
+    const statsCriteria: any = { isDeleted: false };
+    if (criteria.companyId) {
+      statsCriteria.companyId = criteria.companyId;
+    }
+
+    const summaryResults = await EstimateModel.aggregate([
+      { $match: statsCriteria },
+      {
+        $facet: {
+          allEstimates: [{ $count: "count" }],
+          pending: [{ $match: { status: ESTIMATE_STATUS.PENDING } }, { $count: "count" }],
+          orderCreated: [{ $match: { status: ESTIMATE_STATUS.ORDER_CREATED } }, { $count: "count" }],
+          invoiceCreated: [{ $match: { status: ESTIMATE_STATUS.INVOICE_CREATED } }, { $count: "count" }],
+        },
+      },
+    ]);
+
+    const summary = {
+      allEstimates: summaryResults[0].allEstimates[0]?.count || 0,
+      pending: summaryResults[0].pending[0]?.count || 0,
+      orderCreated: summaryResults[0].orderCreated[0]?.count || 0,
+      invoiceCreated: summaryResults[0].invoiceCreated[0]?.count || 0,
+    };
+
     const totalData = await countData(EstimateModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -324,7 +349,7 @@ export const getAllEstimate = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Estimate"), { estimate_data: response, totalData, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Estimate"), { estimate_data: response, totalData, summary, state }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

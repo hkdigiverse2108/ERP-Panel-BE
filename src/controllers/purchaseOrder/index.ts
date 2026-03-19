@@ -173,15 +173,15 @@ export const getAllPurchaseOrder = async (req, res) => {
     let criteria: any = { isDeleted: false };
 
     if (companyId) {
-      criteria.companyId = companyId;
+      criteria.companyId = new ObjectId(companyId);
     }
 
     if (companyFilter) {
-      criteria.companyId = companyFilter;
+      criteria.companyId = new ObjectId(companyFilter);
     }
 
     if (supplierFilter) {
-      criteria.supplierId = supplierFilter;
+      criteria.supplierId = new ObjectId(supplierFilter);
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -249,6 +249,36 @@ export const getAllPurchaseOrder = async (req, res) => {
       }
       return poObj;
     });
+
+    // Aggregation for summary statistics
+    const statsCriteria: any = { isDeleted: false };
+    if (criteria.companyId) {
+      statsCriteria.companyId = criteria.companyId;
+    }
+
+    const summaryResults = await purchaseOrderModel.aggregate([
+      { $match: statsCriteria },
+      {
+        $facet: {
+          allOrders: [{ $count: "count" }],
+          inProgress: [{ $match: { status: ORDER_STATUS.IN_PROGRESS } }, { $count: "count" }],
+          delivered: [{ $match: { status: ORDER_STATUS.DELIVERED } }, { $count: "count" }],
+          exceed: [{ $match: { status: ORDER_STATUS.EXCEED } }, { $count: "count" }],
+          completed: [{ $match: { status: ORDER_STATUS.COMPLETED } }, { $count: "count" }],
+          cancelled: [{ $match: { status: ORDER_STATUS.CANCELLED } }, { $count: "count" }],
+        },
+      },
+    ]);
+
+    const summary = {
+      allOrders: summaryResults[0].allOrders[0]?.count || 0,
+      inProgress: summaryResults[0].inProgress[0]?.count || 0,
+      delivered: summaryResults[0].delivered[0]?.count || 0,
+      exceed: summaryResults[0].exceed[0]?.count || 0,
+      completed: summaryResults[0].completed[0]?.count || 0,
+      cancelled: summaryResults[0].cancelled[0]?.count || 0,
+    };
+
     const totalData = await countData(purchaseOrderModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -259,7 +289,8 @@ export const getAllPurchaseOrder = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Order"), { purchaseOrder_data: response, state, totalData }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Order"), { purchaseOrder_data: response, state, totalData, summary }, {}));
+
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
