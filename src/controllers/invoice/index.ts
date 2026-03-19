@@ -336,7 +336,7 @@ export const getAllInvoice = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, status, paymentStatus, startDate, endDate } = req.query;
+    let { page, limit, search, activeFilter, companyFilter, status, paymentStatus, startDate, endDate, customerFilter, statusFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -348,6 +348,14 @@ export const getAllInvoice = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (customerFilter) {
+      criteria.customerId = customerFilter;
+    }
+
+    if (statusFilter) {
+      criteria.status = statusFilter;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
