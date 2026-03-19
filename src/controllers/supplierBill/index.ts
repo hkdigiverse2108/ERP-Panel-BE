@@ -204,7 +204,7 @@ export const getAllSupplierBill = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, statusFilter, paymentStatus, startDate, endDate } = req.query;
+    let { page, limit, search, activeFilter, companyFilter, statusFilter, paymentStatus, startDate, endDate, supplierFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -216,6 +216,10 @@ export const getAllSupplierBill = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (supplierFilter) {
+      criteria.supplierId = supplierFilter;
     }
 
     if (search) {
