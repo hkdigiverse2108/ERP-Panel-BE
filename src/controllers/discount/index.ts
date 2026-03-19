@@ -65,8 +65,6 @@ export const addDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
-
-
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Discount"), response, {}));
   } catch (error) {
     console.error(error);
@@ -174,20 +172,17 @@ export const getAllDiscount = async (req, res) => {
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
-      criteria.companyId = companyId;
+      criteria.companyId = new ObjectId(companyId);
     }
 
     if (companyFilter) {
-      criteria.companyId = companyFilter;
+      criteria.companyId = new ObjectId(companyFilter);
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [
-        { title: { $regex: search, $options: "si" } },
-        { discountCode: { $regex: search, $options: "si" } },
-      ];
+      criteria.$or = [{ title: { $regex: search, $options: "si" } }, { discountCode: { $regex: search, $options: "si" } }];
     }
 
     if (status) {
@@ -211,9 +206,7 @@ export const getAllDiscount = async (req, res) => {
       const end = new Date(endDateTime as string);
       if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
         criteria.startDateTime = { $lte: end };
-        criteria.$and = [
-          { $or: [{ endDateTime: { $gte: start } }, { endDateTime: null }, { hasEndDate: false }] },
-        ];
+        criteria.$and = [{ $or: [{ endDateTime: { $gte: start } }, { endDateTime: null }, { hasEndDate: false }] }];
       }
     }
 
@@ -295,8 +288,6 @@ export const getAllDiscount = async (req, res) => {
     // ----------------------------
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), { discount_data: enrichedResponse, totalData, state, ...summary }, {}));
-
-
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -338,7 +329,6 @@ export const getOneDiscount = async (req, res) => {
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), enrichedDiscount, {}));
-
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -364,10 +354,7 @@ export const getDropdownDiscount = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [
-        { title: { $regex: search, $options: "si" } },
-        { discountCode: { $regex: search, $options: "si" } },
-      ];
+      criteria.$or = [{ title: { $regex: search, $options: "si" } }, { discountCode: { $regex: search, $options: "si" } }];
     }
 
     if (status) {
@@ -391,9 +378,7 @@ export const getDropdownDiscount = async (req, res) => {
       const end = new Date(endDateTime as string);
       if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
         criteria.startDateTime = { $lte: end };
-        criteria.$and = [
-          { $or: [{ endDateTime: { $gte: start } }, { endDateTime: null }, { hasEndDate: false }] },
-        ];
+        criteria.$and = [{ $or: [{ endDateTime: { $gte: start } }, { endDateTime: null }, { hasEndDate: false }] }];
       }
     }
     // avoid most fields
@@ -592,7 +577,7 @@ const calculateDiscountAmount = (discount: any, qualifyingItems: any[], totalAmo
           // Discount applies to specific products in the cart
           const rewardProductIdSet = new Set(bxgy.getProductIds.map((id: any) => id.toString()));
           // Important: reward items must be in the original items list, not just qualifyingItems
-          // However, qualifyingItems usually already includes relevant items. 
+          // However, qualifyingItems usually already includes relevant items.
           // Let's assume reward items should also be from the list of items provided (passed through qualifyingItems logic or similar)
           // Actually, let's use all items from qualifyingItems if they match rewardProductIdSet
           potentialRewardItems = qualifyingItems.filter((item: any) => rewardProductIdSet.has(item.productId?.toString()));
@@ -748,7 +733,6 @@ export const applyDiscount = async (req, res) => {
 
     const discountAmount = calculateDiscountAmount(discount, qualifyingItems, totalAmount || 0);
 
-
     const result: any = {
       discountId: discount._id,
       title: discount.title,
@@ -806,7 +790,6 @@ export const removeDiscount = async (req, res) => {
     }
 
     // Decrement usage logic removed (now handled in order flows)
-
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Discount removed successfully", {}, {}));
   } catch (error) {
