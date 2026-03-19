@@ -15,18 +15,18 @@ export const addRecipe = async (req, res) => {
 
     value.companyId = await checkCompany(user, value);
 
-    // console.table(value);
-
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     value.number = await generateSequenceNumber(
       {
         model: recipeModel,
         prefix: "RC",
-        fieldName: "Recipe Number",
+        fieldName: "number",
         companyId: value.companyId,
       }
     );
+
+    console.log(value);
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
