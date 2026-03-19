@@ -262,8 +262,13 @@ export const getAllDiscount = async (req, res) => {
     };
 
     // --- Global Summary Stats ---
+    const statsCriteria: any = { discountId: { $ne: null }, isDeleted: false };
+    if (criteria.companyId) {
+      statsCriteria.companyId = criteria.companyId;
+    }
+
     const globalStats = await PosOrderModel.aggregate([
-      { $match: { companyId: criteria.companyId, discountId: { $ne: null }, isDeleted: false } },
+      { $match: statsCriteria },
       {
         $group: {
           _id: null,
@@ -274,7 +279,11 @@ export const getAllDiscount = async (req, res) => {
       },
     ]);
 
-    const activeDiscounts = await countData(discountModel, { companyId: criteria.companyId, status: "active", isDeleted: false });
+    const activeCriteria: any = { status: "active", isDeleted: false };
+    if (criteria.companyId) {
+      activeCriteria.companyId = criteria.companyId;
+    }
+    const activeDiscounts = await countData(discountModel, activeCriteria);
 
     const summary = {
       totalDiscounts: totalData,
