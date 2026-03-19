@@ -1,5 +1,6 @@
 import { apiResponse, HTTP_STATUS, DISCOUNT_MODE, DISCOUNT_APPLICABLE, DISCOUNT_APPLIES_TO, MINIMUM_REQUIREMENT, DISCOUNT_STATUS, VALUE_TYPE } from "../../common";
-import { discountModel, productModel } from "../../database";
+import { discountModel, productModel, PosOrderModel } from "../../database";
+
 import { checkCompany, checkIdExist, countData, createOne, findAllAndPopulate, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addDiscountSchema, deleteDiscountSchema, editDiscountSchema, getDiscountSchema, verifyDiscountSchema, applyDiscountSchema, removeDiscountSchema } from "../../validation";
 
@@ -223,6 +224,33 @@ export const getAllDiscount = async (req, res) => {
     };
 
     const response = await findAllAndPopulate(discountModel, criteria, {}, options, discountPopulate);
+
+    const discountIds = response.map((d: any) => d._id);
+    const stats = await PosOrderModel.aggregate([
+      { $match: { discountId: { $in: discountIds }, isDeleted: false } },
+      {
+        $group: {
+          _id: "$discountId",
+          orders: { $sum: 1 },
+          revenue: { $sum: "$totalAmount" },
+        },
+      },
+    ]);
+
+    const statsMap = stats.reduce((acc: any, curr: any) => {
+      acc[curr._id.toString()] = { orders: curr.orders, revenue: curr.revenue };
+      return acc;
+    }, {});
+
+    const enrichedResponse = response.map((d: any) => {
+      const s = statsMap[d._id.toString()] || { orders: 0, revenue: 0 };
+      return {
+        ...d,
+        orders: s.orders,
+        revenue: s.revenue,
+      };
+    });
+
     const totalData = await countData(discountModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -233,7 +261,33 @@ export const getAllDiscount = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), { discount_data: response, totalData, state }, {}));
+    // --- Global Summary Stats ---
+    const globalStats = await PosOrderModel.aggregate([
+      { $match: { companyId: criteria.companyId, discountId: { $ne: null }, isDeleted: false } },
+      {
+        $group: {
+          _id: null,
+          orderWithDiscounts: { $sum: 1 },
+          revenue: { $sum: "$totalAmount" },
+          discountGiven: { $sum: "$discountAmount" },
+        },
+      },
+    ]);
+
+    const activeDiscounts = await countData(discountModel, { companyId: criteria.companyId, status: "active", isDeleted: false });
+
+    const summary = {
+      totalDiscounts: totalData,
+      activeDiscounts,
+      orderWithDiscounts: globalStats[0]?.orderWithDiscounts || 0,
+      revenue: globalStats[0]?.revenue || 0,
+      discountGiven: globalStats[0]?.discountGiven || 0,
+    };
+    // ----------------------------
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), { discount_data: enrichedResponse, totalData, state, ...summary }, {}));
+
+
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -255,7 +309,27 @@ export const getOneDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Discount"), {}, {}));
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), response[0], {}));
+    const discount = response[0];
+    const stats = await PosOrderModel.aggregate([
+      { $match: { discountId: discount._id, isDeleted: false } },
+      {
+        $group: {
+          _id: "$discountId",
+          orders: { $sum: 1 },
+          revenue: { $sum: "$totalAmount" },
+        },
+      },
+    ]);
+
+    const s = stats[0] || { orders: 0, revenue: 0 };
+    const enrichedDiscount = {
+      ...discount,
+      orders: s.orders,
+      revenue: s.revenue,
+    };
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), enrichedDiscount, {}));
+
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
