@@ -22,8 +22,8 @@ const buyXGetYJoi = Joi.object({
   buyQty: Joi.number().integer().min(1).required(),
   getQty: Joi.number().integer().min(1).required(),
   getProductIds: Joi.array().items(objectId()).optional(),
-  getDiscountType: Joi.string().valid(...Object.values(VALUE_TYPE)).required(),
-  getDiscountValue: Joi.number().min(0).required(),
+  getDiscountType: Joi.string().valid(...Object.values(VALUE_TYPE)).optional().default(VALUE_TYPE.PERCENTAGE),
+  getDiscountValue: Joi.number().min(0).optional().default(100),
 });
 
 const productAtFixAmountJoi = Joi.object({
