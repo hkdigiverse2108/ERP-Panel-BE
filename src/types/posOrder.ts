@@ -22,4 +22,7 @@ export interface IPosOrder extends IBase {
   holdDate?: Date;
   notes?: string;
   invoiceId?: Schema.Types.ObjectId; // Linked invoice
+  discountId?: Schema.Types.ObjectId;
+  discountMode?: string;
+  freeProducts?: { productId: Schema.Types.ObjectId; qty: number; mrp: number }[];
 }

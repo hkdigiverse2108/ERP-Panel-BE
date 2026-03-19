@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, DISCOUNT_MODE, DISCOUNT_APPLICABLE, DISCOUNT_APPLIES_TO, MINIMUM_REQUIREMENT, DISCOUNT_STATUS, VALUE_TYPE } from "../../common";
 import { discountModel, productModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, findAllAndPopulate, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, findAllAndPopulate, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addDiscountSchema, deleteDiscountSchema, editDiscountSchema, getDiscountSchema, verifyDiscountSchema, applyDiscountSchema, removeDiscountSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -53,11 +53,18 @@ export const addDiscount = async (req, res) => {
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
+    // chnage other with auto apply true to false
+    if (value.autoApply) {
+      await discountModel.updateMany({ companyId: value.companyId, autoApply: true }, { autoApply: false });
+    }
+
     const response = await createOne(discountModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
+
+
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Discount"), response, {}));
   } catch (error) {
@@ -105,6 +112,11 @@ export const editDiscount = async (req, res) => {
     }
 
     value.updatedBy = user?._id || null;
+
+    // chnage other with auto apply true to false
+    if (value.autoApply) {
+      await discountModel.updateMany({ companyId: isExist?.companyId, autoApply: true }, { autoApply: false });
+    }
 
     const response = await updateData(discountModel, { _id: value?.discountId }, value, {});
 
@@ -250,6 +262,93 @@ export const getOneDiscount = async (req, res) => {
   }
 };
 
+export const getDropdownDiscount = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id;
+    let { search, status, startDateTime, endDateTime, activeFilter, companyFilter, discountMode, appliesTo, branchFilter } = req.query;
+
+    let criteria: any = { isDeleted: false };
+    if (companyId) {
+      criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
+    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+
+    if (search) {
+      criteria.$or = [
+        { title: { $regex: search, $options: "si" } },
+        { discountCode: { $regex: search, $options: "si" } },
+      ];
+    }
+
+    if (status) {
+      criteria.status = status;
+    }
+
+    if (discountMode) {
+      criteria.discountMode = discountMode;
+    }
+
+    if (appliesTo) {
+      criteria.appliesTo = appliesTo;
+    }
+
+    if (branchFilter) {
+      criteria.branchIds = new ObjectId(branchFilter);
+    }
+
+    if (startDateTime && endDateTime) {
+      const start = new Date(startDateTime as string);
+      const end = new Date(endDateTime as string);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        criteria.startDateTime = { $lte: end };
+        criteria.$and = [
+          { $or: [{ endDateTime: { $gte: start } }, { endDateTime: null }, { hasEndDate: false }] },
+        ];
+      }
+    }
+    // avoid most fields
+    const projection = {
+      discountCode: 1,
+      title: 1,
+      autoApply: 1,
+      // discountMode: 1,
+      // discountType: 1,
+      // discountValue: 1,
+      // appliesTo: 1,
+      // minimumRequirement: 1,
+      // minimumPurchaseAmount: 1,
+      // minimumQuantity: 1,
+      // branchIds: 1,
+      // customerIds: 1,
+      // productIds: 1,
+      // categoryIds: 1,
+      // brandIds: 1,
+      // customerGroupIds: 1,
+      // status: 1,
+      // isActive: 1,
+      // hasEndDate: 1,
+      // startDateTime: 1,
+      // endDateTime: 1,
+      // createdAt: 1,
+      // updatedAt: 1,
+    };
+
+    const response = await getData(discountModel, criteria, projection, {});
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
 // ─── Discount Eligibility Check (shared by verify & apply) ───
 
 const checkDiscountEligibility = async (discount: any, branchId: string, customerId: string | null, items: any[], totalAmount: number, totalQty: number) => {
@@ -344,6 +443,20 @@ const getQualifyingItems = async (discount: any, items: any[]) => {
     qualifyingItems = qualifyingItems.filter((item: any) => !(item.discountAmount > 0));
   }
 
+  // Ensure reward products for BUY_X_GET_Y are included if they are in the cart
+  if (discount.discountMode === DISCOUNT_MODE.BUY_X_GET_Y && discount.buyXGetY?.getProductIds?.length > 0) {
+    const rewardProductIdSet = new Set(discount.buyXGetY.getProductIds.map((id: any) => id.toString()));
+    const rewardItemsInCart = items.filter((item: any) => rewardProductIdSet.has(item.productId?.toString()));
+
+    // Add reward items if they are not already in qualifyingItems
+    const existingQualifyingIds = new Set(qualifyingItems.map((item: any) => item.productId?.toString()));
+    for (const rewardItem of rewardItemsInCart) {
+      if (!existingQualifyingIds.has(rewardItem.productId?.toString())) {
+        qualifyingItems.push(rewardItem);
+      }
+    }
+  }
+
   return qualifyingItems;
 };
 
@@ -385,16 +498,43 @@ const calculateDiscountAmount = (discount: any, qualifyingItems: any[], totalAmo
   } else if (discount.discountMode === DISCOUNT_MODE.BUY_X_GET_Y) {
     const bxgy = discount.buyXGetY;
     if (bxgy) {
-      for (const item of qualifyingItems) {
-        const qty = item.qty || 0;
-        if (qty >= bxgy.buyQty) {
-          const freeQty = Math.floor(qty / bxgy.buyQty) * bxgy.getQty;
+      const totalQualifyingQty = qualifyingItems.reduce((sum, item) => sum + (item.qty || 0), 0);
+      const numSets = Math.floor(totalQualifyingQty / bxgy.buyQty);
+      let totalGetQty = numSets * bxgy.getQty;
+
+      if (totalGetQty > 0) {
+        let potentialRewardItems = [];
+
+        if (bxgy.getProductIds && bxgy.getProductIds.length > 0) {
+          // Discount applies to specific products in the cart
+          const rewardProductIdSet = new Set(bxgy.getProductIds.map((id: any) => id.toString()));
+          // Important: reward items must be in the original items list, not just qualifyingItems
+          // However, qualifyingItems usually already includes relevant items. 
+          // Let's assume reward items should also be from the list of items provided (passed through qualifyingItems logic or similar)
+          // Actually, let's use all items from qualifyingItems if they match rewardProductIdSet
+          potentialRewardItems = qualifyingItems.filter((item: any) => rewardProductIdSet.has(item.productId?.toString()));
+        } else {
+          // Discount applies to the same items that qualified
+          potentialRewardItems = [...qualifyingItems];
+        }
+
+        // Sort by price (ascending) to apply discount to cheapest items first (standard practice)
+        potentialRewardItems.sort((a, b) => (a.mrp || a.unitCost || 0) - (b.mrp || b.unitCost || 0));
+
+        let appliedGetQty = 0;
+        for (const item of potentialRewardItems) {
+          if (appliedGetQty >= totalGetQty) break;
+
           const itemPrice = item.mrp || item.unitCost || 0;
+          const itemQtyAvailable = item.qty || 0;
+          const qtyToDiscount = Math.min(itemQtyAvailable, totalGetQty - appliedGetQty);
+
           if (bxgy.getDiscountType === VALUE_TYPE.PERCENTAGE) {
-            discountAmount += (itemPrice * freeQty * bxgy.getDiscountValue) / 100;
+            discountAmount += (itemPrice * qtyToDiscount * bxgy.getDiscountValue) / 100;
           } else {
-            discountAmount += freeQty * bxgy.getDiscountValue;
+            discountAmount += qtyToDiscount * bxgy.getDiscountValue;
           }
+          appliedGetQty += qtyToDiscount;
         }
       }
     }
@@ -460,6 +600,16 @@ export const verifyDiscount = async (req, res) => {
       finalAmount: (totalAmount || 0) - discountAmount,
     };
 
+    if (discount.discountMode === DISCOUNT_MODE.BUY_X_GET_Y && discount.buyXGetY) {
+      result.freeProducts = {
+        buyQty: discount.buyXGetY.buyQty,
+        getQty: discount.buyXGetY.getQty,
+        getProductIds: discount.buyXGetY.getProductIds,
+        getDiscountType: discount.buyXGetY.getDiscountType,
+        getDiscountValue: discount.buyXGetY.getDiscountValue,
+      };
+    }
+
     if (discount.discountMode === DISCOUNT_MODE.PRODUCT_AT_FIX_AMOUNT && discount.productAtFixAmount) {
       const fixAmount = discount.productAtFixAmount;
       if ((totalAmount || 0) >= fixAmount.minimumAmount) {
@@ -515,17 +665,6 @@ export const applyDiscount = async (req, res) => {
 
     const discountAmount = calculateDiscountAmount(discount, qualifyingItems, totalAmount || 0);
 
-    // Increment usage count and track customer
-    if (customerId) {
-      const customerEntry = discount.customerIds ? discount.customerIds.find((item: any) => item.id?.toString() === customerId.toString()) : null;
-      if (customerEntry) {
-        await discountModel.updateOne({ _id: discount._id, "customerIds.id": customerId as any }, { $inc: { "customerIds.$.count": 1, usedCount: 1 } });
-      } else {
-        await discountModel.updateOne({ _id: discount._id }, { $push: { customerIds: { id: customerId, count: 1 } }, $inc: { usedCount: 1 } });
-      }
-    } else {
-      await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: 1 } });
-    }
 
     const result: any = {
       discountId: discount._id,
@@ -537,6 +676,16 @@ export const applyDiscount = async (req, res) => {
       qualifyingItemCount: qualifyingItems.length,
       finalAmount: (totalAmount || 0) - discountAmount,
     };
+
+    if (discount.discountMode === DISCOUNT_MODE.BUY_X_GET_Y && discount.buyXGetY) {
+      result.freeProducts = {
+        buyQty: discount.buyXGetY.buyQty,
+        getQty: discount.buyXGetY.getQty,
+        getProductIds: discount.buyXGetY.getProductIds,
+        getDiscountType: discount.buyXGetY.getDiscountType,
+        getDiscountValue: discount.buyXGetY.getDiscountValue,
+      };
+    }
 
     if (discount.discountMode === DISCOUNT_MODE.PRODUCT_AT_FIX_AMOUNT && discount.productAtFixAmount) {
       const fixAmount = discount.productAtFixAmount;
@@ -573,21 +722,8 @@ export const removeDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Discount"), {}, {}));
     }
 
-    // Decrement usage
-    if (customerId) {
-      const customerEntry = discount.customerIds ? discount.customerIds.find((item: any) => item.id?.toString() === customerId.toString()) : null;
-      if (customerEntry) {
-        if (customerEntry.count > 1) {
-          await discountModel.updateOne({ _id: new ObjectId(discountId) as any, "customerIds.id": new ObjectId(customerId) as any }, { $inc: { "customerIds.$.count": -1, usedCount: -1 } });
-        } else {
-          await discountModel.updateOne({ _id: new ObjectId(discountId) as any }, { $pull: { customerIds: { id: new ObjectId(customerId) as any } }, $inc: { usedCount: -1 } });
-        }
-      } else {
-        await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: -1 } });
-      }
-    } else {
-      await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: -1 } });
-    }
+    // Decrement usage logic removed (now handled in order flows)
+
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Discount removed successfully", {}, {}));
   } catch (error) {

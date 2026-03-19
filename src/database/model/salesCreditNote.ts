@@ -1,7 +1,17 @@
 import mongoose, { Schema } from "mongoose";
-import { baseSchemaFields, baseSchemaOptions, transactionSummarySchema, commonAdditionalChargeSchema, salesItemSchema, commonShippingSchema } from "./base";
+import {
+  baseSchemaFields,
+  baseSchemaOptions,
+  transactionSummarySchema,
+  commonAdditionalChargeSchema,
+  salesItemSchema,
+  commonShippingSchema,
+} from "./base";
 import { IBase } from "../../types";
-import { PURCHASE_DEBIT_NOTE_STATUS, SALES_CREDIT_NOTE_PRODUCT_TYPE } from "../../common";
+import {
+  PURCHASE_DEBIT_NOTE_STATUS,
+  SALES_CREDIT_NOTE_PRODUCT_TYPE,
+} from "../../common";
 
 export interface ISalesCreditNote extends IBase {
   customerId: Schema.Types.ObjectId;
@@ -20,11 +30,10 @@ export interface ISalesCreditNote extends IBase {
   productType: string;
 
   salesManId?: Schema.Types.ObjectId;
-
+  reason?: string;
   productDetails: any[];
 
   additionalCharges: any[];
-
 
   termsAndConditionIds: Schema.Types.ObjectId[];
   notes?: string;
@@ -84,6 +93,8 @@ const salesCreditNoteSchema = new Schema<ISalesCreditNote>(
       ref: "invoice",
     },
 
+    reason: { type: String },
+
     reverseCharge: { type: Boolean, default: false },
     sez: { type: String },
     paymentReminder: { type: Boolean, default: false },
@@ -95,16 +106,16 @@ const salesCreditNoteSchema = new Schema<ISalesCreditNote>(
 
     salesManId: {
       type: Schema.Types.ObjectId,
-      ref: "employee",
+      ref: "user",
     },
 
     productDetails: [salesCreditNoteItemSchema],
 
-
     additionalCharges: [commonAdditionalChargeSchema],
 
-
-    termsAndConditionIds: [{ type: Schema.Types.ObjectId, ref: "terms-condition" }],
+    termsAndConditionIds: [
+      { type: Schema.Types.ObjectId, ref: "terms-condition" },
+    ],
     notes: { type: String },
 
     shippingDetails: commonShippingSchema,
@@ -120,4 +131,7 @@ const salesCreditNoteSchema = new Schema<ISalesCreditNote>(
   baseSchemaOptions,
 );
 
-export const salesCreditNoteModel = mongoose.model<ISalesCreditNote>("sales-credit-note", salesCreditNoteSchema);
+export const salesCreditNoteModel = mongoose.model<ISalesCreditNote>(
+  "sales-credit-note",
+  salesCreditNoteSchema,
+);

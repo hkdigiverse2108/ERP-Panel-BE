@@ -4,10 +4,10 @@ import { deliveryChallanController } from "../controllers";
 const router = express.Router();
 
 router.get("/all", deliveryChallanController.getAllDeliveryChallan);
+router.get("/dropdown", deliveryChallanController.getDeliveryChallanDropdown);
 router.post("/add", deliveryChallanController.addDeliveryChallan);
 router.put("/edit", deliveryChallanController.editDeliveryChallan);
 router.delete("/:id", deliveryChallanController.deleteDeliveryChallan);
 router.get("/:id", deliveryChallanController.getOneDeliveryChallan);
 
 export const deliveryChallanRouter = router;
-

@@ -1,6 +1,15 @@
 import Joi from "joi";
-import { baseApiSchema, objectId, transactionSummarySchema, commonAdditionalChargeSchema, commonShippingSchema } from "./common";
-import { PURCHASE_DEBIT_NOTE_STATUS, SALES_CREDIT_NOTE_PRODUCT_TYPE } from "../common";
+import {
+  baseApiSchema,
+  objectId,
+  transactionSummarySchema,
+  commonAdditionalChargeSchema,
+  commonShippingSchema,
+} from "./common";
+import {
+  PURCHASE_DEBIT_NOTE_STATUS,
+  SALES_CREDIT_NOTE_PRODUCT_TYPE,
+} from "../common";
 
 const salesCreditNoteItemSchema = Joi.object({
   productId: objectId().required(),
@@ -65,12 +74,10 @@ export const editSalesCreditNoteSchema = Joi.object({
     .valid(...Object.values(SALES_CREDIT_NOTE_PRODUCT_TYPE))
     .optional(),
   salesManId: objectId().optional(),
-
+  reason: Joi.string().allow("").optional(),
   productDetails: Joi.array().items(salesCreditNoteItemSchema).optional(),
 
-
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
-
 
   termsAndConditionIds: Joi.array().items(objectId()).optional(),
   notes: Joi.string().allow("").optional(),

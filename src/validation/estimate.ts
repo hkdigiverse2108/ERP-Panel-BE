@@ -4,6 +4,7 @@ import {
   objectId,
   transactionSummarySchema,
   commonShippingSchema,
+  baseApiSchema,
 } from "./common";
 import {
   ESTIMATE_STATUS,
@@ -28,7 +29,7 @@ const estimateItemSchema = Joi.object().keys({
 });
 
 export const addEstimateSchema = Joi.object().keys({
-  companyId: objectId().optional().allow("", null),
+  // companyId: objectId().optional().allow("", null),
   date: Joi.date().required(),
   dueDate: Joi.date().required(),
   customerId: objectId().required(),
@@ -49,11 +50,12 @@ export const addEstimateSchema = Joi.object().keys({
   sez: Joi.string().optional().allow("", null),
   shippingDetails: commonShippingSchema.optional(),
   notes: Joi.string().optional().allow("", null),
+  ...baseApiSchema,
 });
 
 export const editEstimateSchema = Joi.object().keys({
   estimateId: objectId().required(),
-  companyId: objectId().optional().allow("", null),
+  // companyId: objectId().optional().allow("", null),
   estimateNo: Joi.string().optional(),
   date: Joi.date().optional(),
   dueDate: Joi.date().optional(),
@@ -75,6 +77,7 @@ export const editEstimateSchema = Joi.object().keys({
   sez: Joi.string().optional().allow("", null),
   shippingDetails: commonShippingSchema.optional(),
   notes: Joi.string().optional().allow("", null),
+  ...baseApiSchema,
 });
 
 export const deleteEstimateSchema = Joi.object().keys({

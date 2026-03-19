@@ -21,7 +21,8 @@ export const edit_permission_by_id = async (req, res) => {
             add: roleDetails.add,
             edit: roleDetails.edit,
             view: roleDetails.view,
-            delete: roleDetails.delete
+            delete: roleDetails.delete,
+            // isActive: roleDetails.isActive,
           }
         },
         upsert: true

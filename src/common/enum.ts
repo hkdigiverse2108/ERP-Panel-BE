@@ -353,7 +353,10 @@ export const PAYMENT_TERMS_ENUM = {
 export const SALES_ORDER_STATUS = {
   PENDING: "pending",
   INVOICE_CREATED: "invoice_created",
+  PARTIAL_INVOICE_CREATED: "partial_invoice_created",
   DELIVERY_CHALLAN_CREATED: "delivery_challan_created",
+  PARTIAL_DELIVERY_CHALLAN_CREATED: "partial_delivery_challan_created",
+  PARTIALLY_CANCELLED: "partially_cancelled",
   CANCELLED: "cancelled",
 } as const;
 
