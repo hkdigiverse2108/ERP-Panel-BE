@@ -1,20 +1,15 @@
 import Joi from "joi";
 import { baseApiSchema, objectId } from "./common";
-import {
-  VALUE_TYPE,
-  DISCOUNT_STATUS,
-  DISCOUNT_MODE,
-  DISCOUNT_APPLICABLE,
-  DISCOUNT_APPLIES_TO,
-  MINIMUM_REQUIREMENT,
-} from "../common";
+import { VALUE_TYPE, DISCOUNT_STATUS, DISCOUNT_MODE, DISCOUNT_APPLICABLE, DISCOUNT_APPLIES_TO, MINIMUM_REQUIREMENT } from "../common";
 
 // --- Sub-schemas ---
 
 const rangeWiseRuleJoi = Joi.object({
   minQty: Joi.number().min(0).required(),
   maxQty: Joi.number().min(Joi.ref("minQty")).required(),
-  discountType: Joi.string().valid(...Object.values(VALUE_TYPE)).required(),
+  discountType: Joi.string()
+    .valid(...Object.values(VALUE_TYPE))
+    .required(),
   discountValue: Joi.number().min(0).required(),
 });
 
@@ -22,7 +17,10 @@ const buyXGetYJoi = Joi.object({
   buyQty: Joi.number().integer().min(1).required(),
   getQty: Joi.number().integer().min(1).required(),
   getProductIds: Joi.array().items(objectId()).optional(),
-  getDiscountType: Joi.string().valid(...Object.values(VALUE_TYPE)).optional().default(VALUE_TYPE.PERCENTAGE),
+  getDiscountType: Joi.string()
+    .valid(...Object.values(VALUE_TYPE))
+    .optional()
+    .default(VALUE_TYPE.PERCENTAGE),
   getDiscountValue: Joi.number().min(0).optional().default(100),
 });
 
@@ -52,8 +50,13 @@ export const addDiscountSchema = Joi.object().keys({
     .default(DISCOUNT_MODE.NORMAL),
   discountType: Joi.when("discountMode", {
     is: DISCOUNT_MODE.NORMAL,
-    then: Joi.string().valid(...Object.values(VALUE_TYPE)).default(VALUE_TYPE.PERCENTAGE),
-    otherwise: Joi.string().valid(...Object.values(VALUE_TYPE)).optional().allow(null),
+    then: Joi.string()
+      .valid(...Object.values(VALUE_TYPE))
+      .default(VALUE_TYPE.PERCENTAGE),
+    otherwise: Joi.string()
+      .valid(...Object.values(VALUE_TYPE))
+      .optional()
+      .allow(null),
   }),
   discountValue: Joi.when("discountMode", {
     is: DISCOUNT_MODE.NORMAL,
@@ -79,7 +82,8 @@ export const addDiscountSchema = Joi.object().keys({
   // Targeting
   appliesTo: Joi.string()
     .valid(...Object.values(DISCOUNT_APPLIES_TO))
-    .default(DISCOUNT_APPLIES_TO.SPECIFIC_CATEGORY),
+    .allow(null, "")
+    .optional(),
   applyToEntireSelection: Joi.boolean().default(false),
   categoryIds: Joi.when("appliesTo", {
     is: DISCOUNT_APPLIES_TO.SPECIFIC_CATEGORY,
@@ -135,7 +139,7 @@ export const addDiscountSchema = Joi.object().keys({
     .valid(...Object.values(DISCOUNT_STATUS))
     .default(DISCOUNT_STATUS.ACTIVE)
     .optional(),
-  ...baseApiSchema
+  ...baseApiSchema,
 });
 
 // --- Edit Discount ---
@@ -149,16 +153,26 @@ export const editDiscountSchema = Joi.object().keys({
 
   autoApply: Joi.boolean().optional(),
   excludeAlreadyDiscounted: Joi.boolean().optional(),
-  discountApplicable: Joi.string().valid(...Object.values(DISCOUNT_APPLICABLE)).optional(),
+  discountApplicable: Joi.string()
+    .valid(...Object.values(DISCOUNT_APPLICABLE))
+    .optional(),
 
-  discountMode: Joi.string().valid(...Object.values(DISCOUNT_MODE)).optional(),
-  discountType: Joi.string().valid(...Object.values(VALUE_TYPE)).optional().allow(null),
+  discountMode: Joi.string()
+    .valid(...Object.values(DISCOUNT_MODE))
+    .optional(),
+  discountType: Joi.string()
+    .valid(...Object.values(VALUE_TYPE))
+    .optional()
+    .allow(null),
   discountValue: Joi.number().min(0).optional().allow(null),
   rangeWiseRules: Joi.array().items(rangeWiseRuleJoi).optional(),
   buyXGetY: buyXGetYJoi.optional().allow(null),
   productAtFixAmount: productAtFixAmountJoi.optional().allow(null),
 
-  appliesTo: Joi.string().valid(...Object.values(DISCOUNT_APPLIES_TO)).optional(),
+  appliesTo: Joi.string()
+    .valid(...Object.values(DISCOUNT_APPLIES_TO))
+    .allow(null, "")
+    .optional(),
   applyToEntireSelection: Joi.boolean().optional(),
   categoryIds: Joi.array().items(objectId()).optional(),
   subcategoryIds: Joi.array().items(objectId()).optional(),
@@ -166,7 +180,9 @@ export const editDiscountSchema = Joi.object().keys({
   productIds: Joi.array().items(objectId()).optional(),
   excludedProductIds: Joi.array().items(objectId()).optional(),
 
-  minimumRequirement: Joi.string().valid(...Object.values(MINIMUM_REQUIREMENT)).optional(),
+  minimumRequirement: Joi.string()
+    .valid(...Object.values(MINIMUM_REQUIREMENT))
+    .optional(),
   minimumPurchaseAmount: Joi.number().min(0).optional().allow(null),
   minimumQuantity: Joi.number().integer().min(1).optional().allow(null),
 
@@ -179,8 +195,10 @@ export const editDiscountSchema = Joi.object().keys({
 
   branchIds: Joi.array().items(objectId()).optional(),
 
-  status: Joi.string().valid(...Object.values(DISCOUNT_STATUS)).optional(),
-  ...baseApiSchema
+  status: Joi.string()
+    .valid(...Object.values(DISCOUNT_STATUS))
+    .optional(),
+  ...baseApiSchema,
 });
 
 // --- Delete / Get ---
@@ -201,27 +219,31 @@ const orderItemJoi = Joi.object({
   discountAmount: Joi.number().min(0).default(0),
 }).unknown(true);
 
-export const verifyDiscountSchema = Joi.object().keys({
-  discountId: objectId().optional(),
-  discountCode: Joi.string().optional(),
-  branchId: objectId().optional(),
-  customerId: objectId().optional().allow(null),
-  items: Joi.array().items(orderItemJoi).min(1).required(),
-  totalAmount: Joi.number().min(0).required(),
-  totalQty: Joi.number().min(0).optional().default(0),
-}).or("discountId", "discountCode");
+export const verifyDiscountSchema = Joi.object()
+  .keys({
+    discountId: objectId().optional(),
+    discountCode: Joi.string().optional(),
+    branchId: objectId().optional(),
+    customerId: objectId().optional().allow(null),
+    items: Joi.array().items(orderItemJoi).min(1).required(),
+    totalAmount: Joi.number().min(0).required(),
+    totalQty: Joi.number().min(0).optional().default(0),
+  })
+  .or("discountId", "discountCode");
 
 // --- Apply Discount (verify + increment usage) ---
 
-export const applyDiscountSchema = Joi.object().keys({
-  discountId: objectId().optional(),
-  discountCode: Joi.string().optional(),
-  branchId: objectId().optional(),
-  customerId: objectId().optional().allow(null),
-  items: Joi.array().items(orderItemJoi).min(1).required(),
-  totalAmount: Joi.number().min(0).required(),
-  totalQty: Joi.number().min(0).optional().default(0),
-}).or("discountId", "discountCode");
+export const applyDiscountSchema = Joi.object()
+  .keys({
+    discountId: objectId().optional(),
+    discountCode: Joi.string().optional(),
+    branchId: objectId().optional(),
+    customerId: objectId().optional().allow(null),
+    items: Joi.array().items(orderItemJoi).min(1).required(),
+    totalAmount: Joi.number().min(0).required(),
+    totalQty: Joi.number().min(0).optional().default(0),
+  })
+  .or("discountId", "discountCode");
 
 // --- Remove Discount (revert usage) ---
 
