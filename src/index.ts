@@ -7,7 +7,7 @@ import * as packageInfo from "../package.json";
 import { connectDb } from "./database/connection";
 import { router } from "./routes";
 import path from "path";
-import { HTTP_STATUS } from "./common";
+import { apiResponse, HTTP_STATUS } from "./common";
 import { socketServer } from "./helper/socket";
 import { initCronJobs } from "./helper";
 
@@ -40,7 +40,17 @@ app.get("/isServerUp", (_, res) => {
 });
 
 app.use(router);
-// app.use("/*", bad_gateway);
+
+app.use((err, req, res, next) => {
+  if (err.name === "MulterError") {
+    return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, err.message, {}, err));
+  }
+  if (err) {
+    console.error(err);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, "Internal Server Error", {}, err));
+  }
+  next();
+});
 
 app.use((_, res) => {
   res.status(HTTP_STATUS.NOT_FOUND).json({
