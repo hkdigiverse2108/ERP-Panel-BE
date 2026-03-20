@@ -1,4 +1,4 @@
-import { apiResponse, ESTIMATE_STATUS, HTTP_STATUS } from "../../common";
+import { apiResponse, ESTIMATE_STATUS, HTTP_STATUS, SALES_ORDER_STATUS } from "../../common";
 import { contactModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel, EstimateModel, userModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addSalesOrderSchema, deleteSalesOrderSchema, editSalesOrderSchema, getSalesOrderSchema } from "../../validation";
@@ -242,17 +242,17 @@ export const getAllSalesOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, customerFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
-      criteria.companyId = companyId;
+      criteria.companyId = new ObjectId(companyId);
     }
     if (companyFilter) {
-      criteria.companyId = companyFilter;
+      criteria.companyId = new ObjectId(companyFilter);
     }
 
     if (search) {
@@ -262,6 +262,10 @@ export const getAllSalesOrder = async (req, res) => {
 
     if (statusFilter) {
       criteria.status = statusFilter;
+    }
+
+    if (customerFilter) {
+      criteria.customerId = new ObjectId(customerFilter);
     }
 
     applyDateFilter(criteria, startDate as string, endDate as string, "date");
@@ -331,6 +335,33 @@ export const getAllSalesOrder = async (req, res) => {
       return soObj;
     });
 
+    // Aggregation for summary statistics
+    const statsCriteria: any = { isDeleted: false };
+    if (criteria.companyId) {
+      statsCriteria.companyId = criteria.companyId;
+    }
+
+    const summaryResults = await SalesOrderModel.aggregate([
+      { $match: statsCriteria },
+      {
+        $facet: {
+          allSalesOrders: [{ $count: "count" }],
+          pending: [{ $match: { status: SALES_ORDER_STATUS.PENDING } }, { $count: "count" }],
+          invoiceCreated: [{ $match: { status: SALES_ORDER_STATUS.INVOICE_CREATED } }, { $count: "count" }],
+          deliveryChallanCreated: [{ $match: { status: SALES_ORDER_STATUS.DELIVERY_CHALLAN_CREATED } }, { $count: "count" }],
+          cancelled: [{ $match: { status: SALES_ORDER_STATUS.CANCELLED } }, { $count: "count" }],
+        },
+      },
+    ]);
+
+    const summary = {
+      allSalesOrders: summaryResults[0].allSalesOrders[0]?.count || 0,
+      pending: summaryResults[0].pending[0]?.count || 0,
+      invoiceCreated: summaryResults[0].invoiceCreated[0]?.count || 0,
+      deliveryChallanCreated: summaryResults[0].deliveryChallanCreated[0]?.count || 0,
+      cancelled: summaryResults[0].cancelled[0]?.count || 0,
+    };
+
     const totalData = await countData(SalesOrderModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -341,7 +372,8 @@ export const getAllSalesOrder = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order"), { salesOrder_data: finalResponse, totalData, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order"), { salesOrder_data: finalResponse, totalData, summary, state }, {}));
+
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

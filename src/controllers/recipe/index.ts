@@ -21,10 +21,12 @@ export const addRecipe = async (req, res) => {
       {
         model: recipeModel,
         prefix: "RC",
-        fieldName: "Recipe Number",
+        fieldName: "number",
         companyId: value.companyId,
       }
     );
+
+    console.log(value);
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;

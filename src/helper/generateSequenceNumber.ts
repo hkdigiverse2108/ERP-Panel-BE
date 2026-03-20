@@ -38,6 +38,7 @@ export const generateSequenceNumber = async ({ model, prefix, fieldName = "numbe
 
   let candidate = `${prefix}-${nextNumber}`;
 
+
   while (
     await model.exists({
       ...baseQuery,

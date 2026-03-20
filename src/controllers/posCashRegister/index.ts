@@ -317,9 +317,10 @@ export const getAllPosCashRegister = async (req, res) => {
     let {
       page,
       limit,
+      salesManFilter,
       companyFilter,
       branchFilter,
-      statusFilter,
+      statusFilter, 
       startDate,
       endDate,
     } = req.query;
@@ -329,6 +330,7 @@ export const getAllPosCashRegister = async (req, res) => {
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
     if (companyFilter) criteria.companyId = companyFilter;
+    if (salesManFilter) criteria.salesManId = salesManFilter;
     if (branchFilter) criteria.branchId = branchFilter;
     if (statusFilter) criteria.status = statusFilter;
 

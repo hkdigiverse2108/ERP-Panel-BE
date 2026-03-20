@@ -286,23 +286,23 @@ export const getAllDeliveryChallan = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const companyId = await checkCompany(user, res);
-    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter , customerFilter } = req.query;
+    const companyId = user?.companyId?._id;
+    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, customerFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
-      criteria.companyId = companyId;
+      criteria.companyId = new ObjectId(companyId);
     }
 
     if (companyFilter) {
-      criteria.companyId = companyFilter;
+      criteria.companyId = new ObjectId(companyFilter);
     }
 
     if (customerFilter) {
-      criteria.customerId = customerFilter;
+      criteria.customerId = new ObjectId(customerFilter);
     }
 
     if (search) {
@@ -379,6 +379,31 @@ export const getAllDeliveryChallan = async (req, res) => {
       return dcObj;
     });
 
+    // Aggregation for summary statistics
+    const statsCriteria: any = { isDeleted: false };
+    if (criteria.companyId) {
+      statsCriteria.companyId = criteria.companyId;
+    }
+
+    const summaryResults = await deliveryChallanModel.aggregate([
+      { $match: statsCriteria },
+      {
+        $facet: {
+          allDeliveryChallans: [{ $count: "count" }],
+          invoiceCreated: [{ $match: { status: DELIVERY_CHALLAN_STATUS.INVOICE_CREATED } }, { $count: "count" }],
+          delivered: [{ $match: { status: DELIVERY_CHALLAN_STATUS.DELIVERED } }, { $count: "count" }],
+          cancelled: [{ $match: { status: DELIVERY_CHALLAN_STATUS.CANCELLED } }, { $count: "count" }],
+        },
+      },
+    ]);
+
+    const summary = {
+      allDeliveryChallans: summaryResults[0].allDeliveryChallans[0]?.count || 0,
+      invoiceCreated: summaryResults[0].invoiceCreated[0]?.count || 0,
+      delivered: summaryResults[0].delivered[0]?.count || 0,
+      cancelled: summaryResults[0].cancelled[0]?.count || 0,
+    };
+
     const totalData = await countData(deliveryChallanModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -389,7 +414,8 @@ export const getAllDeliveryChallan = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan"), { deliveryChallan_data: finalResponse, totalData, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan"), { deliveryChallan_data: finalResponse, totalData, summary, state }, {}));
+
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
