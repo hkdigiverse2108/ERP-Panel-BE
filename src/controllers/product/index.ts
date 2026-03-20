@@ -93,34 +93,7 @@ export const bulkAddProduct = async (req, res) => {
         item.productType = item.productType.trim().toLowerCase().replace(/\s+/g, "_");
       }
 
-      // 3. Handle ingredients (comma-separated string to array)
-      if (item.ingredients && typeof item.ingredients === "string") {
-        item.ingredients = item.ingredients
-          .split(",")
-          .map((s) => s.trim())
-          .filter((s) => s !== "");
-      }
-
-      // 4. Handle nutrition (string like {name:"X", value:"Y"},{...} to array of objects)
-      if (item.nutrition && typeof item.nutrition === "string") {
-        const nutritionArray = [];
-        const blocks = item.nutrition.match(/\{[^{}]+\}/g);
-        if (blocks) {
-          for (const block of blocks) {
-            const nameMatch = block.match(/name\s*:\s*(['"]?)([^'"}]+)\1/i);
-            const valueMatch = block.match(/value\s*:\s*(['"]?)([^'"}]+)\1/i);
-            if (nameMatch || valueMatch) {
-              nutritionArray.push({
-                name: nameMatch ? nameMatch[2].trim() : "",
-                value: valueMatch ? valueMatch[2].trim() : "",
-              });
-            }
-          }
-        }
-        item.nutrition = nutritionArray;
-      }
-
-      // 5. Handle date strings (DD-MM-YYYY or DD/MM/YYYY to Date object)
+      // 3. Handle date strings (DD-MM-YYYY or DD/MM/YYYY to Date object)
       if (item.expiryReferenceDate && typeof item.expiryReferenceDate === "string") {
         const dateStr = item.expiryReferenceDate.trim();
         const dateParts = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
@@ -141,6 +114,34 @@ export const bulkAddProduct = async (req, res) => {
       if (error) {
         errors.push({ row: i + 1, error: error.details[0].message });
         continue;
+      }
+
+      // --- Post-validation processing ---
+
+      // 1. Handle ingredients (comma-separated string to array)
+      if (value.ingredients && typeof value.ingredients === "string") {
+        value.ingredients = value.ingredients
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s !== "");
+      }
+
+      // 2. Handle nutrition (string like 'item1:value1, item2:value2' to array of objects)
+      if (value.nutrition && typeof value.nutrition === "string") {
+        const nutritionArray = [];
+        const pairs = value.nutrition.split(",").map((p) => p.trim()).filter((p) => p !== "");
+        for (const pair of pairs) {
+          const parts = pair.split(":");
+          const name = parts[0]?.trim() || "";
+          const val = parts.slice(1).join(":")?.trim() || ""; // In case the value contains a colon
+          if (name || val) {
+            nutritionArray.push({
+              name: name,
+              value: val,
+            });
+          }
+        }
+        value.nutrition = nutritionArray;
       }
 
       if (userType !== USER_TYPES.SUPER_ADMIN) {

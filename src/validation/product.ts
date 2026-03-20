@@ -215,21 +215,23 @@ export const addBulkProductSchema = Joi.object().keys({
     otherwise: Joi.optional(),
   }),
 
-  ingredients: Joi.array().items(Joi.string()).optional(),
+  ingredients: Joi.string().optional(),
   description: Joi.string().optional(),
   shortDescription: Joi.string().optional(),
   netWeight: Joi.number().min(0).optional().allow("", null),
 
-  nutrition: Joi.array()
-    .items(
-      Joi.object({
-        name: Joi.string().optional().allow("", null),
-        value: Joi.string().optional().allow("", null),
-      }),
-    )
-    .optional(),
-
+  nutrition: Joi.string().optional(),
+  
   isActive: Joi.boolean().optional(),
+  // nutrition: Joi.array()
+  //   .items(
+  //     Joi.object({
+  //       name: Joi.string().optional().allow("", null),
+  //       value: Joi.string().optional().allow("", null),
+  //     }),
+  //   )
+  //   .optional(),
+
 
   // purchasePrice: Joi.number().min(0).default(0).optional(),
   // landingCost: Joi.number().min(0).default(0).optional(),
