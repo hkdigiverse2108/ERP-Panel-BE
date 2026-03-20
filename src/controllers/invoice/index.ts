@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS, INVOICE_STATUS } from "../../common";
 import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, termsConditionModel, deliveryChallanModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSchema } from "../../validation";
@@ -336,18 +336,26 @@ export const getAllInvoice = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, status, paymentStatus, startDate, endDate } = req.query;
+    let { page, limit, search, activeFilter, companyFilter, status, paymentStatus, startDate, endDate, customerFilter, statusFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
-      criteria.companyId = companyId;
+      criteria.companyId = new ObjectId(companyId);
     }
 
     if (companyFilter) {
-      criteria.companyId = companyFilter;
+      criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (customerFilter) {
+      criteria.customerId = new ObjectId(customerFilter);
+    }
+
+    if (statusFilter) {
+      criteria.status = statusFilter;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -432,6 +440,44 @@ export const getAllInvoice = async (req, res) => {
       return invObj;
     });
 
+    // Aggregation for summary statistics
+    const statsCriteria: any = { isDeleted: false };
+    if (criteria.companyId) {
+      statsCriteria.companyId = criteria.companyId;
+    }
+
+    const summaryResults = await InvoiceModel.aggregate([
+      { $match: statsCriteria },
+      {
+        $facet: {
+          allInvoices: [{ $count: "count" }],
+          invoiced: [{ $match: { status: INVOICE_STATUS.INVOICED } }, { $count: "count" }],
+          deliveryChallanCreated: [{ $match: { status: INVOICE_STATUS.DELIVERY_CHALLAN_CREATED } }, { $count: "count" }],
+          cancelled: [{ $match: { status: INVOICE_STATUS.CANCELLED } }, { $count: "count" }],
+          financials: [
+            {
+              $group: {
+                _id: null,
+                totalSales: { $sum: "$transactionSummary.netAmount" },
+                totalPaid: { $sum: "$paidAmount" },
+                totalUnpaid: { $sum: "$balanceAmount" },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    const summary = {
+      allInvoices: summaryResults[0].allInvoices[0]?.count || 0,
+      invoiced: summaryResults[0].invoiced[0]?.count || 0,
+      deliveryChallanCreated: summaryResults[0].deliveryChallanCreated[0]?.count || 0,
+      cancelled: summaryResults[0].cancelled[0]?.count || 0,
+      totalSales: summaryResults[0].financials[0]?.totalSales || 0,
+      paidAmount: summaryResults[0].financials[0]?.totalPaid || 0,
+      unpaidAmount: summaryResults[0].financials[0]?.totalUnpaid || 0,
+    };
+
     const totalData = await countData(InvoiceModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -442,7 +488,8 @@ export const getAllInvoice = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice"), { invoice_data: finalResponse, totalData, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice"), { invoice_data: finalResponse, totalData, summary, state }, {}));
+
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

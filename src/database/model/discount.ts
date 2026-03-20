@@ -1,12 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import {
-  DISCOUNT_STATUS,
-  VALUE_TYPE,
-  DISCOUNT_MODE,
-  DISCOUNT_APPLICABLE,
-  DISCOUNT_APPLIES_TO,
-  MINIMUM_REQUIREMENT,
-} from "../../common";
+import { DISCOUNT_STATUS, VALUE_TYPE, DISCOUNT_MODE, DISCOUNT_APPLICABLE, DISCOUNT_APPLIES_TO, MINIMUM_REQUIREMENT } from "../../common";
 import { IDiscount } from "../../types";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
 
@@ -80,7 +73,6 @@ const discountSchema = new Schema<IDiscount>(
     appliesTo: {
       type: String,
       enum: Object.values(DISCOUNT_APPLIES_TO),
-      default: DISCOUNT_APPLIES_TO.SPECIFIC_CATEGORY,
     },
     applyToEntireSelection: { type: Boolean, default: false },
     categoryIds: [{ type: Schema.Types.ObjectId, ref: "category" }],

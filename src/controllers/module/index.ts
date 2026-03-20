@@ -1,9 +1,31 @@
 import { countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, updateMany } from "../../helper";
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { moduleModel, permissionModel, userModel } from "../../database";
 import { addModuleSchema, editModuleSchema, deleteModuleSchema, getModuleSchema, getModuleByIdSchema, bulkEditModuleSchema, getUsersPermissionsByModuleIdSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
+
+const grantPermissionToSuperAdmins = async (moduleId) => {
+    try {
+        const superAdmins = await getData(userModel, { userType: USER_TYPES.SUPER_ADMIN, isDeleted: false }, { _id: 1 }, {});
+        if (superAdmins && superAdmins.length > 0) {
+            for (const admin of superAdmins) {
+                const permissionData = {
+                    moduleId: new ObjectId(moduleId),
+                    userId: new ObjectId(admin._id),
+                    view: true,
+                    add: true,
+                    edit: true,
+                    delete: true
+                };
+                await updateData(permissionModel, { userId: new ObjectId(admin._id), moduleId: new ObjectId(moduleId) }, permissionData, { upsert: true });
+            }
+        }
+    } catch (error) {
+        console.error("Error granting permissions to super admins:", error);
+    }
+};
+
 
 export const add_module = async (req, res) => {
     reqInfo(req);
@@ -26,6 +48,8 @@ export const add_module = async (req, res) => {
 
         const response = await createOne(moduleModel, body);
         if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.addDataError, {}, {}));
+
+        await grantPermissionToSuperAdmins(response._id);
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("module"), response, {}));
     } catch (error) {

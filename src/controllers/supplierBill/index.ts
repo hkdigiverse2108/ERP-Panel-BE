@@ -211,15 +211,15 @@ export const getAllSupplierBill = async (req, res) => {
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
-      criteria.companyId = companyId;
+      criteria.companyId = new ObjectId(companyId);
     }
 
     if (companyFilter) {
-      criteria.companyId = companyFilter;
+      criteria.companyId = new ObjectId(companyFilter);
     }
 
     if (supplierFilter) {
-      criteria.supplierId = supplierFilter;
+      criteria.supplierId = new ObjectId(supplierFilter);
     }
 
     if (search) {
@@ -320,6 +320,31 @@ export const getAllSupplierBill = async (req, res) => {
       }
       return sbObj;
     });
+
+    // Aggregation for summary statistics
+    const statsCriteria: any = { isDeleted: false };
+    if (criteria.companyId) {
+      statsCriteria.companyId = criteria.companyId;
+    }
+
+    const summaryResults = await supplierBillModel.aggregate([
+      { $match: statsCriteria },
+      {
+        $group: {
+          _id: null,
+          totalPurchase: { $sum: "$summary.netAmount" },
+          paidAmount: { $sum: "$paidAmount" },
+          unpaidAmount: { $sum: "$balanceAmount" },
+        },
+      },
+    ]);
+
+    const summary = {
+      totalPurchase: summaryResults[0]?.totalPurchase || 0,
+      paidAmount: summaryResults[0]?.paidAmount || 0,
+      unpaidAmount: summaryResults[0]?.unpaidAmount || 0,
+    };
+
     const totalData = await countData(supplierBillModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -330,7 +355,8 @@ export const getAllSupplierBill = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Supplier Bill"), { supplierBill_data: response, totalData, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Supplier Bill"), { supplierBill_data: response, totalData, summary, state }, {}));
+
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
