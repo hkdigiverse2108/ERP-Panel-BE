@@ -415,6 +415,7 @@ export const editPosOrder = async (req, res) => {
         }
       } else if (diff < 0) {
         await revertRedeemCredit(oldRedeemId, isExist.redeemCreditType, Math.abs(diff), isExist._id?.toString());
+        // await applyRedeemCredit(oldRedeemId, isExist.redeemCreditType, newAmount, isExist.customerId?.toString(), isExist._id?.toString());
       }
     }
     // ------------------------------------------------
