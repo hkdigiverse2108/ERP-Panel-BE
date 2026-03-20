@@ -176,7 +176,7 @@ export const getAllPosCreditNote = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, customerFilter, startDate, endDate, companyFilter } = req.query;
+    let { page, limit, search, customerFilter, startDate, endDate, companyFilter, statusFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -185,6 +185,7 @@ export const getAllPosCreditNote = async (req, res) => {
     if (companyId) criteria.companyId = companyId;
     if (customerFilter) criteria.customerId = new ObjectId(customerFilter);
     if (companyFilter) criteria.companyId = new ObjectId(companyFilter);
+    if (statusFilter) criteria.status = statusFilter;
 
     if (search) {
       criteria.$or = [{ creditNoteNo: { $regex: search, $options: "si" } }, { notes: { $regex: search, $options: "si" } }];
