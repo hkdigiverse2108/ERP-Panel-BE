@@ -123,11 +123,11 @@ export const refundPosCredit = async (req, res) => {
     // Update Return POS Order
     if (creditNote.returnPosOrderId) {
       const returnUpdate: any = {
-        $inc: {
+        $set: {
           refundViaCash: refundViaCash || 0,
           refundViaBank: refundViaBank || 0,
+          updatedBy: user?._id || null,
         },
-        $set: { updatedBy: user?._id || null },
       };
       if (bankAccountId) returnUpdate.$set.bankAccountId = bankAccountId;
       if (refundDescription) returnUpdate.$set.refundDescription = refundDescription;
