@@ -384,6 +384,35 @@ export const editPosOrder = async (req, res) => {
       else if (value.redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) value.redeemCreditType = REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT;
     }
 
+    // --- Handle Credit Redemption Synchronization ---
+    const oldRedeemId = isExist.redeemCreditId?.toString();
+    const newRedeemId = value.redeemCreditId?.toString();
+    const oldAmount = Number(isExist.redeemCreditAmount) || 0;
+    const newAmount = Number(value.redeemCreditAmount) || 0;
+
+    if (oldRedeemId !== newRedeemId) {
+      if (oldRedeemId) {
+        await revertRedeemCredit(oldRedeemId, isExist.redeemCreditType, oldAmount, isExist._id?.toString());
+      }
+      if (newRedeemId) {
+        const applyRes = await applyRedeemCredit(newRedeemId, value.redeemCreditType, newAmount, value.customerId || isExist.customerId?.toString(), isExist._id?.toString());
+        if (typeof applyRes === "string" && applyRes !== "Redeem credit applied successfully") {
+          return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, applyRes, {}, {}));
+        }
+      }
+    } else if (oldRedeemId && oldAmount !== newAmount) {
+      const diff = newAmount - oldAmount;
+      if (diff > 0) {
+        const applyRes = await applyRedeemCredit(oldRedeemId, isExist.redeemCreditType, diff, isExist.customerId?.toString(), isExist._id?.toString());
+        if (typeof applyRes === "string" && applyRes !== "Redeem credit applied successfully") {
+          return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, applyRes, {}, {}));
+        }
+      } else if (diff < 0) {
+        await revertRedeemCredit(oldRedeemId, isExist.redeemCreditType, Math.abs(diff), isExist._id?.toString());
+      }
+    }
+    // ------------------------------------------------
+
 
     const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, value, {});
 

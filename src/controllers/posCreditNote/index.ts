@@ -96,12 +96,8 @@ export const refundPosCredit = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Credit Note"), {}, {}));
     }
 
-    if (creditNote.creditsRemaining !== totalRefund) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Credit Note amount and refund amount must be equal`, {}, {}));
-    }
-
-    if (creditNote.creditsRemaining < totalRefund) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Insufficient credits. Available: ${creditNote.creditsRemaining}`, {}, {}));
+    if (totalRefund > creditNote.creditsRemaining) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Refund amount exceeds available credits. Available: ${creditNote.creditsRemaining}`, {}, {}));
     }
 
     if (refundViaBank > 0 && !bankAccountId) {
