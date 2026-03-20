@@ -108,6 +108,9 @@ export const addPosOrder = async (req, res) => {
     if (paidAmount >= totalAmount) {
       value.paymentStatus = POS_PAYMENT_STATUS.PAID;
       value.status = POS_ORDER_STATUS.COMPLETED;
+      if (totalAmount === 0 && req.body.status === POS_ORDER_STATUS.HOLD) {
+        value.status = POS_ORDER_STATUS.HOLD;
+      }
     } else if (paidAmount > 0 && paidAmount < totalAmount) {
       value.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
     } else {
@@ -343,6 +346,9 @@ export const editPosOrder = async (req, res) => {
     if (newPaidAmount >= totalAmount) {
       value.paymentStatus = POS_PAYMENT_STATUS.PAID;
       value.status = POS_ORDER_STATUS.COMPLETED;
+      if (totalAmount === 0 && req.body.status === POS_ORDER_STATUS.HOLD) {
+        value.status = POS_ORDER_STATUS.HOLD;
+      }
     } else if (newPaidAmount > 0 && newPaidAmount < totalAmount) {
       value.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
     } else {
