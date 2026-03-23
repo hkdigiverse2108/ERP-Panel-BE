@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { ExpenseModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, aggregateAndPopulate } from "../../helper";
 import { addExpenseSchema, deleteExpenseSchema, editExpenseSchema, getExpenseSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -81,30 +81,72 @@ export const getAllExpense = async (req, res) => {
         applyDateFilter(criteria, startDate as string, endDate as string);
 
 
-        const options: any = {
-            sort: { createdAt: -1 },
-            skip: (page - 1) * limit,
-            limit: limit,
-            populate: [
-                { path: "companyId", select: "name" }
-            ]
-        };
+        // aggregation pipeline
+        let pipeline: any = [
+            { $match: criteria },
+            { $sort: { createdAt: -1 } },
+            { $skip: (page - 1) * limit },
+            { $limit: limit },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "userInfo"
+                }
+            },
+            {
+                $lookup: {
+                    from: "contacts",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "contactInfo"
+                }
+            },
+            {
+                $addFields: {
+                    partyId: {
+                        $cond: {
+                            if: "$isSalary",
+                            then: { $arrayElemAt: ["$userInfo", 0] },
+                            else: { $arrayElemAt: ["$contactInfo", 0] }
+                        }
+                    }
+                }
+            },
+            {
+                $addFields: {
+                    "partyId.fullName": {
+                        $cond: {
+                            if: "$isSalary",
+                            then: "$partyId.fullName",
+                            else: {
+                                $trim: {
+                                    input: {
+                                        $concat: [
+                                            { $ifNull: ["$partyId.firstName", ""] },
+                                            " ",
+                                            { $ifNull: ["$partyId.lastName", ""] }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    userInfo: 0,
+                    contactInfo: 0
+                }
+            }
+        ];
 
-        // fetch data
-        const response = await getDataWithSorting(ExpenseModel, criteria, {}, options);
-
-        // dynamic populate based on salary
-        await Promise.all(
-            response.map(async (item) => {
-                await ExpenseModel.populate(item, {
-                    path: "partyId",
-                    model: item.isSalary ? "user" : "contact",
-                    select: item.isSalary
-                        ? "fullName"
-                        : "firstName lastName companyName"
-                });
-            })
-        );
+        // fetch data with aggregate and populate
+        const response = await aggregateAndPopulate(ExpenseModel, pipeline, [
+            { path: "companyId", select: "name" }
+        ]);
 
         // total count
         const totalData = await countData(ExpenseModel, criteria);
