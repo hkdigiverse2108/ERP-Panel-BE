@@ -62,7 +62,7 @@ export const getAllExpense = async (req, res) => {
         if (typeFilter) criteria.type = typeFilter;
 
         // active filter
-        if (activeFilter) criteria.isActive = activeFilter;
+        if (activeFilter) criteria.isActive = activeFilter === "true" ? true : false;
 
         // avoid salary filter
         if (avoidSalary === "true" || avoidSalary === true) {
