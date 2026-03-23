@@ -85,8 +85,7 @@ export const getAllExpense = async (req, res) => {
         let pipeline: any = [
             { $match: criteria },
             { $sort: { createdAt: -1 } },
-            { $skip: (page - 1) * limit },
-            { $limit: limit },
+            ...(page && limit ? [{ $skip: (page - 1) * limit }, { $limit: limit }] : []),
             {
                 $lookup: {
                     from: "users",
@@ -106,28 +105,32 @@ export const getAllExpense = async (req, res) => {
             {
                 $addFields: {
                     partyId: {
-                        $cond: {
-                            if: "$isSalary",
-                            then: { $arrayElemAt: ["$userInfo", 0] },
-                            else: { $arrayElemAt: ["$contactInfo", 0] }
-                        }
-                    }
-                }
-            },
-            {
-                $addFields: {
-                    "partyId.fullName": {
-                        $cond: {
-                            if: "$isSalary",
-                            then: "$partyId.fullName",
-                            else: {
-                                $trim: {
-                                    input: {
-                                        $concat: [
-                                            { $ifNull: ["$partyId.firstName", ""] },
-                                            " ",
-                                            { $ifNull: ["$partyId.lastName", ""] }
-                                        ]
+                        $let: {
+                            vars: {
+                                party: {
+                                    $cond: {
+                                        if: "$isSalary",
+                                        then: { $arrayElemAt: ["$userInfo", 0] },
+                                        else: { $arrayElemAt: ["$contactInfo", 0] }
+                                    }
+                                }
+                            },
+                            in: {
+                                fullName: {
+                                    $cond: {
+                                        if: "$isSalary",
+                                        then: "$$party.fullName",
+                                        else: {
+                                            $trim: {
+                                                input: {
+                                                    $concat: [
+                                                        { $ifNull: ["$$party.firstName", ""] },
+                                                        " ",
+                                                        { $ifNull: ["$$party.lastName", ""] }
+                                                    ]
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
