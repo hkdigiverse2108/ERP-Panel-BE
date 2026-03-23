@@ -320,7 +320,7 @@ export const getAllPosCashRegister = async (req, res) => {
       salesManFilter,
       companyFilter,
       branchFilter,
-      statusFilter, 
+      statusFilter,
       startDate,
       endDate,
     } = req.query;

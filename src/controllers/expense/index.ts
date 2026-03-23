@@ -70,10 +70,12 @@ export const getAllExpense = async (req, res) => {
         }
 
         // search
+        let searchCriteria: any = {};
         if (search) {
-            criteria.$or = [
+            searchCriteria.$or = [
                 { description: { $regex: search, $options: "i" } },
-                { type: { $regex: search, $options: "i" } }
+                { type: { $regex: search, $options: "i" } },
+                { "partyId.fullName": { $regex: search, $options: "i" } }
             ];
         }
 
@@ -84,8 +86,79 @@ export const getAllExpense = async (req, res) => {
         // aggregation pipeline
         let pipeline: any = [
             { $match: criteria },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "userInfo"
+                }
+            },
+            {
+                $lookup: {
+                    from: "contacts",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "contactInfo"
+                }
+            },
+            {
+                $addFields: {
+                    partyId: {
+                        $let: {
+                            vars: {
+                                party: {
+                                    $cond: {
+                                        if: "$isSalary",
+                                        then: { $arrayElemAt: ["$userInfo", 0] },
+                                        else: { $arrayElemAt: ["$contactInfo", 0] }
+                                    }
+                                }
+                            },
+                            in: {
+                                _id: "$$party._id",
+                                fullName: {
+                                    $cond: {
+                                        if: "$isSalary",
+                                        then: "$$party.fullName",
+                                        else: {
+                                            $trim: {
+                                                input: {
+                                                    // remove extra space between first name and last name
+                                                    $concat: [
+                                                        { $ifNull: ["$$party.firstName", ""] },
+                                                        "",
+                                                        { $ifNull: ["$$party.lastName", ""] }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            ...(search ? [{ $match: searchCriteria }] : []),
             { $sort: { createdAt: -1 } },
             ...(page && limit ? [{ $skip: (page - 1) * limit }, { $limit: limit }] : []),
+            {
+                $project: {
+                    userInfo: 0,
+                    contactInfo: 0
+                }
+            }
+        ];
+
+        // fetch data with aggregate and populate
+        const response = await aggregateAndPopulate(ExpenseModel, pipeline, [
+            { path: "companyId", select: "name" }
+        ]);
+
+        // total count with aggregation to support search in populated fields
+        let totalCountResult = await ExpenseModel.aggregate([
+            { $match: criteria },
             {
                 $lookup: {
                     from: "users",
@@ -138,21 +211,11 @@ export const getAllExpense = async (req, res) => {
                     }
                 }
             },
-            {
-                $project: {
-                    userInfo: 0,
-                    contactInfo: 0
-                }
-            }
-        ];
-
-        // fetch data with aggregate and populate
-        const response = await aggregateAndPopulate(ExpenseModel, pipeline, [
-            { path: "companyId", select: "name" }
+            ...(search ? [{ $match: searchCriteria }] : []),
+            { $count: "total" }
         ]);
 
-        // total count
-        const totalData = await countData(ExpenseModel, criteria);
+        const totalData = totalCountResult.length > 0 ? totalCountResult[0].total : 0;
 
         const totalPages = Math.ceil(totalData / limit) || 1;
 
