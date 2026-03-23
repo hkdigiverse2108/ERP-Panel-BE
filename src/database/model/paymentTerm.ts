@@ -1,14 +1,15 @@
-// import mongoose, { Schema } from "mongoose";
-// import { baseSchemaFields, baseSchemaOptions } from "./base";
-// import { IPaymentTerm } from "../../types";
+import mongoose, { Schema } from "mongoose";
+import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { IPaymentTerms } from "../../types";
 
-// const paymentTermSchema = new Schema<IPaymentTerm>(
-//   {
-//     ...baseSchemaFields,
-//     name: { type: String, required: true },
-//     day: { type: Number, required: true },
-//   },
-//   baseSchemaOptions
-// );
+const paymentTermsSchema = new Schema<IPaymentTerms>(
+  {
+    ...baseSchemaFields,
+    name: { type: String },
+    day: { type: Number },
+    isDefault: { type: Boolean, default: true },
+  },
+  baseSchemaOptions,
+);
 
-// export const paymentTermModel = mongoose.model<IPaymentTerm>("payment-term", paymentTermSchema);
+export const paymentTermsModel = mongoose.model<IPaymentTerms>("paymentTerms", paymentTermsSchema);
