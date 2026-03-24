@@ -13,9 +13,7 @@ export const addMaterialConsumptionSchema = Joi.object({
   ...baseApiSchema,
   // number: Joi.string().trim().optional(),
   date: Joi.date().required(),
-  type: Joi.string()
-    .valid(...Object.values(CONSUMPTION_TYPE))
-    .default(CONSUMPTION_TYPE.PRODUCTION),
+  consumptionTypeId: objectId().required(),
   remark: Joi.string().allow("", null).optional(),
   items: Joi.array().items(materialConsumptionItemSchema).min(1).required(),
   totalQty: Joi.number().min(0).optional(),
@@ -27,9 +25,7 @@ export const editMaterialConsumptionSchema = Joi.object({
   materialConsumptionId: objectId().required(), // used to find the document
   // number: Joi.string().trim().optional(),
   date: Joi.date().optional(),
-  type: Joi.string()
-    .valid(...Object.values(CONSUMPTION_TYPE))
-    .default(CONSUMPTION_TYPE.PRODUCTION),
+  consumptionTypeId: objectId().optional(),
   remark: Joi.string().allow("", null).optional(),
   items: Joi.array().items(materialConsumptionItemSchema).optional(),
   totalQty: Joi.number().min(0).optional(),

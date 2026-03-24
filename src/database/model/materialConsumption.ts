@@ -17,7 +17,7 @@ const materialConsumptionSchema = new Schema(
     ...baseSchemaFields,
     number: { type: String, index: true },
     date: { type: Date },
-    type: { type: String, enum: Object.values(CONSUMPTION_TYPE), default: CONSUMPTION_TYPE.PRODUCTION },
+    consumptionTypeId: { type: Schema.Types.ObjectId, ref: "consumption-type" },
     remark: { type: String },
     items: [materialConsumptionItemSchema],
     totalQty: { type: Number },

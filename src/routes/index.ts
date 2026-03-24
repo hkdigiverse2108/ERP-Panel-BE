@@ -62,6 +62,7 @@ import { productTypeRouter } from "./productType";
 import { expenseRouter } from "./expense";
 import { salaryRouter } from "./salary";
 import { paymentTermRouter } from "./paymentTerm";
+import { consumptionTypeRouter } from "./consumptionType";
 
 const router = Router();
 
@@ -90,6 +91,7 @@ router.use("/payment-term", paymentTermRouter);
 router.use("/location", locationRouter);
 router.use("/uom", uomRouter);
 router.use("/tax", taxRouter);
+router.use("/consumption-type", consumptionTypeRouter);
 router.use("/terms-condition", termsConditionRouter);
 router.use("/purchase-order", purchaseOrderRouter);
 router.use("/supplier-bill", supplierBillRouter);

@@ -59,3 +59,4 @@ export * from "./companyDrive";
 export * from "./productType";
 export * from "./expense";
 export * from "./salary";
+export * from "./consumptionType";

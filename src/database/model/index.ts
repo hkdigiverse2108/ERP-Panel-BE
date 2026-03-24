@@ -65,3 +65,4 @@ export * from "./estimate";
 export * from "./productType";
 export * from "./expense";
 export * from "./paymentTerm"
+export * from "./consumptionType"
