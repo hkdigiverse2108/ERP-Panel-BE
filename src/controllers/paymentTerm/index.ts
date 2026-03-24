@@ -137,6 +137,9 @@ export const getAllPaymentTerm = async (req, res) => {
             sort: { name: 1 },
             skip: (page - 1) * limit,
             limit,
+            populate: [
+                { path: "createdBy", select: "name userType" },
+            ],
         };
 
         const response = await getDataWithSorting(paymentTermsModel, criteria, {}, options);
@@ -170,7 +173,7 @@ export const getPaymentTermById = async (req, res) => {
             { _id: id, isDeleted: false },
             {},
             {
-                populate: [{ path: "companyId", select: "name" }],
+                populate: [{ path: "companyId", select: "name" }, { path: "createdBy", select: "name userType" }],
             },
         );
 

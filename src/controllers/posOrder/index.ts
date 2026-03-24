@@ -797,6 +797,8 @@ export const getAllPosOrder = async (req, res) => {
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "additionalCharges.chargeId", select: "name" },
         { path: "posCashRegisterId", select: "registerNo status" },
+        { path: "payLater.paymentTermsId", select: "name day" },
+        { path: "createdBy", select: "name userType" },
       ],
       ...(lastBillFilter !== "true" && { skip: (page - 1) * limit, limit }),
     };
@@ -881,6 +883,8 @@ export const getOnePosOrder = async (req, res) => {
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "additionalCharges.chargeId", select: "name" },
           { path: "posCashRegisterId", select: "name status" },
+          { path: "payLater.paymentTermsId", select: "name day" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );
@@ -985,10 +989,12 @@ export const getAllHoldOrders = async (req, res) => {
         { path: "salesManId", select: "fullName" },
         { path: "customerId", select: "firstName lastName companyName phoneNo" },
         { path: "posCashRegisterId", select: "registerNo status" },
+        { path: "payLater.paymentTermsId", select: "name day" },
         {
           path: "items.productId",
           select: "-isDeleted -isActive -createdAt -updatedAt -createdBy -updatedBy -images -nutrition",
         },
+        { path: "createdBy", select: "name userType" },
       ],
       limit: 100,
     };
@@ -1266,6 +1272,7 @@ export const getPosCashControl = async (req, res) => {
         populate: [
           { path: "branchId", select: "name" },
           { path: "closedBy", select: "firstName lastName" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );
@@ -1465,6 +1472,7 @@ export const getCombinedPayments = async (req, res) => {
       populate: [
         { path: "partyId", select: "firstName lastName companyName" },
         { path: "bankAccountId", select: "name" },
+        { path: "createdBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -1597,6 +1605,7 @@ export const quickAddProduct = async (req, res) => {
         populate: [
           { path: "categoryId", select: "name" },
           { path: "salesTaxId", select: "name percentage" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

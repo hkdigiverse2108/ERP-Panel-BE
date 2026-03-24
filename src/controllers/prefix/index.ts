@@ -142,6 +142,7 @@ export const getAllPrefix = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
+        { path: "createdBy", select: "name userType" },
       ],
     };
 
@@ -185,6 +186,7 @@ export const getOnePrefix = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

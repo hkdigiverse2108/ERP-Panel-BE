@@ -208,6 +208,7 @@ export const getAllMaterialConsumption = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "items.productId", select: "name" },
+        { path: "createdBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -245,6 +246,7 @@ export const getMaterialConsumptionById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "items.productId", select: "name" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

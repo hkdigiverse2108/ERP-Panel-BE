@@ -230,6 +230,8 @@ export const getAllUser = async (req, res) => {
         { path: "address.country", select: "name code" },
         { path: "address.state", select: "name code" },
         { path: "address.city", select: "name code" },
+        { path: "createdBy", select: "name userType" },
+        { path: "updatedBy", select: "name userType" },
       ],
     };
 
@@ -276,6 +278,8 @@ export const getUserById = async (req, res) => {
           { path: "address.country", select: "name code" },
           { path: "address.state", select: "name code" },
           { path: "address.city", select: "name code" },
+          { path: "createdBy", select: "name userType" },
+          { path: "updatedBy", select: "name userType" },
         ],
       },
     );

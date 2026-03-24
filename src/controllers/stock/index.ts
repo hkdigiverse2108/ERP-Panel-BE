@@ -313,6 +313,7 @@ export const getAllStock = async (req, res) => {
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
         { path: "subBrandId", select: "name" },
+        { path: "createdBy", select: "name userType" },
       ],
     };
     const products = await getDataWithSorting(productModel, criteria, {}, options);
@@ -366,6 +367,7 @@ export const getOneStock = async (req, res) => {
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );
@@ -394,6 +396,7 @@ export const getOneStock = async (req, res) => {
           { path: "branchId", select: "name" },
           { path: "purchaseTaxId", select: "name" },
           { path: "salesTaxId", select: "name" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

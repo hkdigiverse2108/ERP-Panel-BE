@@ -345,6 +345,7 @@ export const getAllPosCashRegister = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "salesManId", select: "fullName" },
         { path: "bankAccountId", select: "name" },
+        { path: "createdBy", select: "name userType" },
       ],
     };
 
@@ -410,6 +411,7 @@ export const getOnePosCashRegister = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "salesManId", select: "fullName" },
           { path: "bankAccountId", select: "name" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

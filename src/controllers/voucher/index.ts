@@ -158,6 +158,8 @@ export const getAllVoucher = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "partyId", select: "firstName lastName companyName" },
+        { path: "createdBy", select: "name userType" },
+        { path: "updatedBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -197,6 +199,8 @@ export const getOneVoucher = async (req, res) => {
       {
         populate: [
           { path: "partyId", select: "firstName lastName companyName email phoneNo address" },
+          { path: "createdBy", select: "name userType" },
+          { path: "updatedBy", select: "name userType" },
         ],
       },
     );

@@ -287,6 +287,8 @@ export const getAllSalesCreditNote = async (req, res) => {
         { path: "termsAndConditionIds", select: "termsCondition" },
         { path: "companyId", select: "name" },
         { path: "salesManId", select: "firstName lastName" },
+        { path: "createdBy", select: "name userType" },
+        { path: "updatedBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -383,6 +385,8 @@ export const getOneSalesCreditNote = async (req, res) => {
           { path: "companyId", select: "name gstNo" },
           { path: "salesManId", select: "firstName lastName" },
           { path: "shippingDetails.transporterId", select: "firstName lastName" },
+          { path: "createdBy", select: "name userType" },
+          { path: "updatedBy", select: "name userType" },
         ],
       },
     );

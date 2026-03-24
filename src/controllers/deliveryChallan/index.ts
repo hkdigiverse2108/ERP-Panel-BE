@@ -329,6 +329,8 @@ export const getAllDeliveryChallan = async (req, res) => {
             { path: "address.city", select: "name" },
           ],
         },
+        { path: "paymentTermsId", select: "name day" },
+        { path: "createdBy", select: "name userType" },
         { path: "salesOrderIds", select: "salesOrderNo" },
         { path: "invoiceIds", select: "invoiceNo" },
         { path: "items.productId", select: "name itemCode" },
@@ -446,6 +448,8 @@ export const getOneDeliveryChallan = async (req, res) => {
               { path: "address.city", select: "name" },
             ],
           },
+          { path: "paymentTermsId", select: "name day" },
+          { path: "createdBy", select: "name userType" },
           { path: "salesOrderIds", select: "salesOrderNo date" },
           { path: "invoiceIds", select: "invoiceNo date" },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },
@@ -533,7 +537,7 @@ export const getDeliveryChallanDropdown = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "customerId", select: "firstName lastName companyName" }],
+      populate: [{ path: "customerId", select: "firstName lastName companyName" }, { path: "createdBy", select: "name userType" }],
     };
 
     const response = await getDataWithSorting(deliveryChallanModel, criteria, { deliveryChallanNo: 1, date: 1, transactionSummary: 1 }, options);

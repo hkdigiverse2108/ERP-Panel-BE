@@ -7,7 +7,7 @@ import {
   salesItemSchema,
   commonShippingSchema,
 } from "./base";
-import { ESTIMATE_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE } from "../../common";
+import { ESTIMATE_STATUS, TAX_TYPE } from "../../common";
 import { IEstimate } from "../../types";
 
 const EstimateSchema = new Schema<IEstimate>(
@@ -26,7 +26,7 @@ const EstimateSchema = new Schema<IEstimate>(
     status: { type: String, enum: Object.values(ESTIMATE_STATUS), default: ESTIMATE_STATUS.PENDING },
     transactionSummary: { type: transactionSummarySchema },
     additionalCharges: { type: [commonAdditionalChargeSchema] },
-    paymentTerms: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
+    paymentTermsId: { type: mongoose.Schema.Types.ObjectId, ref: "paymentTerms" },
     taxType: { type: String, enum: Object.values(TAX_TYPE), default: TAX_TYPE.DEFAULT },
     sez: { type: String },
     shippingDetails: { type: commonShippingSchema },

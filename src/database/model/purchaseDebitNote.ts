@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema, commonShippingSchema, transactionSummarySchema } from "./base";
-import { PAYMENT_TERMS_ENUM, PURCHASE_DEBIT_NOTE_STATUS } from "../../common";
+import { PURCHASE_DEBIT_NOTE_STATUS } from "../../common";
 
 export interface IpurchaseDebitNote {
   _id?: Schema.Types.ObjectId;
@@ -15,7 +15,7 @@ export interface IpurchaseDebitNote {
   debitNoteDate: Date;
   dueDate?: Date;
   shippingDate?: Date;
-  paymentTerm?: string;
+  paymentTermsId?: Schema.Types.ObjectId;
   purchaseId?: Schema.Types.ObjectId;
   reverseCharge: boolean;
   reason?: string;
@@ -82,7 +82,7 @@ const purchaseDebitNoteSchema = new Schema<IpurchaseDebitNote>(
     debitNoteDate: { type: Date },
     dueDate: { type: Date },
     shippingDate: { type: Date },
-    paymentTerm: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
+    paymentTermsId: { type: mongoose.Schema.Types.ObjectId, ref: "paymentTerms" },
     purchaseId: {
       type: Schema.Types.ObjectId,
       ref: "purchase-order",

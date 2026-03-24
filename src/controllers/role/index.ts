@@ -171,6 +171,7 @@ export const getAllRole = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
+        { path: "createdBy", select: "name userType" },
       ],
     };
 
@@ -214,6 +215,7 @@ export const getRoleById = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

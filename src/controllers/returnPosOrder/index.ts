@@ -565,8 +565,10 @@ export const getAllReturnPosOrder = async (req, res) => {
     ];
 
     const result = await returnPosOrderModel.aggregate(pipeline);
-    const response = result[0].data;
+    let response = result[0].data;
     const totalData = result[0].metadata[0]?.total || 0;
+
+    response = await returnPosOrderModel.populate(response, { path: "createdBy", select: "name userType" });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), { returnPosOrder_data: response, totalData, state: { page, limit, totalPages: Math.ceil(totalData / limit) } }, {}));
   } catch (error) {
@@ -801,7 +803,9 @@ export const getOneReturnPosOrder = async (req, res) => {
 
     if (!response || response.length === 0) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Return POS Order"), {}, {}));
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), response[0], {}));
+    const populatedResponse = await returnPosOrderModel.populate(response[0], { path: "createdBy", select: "name userType" });
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), populatedResponse, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));

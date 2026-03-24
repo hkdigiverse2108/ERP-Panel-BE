@@ -188,6 +188,8 @@ export const getAllStockVerification = async (req, res) => {
           select: "name itemCode",
           // populate: [{ path: "uomId", select: "name code" }],
         },
+        { path: "createdBy", select: "name userType" },
+        { path: "updatedBy", select: "name userType" },
       ],
       skip: (parseInt(page as string) - 1) * parseInt(limit as string),
       limit: parseInt(limit as string),
@@ -240,6 +242,8 @@ export const getOneStockVerification = async (req, res) => {
               { path: "brandId", select: "name" },
             ],
           },
+          { path: "createdBy", select: "name userType" },
+          { path: "updatedBy", select: "name userType" },
         ],
       },
     );

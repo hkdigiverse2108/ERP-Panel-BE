@@ -272,8 +272,9 @@ export const getAllPurchaseDebitNote = async (req, res) => {
         { path: "productDetails.taxId", select: "name percentage" },
         { path: "additionalCharges.chargeId", select: "name type" },
         { path: "additionalCharges.taxId", select: "name percentage" },
+        { path: "paymentTermsId", select: "name day" },
         { path: "companyId", select: "name" },
-
+        { path: "createdBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -378,7 +379,9 @@ export const getOnePurchaseDebitNote = async (req, res) => {
           { path: "productDetails.taxId", select: "name percentage" },
           { path: "additionalCharges.chargeId", select: "name type" },
           { path: "additionalCharges.taxId", select: "name percentage" },
+          { path: "paymentTermsId", select: "name day" },
           { path: "companyId", select: "name gstNo" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

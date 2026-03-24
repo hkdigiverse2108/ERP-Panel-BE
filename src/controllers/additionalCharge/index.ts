@@ -127,6 +127,7 @@ export const getAllAdditionalCharge = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "taxId", select: "name taxPercentage" },
+        { path: "createdBy", select: "fullName userType" },
       ],
     };
 
@@ -169,6 +170,7 @@ export const getAdditionalChargeById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "taxId", select: "name taxPercentage" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

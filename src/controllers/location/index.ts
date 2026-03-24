@@ -252,7 +252,7 @@ export const getAllLocation = async (req, res) => {
 
     const options: any = {
       sort: { createdAt: -1 },
-      populate: [{ path: "parentId", select: "name type" }],
+      populate: [{ path: "parentId", select: "name type" }, { path: "createdBy", select: "name userType" },],
     };
 
     if (page && limit) {
@@ -291,7 +291,7 @@ export const getLocationById = async (req, res) => {
       { _id: value.id, isDeleted: false },
       {},
       {
-        populate: [{ path: "parentId", select: "name type" }],
+        populate: [{ path: "parentId", select: "name type" }, { path: "createdBy", select: "name userType" },],
       },
     );
 
