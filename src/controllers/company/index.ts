@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
-import { bankModel, companyModel, locationModel } from "../../database";
+import { bankModel, companyModel, locationModel, PrefixModel } from "../../database";
 import {
   checkIdExist,
   checkLocationExist,
@@ -124,6 +124,25 @@ export const addCompany = async (req, res) => {
             {},
           ),
         );
+
+    // Auto-create prefixes for the new company based on templates
+    try {
+      const templates = await PrefixModel.find({ companyId: null, isDeleted: false });
+      if (templates.length > 0) {
+        const companyPrefixes = templates.map((template: any) => ({
+          prefixType: template.prefixType,
+          prefix: template.prefix,
+          sequenceNumber: template.sequenceNumber,
+          companyId: response._id,
+          createdBy: user?._id || null,
+          updatedBy: user?._id || null,
+        }));
+        await PrefixModel.insertMany(companyPrefixes);
+      }
+    } catch (prefixError) {
+      console.error("Error creating prefixes for company:", prefixError);
+      // We don't fail the company creation if prefix creation fails, but we log it
+    }
 
     return res
       .status(HTTP_STATUS.CREATED)
