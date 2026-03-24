@@ -1,7 +1,8 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { paymentTermsModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addPaymentTermSchema, deletePaymentTermSchema, editPaymentTermSchema, getPaymentTermSchema } from "../../validation";
+import { propagateDefaultPaymentTermToAllCompanies } from "./helper";
 
 export const addPaymentTerm = async (req, res) => {
     reqInfo(req);
@@ -13,7 +14,7 @@ export const addPaymentTerm = async (req, res) => {
 
         value.companyId = await checkCompany(user, value);
 
-        if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+        if (!value.companyId && user.userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
         const isExist = await getFirstMatch(paymentTermsModel, { name: value?.name, companyId: value.companyId, isDeleted: false }, {}, {});
         if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Payment Term"), {}, {}));
@@ -21,8 +22,19 @@ export const addPaymentTerm = async (req, res) => {
         value.createdBy = user?._id;
         value.updatedBy = user?._id;
 
+        if (!value.companyId) {
+            if (user.userType === USER_TYPES.SUPER_ADMIN) {
+                value.isDefault = true;
+            }
+        }
+
         const response = await createOne(paymentTermsModel, value);
         if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+
+        // If a new global default is created, propagate to all existing companies (optional requirement fulfilled)
+        if (!value.companyId && value.isDefault) {
+            await propagateDefaultPaymentTermToAllCompanies(response._id, user?._id);
+        }
 
         return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Payment Term"), response, {}));
     } catch (error) {
@@ -178,10 +190,16 @@ export const getPaymentTermDropdown = async (req, res) => {
         const { user } = req?.headers;
         const companyId = user?.companyId?._id;
 
+        const { companyFilter } = req.query;
+
         let criteria: any = { isDeleted: false, isActive: true };
 
         if (companyId) {
             criteria.companyId = companyId;
+        }
+
+        if (companyFilter) {
+            criteria.companyId = companyFilter;
         }
 
         const response = await getDataWithSorting(

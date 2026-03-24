@@ -1,5 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { bankModel, companyModel, locationModel } from "../../database";
+import { cloneDefaultPaymentTermsToCompany } from "../paymentTerm/helper";
 import {
   checkIdExist,
   checkLocationExist,
@@ -124,6 +125,9 @@ export const addCompany = async (req, res) => {
             {},
           ),
         );
+
+    // Clone global default payment terms to the newly created company
+    await cloneDefaultPaymentTermsToCompany(response._id, user?._id);
 
     return res
       .status(HTTP_STATUS.CREATED)
