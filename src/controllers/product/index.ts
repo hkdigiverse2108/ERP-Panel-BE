@@ -463,12 +463,17 @@ export const getAllProduct = async (req, res) => {
               _id: "$productId",
               totalQty: { $sum: "$qty" },
               totalMrp: { $sum: "$mrp" },
+
               totalSellingPrice: { $sum: "$sellingPrice" },
               totalSellingDiscount: { $sum: "$sellingDiscount" },
               totalLandingCost: { $sum: "$landingCost" },
               totalPurchasePrice: { $sum: "$purchasePrice" },
               totalSellingMargin: { $sum: "$sellingMargin" },
               uomId: { $first: "$uomId" },
+              purchaseTaxId: { $first: "$purchaseTaxId" },
+              salesTaxId: { $first: "$salesTaxId" },
+              isPurchaseTaxIncluding: { $first: "$isPurchaseTaxIncluding" },
+              isSalesTaxIncluding: { $first: "$isSalesTaxIncluding" },
             },
           },
           {
@@ -480,8 +485,36 @@ export const getAllProduct = async (req, res) => {
             },
           },
           {
+            $lookup: {
+              from: "taxes",
+              localField: "purchaseTaxId",
+              foreignField: "_id",
+              as: "purchaseTaxData",
+            },
+          },
+          {
+            $lookup: {
+              from: "taxes",
+              localField: "salesTaxId",
+              foreignField: "_id",
+              as: "salesTaxData",
+            },
+          },
+          {
             $unwind: {
               path: "$uomData",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+          {
+            $unwind: {
+              path: "$purchaseTaxData",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+          {
+            $unwind: {
+              path: "$salesTaxData",
               preserveNullAndEmptyArrays: true,
             },
           },
@@ -494,6 +527,16 @@ export const getAllProduct = async (req, res) => {
                 name: "$uomData.name",
                 code: "$uomData.code",
               },
+              purchaseTaxData: {
+                _id: "$purchaseTaxData._id",
+                name: "$purchaseTaxData.name",
+                percentage: "$purchaseTaxData.percentage",
+              },
+              salesTaxData: {
+                _id: "$salesTaxData._id",
+                name: "$salesTaxData.name",
+                percentage: "$salesTaxData.percentage",
+              },
               totalQty: 1,
               totalMrp: 1,
               totalSellingPrice: 1,
@@ -501,6 +544,8 @@ export const getAllProduct = async (req, res) => {
               totalLandingCost: 1,
               totalPurchasePrice: 1,
               totalSellingMargin: 1,
+              isPurchaseTaxIncluding: 1,
+              isSalesTaxIncluding: 1,
             },
           },
         ]);
@@ -515,6 +560,10 @@ export const getAllProduct = async (req, res) => {
           landingCost: stockAggregation.length > 0 ? stockAggregation[0].totalLandingCost : 0,
           purchasePrice: stockAggregation.length > 0 ? stockAggregation[0].totalPurchasePrice : 0,
           sellingMargin: stockAggregation.length > 0 ? stockAggregation[0].totalSellingMargin : 0,
+          purchaseTaxId: stockAggregation.length > 0 ? stockAggregation[0].purchaseTaxData : null,
+          salesTaxId: stockAggregation.length > 0 ? stockAggregation[0].salesTaxData : null,
+          isPurchaseTaxIncluding: stockAggregation.length > 0 ? stockAggregation[0].isPurchaseTaxIncluding : false,
+          isSalesTaxIncluding: stockAggregation.length > 0 ? stockAggregation[0].isSalesTaxIncluding : false,
           qty,
           uomId: stockAggregation.length > 0 ? stockAggregation[0].uomData : null,
         };

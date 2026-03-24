@@ -31,3 +31,4 @@ export * from "./settings";
 export * from "./bankTransaction";
 export * from "./supplierBill";
 export * from "./expense";
+export * from "./paymentTerm";

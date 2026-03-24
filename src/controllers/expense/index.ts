@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { ExpenseModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, aggregateAndPopulate } from "../../helper";
 import { addExpenseSchema, deleteExpenseSchema, editExpenseSchema, getExpenseSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -62,7 +62,7 @@ export const getAllExpense = async (req, res) => {
         if (typeFilter) criteria.type = typeFilter;
 
         // active filter
-        if (activeFilter) criteria.isActive = activeFilter;
+        if (activeFilter) criteria.isActive = activeFilter === "true" ? true : false;
 
         // avoid salary filter
         if (avoidSalary === "true" || avoidSalary === true) {
@@ -70,10 +70,12 @@ export const getAllExpense = async (req, res) => {
         }
 
         // search
+        let searchCriteria: any = {};
         if (search) {
-            criteria.$or = [
+            searchCriteria.$or = [
                 { description: { $regex: search, $options: "i" } },
-                { type: { $regex: search, $options: "i" } }
+                { type: { $regex: search, $options: "i" } },
+                { "partyId.fullName": { $regex: search, $options: "i" } }
             ];
         }
 
@@ -81,33 +83,139 @@ export const getAllExpense = async (req, res) => {
         applyDateFilter(criteria, startDate as string, endDate as string);
 
 
-        const options: any = {
-            sort: { createdAt: -1 },
-            skip: (page - 1) * limit,
-            limit: limit,
-            populate: [
-                { path: "companyId", select: "name" }
-            ]
-        };
+        // aggregation pipeline
+        let pipeline: any = [
+            { $match: criteria },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "userInfo"
+                }
+            },
+            {
+                $lookup: {
+                    from: "contacts",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "contactInfo"
+                }
+            },
+            {
+                $addFields: {
+                    partyId: {
+                        $let: {
+                            vars: {
+                                party: {
+                                    $cond: {
+                                        if: "$isSalary",
+                                        then: { $arrayElemAt: ["$userInfo", 0] },
+                                        else: { $arrayElemAt: ["$contactInfo", 0] }
+                                    }
+                                }
+                            },
+                            in: {
+                                _id: "$$party._id",
+                                fullName: {
+                                    $cond: {
+                                        if: "$isSalary",
+                                        then: "$$party.fullName",
+                                        else: {
+                                            $trim: {
+                                                input: {
+                                                    // remove extra space between first name and last name
+                                                    $concat: [
+                                                        { $ifNull: ["$$party.firstName", ""] },
+                                                        "",
+                                                        { $ifNull: ["$$party.lastName", ""] }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            ...(search ? [{ $match: searchCriteria }] : []),
+            { $sort: { createdAt: -1 } },
+            ...(page && limit ? [{ $skip: (page - 1) * limit }, { $limit: limit }] : []),
+            {
+                $project: {
+                    userInfo: 0,
+                    contactInfo: 0
+                }
+            }
+        ];
 
-        // fetch data
-        const response = await getDataWithSorting(ExpenseModel, criteria, {}, options);
+        // fetch data with aggregate and populate
+        const response = await aggregateAndPopulate(ExpenseModel, pipeline, [
+            { path: "companyId", select: "name" }
+        ]);
 
-        // dynamic populate based on salary
-        await Promise.all(
-            response.map(async (item) => {
-                await ExpenseModel.populate(item, {
-                    path: "partyId",
-                    model: item.isSalary ? "user" : "contact",
-                    select: item.isSalary
-                        ? "fullName"
-                        : "firstName lastName companyName"
-                });
-            })
-        );
+        // total count with aggregation to support search in populated fields
+        let totalCountResult = await ExpenseModel.aggregate([
+            { $match: criteria },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "userInfo"
+                }
+            },
+            {
+                $lookup: {
+                    from: "contacts",
+                    localField: "partyId",
+                    foreignField: "_id",
+                    as: "contactInfo"
+                }
+            },
+            {
+                $addFields: {
+                    partyId: {
+                        $let: {
+                            vars: {
+                                party: {
+                                    $cond: {
+                                        if: "$isSalary",
+                                        then: { $arrayElemAt: ["$userInfo", 0] },
+                                        else: { $arrayElemAt: ["$contactInfo", 0] }
+                                    }
+                                }
+                            },
+                            in: {
+                                fullName: {
+                                    $cond: {
+                                        if: "$isSalary",
+                                        then: "$$party.fullName",
+                                        else: {
+                                            $trim: {
+                                                input: {
+                                                    $concat: [
+                                                        { $ifNull: ["$$party.firstName", ""] },
+                                                        " ",
+                                                        { $ifNull: ["$$party.lastName", ""] }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            ...(search ? [{ $match: searchCriteria }] : []),
+            { $count: "total" }
+        ]);
 
-        // total count
-        const totalData = await countData(ExpenseModel, criteria);
+        const totalData = totalCountResult.length > 0 ? totalCountResult[0].total : 0;
 
         const totalPages = Math.ceil(totalData / limit) || 1;
 
