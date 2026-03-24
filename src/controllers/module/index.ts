@@ -271,3 +271,24 @@ export const get_users_permissions_by_moduleId = async (req, res) => {
     }
 }
 
+export const automatic_attach = async () => {
+    try {
+        const modules = await getData(moduleModel, { isDeleted: false }, {}, {});
+        const users = await getData(userModel, { isDeleted: false, userType: USER_TYPES.SUPER_ADMIN }, {}, {});
+        for (const module of modules) {
+            for (const user of users) {
+                const permissionData = {
+                    moduleId: new ObjectId(module._id),
+                    userId: new ObjectId(user._id),
+                    view: true,
+                    add: true,
+                    edit: true,
+                    delete: true
+                };
+                await updateData(permissionModel, { userId: new ObjectId(user._id), moduleId: new ObjectId(module._id) }, permissionData, { upsert: true });
+            }
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
