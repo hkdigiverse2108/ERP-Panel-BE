@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
-import { branchModel, companyModel, productModel, productTypeModel, stockModel, uomModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, findAllAndPopulateWithSorting } from "../../helper";
-import { addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation";
+import { branchModel, companyModel, productModel, productTypeModel, stockModel, uomModel, brandModel, categoryModel } from "../../database";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, findAllAndPopulateWithSorting, extractDataFromFile } from "../../helper";
+import { addBulkProductSchema, addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation";
 import axios from "axios";
 import FormData from "form-data";
 
@@ -44,6 +44,202 @@ export const addProduct = async (req, res) => {
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Product"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const bulkAddProduct = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = userType !== USER_TYPES.SUPER_ADMIN ? user?.companyId?._id : null;
+
+    if (!req.file) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("File"), {}, {}));
+    }
+
+    const { data, error: extractError } = extractDataFromFile(req.file);
+    if (extractError) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, extractError, {}, {}));
+    }
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "No data found in the file", {}, {}));
+    }
+
+    const productsToAdd = [];
+    const errors = [];
+    const namesInFile = new Set();
+
+    for (let i = 0; i < data.length; i++) {
+      let item = data[i];
+
+      // --- Pre-process the item ---
+
+      // 1. Handle booleans string (TRUE/FALSE)
+      Object.keys(item).forEach((key) => {
+        if (typeof item[key] === "string") {
+          const val = item[key].trim().toUpperCase();
+          if (val === "TRUE") item[key] = true;
+          else if (val === "FALSE") item[key] = false;
+        }
+      });
+
+      // 2. Handle productType string (convert to enum format: lowercase and underscores)
+      if (item.productType && typeof item.productType === "string") {
+        item.productType = item.productType.trim().toLowerCase().replace(/\s+/g, "_");
+      }
+
+      // 3. Handle date strings (DD-MM-YYYY or DD/MM/YYYY to Date object)
+      if (item.expiryReferenceDate && typeof item.expiryReferenceDate === "string") {
+        const dateStr = item.expiryReferenceDate.trim();
+        const dateParts = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+        if (dateParts) {
+          const day = parseInt(dateParts[1], 10);
+          const month = parseInt(dateParts[2], 10) - 1;
+          const year = parseInt(dateParts[3], 10);
+          const date = new Date(year, month, day);
+          if (!isNaN(date.getTime())) {
+            item.expiryReferenceDate = date;
+          }
+        }
+      }
+
+      // Validate with Joi
+      let { error, value } = addBulkProductSchema.validate(item);
+
+      if (error) {
+        errors.push({ row: i + 1, error: error.details[0].message });
+        continue;
+      }
+
+      // --- Post-validation processing ---
+
+      // 1. Handle ingredients (comma-separated string to array)
+      if (value.ingredients && typeof value.ingredients === "string") {
+        value.ingredients = value.ingredients
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s !== "");
+      }
+
+      // 2. Handle nutrition (string like 'item1:value1, item2:value2' to array of objects)
+      if (value.nutrition && typeof value.nutrition === "string") {
+        const nutritionArray = [];
+        const pairs = value.nutrition.split(",").map((p) => p.trim()).filter((p) => p !== "");
+        for (const pair of pairs) {
+          const parts = pair.split(":");
+          const name = parts[0]?.trim() || "";
+          const val = parts.slice(1).join(":")?.trim() || ""; // In case the value contains a colon
+          if (name || val) {
+            nutritionArray.push({
+              name: name,
+              value: val,
+            });
+          }
+        }
+        value.nutrition = nutritionArray;
+      }
+
+      if (userType !== USER_TYPES.SUPER_ADMIN) {
+        value.companyId = companyId;
+      }
+
+      // --- Map names to IDs ---
+
+      // Category & SubCategory Mapping
+      if (value.category) {
+        const categoryResult = await getFirstMatch(categoryModel, { name: { $regex: new RegExp(`^${value.category.trim()}$`, "i") }, isDeleted: false, parentCategoryId: null }, {}, {});
+        if (!categoryResult) {
+          errors.push({ row: i + 1, error: `Category '${value.category}' not found` });
+          continue;
+        }
+        value.categoryId = categoryResult._id;
+
+        if (value.subCategory) {
+          const subCategoryResult = await getFirstMatch(categoryModel, { name: { $regex: new RegExp(`^${value.subCategory.trim()}$`, "i") }, isDeleted: false, parentCategoryId: value.categoryId }, {}, {});
+          if (!subCategoryResult) {
+            errors.push({ row: i + 1, error: `Sub-category '${value.subCategory}' not found under '${value.category}'` });
+            continue;
+          }
+          value.subCategoryId = subCategoryResult._id;
+        }
+      }
+
+      // Brand & SubBrand Mapping
+      if (value.brand) {
+        const brandResult = await getFirstMatch(brandModel, { name: { $regex: new RegExp(`^${value.brand.trim()}$`, "i") }, isDeleted: false, parentBrandId: null }, {}, {});
+        if (!brandResult) {
+          errors.push({ row: i + 1, error: `Brand '${value.brand}' not found` });
+          continue;
+        }
+        value.brandId = brandResult._id;
+
+        if (value.subBrand) {
+          const subBrandResult = await getFirstMatch(brandModel, { name: { $regex: new RegExp(`^${value.subBrand.trim()}$`, "i") }, isDeleted: false, parentBrandId: value.brandId }, {}, {});
+          if (!subBrandResult) {
+            errors.push({ row: i + 1, error: `Sub-brand '${value.subBrand}' not found under '${value.brand}'` });
+            continue;
+          }
+          value.subBrandId = subBrandResult._id;
+        }
+      }
+
+      const nameKey = value.companyId ? `${value.name}_${value.companyId}` : value.name;
+      if (namesInFile.has(nameKey)) {
+        errors.push({ row: i + 1, error: `Duplicate Product Name in file: ${value.name}` });
+        continue;
+      }
+      namesInFile.add(nameKey);
+
+      if (value.companyId && !(await checkIdExist(companyModel, value.companyId, "Company", null))) {
+        errors.push({ row: i + 1, error: responseMessage?.getDataNotFound("Company") });
+        continue;
+      }
+
+      if (value.branchId && !(await checkIdExist(branchModel, value.branchId, "Branch", null))) {
+        errors.push({ row: i + 1, error: responseMessage?.getDataNotFound("Branch") });
+        continue;
+      }
+
+      if (value?.productTypeId && !(await checkIdExist(productTypeModel, value?.productTypeId, "Product Type", null))) {
+        errors.push({ row: i + 1, error: responseMessage?.getDataNotFound("Product Type") });
+        continue;
+      }
+
+      let duplicateCriteria: any = { name: value?.name, isDeleted: false };
+      if (value?.companyId) duplicateCriteria.companyId = value.companyId;
+      let isExist = await getFirstMatch(productModel, duplicateCriteria, {}, {});
+      if (isExist) {
+        errors.push({ row: i + 1, error: responseMessage?.dataAlreadyExist("Product with this name") });
+        continue;
+      }
+
+      value.createdBy = user?._id || null;
+      value.updatedBy = user?._id || null;
+
+      // Clean up the string fields used for mapping before saving to DB
+      delete value.category;
+      delete value.subCategory;
+      delete value.brand;
+      delete value.subBrand;
+
+      productsToAdd.push(value);
+    }
+
+    if (errors.length > 0) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Bulk upload failed due to some errors.", {  }, {errors}));
+    }
+
+    const response = await productModel.insertMany(productsToAdd);
+    if (!response) {
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Bulk Products"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
