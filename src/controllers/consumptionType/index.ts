@@ -149,7 +149,7 @@ export const getAllConsumptionType = async (req: any, res: any) => {
     reqInfo(req);
     try {
         const { user } = req.headers;
-        let { page, limit, search, companyFilter } = req.query;
+        let { page, limit, search, companyFilter ,activeFilter} = req.query;
 
         page = Number(page) || 1;
         limit = Number(limit) || 10;
@@ -164,6 +164,10 @@ export const getAllConsumptionType = async (req: any, res: any) => {
 
         if (search) {
             criteria.name = { $regex: search, $options: "si" };
+        }
+
+        if(activeFilter){
+            criteria.isActive = activeFilter;
         }
 
         const options = {
