@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS, INVOICE_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS, INVOICE_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, termsConditionModel, deliveryChallanModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
 import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -75,9 +75,12 @@ export const addInvoice = async (req, res) => {
       }
     }
 
-    // Generate document number if not provided
+    // Generate document number if not provided using dynamic prefix helper
     if (!value.invoiceNo) {
-      value.invoiceNo = await generateSequenceNumber({ model: InvoiceModel, prefix: "INV", fieldName: "invoiceNo", companyId: value.companyId });
+      value.invoiceNo = await getAndIncrementPrefix({ 
+        companyId: value.companyId, 
+        prefixType: PREFIX_MODULES.INVOICE 
+      });
     }
 
     // Get customer name

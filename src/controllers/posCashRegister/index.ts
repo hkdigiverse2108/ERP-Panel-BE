@@ -15,6 +15,7 @@ import {
   POS_VOUCHER_TYPE,
   PAYMENT_MODE,
   POS_ORDER_STATUS,
+  PREFIX_MODULES,
 } from "../../common";
 import mongoose from "mongoose";
 import {
@@ -29,6 +30,7 @@ import {
   responseMessage,
   generateSequenceNumber,
   applyDateFilter,
+  getAndIncrementPrefix,
 } from "../../helper";
 import {
   addPosCashRegisterSchema,
@@ -99,11 +101,9 @@ export const addPosCashRegister = async (req, res) => {
     value.createdBy = user?._id || null;
     value.salesManId = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.registerNo = await generateSequenceNumber({
-      model: PosCashRegisterModel,
-      prefix: "REG",
-      fieldName: "registerNo",
-      companyId: value.companyId,
+    value.registerNo = await getAndIncrementPrefix({ 
+      companyId: value.companyId, 
+      prefixType: PREFIX_MODULES.POS_CASH_REGISTER 
     });
 
     const response = await createOne(PosCashRegisterModel, value);

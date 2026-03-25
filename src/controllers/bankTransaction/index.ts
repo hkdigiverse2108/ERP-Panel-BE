@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { bankModel, BankTransactionModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, checkIdExist, checkCompany, generateSequenceNumber } from "../../helper";
+import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, checkIdExist, checkCompany, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
 import { addBankTransactionSchema, editBankTransactionSchema, getBankTransactionSchema, deleteBankTransactionSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -25,9 +25,10 @@ export const addBankTransaction = async (req, res) => {
         value.createdBy = user?._id || null;
         value.updatedBy = user?._id || null;
 
-        const voucherNo = await generateSequenceNumber(
-            { model: BankTransactionModel, prefix: "BT", fieldName: "BankVoucher", companyId: value.companyId }
-        );
+        const voucherNo = await getAndIncrementPrefix({ 
+            companyId: value.companyId, 
+            prefixType: PREFIX_MODULES.BANK_TRANSACTION 
+        });
         value.voucherNo = voucherNo;
 
         const response = await createOne(BankTransactionModel, value);

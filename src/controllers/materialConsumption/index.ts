@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { branchModel, ConsumptionTypeModel, materialConsumptionModel, productModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addMaterialConsumptionSchema, deleteMaterialConsumptionSchema, editMaterialConsumptionSchema, getMaterialConsumptionSchema } from "../../validation";
 
 export const addMaterialConsumption = async (req, res) => {
@@ -43,7 +43,10 @@ export const addMaterialConsumption = async (req, res) => {
       if (!updatedStock) continue;
     }
 
-    value.number = await generateSequenceNumber({ model: materialConsumptionModel, prefix: "CON", fieldName: "number", companyId: value.companyId });
+    value.number = await getAndIncrementPrefix({ 
+      companyId: value.companyId, 
+      prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION 
+    });
 
     const isExist = await getFirstMatch(materialConsumptionModel, { companyId: value.companyId, number: value?.number, isDeleted: false }, {}, {});
 

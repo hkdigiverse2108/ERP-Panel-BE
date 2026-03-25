@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
+import { apiResponse, HTTP_STATUS, USER_TYPES, PREFIX_MODULES } from "../../common";
 import { branchModel, materialConsumptionModel, productModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix } from "../../helper";
 import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -153,7 +153,10 @@ export const bulkStockAdjustment = async (req, res) => {
 
     if (processedItems.length) {
       const companyId = user?.companyId?._id || null;
-      const consumptionNo = await generateSequenceNumber({ model: materialConsumptionModel, prefix: "CON", fieldName: "number", companyId: companyId });
+      const consumptionNo = await getAndIncrementPrefix({ 
+        companyId, 
+        prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION 
+      });
       const totalAmount = processedItems.reduce((sum, item: any) => {
         const itemTotal = item?.totalPrice ?? (item?.qty || 0) * (item?.price || 0);
         return sum + itemTotal;

@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS, ORDER_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, purchaseOrderModel, productModel, companyModel, termsConditionModel, uomModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
 import { addPurchaseOrderSchema, deletePurchaseOrderSchema, editPurchaseOrderSchema, getPurchaseOrderSchema } from "../../validation/purchaseOrder";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -43,11 +43,9 @@ export const addPurchaseOrder = async (req, res) => {
     }
 
     if (!value.orderNo) {
-      value.orderNo = await generateSequenceNumber({
-        model: purchaseOrderModel,
-        prefix: "PO",
-        fieldName: "orderNo",
-        companyId: value.companyId,
+      value.orderNo = await getAndIncrementPrefix({ 
+        companyId: value.companyId, 
+        prefixType: PREFIX_MODULES.PURCHASE_ORDER 
       });
     }
 

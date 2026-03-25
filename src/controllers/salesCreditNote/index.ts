@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, salesCreditNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, employeeModel, SalesOrderModel, InvoiceModel, userModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addSalesCreditNoteSchema, deleteSalesCreditNoteSchema, editSalesCreditNoteSchema, getSalesCreditNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -75,13 +75,11 @@ export const addSalesCreditNote = async (req, res) => {
       }
     }
 
-    // Generate credit note number if not provided
+    // Generate credit note number if not provided using dynamic prefix helper
     if (!value?.creditNoteNo) {
-      value.creditNoteNo = await generateSequenceNumber({
-        model: salesCreditNoteModel,
-        prefix: "SCN",
-        fieldName: "creditNoteNo",
-        companyId: value.companyId,
+      value.creditNoteNo = await getAndIncrementPrefix({ 
+        companyId: value.companyId, 
+        prefixType: PREFIX_MODULES.SALES_CREDIT_NOTE 
       });
     }
 

@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS, VOUCHAR_TYPE } from "../../common";
+import { apiResponse, HTTP_STATUS, VOUCHAR_TYPE, PREFIX_MODULES } from "../../common";
 import { contactModel, voucherModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
 import { addVoucherSchema, deleteVoucherSchema, editVoucherSchema, getVoucherSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -29,15 +29,20 @@ export const addVoucher = async (req, res) => {
 
     // Generate voucher number if not provided
     if (!value.voucherNo) {
-      const prefixMap: { [key: string]: string } = {
-        [VOUCHAR_TYPE.PAYMENT]: "PAY",
-        [VOUCHAR_TYPE.RECEIPT]: "REC",
-        [VOUCHAR_TYPE.EXPENSE]: "EXP",
-        [VOUCHAR_TYPE.JOURNAL]: "JRN",
-        [VOUCHAR_TYPE.CONTRA]: "CNT",
+      const typeMap: { [key: string]: string } = {
+        [VOUCHAR_TYPE.PAYMENT]: PREFIX_MODULES.PAYMENT,
+        [VOUCHAR_TYPE.RECEIPT]: PREFIX_MODULES.RECEIPT,
+        [VOUCHAR_TYPE.EXPENSE]: PREFIX_MODULES.EXPENSE,
+        [VOUCHAR_TYPE.JOURNAL]: PREFIX_MODULES.JOURNAL_VOUCHER,
+        [VOUCHAR_TYPE.CONTRA]: PREFIX_MODULES.CONTRA_VOUCHER,
       };
-      const prefix = prefixMap[value.type] || "VCH";
-      value.voucherNo = await generateSequenceNumber({ model: voucherModel, prefix: prefix, fieldName: "voucherNo", companyId: value.companyId });
+
+      const prefixType = typeMap[value.type] || PREFIX_MODULES.RECEIPT; // Defaulting to Receipt if unknown
+
+      value.voucherNo = await getAndIncrementPrefix({ 
+        companyId: value.companyId, 
+        prefixType: prefixType 
+      });
     }
 
     value.createdBy = user?._id || null;

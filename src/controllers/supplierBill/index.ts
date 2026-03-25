@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, supplierBillModel, productModel, termsConditionModel, additionalChargeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addSupplierBillSchema, deleteSupplierBillSchema, editSupplierBillSchema, getSupplierBillSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -61,21 +61,17 @@ export const addSupplierBill = async (req, res) => {
       }
     }
 
-    // Generate bill number if not provided
+    // Generate bill number if not provided using dynamic prefix helper
     if (!value?.supplierBillNo) {
-      value.supplierBillNo = await generateSequenceNumber({
-        model: supplierBillModel,
-        prefix: "SB",
-        fieldName: "supplierBillNo",
-        companyId: value.companyId,
+      value.supplierBillNo = await getAndIncrementPrefix({ 
+        companyId: value.companyId, 
+        prefixType: PREFIX_MODULES.SUPPLIER_BILL 
       });
     }
     if (!value?.referenceBillNo) {
-      value.referenceBillNo = await generateSequenceNumber({
-        model: supplierBillModel,
-        prefix: "REF",
-        fieldName: "referenceBillNo",
-        companyId: value.companyId,
+      value.referenceBillNo = await getAndIncrementPrefix({ 
+        companyId: value.companyId, 
+        prefixType: PREFIX_MODULES.SUPPLIER_BILL 
       });
     }
 

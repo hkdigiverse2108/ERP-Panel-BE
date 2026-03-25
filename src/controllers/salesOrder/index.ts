@@ -1,6 +1,6 @@
-import { apiResponse, ESTIMATE_STATUS, HTTP_STATUS, SALES_ORDER_STATUS } from "../../common";
+import { apiResponse, ESTIMATE_STATUS, HTTP_STATUS, SALES_ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel, EstimateModel, userModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
 import { addSalesOrderSchema, deleteSalesOrderSchema, editSalesOrderSchema, getSalesOrderSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -74,9 +74,12 @@ export const addSalesOrder = async (req, res) => {
       if (!(await checkIdExist(contactModel, value.shippingDetails.transporterId, "Transporter", res))) return;
     }
 
-    // Generate document number if not provided
+    // Generate document number if not provided using dynamic prefix helper
     if (!value.salesOrderNo) {
-      value.salesOrderNo = await generateSequenceNumber({ model: SalesOrderModel, prefix: "SO", fieldName: "salesOrderNo", companyId: value.companyId });
+      value.salesOrderNo = await getAndIncrementPrefix({ 
+        companyId: value.companyId, 
+        prefixType: PREFIX_MODULES.SALES_ORDER 
+      });
     }
 
     value.createdBy = user?._id || null;

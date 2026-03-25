@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS, PREFIX_MODULES } from "../../common";
 import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, PosPaymentModel, additionalChargeModel, taxModel, PosCashRegisterModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkStockQty } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkStockQty, getAndIncrementPrefix } from "../../helper";
 import { addReturnPosOrderSchema, editReturnPosOrderSchema, getReturnPosOrderSchema, deleteReturnPosOrderSchema, returnPosOrderDropDownSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -68,7 +68,10 @@ export const addReturnPosOrder = async (req, res) => {
     }
     // -------------------------------
 
-    value.returnOrderNo = await generateSequenceNumber({ model: returnPosOrderModel, prefix: "RETPOS", fieldName: "returnOrderNo", companyId: value.companyId });
+    value.returnOrderNo = await getAndIncrementPrefix({ 
+      companyId: value.companyId, 
+      prefixType: PREFIX_MODULES.RETURN_POS_ORDER 
+    });
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
@@ -132,7 +135,10 @@ export const addReturnPosOrder = async (req, res) => {
         returnPosOrderId: response._id,
         totalAmount: response.total,
         creditsRemaining: response.total,
-        creditNoteNo: await generateSequenceNumber({ model: posCreditNoteModel, prefix: "POSCN", fieldName: "creditNoteNo", companyId: response.companyId }),
+        creditNoteNo: await getAndIncrementPrefix({ 
+          companyId: response.companyId, 
+          prefixType: PREFIX_MODULES.POS_CREDIT_NOTE 
+        }),
         createdBy: user?._id || null,
         updatedBy: user?._id || null,
       };

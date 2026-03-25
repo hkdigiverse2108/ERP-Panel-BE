@@ -412,6 +412,7 @@ export const PREFIX_MODULES = {
   JOURNAL_VOUCHER: "Journal_Voucher",
   CONTRA_VOUCHER: "Contra_Voucher",
   SUPPLIER_BILL: "Supplier_Bill",
+  SUPPLIER_BILL_REFERENCE: "Supplier_Bill_Reference",
   MATERIAL_CONSUMPTION: "Material_Consumption",
   STOCK_VERIFICATION: "Stock_Verification",
   STOCK: "Stock",
