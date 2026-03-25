@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions, transactionSummarySchema, commonAdditionalChargeSchema, salesItemSchema, commonShippingSchema } from "./base";
 import { IInvoice } from "../../types";
-import { INVOICE_PAYMENT_STATUS, INVOICE_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE, INVOICE_CREATED_FROM, PAY_TYPE } from "../../common";
+import { INVOICE_PAYMENT_STATUS, INVOICE_STATUS, TAX_TYPE, INVOICE_CREATED_FROM, PAY_TYPE } from "../../common";
 
 const invoiceItemSchema = new Schema({
     refId: { type: Schema.Types.ObjectId, refFrom: 'createdFrom' },
@@ -19,7 +19,7 @@ const invoiceSchema = new Schema<IInvoice>({
     billingAddress: { type: Schema.Types.ObjectId },
     shippingAddress: { type: Schema.Types.ObjectId },
     reverseCharge: { type: Boolean, default: false },
-    paymentTerms: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
+    paymentTermsId: { type: mongoose.Schema.Types.ObjectId, ref: "paymentTerms" },
     createdFrom: { type: String, enum: Object.values(INVOICE_CREATED_FROM) },
     salesOrderIds: [{ type: Schema.Types.ObjectId, ref: 'sales-order' }],
     deliveryChallanIds: [{ type: Schema.Types.ObjectId, ref: 'delivery-challan' }],

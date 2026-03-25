@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { ISalesOrder } from "../../types/sales";
 import { baseSchemaFields, baseSchemaOptions, commonAdditionalChargeSchema, transactionSummarySchema, salesItemSchema, commonShippingSchema } from "./base";
-import { PAYMENT_TERMS_ENUM, SALES_ORDER_STATUS, TAX_TYPE } from "../../common";
+import { SALES_ORDER_STATUS, TAX_TYPE } from "../../common";
 
 const salesOrderItemSchema = new Schema(
   {
@@ -20,7 +20,7 @@ const SalesOrderSchema = new Schema<ISalesOrder>(
     placeOfSupply: { type: String },
     billingAddress: { type: Schema.Types.ObjectId },
     shippingAddress: { type: Schema.Types.ObjectId },
-    paymentTerms: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
+    paymentTermsId: { type: mongoose.Schema.Types.ObjectId, ref: "paymentTerms" },
     taxType: { type: String, enum: Object.values(TAX_TYPE) },
     salesManId: { type: Schema.Types.ObjectId, ref: "user" },
     selectedEstimateId: { type: Schema.Types.ObjectId, ref: "estimate" },

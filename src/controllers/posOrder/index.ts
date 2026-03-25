@@ -108,6 +108,9 @@ export const addPosOrder = async (req, res) => {
     if (paidAmount >= totalAmount) {
       value.paymentStatus = POS_PAYMENT_STATUS.PAID;
       value.status = POS_ORDER_STATUS.COMPLETED;
+      if (totalAmount === 0 && req.body.status === POS_ORDER_STATUS.HOLD) {
+        value.status = POS_ORDER_STATUS.HOLD;
+      }
     } else if (paidAmount > 0 && paidAmount < totalAmount) {
       value.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
     } else {
@@ -343,6 +346,9 @@ export const editPosOrder = async (req, res) => {
     if (newPaidAmount >= totalAmount) {
       value.paymentStatus = POS_PAYMENT_STATUS.PAID;
       value.status = POS_ORDER_STATUS.COMPLETED;
+      if (totalAmount === 0 && req.body.status === POS_ORDER_STATUS.HOLD) {
+        value.status = POS_ORDER_STATUS.HOLD;
+      }
     } else if (newPaidAmount > 0 && newPaidAmount < totalAmount) {
       value.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
     } else {
@@ -383,6 +389,36 @@ export const editPosOrder = async (req, res) => {
       if (value.redeemCreditType === REDEEM_CREDIT_TYPE.CREDIT_NOTE) value.redeemCreditType = REDEEM_CREDIT_MODEL.CREDIT_NOTE;
       else if (value.redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) value.redeemCreditType = REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT;
     }
+
+    // --- Handle Credit Redemption Synchronization ---
+    const oldRedeemId = isExist.redeemCreditId?.toString();
+    const newRedeemId = value.redeemCreditId?.toString();
+    const oldAmount = Number(isExist.redeemCreditAmount) || 0;
+    const newAmount = Number(value.redeemCreditAmount) || 0;
+
+    if (oldRedeemId !== newRedeemId) {
+      if (oldRedeemId) {
+        await revertRedeemCredit(oldRedeemId, isExist.redeemCreditType, oldAmount, isExist._id?.toString());
+      }
+      if (newRedeemId) {
+        const applyRes = await applyRedeemCredit(newRedeemId, value.redeemCreditType, newAmount, value.customerId || isExist.customerId?.toString(), isExist._id?.toString());
+        if (typeof applyRes === "string" && applyRes !== "Redeem credit applied successfully") {
+          return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, applyRes, {}, {}));
+        }
+      }
+    } else if (oldRedeemId && oldAmount !== newAmount) {
+      const diff = newAmount - oldAmount;
+      if (diff > 0) {
+        const applyRes = await applyRedeemCredit(oldRedeemId, isExist.redeemCreditType, diff, isExist.customerId?.toString(), isExist._id?.toString());
+        if (typeof applyRes === "string" && applyRes !== "Redeem credit applied successfully") {
+          return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, applyRes, {}, {}));
+        }
+      } else if (diff < 0) {
+        await revertRedeemCredit(oldRedeemId, isExist.redeemCreditType, Math.abs(diff), isExist._id?.toString());
+        // await applyRedeemCredit(oldRedeemId, isExist.redeemCreditType, newAmount, isExist.customerId?.toString(), isExist._id?.toString());
+      }
+    }
+    // ------------------------------------------------
 
 
     const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, value, {});
@@ -761,6 +797,8 @@ export const getAllPosOrder = async (req, res) => {
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "additionalCharges.chargeId", select: "name" },
         { path: "posCashRegisterId", select: "registerNo status" },
+        { path: "payLater.paymentTermsId", select: "name day" },
+        { path: "createdBy", select: "name userType" },
       ],
       ...(lastBillFilter !== "true" && { skip: (page - 1) * limit, limit }),
     };
@@ -845,6 +883,8 @@ export const getOnePosOrder = async (req, res) => {
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "additionalCharges.chargeId", select: "name" },
           { path: "posCashRegisterId", select: "name status" },
+          { path: "payLater.paymentTermsId", select: "name day" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );
@@ -949,10 +989,12 @@ export const getAllHoldOrders = async (req, res) => {
         { path: "salesManId", select: "fullName" },
         { path: "customerId", select: "firstName lastName companyName phoneNo" },
         { path: "posCashRegisterId", select: "registerNo status" },
+        { path: "payLater.paymentTermsId", select: "name day" },
         {
           path: "items.productId",
           select: "-isDeleted -isActive -createdAt -updatedAt -createdBy -updatedBy -images -nutrition",
         },
+        { path: "createdBy", select: "name userType" },
       ],
       limit: 100,
     };
@@ -1230,6 +1272,7 @@ export const getPosCashControl = async (req, res) => {
         populate: [
           { path: "branchId", select: "name" },
           { path: "closedBy", select: "firstName lastName" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );
@@ -1429,6 +1472,7 @@ export const getCombinedPayments = async (req, res) => {
       populate: [
         { path: "partyId", select: "firstName lastName companyName" },
         { path: "bankAccountId", select: "name" },
+        { path: "createdBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -1561,6 +1605,7 @@ export const quickAddProduct = async (req, res) => {
         populate: [
           { path: "categoryId", select: "name" },
           { path: "salesTaxId", select: "name percentage" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

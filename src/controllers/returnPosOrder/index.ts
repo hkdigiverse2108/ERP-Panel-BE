@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS } from "../../common";
 import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, PosPaymentModel, additionalChargeModel, taxModel, PosCashRegisterModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkStockQty } from "../../helper";
 import { addReturnPosOrderSchema, editReturnPosOrderSchema, getReturnPosOrderSchema, deleteReturnPosOrderSchema, returnPosOrderDropDownSchema } from "../../validation";
@@ -281,6 +281,30 @@ export const editReturnPosOrder = async (req, res) => {
       await stockModel.findOneAndUpdate({ productId: item.productId, companyId: response.companyId, isDeleted: false }, { $inc: { qty: item.qty } });
     }
     // ----------------------------
+    // --- Update associated Credit Note ---
+    if (response.type === RETURN_POS_ORDER_TYPE.SALES_RETURN) {
+      const creditNote = await getFirstMatch(posCreditNoteModel, { returnPosOrderId: response._id, isDeleted: false }, {}, {});
+      if (creditNote) {
+        const diff = (Number(response.total) || 0) - (Number(creditNote.totalAmount) || 0);
+        if ((Number(creditNote.creditsRemaining) || 0) + diff < 0) {
+          return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Cannot reduce return total. Some credits already used/refunded.`, {}, {}));
+        }
+        await posCreditNoteModel.updateOne(
+          { _id: creditNote._id },
+          {
+            $set: { totalAmount: response.total, updatedBy: user?._id || null },
+            $inc: { creditsRemaining: diff },
+          },
+        );
+        const updatedCN: any = await posCreditNoteModel.findById(creditNote._id);
+        if (updatedCN.creditsRemaining <= 0) {
+          await posCreditNoteModel.updateOne({ _id: creditNote._id }, { status: POS_CREDIT_NOTE_STATUS.USED });
+        } else {
+          await posCreditNoteModel.updateOne({ _id: creditNote._id }, { status: POS_CREDIT_NOTE_STATUS.AVAILABLE });
+        }
+      }
+    }
+    // -------------------------------------
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Return POS Order"), response, {}));
   } catch (error) {
@@ -541,8 +565,10 @@ export const getAllReturnPosOrder = async (req, res) => {
     ];
 
     const result = await returnPosOrderModel.aggregate(pipeline);
-    const response = result[0].data;
+    let response = result[0].data;
     const totalData = result[0].metadata[0]?.total || 0;
+
+    response = await returnPosOrderModel.populate(response, { path: "createdBy", select: "name userType" });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), { returnPosOrder_data: response, totalData, state: { page, limit, totalPages: Math.ceil(totalData / limit) } }, {}));
   } catch (error) {
@@ -777,7 +803,9 @@ export const getOneReturnPosOrder = async (req, res) => {
 
     if (!response || response.length === 0) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Return POS Order"), {}, {}));
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), response[0], {}));
+    const populatedResponse = await returnPosOrderModel.populate(response[0], { path: "createdBy", select: "name userType" });
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), populatedResponse, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
@@ -850,6 +878,16 @@ export const deleteReturnPosOrder = async (req, res) => {
       await stockModel.findOneAndUpdate({ productId: item.productId, companyId: isExist.companyId, isDeleted: false }, { $inc: { qty: -item.qty } });
     }
     // ----------------------------
+
+    // --- Soft delete associated Credit Note ---
+    const creditNote = await getFirstMatch(posCreditNoteModel, { returnPosOrderId: isExist._id, isDeleted: false }, {}, {});
+    if (creditNote) {
+      if ((Number(creditNote.creditsUsed) || 0) > 0 || (Number(creditNote.refundedAmount) || 0) > 0) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Cannot delete return order. Associated credit note has already been used or refunded.", {}, {}));
+      }
+      await posCreditNoteModel.updateOne({ _id: creditNote._id }, { isDeleted: true, updatedBy: user?._id || null });
+    }
+    // -------------------------------------------
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Return POS Order"), response, {}));
   } catch (error) {

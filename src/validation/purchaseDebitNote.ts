@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { baseApiSchema, objectId, transactionSummarySchema, commonAdditionalChargeSchema, commonShippingSchema } from "./common";
-import { PAYMENT_TERMS_ENUM, PURCHASE_DEBIT_NOTE_STATUS } from "../common";
+import { PURCHASE_DEBIT_NOTE_STATUS } from "../common";
 
 const purchaseDebitNoteItemSchema = Joi.object({
   productId: objectId().required(),
@@ -28,9 +28,7 @@ export const addPurchaseDebitNoteSchema = Joi.object({
   debitNoteDate: Joi.date().required(),
   dueDate: Joi.date().optional(),
   shippingDate: Joi.date().optional(),
-  paymentTerm: Joi.string()
-    .valid(...Object.values(PAYMENT_TERMS_ENUM))
-    .optional(),
+  paymentTermsId: objectId().optional(),
   purchaseId: objectId().optional(),
   reverseCharge: Joi.boolean().default(false),
   reason: Joi.string().allow("").optional(),
@@ -64,9 +62,7 @@ export const editPurchaseDebitNoteSchema = Joi.object({
   debitNoteDate: Joi.date().optional(),
   dueDate: Joi.date().optional(),
   shippingDate: Joi.date().optional(),
-  paymentTerm: Joi.string()
-    .valid(...Object.values(PAYMENT_TERMS_ENUM))
-    .optional(),
+  paymentTermsId: objectId().optional(),
   purchaseId: objectId().optional(),
   reverseCharge: Joi.boolean().optional(),
   reason: Joi.string().allow("").optional(),

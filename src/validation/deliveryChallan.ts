@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { baseApiSchema, commonAdditionalChargeSchema, objectId, transactionSummarySchema } from "./common";
-import { DELIVERY_CHALLAN_STATUS, PAYMENT_TERMS_ENUM, TAX_TYPE } from "../common";
+import { DELIVERY_CHALLAN_STATUS, TAX_TYPE } from "../common";
 
 const deliveryChallanItemSchema = Joi.object().keys({
   refId: objectId().optional().allow(null),
@@ -28,7 +28,7 @@ export const addDeliveryChallanSchema = Joi.object().keys({
   placeOfSupply: Joi.string().optional().allow("", null),
   billingAddress: objectId().optional().allow("", null),
   shippingAddress: objectId().optional().allow("", null),
-  paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional().allow("", null),
+  paymentTermsId: objectId().optional().allow("", null),
   createdFrom: Joi.string().valid(...Object.values(["invoice", "sales-order", ""])).optional().allow("", null),
   taxType: Joi.string().valid(...Object.values(TAX_TYPE)).optional().allow("", null),
   shippingDetails: Joi.object().optional(),
@@ -50,7 +50,7 @@ export const editDeliveryChallanSchema = Joi.object().keys({
   placeOfSupply: Joi.string().optional().allow("", null),
   billingAddress: objectId().optional().allow("", null),
   shippingAddress: objectId().optional().allow("", null),
-  paymentTerms: Joi.string().valid(...Object.values(PAYMENT_TERMS_ENUM)).optional().allow("", null),
+  paymentTermsId: objectId().optional().allow("", null),
   createdFrom: Joi.string().valid(...Object.values(["invoice", "sales-order", ""])).optional().allow("", null),
   taxType: Joi.string().valid(...Object.values(TAX_TYPE)).optional().allow("", null),
   shippingDetails: Joi.object().optional(),

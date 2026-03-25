@@ -1,5 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { bankModel, companyModel, locationModel, PrefixModel } from "../../database";
+import { cloneDefaultPaymentTermsToCompany } from "../paymentTerm/helper";
 import {
   checkIdExist,
   checkLocationExist,
@@ -143,6 +144,8 @@ export const addCompany = async (req, res) => {
       console.error("Error creating prefixes for company:", prefixError);
       // We don't fail the company creation if prefix creation fails, but we log it
     }
+    // Clone global default payment terms to the newly created company
+    await cloneDefaultPaymentTermsToCompany(response._id, user?._id);
 
     return res
       .status(HTTP_STATUS.CREATED)
@@ -437,6 +440,7 @@ export const getAllCompany = async (req, res) => {
           select:
             "name ifscCode branchName accountHolderName bankAccountNumber swiftCode upiId",
         },
+        { path: "createdBy", select: "name userType" },
         { path: "userIds", select: "fullName" },
         { path: "roles", select: "name" },
         { path: "address.country", select: "name code" },
@@ -515,6 +519,7 @@ export const getCompanyById = async (req, res) => {
             select:
               "name ifscCode branchName accountHolderName bankAccountNumber swiftCode upiId",
           },
+          { path: "createdBy", select: "name userType" },
           { path: "userIds", select: "fullName" },
           { path: "roles", select: "name" },
           { path: "address.country", select: "name code" },

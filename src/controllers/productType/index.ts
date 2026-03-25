@@ -128,6 +128,7 @@ export const getAllProductType = async (req, res) => {
       sort: { name: 1 },
       skip: (page - 1) * limit,
       limit,
+      populate: [{ path: "createdBy", select: "name userType" }],
     };
 
     const response = await getDataWithSorting(productTypeModel, criteria, {}, options);
@@ -181,7 +182,11 @@ export const getProductTypeById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const response = await getFirstMatch(productTypeModel, { _id: value?.id, isDeleted: false }, {}, {});
+    const options: any = {
+      populate: [{ path: "createdBy", select: "name userType" }],
+    };
+
+    const response = await getFirstMatch(productTypeModel, { _id: value?.id, isDeleted: false }, {}, options);
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product Type"), {}, {}));
 

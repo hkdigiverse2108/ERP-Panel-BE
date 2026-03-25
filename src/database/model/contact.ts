@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { CONTACT_STATUS, CONTACT_TYPE, CUSTOMER_TYPE, SUPPLIER_TYPE, PAYMENT_TERMS_ENUM } from "../../common";
+import { CONTACT_STATUS, CONTACT_TYPE, CUSTOMER_TYPE, SUPPLIER_TYPE } from "../../common";
 import { IContact } from "../../types";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
 
@@ -15,18 +15,18 @@ const contactSchema = new Schema<IContact>(
     telephoneNo: { type: String },
     remarks: { type: String },
     phoneNo: {
-      countryCode: { type: String },
+      countryCode: { type: String, default: "+91" },
       phoneNo: { type: Number },
     },
     whatsappNo: {
-      countryCode: { type: String },
+      countryCode: { type: String, default: "+91" },
       phoneNo: { type: Number },
     },
     dob: { type: Date },
     anniversaryDate: { type: Date },
 
     paymentMode: { type: String },
-    paymentTerms: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
+    paymentTermsId: { type: mongoose.Schema.Types.ObjectId, ref: "paymentTerms" },
     openingBalance: {
       debitBalance: { type: String },
       creditBalance: { type: String },
@@ -39,7 +39,7 @@ const contactSchema = new Schema<IContact>(
         contactLastName: { type: String },
         contactCompanyName: { type: String },
         contactNo: {
-          countryCode: { type: String },
+          countryCode: { type: String, default: "+91" },
           phoneNo: { type: Number },
         },
         contactEmail: { type: String },

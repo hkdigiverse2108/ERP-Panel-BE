@@ -48,7 +48,7 @@ export const createMany = async (modelName, objToSave) => {
 // ================ All Create Services ================
 
 export const updateData = async (modelName, criteria, dataToSet, options) => {
-  options.new = true;
+  options.returnDocument = "after";
   options.lean = true;
   return await modelName.findOneAndUpdate(criteria, dataToSet, options);
 };

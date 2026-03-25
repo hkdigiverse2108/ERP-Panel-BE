@@ -317,6 +317,7 @@ export const getAllPosCashRegister = async (req, res) => {
     let {
       page,
       limit,
+      salesManFilter,
       companyFilter,
       branchFilter,
       statusFilter,
@@ -329,6 +330,7 @@ export const getAllPosCashRegister = async (req, res) => {
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
     if (companyFilter) criteria.companyId = companyFilter;
+    if (salesManFilter) criteria.salesManId = salesManFilter;
     if (branchFilter) criteria.branchId = branchFilter;
     if (statusFilter) criteria.status = statusFilter;
 
@@ -343,6 +345,7 @@ export const getAllPosCashRegister = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "salesManId", select: "fullName" },
         { path: "bankAccountId", select: "name" },
+        { path: "createdBy", select: "name userType" },
       ],
     };
 
@@ -408,6 +411,7 @@ export const getOnePosCashRegister = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "salesManId", select: "fullName" },
           { path: "bankAccountId", select: "name" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

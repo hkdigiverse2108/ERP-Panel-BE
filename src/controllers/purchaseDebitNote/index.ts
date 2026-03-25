@@ -232,11 +232,11 @@ export const getAllPurchaseDebitNote = async (req, res) => {
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
-      criteria.companyId = companyId;
+      criteria.companyId = new ObjectId(companyId);
     }
 
     if (companyFilter) {
-      criteria.companyId = companyFilter;
+      criteria.companyId = new ObjectId(companyFilter);
     }
 
     if (search) {
@@ -272,8 +272,9 @@ export const getAllPurchaseDebitNote = async (req, res) => {
         { path: "productDetails.taxId", select: "name percentage" },
         { path: "additionalCharges.chargeId", select: "name type" },
         { path: "additionalCharges.taxId", select: "name percentage" },
+        { path: "paymentTermsId", select: "name day" },
         { path: "companyId", select: "name" },
-
+        { path: "createdBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -318,6 +319,17 @@ export const getAllPurchaseDebitNote = async (req, res) => {
     });
     const totalData = await countData(purchaseDebitNoteModel, criteria);
 
+    const totalAmountAggregation = await purchaseDebitNoteModel.aggregate([
+      { $match: criteria },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$summary.netAmount" },
+        },
+      },
+    ]);
+    const totalAmount = totalAmountAggregation[0]?.totalAmount || 0;
+
     const totalPages = Math.ceil(totalData / limit) || 1;
 
     const state = {
@@ -326,7 +338,8 @@ export const getAllPurchaseDebitNote = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Debit Note"), { purchaseDebitNote_data: response, totalData, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Debit Note"), { purchaseDebitNote_data: response, totalData, totalAmount, state }, {}));
+
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -366,7 +379,9 @@ export const getOnePurchaseDebitNote = async (req, res) => {
           { path: "productDetails.taxId", select: "name percentage" },
           { path: "additionalCharges.chargeId", select: "name type" },
           { path: "additionalCharges.taxId", select: "name percentage" },
+          { path: "paymentTermsId", select: "name day" },
           { path: "companyId", select: "name gstNo" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

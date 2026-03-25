@@ -10,3 +10,4 @@ export * from "./mail";
 export * from "./dateFilter";
 export * from "./stockHelper";
 export * from "./cronHelper";
+export * from "./bulkDataHelper";

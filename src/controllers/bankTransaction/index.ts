@@ -81,8 +81,8 @@ export const getBankTransactions = async (req, res) => {
                 { path: "companyId", select: "name" },
                 { path: "fromAccount", select: "name" },
                 { path: "toAccount", select: "name" },
-                { path: "createdBy", select: "fullName" },
-                { path: "updatedBy", select: "fullName" },
+                { path: "createdBy", select: "fullName userType" },
+                { path: "updatedBy", select: "fullName userType" },
             ],
             skip: (page - 1) * limit,
             limit
@@ -122,8 +122,8 @@ export const getBankTransactionById = async (req, res) => {
                     { path: "companyId", select: "name" },
                     { path: "fromAccount", select: "name" },
                     { path: "toAccount", select: "name" },
-                    { path: "createdBy", select: "fullName" },
-                    { path: "updatedBy", select: "fullName" },
+                    { path: "createdBy", select: "fullName userType" },
+                    { path: "updatedBy", select: "fullName userType" },
                 ]
             }
         );

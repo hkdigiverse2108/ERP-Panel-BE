@@ -1,9 +1,31 @@
 import { countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, updateMany } from "../../helper";
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { moduleModel, permissionModel, userModel } from "../../database";
 import { addModuleSchema, editModuleSchema, deleteModuleSchema, getModuleSchema, getModuleByIdSchema, bulkEditModuleSchema, getUsersPermissionsByModuleIdSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
+
+const grantPermissionToSuperAdmins = async (moduleId) => {
+    try {
+        const superAdmins = await getData(userModel, { userType: USER_TYPES.SUPER_ADMIN, isDeleted: false }, { _id: 1 }, {});
+        if (superAdmins && superAdmins.length > 0) {
+            for (const admin of superAdmins) {
+                const permissionData = {
+                    moduleId: new ObjectId(moduleId),
+                    userId: new ObjectId(admin._id),
+                    view: true,
+                    add: true,
+                    edit: true,
+                    delete: true
+                };
+                await updateData(permissionModel, { userId: new ObjectId(admin._id), moduleId: new ObjectId(moduleId) }, permissionData, { upsert: true });
+            }
+        }
+    } catch (error) {
+        console.error("Error granting permissions to super admins:", error);
+    }
+};
+
 
 export const add_module = async (req, res) => {
     reqInfo(req);
@@ -26,6 +48,8 @@ export const add_module = async (req, res) => {
 
         const response = await createOne(moduleModel, body);
         if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.addDataError, {}, {}));
+
+        await grantPermissionToSuperAdmins(response._id);
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("module"), response, {}));
     } catch (error) {
@@ -110,7 +134,8 @@ export const get_all_module = async (req, res) => {
                 {
                     path: "parentId",
                     model: "module"
-                }
+                },
+                { path: "createdBy", select: "name userType" },
             ],
         };
 
@@ -147,7 +172,13 @@ export const get_by_id_module = async (req, res) => {
         let { error, value } = getModuleByIdSchema.validate({ id: req.params.id });
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-        const response = await getFirstMatch(moduleModel, { _id: new ObjectId(value.id), isDeleted: false }, {}, {});
+        const options: any = {
+            populate: [
+                { path: "createdBy", select: "name userType" },
+            ],
+        };
+
+        const response = await getFirstMatch(moduleModel, { _id: new ObjectId(value.id), isDeleted: false }, {}, options);
         if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("module"), {}, {}));
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("module"), response, {}));
@@ -247,3 +278,24 @@ export const get_users_permissions_by_moduleId = async (req, res) => {
     }
 }
 
+export const automatic_attach = async () => {
+    try {
+        const modules = await getData(moduleModel, { isDeleted: false }, {}, {});
+        const users = await getData(userModel, { isDeleted: false, userType: USER_TYPES.SUPER_ADMIN }, {}, {});
+        for (const module of modules) {
+            for (const user of users) {
+                const permissionData = {
+                    moduleId: new ObjectId(module._id),
+                    userId: new ObjectId(user._id),
+                    view: true,
+                    add: true,
+                    edit: true,
+                    delete: true
+                };
+                await updateData(permissionModel, { userId: new ObjectId(user._id), moduleId: new ObjectId(module._id) }, permissionData, { upsert: true });
+            }
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}

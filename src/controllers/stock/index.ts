@@ -43,7 +43,7 @@ export const addStock = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
-    await updateData(productModel, { _id: value?.productId }, { $push: { stockIds: response?._id } }, {});
+    if (!existingStock) await updateData(productModel, { _id: value?.productId }, { $push: { stockIds: response?._id } }, {});
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock"), response, {}));
   } catch (error) {
     console.error(error);
@@ -313,6 +313,7 @@ export const getAllStock = async (req, res) => {
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
         { path: "subBrandId", select: "name" },
+        { path: "createdBy", select: "name userType" },
       ],
     };
     const products = await getDataWithSorting(productModel, criteria, {}, options);
@@ -366,6 +367,7 @@ export const getOneStock = async (req, res) => {
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );
@@ -394,6 +396,7 @@ export const getOneStock = async (req, res) => {
           { path: "branchId", select: "name" },
           { path: "purchaseTaxId", select: "name" },
           { path: "salesTaxId", select: "name" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

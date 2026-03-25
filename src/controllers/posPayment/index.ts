@@ -214,6 +214,7 @@ export const getAllPosPayment = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "taxId", select: "name percentage" },
+        { path: "createdBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -249,6 +250,7 @@ export const getOnePosPayment = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "taxId", select: "name percentage" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

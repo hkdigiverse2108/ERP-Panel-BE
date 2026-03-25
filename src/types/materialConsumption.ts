@@ -5,7 +5,7 @@ export interface IMaterialConsumption {
   consumptionDate: Date;
   userId?: Schema.Types.ObjectId;
   branchId?: Schema.Types.ObjectId;
-  consumptionType: string;
+  consumptionTypeId: Schema.Types.ObjectId;
   remark?: string;
   items: {
     productId: Schema.Types.ObjectId;

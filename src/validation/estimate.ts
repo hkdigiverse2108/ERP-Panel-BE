@@ -8,7 +8,6 @@ import {
 } from "./common";
 import {
   ESTIMATE_STATUS,
-  PAYMENT_TERMS_ENUM,
   TAX_TYPE,
   SHIPPING_TYPE,
 } from "../common";
@@ -41,9 +40,7 @@ export const addEstimateSchema = Joi.object().keys({
   reverseCharge: Joi.boolean().default(false).optional(),
   transactionSummary: transactionSummarySchema.required(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
-  paymentTerms: Joi.string()
-    .valid(...Object.values(PAYMENT_TERMS_ENUM))
-    .optional(),
+  paymentTermsId: objectId().optional(),
   taxType: Joi.string()
     .optional()
     .valid(...Object.values(TAX_TYPE)),
@@ -68,9 +65,7 @@ export const editEstimateSchema = Joi.object().keys({
   reverseCharge: Joi.boolean().optional(),
   transactionSummary: transactionSummarySchema.optional(),
   additionalCharges: Joi.array().items(commonAdditionalChargeSchema).optional(),
-  paymentTerms: Joi.string()
-    .valid(...Object.values(PAYMENT_TERMS_ENUM))
-    .optional(),
+  paymentTermsId: objectId().optional(),
   taxType: Joi.string()
     .optional()
     .valid(...Object.values(TAX_TYPE)),

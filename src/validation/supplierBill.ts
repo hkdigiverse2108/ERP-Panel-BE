@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { baseApiSchema, objectId, transactionSummarySchema, commonAdditionalChargeSchema } from "./common";
-import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS, PAYMENT_TERMS_ENUM } from "../common";
+import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS } from "../common";
 
 const supplierBillItemSchema = Joi.object({
   productId: objectId().required(),
@@ -49,9 +49,7 @@ export const addSupplierBillSchema = Joi.object({
   gstIn: Joi.string().optional().allow("", null),
   billingAddress: objectId().optional(),
 
-  paymentTerm: Joi.string()
-    .valid(...Object.values(PAYMENT_TERMS_ENUM))
-    .optional(),
+  paymentTermsId: objectId().optional(),
 
   dueDate: Joi.date().optional(),
 
@@ -102,9 +100,7 @@ export const editSupplierBillSchema = Joi.object({
   gstIn: Joi.string().optional().allow("", null),
   billingAddress: objectId().optional(),
 
-  paymentTerm: Joi.string()
-    .valid(...Object.values(PAYMENT_TERMS_ENUM))
-    .optional(),
+  paymentTermsId: objectId().optional(),
   dueDate: Joi.date().optional(),
 
   reverseCharge: Joi.boolean().optional(),

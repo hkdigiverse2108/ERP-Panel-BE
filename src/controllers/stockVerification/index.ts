@@ -141,7 +141,7 @@ export const getAllStockVerification = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { page, limit, search, startDate, endDate, status, branchId, activeFilter, companyFilter } = req.query;
+    const { page, limit, search, startDate, endDate, status, branchId, activeFilter, companyFilter, statusFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -153,6 +153,10 @@ export const getAllStockVerification = async (req, res) => {
 
     if (status) {
       criteria.status = status;
+    }
+
+    if (statusFilter) {
+      criteria.status = statusFilter;
     }
 
     if (branchId) {
@@ -184,6 +188,8 @@ export const getAllStockVerification = async (req, res) => {
           select: "name itemCode",
           // populate: [{ path: "uomId", select: "name code" }],
         },
+        { path: "createdBy", select: "name userType" },
+        { path: "updatedBy", select: "name userType" },
       ],
       skip: (parseInt(page as string) - 1) * parseInt(limit as string),
       limit: parseInt(limit as string),
@@ -236,6 +242,8 @@ export const getOneStockVerification = async (req, res) => {
               { path: "brandId", select: "name" },
             ],
           },
+          { path: "createdBy", select: "name userType" },
+          { path: "updatedBy", select: "name userType" },
         ],
       },
     );

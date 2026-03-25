@@ -1,3 +1,4 @@
+import { USER_TYPES } from './../../common/enum';
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { additionalChargeModel, taxModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
@@ -94,12 +95,18 @@ export const deleteAdditionalChargeById = async (req, res) => {
 export const getAllAdditionalCharge = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req.headers;
+
     let { page, limit, search, startDate, endDate, activeFilter, companyFilter, typeFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
+    if (user?.userType !== USER_TYPES.SUPER_ADMIN) {
+      criteria.companyId = user?.companyId;
+    }
+
     if (companyFilter) {
-      criteria.companyId = companyFilter;
+      criteria.companyId = new ObjectId(companyFilter);
     }
 
     if (typeFilter) {
@@ -120,6 +127,7 @@ export const getAllAdditionalCharge = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "taxId", select: "name taxPercentage" },
+        { path: "createdBy", select: "fullName userType" },
       ],
     };
 
@@ -162,6 +170,7 @@ export const getAdditionalChargeById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "taxId", select: "name taxPercentage" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

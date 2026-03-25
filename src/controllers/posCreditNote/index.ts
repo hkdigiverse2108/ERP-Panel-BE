@@ -96,12 +96,8 @@ export const refundPosCredit = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Credit Note"), {}, {}));
     }
 
-    if (creditNote.creditsRemaining !== totalRefund) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Credit Note amount and refund amount must be equal`, {}, {}));
-    }
-
-    if (creditNote.creditsRemaining < totalRefund) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Insufficient credits. Available: ${creditNote.creditsRemaining}`, {}, {}));
+    if (totalRefund > creditNote.creditsRemaining) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Refund amount exceeds available credits. Available: ${creditNote.creditsRemaining}`, {}, {}));
     }
 
     if (refundViaBank > 0 && !bankAccountId) {
@@ -127,11 +123,11 @@ export const refundPosCredit = async (req, res) => {
     // Update Return POS Order
     if (creditNote.returnPosOrderId) {
       const returnUpdate: any = {
-        $inc: {
+        $set: {
           refundViaCash: refundViaCash || 0,
           refundViaBank: refundViaBank || 0,
+          updatedBy: user?._id || null,
         },
-        $set: { updatedBy: user?._id || null },
       };
       if (bankAccountId) returnUpdate.$set.bankAccountId = bankAccountId;
       if (refundDescription) returnUpdate.$set.refundDescription = refundDescription;
@@ -176,7 +172,7 @@ export const getAllPosCreditNote = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
 
-    let { page, limit, search, customerFilter, startDate, endDate, companyFilter } = req.query;
+    let { page, limit, search, customerFilter, startDate, endDate, companyFilter, statusFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -185,6 +181,7 @@ export const getAllPosCreditNote = async (req, res) => {
     if (companyId) criteria.companyId = companyId;
     if (customerFilter) criteria.customerId = new ObjectId(customerFilter);
     if (companyFilter) criteria.companyId = new ObjectId(companyFilter);
+    if (statusFilter) criteria.status = statusFilter;
 
     if (search) {
       criteria.$or = [{ creditNoteNo: { $regex: search, $options: "si" } }, { notes: { $regex: search, $options: "si" } }];
@@ -211,6 +208,7 @@ export const getAllPosCreditNote = async (req, res) => {
         },
         { path: "companyId", select: "name" },
         { path: "usedOnOrderIds", select: "orderNo" },
+        { path: "createdBy", select: "name userType" },
       ],
     };
 
@@ -264,6 +262,7 @@ export const getOnePosCreditNote = async (req, res) => {
           },
           { path: "companyId", select: "name" },
           { path: "usedOnOrderIds", select: "orderNo" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

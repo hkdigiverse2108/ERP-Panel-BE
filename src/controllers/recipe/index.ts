@@ -128,6 +128,7 @@ export const getAllRecipe = async (req, res) => {
         { path: "branchId", select: "name" },
         { path: "rawProducts.productId", select: "name" },
         { path: "finalProducts.productId", select: "name" },
+        { path: "createdBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -168,6 +169,7 @@ export const getRecipeById = async (req, res) => {
           { path: "branchId", select: "name" },
           { path: "rawProducts.productId", select: "name" },
           { path: "finalProducts.productId", select: "name" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );

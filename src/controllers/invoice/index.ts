@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS, INVOICE_STATUS } from "../../common";
 import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, termsConditionModel, deliveryChallanModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
 import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSchema } from "../../validation";
@@ -343,15 +343,15 @@ export const getAllInvoice = async (req, res) => {
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
-      criteria.companyId = companyId;
+      criteria.companyId = new ObjectId(companyId);
     }
 
     if (companyFilter) {
-      criteria.companyId = companyFilter;
+      criteria.companyId = new ObjectId(companyFilter);
     }
 
     if (customerFilter) {
-      criteria.customerId = customerFilter;
+      criteria.customerId = new ObjectId(customerFilter);
     }
 
     if (statusFilter) {
@@ -386,6 +386,7 @@ export const getAllInvoice = async (req, res) => {
             { path: "address.city", select: "name" },
           ],
         },
+        { path: "createdBy", select: "name userType" },
         { path: "salesOrderIds", select: "salesOrderNo" },
         { path: "deliveryChallanIds", select: "deliveryChallanNo" },
         { path: "salesManId", select: "firstName lastName" },
@@ -394,6 +395,7 @@ export const getAllInvoice = async (req, res) => {
         { path: "items.uomId", select: "name" },
         { path: "companyId", select: "name " },
         { path: "branchId", select: "name " },
+        { path: "paymentTermsId", select: "name day" },
         { path: "additionalCharges.chargeId", select: "name " },
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "termsAndConditionIds", select: "name " },
@@ -440,6 +442,44 @@ export const getAllInvoice = async (req, res) => {
       return invObj;
     });
 
+    // Aggregation for summary statistics
+    const statsCriteria: any = { isDeleted: false };
+    if (criteria.companyId) {
+      statsCriteria.companyId = criteria.companyId;
+    }
+
+    const summaryResults = await InvoiceModel.aggregate([
+      { $match: statsCriteria },
+      {
+        $facet: {
+          allInvoices: [{ $count: "count" }],
+          invoiced: [{ $match: { status: INVOICE_STATUS.INVOICED } }, { $count: "count" }],
+          deliveryChallanCreated: [{ $match: { status: INVOICE_STATUS.DELIVERY_CHALLAN_CREATED } }, { $count: "count" }],
+          cancelled: [{ $match: { status: INVOICE_STATUS.CANCELLED } }, { $count: "count" }],
+          financials: [
+            {
+              $group: {
+                _id: null,
+                totalSales: { $sum: "$transactionSummary.netAmount" },
+                totalPaid: { $sum: "$paidAmount" },
+                totalUnpaid: { $sum: "$balanceAmount" },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    const summary = {
+      allInvoices: summaryResults[0].allInvoices[0]?.count || 0,
+      invoiced: summaryResults[0].invoiced[0]?.count || 0,
+      deliveryChallanCreated: summaryResults[0].deliveryChallanCreated[0]?.count || 0,
+      cancelled: summaryResults[0].cancelled[0]?.count || 0,
+      totalSales: summaryResults[0].financials[0]?.totalSales || 0,
+      paidAmount: summaryResults[0].financials[0]?.totalPaid || 0,
+      unpaidAmount: summaryResults[0].financials[0]?.totalUnpaid || 0,
+    };
+
     const totalData = await countData(InvoiceModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
@@ -450,7 +490,8 @@ export const getAllInvoice = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice"), { invoice_data: finalResponse, totalData, state }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice"), { invoice_data: finalResponse, totalData, summary, state }, {}));
+
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -481,6 +522,7 @@ export const getOneInvoice = async (req, res) => {
               { path: "address.city", select: "name" },
             ],
           },
+          { path: "createdBy", select: "name userType" },
           { path: "salesOrderIds", select: "salesOrderNo date netAmount" },
           { path: "deliveryChallanIds", select: "deliveryChallanNo date netAmount" },
           { path: "salesManId", select: "firstName lastName" },
@@ -489,6 +531,7 @@ export const getOneInvoice = async (req, res) => {
           { path: "items.uomId", select: "name" },
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
+          { path: "paymentTermsId", select: "name day" },
           { path: "additionalCharges.chargeId", select: "name " },
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "termsAndConditionIds", select: "name " },

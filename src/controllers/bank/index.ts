@@ -120,6 +120,7 @@ export const getAllBank = async (req, res) => {
         { path: "address.country", select: "name code" },
         { path: "address.state", select: "name code" },
         { path: "address.city", select: "name code" },
+        { path: "createdBy", select: "name userType" },
       ],
     };
 
@@ -165,6 +166,7 @@ export const getBankById = async (req, res) => {
           { path: "address.country", select: "name code" },
           { path: "address.state", select: "name code" },
           { path: "address.city", select: "name code" },
+          { path: "createdBy", select: "name userType" },
         ],
       },
     );
