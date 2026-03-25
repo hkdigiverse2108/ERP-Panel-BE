@@ -208,7 +208,7 @@ export const getPaymentTermDropdown = async (req, res) => {
         const response = await getDataWithSorting(
             paymentTermsModel,
             criteria,
-            { _id: 1, name: 1, days: 1 },
+            { _id: 1, name: 1, day: 1 },
             {
                 sort: { name: 1 },
             },
@@ -217,7 +217,7 @@ export const getPaymentTermDropdown = async (req, res) => {
         const dropdownData = response.map((item) => ({
             _id: item._id,
             name: item.name,
-            days: item.days,
+            day: item.day,
         }));
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payment Term"), dropdownData, {}));
