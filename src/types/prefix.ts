@@ -1,8 +1,10 @@
 import { IBase } from "./base";
 
 export interface IPrefix extends IBase {
-    module: string; // Invoice, PO, SO, etc.
+    prefixType: string; // From PREFIX_MODULES enum
     prefix: string;
-    startNumber: number;
-    currentNumber: number;
+    sequenceNumber: number;
+
+    // startNumber: number;
+    // currentNumber: number;
 }
