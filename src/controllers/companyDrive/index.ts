@@ -68,7 +68,7 @@ export const getCompanyDrives = async (req, res) => {
             populate: [
                 { path: "createdBy", select: "fullName" },
                 { path: "updatedBy", select: "fullName" },
-                { path: "createdBy", select: "name userType" },
+                { path: "createdBy", select: "fullName userType" },
             ],
             skip: (page - 1) * limit,
             limit
@@ -107,7 +107,7 @@ export const getCompanyDriveById = async (req, res) => {
                 populate: [
                     { path: "createdBy", select: "fullName" },
                     { path: "updatedBy", select: "fullName" },
-                    { path: "createdBy", select: "name userType" },
+                    { path: "createdBy", select: "fullName userType" },
                 ]
             }
         );

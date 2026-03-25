@@ -39,9 +39,9 @@ export const addVoucher = async (req, res) => {
 
       const prefixType = typeMap[value.type] || PREFIX_MODULES.RECEIPT; // Defaulting to Receipt if unknown
 
-      value.voucherNo = await getAndIncrementPrefix({ 
-        companyId: value.companyId, 
-        prefixType: prefixType 
+      value.voucherNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: prefixType
       });
     }
 
@@ -163,7 +163,7 @@ export const getAllVoucher = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "partyId", select: "firstName lastName companyName" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
@@ -204,7 +204,7 @@ export const getOneVoucher = async (req, res) => {
       {
         populate: [
           { path: "partyId", select: "firstName lastName companyName email phoneNo address" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
           { path: "updatedBy", select: "name userType" },
         ],
       },

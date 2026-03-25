@@ -24,9 +24,9 @@ export const addStockVerification = async (req, res) => {
       }
     }
 
-    value.stockVerificationNo = await getAndIncrementPrefix({ 
-      companyId: value.companyId, 
-      prefixType: PREFIX_MODULES.STOCK_VERIFICATION 
+    value.stockVerificationNo = await getAndIncrementPrefix({
+      companyId: value.companyId,
+      prefixType: PREFIX_MODULES.STOCK_VERIFICATION
     });
 
     value.createdBy = user?._id || null;
@@ -191,7 +191,7 @@ export const getAllStockVerification = async (req, res) => {
           select: "name itemCode",
           // populate: [{ path: "uomId", select: "name code" }],
         },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
       skip: (parseInt(page as string) - 1) * parseInt(limit as string),
@@ -245,7 +245,7 @@ export const getOneStockVerification = async (req, res) => {
               { path: "brandId", select: "name" },
             ],
           },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
           { path: "updatedBy", select: "name userType" },
         ],
       },

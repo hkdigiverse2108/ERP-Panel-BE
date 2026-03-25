@@ -153,7 +153,7 @@ export const getAllLoyalty = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "customerIds.id", select: "firstName lastName" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -195,7 +195,7 @@ export const getOneLoyalty = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "customerIds.id", select: "firstName lastName" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

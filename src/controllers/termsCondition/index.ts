@@ -126,7 +126,7 @@ export const getAllTermsCondition = async (req, res) => {
     const options: any = {
       sort: { isDefault: -1, name: 1 },
       populate: [
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
@@ -166,7 +166,7 @@ export const getTermsConditionById = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
           { path: "updatedBy", select: "name userType" },
         ],
       },

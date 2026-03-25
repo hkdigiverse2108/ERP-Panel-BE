@@ -101,9 +101,9 @@ export const addPosCashRegister = async (req, res) => {
     value.createdBy = user?._id || null;
     value.salesManId = user?._id || null;
     value.updatedBy = user?._id || null;
-    value.registerNo = await getAndIncrementPrefix({ 
-      companyId: value.companyId, 
-      prefixType: PREFIX_MODULES.POS_CASH_REGISTER 
+    value.registerNo = await getAndIncrementPrefix({
+      companyId: value.companyId,
+      prefixType: PREFIX_MODULES.POS_CASH_REGISTER
     });
 
     const response = await createOne(PosCashRegisterModel, value);
@@ -345,7 +345,7 @@ export const getAllPosCashRegister = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "salesManId", select: "fullName" },
         { path: "bankAccountId", select: "name" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
       ],
     };
 
@@ -411,7 +411,7 @@ export const getOnePosCashRegister = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "salesManId", select: "fullName" },
           { path: "bankAccountId", select: "name" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

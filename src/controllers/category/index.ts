@@ -67,7 +67,7 @@ export const getAllCategory = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "parentCategoryId", select: "name" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
       ],
     };
 
@@ -110,7 +110,7 @@ export const getCategoryById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "parentCategoryId", select: "name" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

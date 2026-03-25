@@ -111,7 +111,7 @@ export const getAllBrand = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "parentBrandId", select: "name" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
       ],
     };
 
@@ -154,7 +154,7 @@ export const getBrandById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "parentBrandId", select: "name" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

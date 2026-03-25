@@ -153,9 +153,9 @@ export const bulkStockAdjustment = async (req, res) => {
 
     if (processedItems.length) {
       const companyId = user?.companyId?._id || null;
-      const consumptionNo = await getAndIncrementPrefix({ 
-        companyId, 
-        prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION 
+      const consumptionNo = await getAndIncrementPrefix({
+        companyId,
+        prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION
       });
       const totalAmount = processedItems.reduce((sum, item: any) => {
         const itemTotal = item?.totalPrice ?? (item?.qty || 0) * (item?.price || 0);
@@ -316,7 +316,7 @@ export const getAllStock = async (req, res) => {
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
         { path: "subBrandId", select: "name" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
       ],
     };
     const products = await getDataWithSorting(productModel, criteria, {}, options);
@@ -370,7 +370,7 @@ export const getOneStock = async (req, res) => {
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );
@@ -399,7 +399,7 @@ export const getOneStock = async (req, res) => {
           { path: "branchId", select: "name" },
           { path: "purchaseTaxId", select: "name" },
           { path: "salesTaxId", select: "name" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

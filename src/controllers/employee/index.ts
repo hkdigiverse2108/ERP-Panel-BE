@@ -173,7 +173,7 @@ export const getAllEmployee = async (req, res) => {
 
     const options: any = {
       sort: { createdAt: -1 },
-      populate: [{ path: "createdBy", select: "name userType" }, { path: "updatedBy", select: "name userType" }],
+      populate: [{ path: "createdBy", select: "fullName userType" }, { path: "updatedBy", select: "name userType" }],
     };
 
     if (page && limit) {
@@ -202,7 +202,7 @@ export const getEmployeeById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
-    const response = await getFirstMatch(userModel, { _id: value?.id, isDeleted: false }, {}, { populate: [{ path: "createdBy", select: "name userType" }, { path: "updatedBy", select: "name userType" }] });
+    const response = await getFirstMatch(userModel, { _id: value?.id, isDeleted: false }, {}, { populate: [{ path: "createdBy", select: "fullName userType" }, { path: "updatedBy", select: "name userType" }] });
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Employee"), {}, {}));
 

@@ -154,7 +154,7 @@ export const getAllFeedback = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "invoiceId", select: "documentNo date netAmount" },
         { path: "customerId", select: "firstName lastName companyName" },
       ],
@@ -199,7 +199,7 @@ export const getOneFeedback = async (req, res) => {
           { path: "customerId", select: "firstName lastName companyName email phoneNo" },
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

@@ -63,15 +63,15 @@ export const addSupplierBill = async (req, res) => {
 
     // Generate bill number if not provided using dynamic prefix helper
     if (!value?.supplierBillNo) {
-      value.supplierBillNo = await getAndIncrementPrefix({ 
-        companyId: value.companyId, 
-        prefixType: PREFIX_MODULES.SUPPLIER_BILL 
+      value.supplierBillNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: PREFIX_MODULES.SUPPLIER_BILL
       });
     }
     if (!value?.referenceBillNo) {
-      value.referenceBillNo = await getAndIncrementPrefix({ 
-        companyId: value.companyId, 
-        prefixType: PREFIX_MODULES.SUPPLIER_BILL 
+      value.referenceBillNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: PREFIX_MODULES.SUPPLIER_BILL
       });
     }
 
@@ -282,7 +282,7 @@ export const getAllSupplierBill = async (req, res) => {
         { path: "termsAndConditionIds", select: "termsCondition" },
         { path: "paymentTermsId", select: "name day" },
         { path: "companyId", select: "name" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
@@ -415,7 +415,7 @@ export const getOneSupplierBill = async (req, res) => {
           { path: "termsAndConditionIds", select: "termsCondition" },
           { path: "paymentTermsId", select: "name day" },
           { path: "companyId", select: "name gstNo" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
           { path: "updatedBy", select: "name userType" },
         ],
       },

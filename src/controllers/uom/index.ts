@@ -136,7 +136,7 @@ export const getAllUOM = async (req, res) => {
     const options: any = {
       sort: { name: 1 },
       populate: [
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
@@ -198,7 +198,7 @@ export const getUOMById = async (req, res) => {
 
     const response = await getFirstMatch(uomModel, { _id: value?.id, isDeleted: false }, {}, {
       populate: [
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
     });

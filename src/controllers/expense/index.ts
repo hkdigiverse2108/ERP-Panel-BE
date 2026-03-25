@@ -154,7 +154,7 @@ export const getAllExpense = async (req, res) => {
         // fetch data with aggregate and populate
         const response = await aggregateAndPopulate(ExpenseModel, pipeline, [
             { path: "companyId", select: "name" },
-            { path: "createdBy", select: "name userType" },
+            { path: "createdBy", select: "fullName userType" },
         ]);
 
         // total count with aggregation to support search in populated fields
@@ -267,7 +267,7 @@ export const getExpenseById = async (req, res) => {
             {
                 populate: [
                     { path: "companyId", select: "name" },
-                    { path: "createdBy", select: "name userType" },
+                    { path: "createdBy", select: "fullName userType" },
                 ],
             },
         );

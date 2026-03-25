@@ -440,7 +440,7 @@ export const getAllCompany = async (req, res) => {
           select:
             "name ifscCode branchName accountHolderName bankAccountNumber swiftCode upiId",
         },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "userIds", select: "fullName" },
         { path: "roles", select: "name" },
         { path: "address.country", select: "name code" },
@@ -519,7 +519,7 @@ export const getCompanyById = async (req, res) => {
             select:
               "name ifscCode branchName accountHolderName bankAccountNumber swiftCode upiId",
           },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
           { path: "userIds", select: "fullName" },
           { path: "roles", select: "name" },
           { path: "address.country", select: "name code" },

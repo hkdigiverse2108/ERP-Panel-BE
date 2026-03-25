@@ -69,9 +69,9 @@ export const addEstimate = async (req, res) => {
 
     // Generate document number if not provided
     if (!value.estimateNo) {
-      value.estimateNo = await getAndIncrementPrefix({ 
-        companyId: value.companyId, 
-        prefixType: PREFIX_MODULES.ESTIMATE 
+      value.estimateNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: PREFIX_MODULES.ESTIMATE
       });
     }
 
@@ -265,7 +265,7 @@ export const getAllEstimate = async (req, res) => {
             { path: "address.city", select: "name" },
           ],
         },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "items.productId", select: "name itemCode" },
         { path: "items.taxId", select: "name percentage" },
         { path: "items.uomId", select: "name" },
@@ -384,7 +384,7 @@ export const getOneEstimate = async (req, res) => {
               { path: "address.city", select: "name" },
             ],
           },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },
           { path: "items.taxId", select: "name percentage" },
           { path: "items.uomId", select: "name" },

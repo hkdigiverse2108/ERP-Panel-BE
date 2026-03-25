@@ -136,7 +136,7 @@ export const getAllPayLater = async (req, res) => {
       populate: [
         { path: "customerId", select: "firstName lastName companyName phoneNo" },
         { path: "posOrderId", select: "orderNo totalAmount" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -168,7 +168,7 @@ export const getOnePayLater = async (req, res) => {
         populate: [
           { path: "customerId", select: "firstName lastName companyName phoneNo email" },
           { path: "posOrderId", select: "orderNo totalAmount items" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

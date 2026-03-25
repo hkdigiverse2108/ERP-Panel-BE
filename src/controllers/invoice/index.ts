@@ -77,9 +77,9 @@ export const addInvoice = async (req, res) => {
 
     // Generate document number if not provided using dynamic prefix helper
     if (!value.invoiceNo) {
-      value.invoiceNo = await getAndIncrementPrefix({ 
-        companyId: value.companyId, 
-        prefixType: PREFIX_MODULES.INVOICE 
+      value.invoiceNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: PREFIX_MODULES.INVOICE
       });
     }
 
@@ -389,7 +389,7 @@ export const getAllInvoice = async (req, res) => {
             { path: "address.city", select: "name" },
           ],
         },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "salesOrderIds", select: "salesOrderNo" },
         { path: "deliveryChallanIds", select: "deliveryChallanNo" },
         { path: "salesManId", select: "firstName lastName" },
@@ -525,7 +525,7 @@ export const getOneInvoice = async (req, res) => {
               { path: "address.city", select: "name" },
             ],
           },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
           { path: "salesOrderIds", select: "salesOrderNo date netAmount" },
           { path: "deliveryChallanIds", select: "deliveryChallanNo date netAmount" },
           { path: "salesManId", select: "firstName lastName" },

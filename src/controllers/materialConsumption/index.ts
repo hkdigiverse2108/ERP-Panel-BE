@@ -43,9 +43,9 @@ export const addMaterialConsumption = async (req, res) => {
       if (!updatedStock) continue;
     }
 
-    value.number = await getAndIncrementPrefix({ 
-      companyId: value.companyId, 
-      prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION 
+    value.number = await getAndIncrementPrefix({
+      companyId: value.companyId,
+      prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION
     });
 
     const isExist = await getFirstMatch(materialConsumptionModel, { companyId: value.companyId, number: value?.number, isDeleted: false }, {}, {});
@@ -218,7 +218,7 @@ export const getAllMaterialConsumption = async (req, res) => {
         { path: "branchId", select: "name" },
         { path: "consumptionTypeId", select: "name" },
         { path: "items.productId", select: "name" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -257,7 +257,7 @@ export const getMaterialConsumptionById = async (req, res) => {
           { path: "branchId", select: "name" },
           { path: "consumptionTypeId", select: "name" },
           { path: "items.productId", select: "name" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

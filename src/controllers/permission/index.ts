@@ -78,7 +78,7 @@ export const get_permission_by_userId = async (req, res) => {
 
     const options: any = {
       populate: [
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
       ],
     };
 

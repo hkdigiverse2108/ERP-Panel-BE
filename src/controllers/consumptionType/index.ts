@@ -132,7 +132,7 @@ export const getOneConsumptionType = async (req: any, res: any) => {
         }
 
 
-        const response = await getFirstMatch(ConsumptionTypeModel, { _id: value.id, isDeleted: false }, {}, { populate: [{ path: "companyId", select: "name" }, { path: "branchId", select: "name" }, { path: "createdBy", select: "name userType" }, { path: "updatedBy", select: "name userType" }] });
+        const response = await getFirstMatch(ConsumptionTypeModel, { _id: value.id, isDeleted: false }, {}, { populate: [{ path: "companyId", select: "name" }, { path: "branchId", select: "name" }, { path: "createdBy", select: "fullName userType" }, { path: "updatedBy", select: "name userType" }] });
 
         if (!response) {
             return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Consumption Type"), {}, {}));
@@ -149,7 +149,7 @@ export const getAllConsumptionType = async (req: any, res: any) => {
     reqInfo(req);
     try {
         const { user } = req.headers;
-        let { page, limit, search, companyFilter ,activeFilter} = req.query;
+        let { page, limit, search, companyFilter, activeFilter } = req.query;
 
         page = Number(page) || 1;
         limit = Number(limit) || 10;
@@ -166,7 +166,7 @@ export const getAllConsumptionType = async (req: any, res: any) => {
             criteria.name = { $regex: search, $options: "si" };
         }
 
-        if(activeFilter){
+        if (activeFilter) {
             criteria.isActive = activeFilter;
         }
 
@@ -174,7 +174,7 @@ export const getAllConsumptionType = async (req: any, res: any) => {
             sort: { isDefault: -1, createdAt: -1 },
             skip: (page - 1) * limit,
             limit: limit,
-            populate: [{ path: "companyId", select: "name" }, { path: "branchId", select: "name" }, { path: "createdBy", select: "name userType" }, { path: "updatedBy", select: "name userType" }]
+            populate: [{ path: "companyId", select: "name" }, { path: "branchId", select: "name" }, { path: "createdBy", select: "fullName userType" }, { path: "updatedBy", select: "name userType" }]
         };
 
         const response = await getDataWithSorting(ConsumptionTypeModel, criteria, {}, options);

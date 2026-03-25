@@ -76,9 +76,9 @@ export const addSalesOrder = async (req, res) => {
 
     // Generate document number if not provided using dynamic prefix helper
     if (!value.salesOrderNo) {
-      value.salesOrderNo = await getAndIncrementPrefix({ 
-        companyId: value.companyId, 
-        prefixType: PREFIX_MODULES.SALES_ORDER 
+      value.salesOrderNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: PREFIX_MODULES.SALES_ORDER
       });
     }
 
@@ -296,7 +296,7 @@ export const getAllSalesOrder = async (req, res) => {
         { path: "termsAndConditionIds", select: "name" },
         { path: "paymentTermsId", select: "name day" },
         { path: "shippingDetails.transporterId", select: "name" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -414,7 +414,7 @@ export const getOneSalesOrder = async (req, res) => {
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
           { path: "paymentTermsId", select: "name day" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
           { path: "updatedBy", select: "name userType" },
         ],
       },

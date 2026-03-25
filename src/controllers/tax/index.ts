@@ -150,7 +150,7 @@ export const getAllTax = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
@@ -197,7 +197,7 @@ export const getTaxById = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
           { path: "updatedBy", select: "name userType" },
         ],
       },

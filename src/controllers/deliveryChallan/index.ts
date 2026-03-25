@@ -91,9 +91,9 @@ export const addDeliveryChallan = async (req, res) => {
 
     // Generate document number if not provided
     if (!value.deliveryChallanNo) {
-      value.deliveryChallanNo = await getAndIncrementPrefix({ 
-        companyId: value.companyId, 
-        prefixType: PREFIX_MODULES.DELIVERY_CHALLAN 
+      value.deliveryChallanNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: PREFIX_MODULES.DELIVERY_CHALLAN
       });
     }
 
@@ -333,7 +333,7 @@ export const getAllDeliveryChallan = async (req, res) => {
           ],
         },
         { path: "paymentTermsId", select: "name day" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "salesOrderIds", select: "salesOrderNo" },
         { path: "invoiceIds", select: "invoiceNo" },
         { path: "items.productId", select: "name itemCode" },
@@ -452,7 +452,7 @@ export const getOneDeliveryChallan = async (req, res) => {
             ],
           },
           { path: "paymentTermsId", select: "name day" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
           { path: "salesOrderIds", select: "salesOrderNo date" },
           { path: "invoiceIds", select: "invoiceNo date" },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },

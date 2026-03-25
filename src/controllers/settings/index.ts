@@ -13,7 +13,7 @@ export const getSettings = async (req: Request | any, res: Response | any) => {
             {},
             {
                 populate: [
-                    { path: "createdBy", select: "name userType" },
+                    { path: "createdBy", select: "fullName userType" },
                     { path: "updatedBy", select: "name userType" },
                 ]
             }

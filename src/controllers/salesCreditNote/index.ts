@@ -77,9 +77,9 @@ export const addSalesCreditNote = async (req, res) => {
 
     // Generate credit note number if not provided using dynamic prefix helper
     if (!value?.creditNoteNo) {
-      value.creditNoteNo = await getAndIncrementPrefix({ 
-        companyId: value.companyId, 
-        prefixType: PREFIX_MODULES.SALES_CREDIT_NOTE 
+      value.creditNoteNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: PREFIX_MODULES.SALES_CREDIT_NOTE
       });
     }
 
@@ -285,7 +285,7 @@ export const getAllSalesCreditNote = async (req, res) => {
         { path: "termsAndConditionIds", select: "termsCondition" },
         { path: "companyId", select: "name" },
         { path: "salesManId", select: "firstName lastName" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
       skip: (page - 1) * limit,
@@ -383,7 +383,7 @@ export const getOneSalesCreditNote = async (req, res) => {
           { path: "companyId", select: "name gstNo" },
           { path: "salesManId", select: "firstName lastName" },
           { path: "shippingDetails.transporterId", select: "firstName lastName" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
           { path: "updatedBy", select: "name userType" },
         ],
       },

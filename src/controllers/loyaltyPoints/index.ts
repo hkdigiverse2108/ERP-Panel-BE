@@ -63,7 +63,7 @@ export const getLoyaltyPoints = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

@@ -73,9 +73,9 @@ export const addPurchaseDebitNote = async (req, res) => {
     }
 
     if (!value?.debitNoteNo) {
-      value.debitNoteNo = await getAndIncrementPrefix({ 
-        companyId: value.companyId, 
-        prefixType: PREFIX_MODULES.PURCHASE_DEBIT_NOTE 
+      value.debitNoteNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: PREFIX_MODULES.PURCHASE_DEBIT_NOTE
       });
     }
 
@@ -271,7 +271,7 @@ export const getAllPurchaseDebitNote = async (req, res) => {
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "paymentTermsId", select: "name day" },
         { path: "companyId", select: "name" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -378,7 +378,7 @@ export const getOnePurchaseDebitNote = async (req, res) => {
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "paymentTermsId", select: "name day" },
           { path: "companyId", select: "name gstNo" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

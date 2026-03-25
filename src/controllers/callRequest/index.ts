@@ -113,7 +113,7 @@ export const getAllCallRequest = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
       ],
     };
 
@@ -156,7 +156,7 @@ export const getOneCallRequest = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

@@ -135,7 +135,7 @@ export const get_all_module = async (req, res) => {
                     path: "parentId",
                     model: "module"
                 },
-                { path: "createdBy", select: "name userType" },
+                { path: "createdBy", select: "fullName userType" },
             ],
         };
 
@@ -174,7 +174,7 @@ export const get_by_id_module = async (req, res) => {
 
         const options: any = {
             populate: [
-                { path: "createdBy", select: "name userType" },
+                { path: "createdBy", select: "fullName userType" },
             ],
         };
 

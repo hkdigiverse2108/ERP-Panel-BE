@@ -25,9 +25,9 @@ export const addBankTransaction = async (req, res) => {
         value.createdBy = user?._id || null;
         value.updatedBy = user?._id || null;
 
-        const voucherNo = await getAndIncrementPrefix({ 
-            companyId: value.companyId, 
-            prefixType: PREFIX_MODULES.BANK_TRANSACTION 
+        const voucherNo = await getAndIncrementPrefix({
+            companyId: value.companyId,
+            prefixType: PREFIX_MODULES.BANK_TRANSACTION
         });
         value.voucherNo = voucherNo;
 

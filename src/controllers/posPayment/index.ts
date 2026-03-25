@@ -36,9 +36,9 @@ export const addPosPayment = async (req, res) => {
     }
     // -------------------------------
 
-    value.paymentNo = await getAndIncrementPrefix({ 
-      companyId: value.companyId, 
-      prefixType: PREFIX_MODULES.POS_PAYMENT 
+    value.paymentNo = await getAndIncrementPrefix({
+      companyId: value.companyId,
+      prefixType: PREFIX_MODULES.POS_PAYMENT
     });
 
     if (value.voucherType === POS_VOUCHER_TYPE.SALES && value.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL) {
@@ -212,7 +212,7 @@ export const getAllPosPayment = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "taxId", select: "name percentage" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -248,7 +248,7 @@ export const getOnePosPayment = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "taxId", select: "name percentage" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

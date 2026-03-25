@@ -43,9 +43,9 @@ export const addPurchaseOrder = async (req, res) => {
     }
 
     if (!value.orderNo) {
-      value.orderNo = await getAndIncrementPrefix({ 
-        companyId: value.companyId, 
-        prefixType: PREFIX_MODULES.PURCHASE_ORDER 
+      value.orderNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: PREFIX_MODULES.PURCHASE_ORDER
       });
     }
 
@@ -212,7 +212,7 @@ export const getAllPurchaseOrder = async (req, res) => {
         { path: "termsAndConditionIds", select: "name" },
         { path: "items.taxId", select: "name percentage" },
         { path: "items.uomId", select: "name" },
-        { path: "createdBy", select: "name userType" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -329,7 +329,7 @@ export const getOnePurchaseOrder = async (req, res) => {
           { path: "termsAndConditionIds", select: "name" },
           { path: "items.taxId", select: "name percentage" },
           { path: "items.uomId", select: "name" },
-          { path: "createdBy", select: "name userType" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

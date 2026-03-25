@@ -28,9 +28,9 @@ export const addCreditNote = async (req, res) => {
       }
     }
 
-    value.voucherNumber = await getAndIncrementPrefix({ 
-      companyId: value.companyId, 
-      prefixType: PREFIX_MODULES.CREDIT_NOTE 
+    value.voucherNumber = await getAndIncrementPrefix({
+      companyId: value.companyId,
+      prefixType: PREFIX_MODULES.CREDIT_NOTE
     });
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
