@@ -15,11 +15,11 @@ const contactSchema = new Schema<IContact>(
     telephoneNo: { type: String },
     remarks: { type: String },
     phoneNo: {
-      countryCode: { type: String },
+      countryCode: { type: String, default: "+91" },
       phoneNo: { type: Number },
     },
     whatsappNo: {
-      countryCode: { type: String },
+      countryCode: { type: String, default: "+91" },
       phoneNo: { type: Number },
     },
     dob: { type: Date },
@@ -39,7 +39,7 @@ const contactSchema = new Schema<IContact>(
         contactLastName: { type: String },
         contactCompanyName: { type: String },
         contactNo: {
-          countryCode: { type: String },
+          countryCode: { type: String, default: "+91" },
           phoneNo: { type: Number },
         },
         contactEmail: { type: String },

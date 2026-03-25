@@ -125,7 +125,7 @@ export const deleteTax = async (req, res) => {
 export const getAllTax = async (req, res) => {
   reqInfo(req);
   try {
-    let { page, limit, search, activeFilter } = req.query;
+    let { page, limit, search, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -136,6 +136,8 @@ export const getAllTax = async (req, res) => {
     if (user?.userType !== USER_TYPES.SUPER_ADMIN) {
       criteria.$or = [{ companyId: null }, { companyId: user?.companyId }];
     }
+
+    if (companyFilter) criteria.companyId = companyFilter;
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
@@ -210,11 +212,14 @@ export const getTaxDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
+    const { companyFilter } = req.query;
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (user?.userType !== USER_TYPES.SUPER_ADMIN) {
       criteria.$or = [{ companyId: null }, { companyId: user?.companyId }];
     }
+
+    if (companyFilter) criteria.companyId = companyFilter;
 
     const response = await getDataWithSorting(
       taxModel,

@@ -61,3 +61,4 @@ export * as companyDriveController from "./companyDrive";
 export * as productTypeController from "./productType";
 export * as expenseController from "./expense";
 export * as salaryController from "./salary";
+export * as paymentTermsController from "./paymentTerm";

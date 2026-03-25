@@ -10,6 +10,7 @@ router.get("/all", productController.getAllProduct);
 router.post("/detect", upload.array('images', 10), productController.detectProduct);
 router.get("/dropdown", productController.getProductDropdown);
 router.post("/add", productController.addProduct);
+router.post("/bulk-add", upload.single("file"), productController.bulkAddProduct);
 router.put("/edit", productController.editProduct);
 router.delete("/:id", productController.deleteProduct);
 router.get("/:id", productController.getOneProduct);
