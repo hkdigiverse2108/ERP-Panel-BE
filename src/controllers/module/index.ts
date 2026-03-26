@@ -135,7 +135,6 @@ export const get_all_module = async (req, res) => {
                     path: "parentId",
                     model: "module"
                 },
-                { path: "createdBy", select: "fullName userType" },
             ],
         };
 
@@ -172,13 +171,8 @@ export const get_by_id_module = async (req, res) => {
         let { error, value } = getModuleByIdSchema.validate({ id: req.params.id });
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-        const options: any = {
-            populate: [
-                { path: "createdBy", select: "fullName userType" },
-            ],
-        };
 
-        const response = await getFirstMatch(moduleModel, { _id: new ObjectId(value.id), isDeleted: false }, {}, options);
+        const response = await getFirstMatch(moduleModel, { _id: new ObjectId(value.id), isDeleted: false }, {}, {});
         if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("module"), {}, {}));
 
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("module"), response, {}));

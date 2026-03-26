@@ -93,11 +93,11 @@ export const editPrefix = async (req, res) => {
 
     // If changing prefixType, check for duplicates in the same company scope
     if (value.prefixType && value.prefixType !== isExist.prefixType) {
-      const typeExist = await getFirstMatch(PrefixModel, { 
-        prefixType: value.prefixType, 
-        companyId: isExist.companyId || null, 
-        isDeleted: false, 
-        _id: { $ne: value.prefixId } 
+      const typeExist = await getFirstMatch(PrefixModel, {
+        prefixType: value.prefixType,
+        companyId: isExist.companyId || null,
+        isDeleted: false,
+        _id: { $ne: value.prefixId }
       }, {}, {});
       if (typeExist) {
         return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist(`Prefix for module ${value.prefixType}`), {}, {}));
@@ -186,7 +186,7 @@ export const getAllPrefix = async (req, res) => {
     let { page, limit, search, prefixType, activeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
-    
+
     // Scoping
     if (userType === USER_TYPES.SUPER_ADMIN) {
       if (!companyFilter) {
@@ -214,6 +214,8 @@ export const getAllPrefix = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
+        { path: "createdBy", select: "fullName userType" },
+        { path: "updatedBy", select: "fullName userType" },
       ],
     };
 
@@ -257,6 +259,8 @@ export const getOnePrefix = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
+          { path: "createdBy", select: "fullName userType" },
+          { path: "updatedBy", select: "fullName userType" },
         ],
       },
     );
