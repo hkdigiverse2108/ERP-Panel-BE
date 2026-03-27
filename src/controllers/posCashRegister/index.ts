@@ -103,7 +103,9 @@ export const addPosCashRegister = async (req, res) => {
     value.updatedBy = user?._id || null;
     value.registerNo = await getAndIncrementPrefix({
       companyId: value.companyId,
-      prefixType: PREFIX_MODULES.POS_CASH_REGISTER
+      prefixType: PREFIX_MODULES.POS_CASH_REGISTER,
+      model: PosCashRegisterModel,
+      fieldName: "registerNo",
     });
 
     const response = await createOne(PosCashRegisterModel, value);

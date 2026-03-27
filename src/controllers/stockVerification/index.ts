@@ -26,7 +26,9 @@ export const addStockVerification = async (req, res) => {
 
     value.stockVerificationNo = await getAndIncrementPrefix({
       companyId: value.companyId,
-      prefixType: PREFIX_MODULES.STOCK_VERIFICATION
+      prefixType: PREFIX_MODULES.STOCK_VERIFICATION,
+      model: stockVerificationModel,
+      fieldName: "stockVerificationNo",
     });
 
     value.createdBy = user?._id || null;

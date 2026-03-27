@@ -45,7 +45,9 @@ export const addPurchaseOrder = async (req, res) => {
     if (!value.orderNo) {
       value.orderNo = await getAndIncrementPrefix({
         companyId: value.companyId,
-        prefixType: PREFIX_MODULES.PURCHASE_ORDER
+        prefixType: PREFIX_MODULES.PURCHASE_ORDER,
+        model: purchaseOrderModel,
+        fieldName: "orderNo",
       });
     }
 

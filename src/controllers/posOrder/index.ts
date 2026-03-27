@@ -69,7 +69,9 @@ export const addPosOrder = async (req, res) => {
 
     value.orderNo = await getAndIncrementPrefix({
       companyId: value.companyId,
-      prefixType: PREFIX_MODULES.POS_ORDER
+      prefixType: PREFIX_MODULES.POS_ORDER,
+      model: PosOrderModel,
+      fieldName: "orderNo",
     });
 
     // Set hold date if status is hold
@@ -203,7 +205,9 @@ export const addPosOrder = async (req, res) => {
             paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
             paymentNo: await getAndIncrementPrefix({
               companyId: response.companyId,
-              prefixType: PREFIX_MODULES.RECEIPT
+              prefixType: PREFIX_MODULES.RECEIPT,
+              model: PosPaymentModel,
+              fieldName: "paymentNo",
             }),
             createdBy: user?._id || null,
             updatedBy: user?._id || null,
@@ -226,7 +230,9 @@ export const addPosOrder = async (req, res) => {
           paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
           paymentNo: await getAndIncrementPrefix({
             companyId: response.companyId,
-            prefixType: PREFIX_MODULES.RECEIPT
+            prefixType: PREFIX_MODULES.RECEIPT,
+            model: PosPaymentModel,
+            fieldName: "paymentNo",
           }),
           createdBy: user?._id || null,
           updatedBy: user?._id || null,
@@ -498,7 +504,9 @@ export const editPosOrder = async (req, res) => {
               paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
               paymentNo: await getAndIncrementPrefix({
                 companyId: response.companyId,
-                prefixType: PREFIX_MODULES.RECEIPT
+                prefixType: PREFIX_MODULES.RECEIPT,
+                model: PosPaymentModel,
+                fieldName: "paymentNo",
               }),
               createdBy: user?._id || null,
               updatedBy: user?._id || null,
@@ -519,7 +527,9 @@ export const editPosOrder = async (req, res) => {
           paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
           paymentNo: await getAndIncrementPrefix({
             companyId: response.companyId,
-            prefixType: PREFIX_MODULES.RECEIPT
+            prefixType: PREFIX_MODULES.RECEIPT,
+            model: PosPaymentModel,
+            fieldName: "paymentNo",
           }),
           createdBy: user?._id || null,
           updatedBy: user?._id || null,

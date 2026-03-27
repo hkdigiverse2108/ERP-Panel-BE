@@ -71,7 +71,9 @@ export const addEstimate = async (req, res) => {
     if (!value.estimateNo) {
       value.estimateNo = await getAndIncrementPrefix({
         companyId: value.companyId,
-        prefixType: PREFIX_MODULES.ESTIMATE
+        prefixType: PREFIX_MODULES.ESTIMATE,
+        model: EstimateModel,
+        fieldName: "estimateNo",
       });
     }
 

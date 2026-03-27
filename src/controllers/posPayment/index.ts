@@ -38,7 +38,9 @@ export const addPosPayment = async (req, res) => {
 
     value.paymentNo = await getAndIncrementPrefix({
       companyId: value.companyId,
-      prefixType: PREFIX_MODULES.POS_PAYMENT
+      prefixType: PREFIX_MODULES.POS_PAYMENT,
+      model: PosPaymentModel,
+      fieldName: "paymentNo",
     });
 
     if (value.voucherType === POS_VOUCHER_TYPE.SALES && value.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL) {

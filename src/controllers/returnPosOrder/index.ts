@@ -70,7 +70,9 @@ export const addReturnPosOrder = async (req, res) => {
 
     value.returnOrderNo = await getAndIncrementPrefix({ 
       companyId: value.companyId, 
-      prefixType: PREFIX_MODULES.RETURN_POS_ORDER 
+      prefixType: PREFIX_MODULES.RETURN_POS_ORDER,
+      model: returnPosOrderModel,
+      fieldName: "returnOrderNo",
     });
 
     value.createdBy = user?._id || null;
@@ -137,7 +139,9 @@ export const addReturnPosOrder = async (req, res) => {
         creditsRemaining: response.total,
         creditNoteNo: await getAndIncrementPrefix({ 
           companyId: response.companyId, 
-          prefixType: PREFIX_MODULES.POS_CREDIT_NOTE 
+          prefixType: PREFIX_MODULES.POS_CREDIT_NOTE,
+          model: posCreditNoteModel,
+          fieldName: "creditNoteNo",
         }),
         createdBy: user?._id || null,
         updatedBy: user?._id || null,

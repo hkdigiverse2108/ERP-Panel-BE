@@ -155,7 +155,9 @@ export const bulkStockAdjustment = async (req, res) => {
       const companyId = user?.companyId?._id || null;
       const consumptionNo = await getAndIncrementPrefix({
         companyId,
-        prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION
+        prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION,
+        model: materialConsumptionModel,
+        fieldName: "number",
       });
       const totalAmount = processedItems.reduce((sum, item: any) => {
         const itemTotal = item?.totalPrice ?? (item?.qty || 0) * (item?.price || 0);
