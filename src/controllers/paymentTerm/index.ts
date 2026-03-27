@@ -138,6 +138,7 @@ export const getAllPaymentTerm = async (req, res) => {
             skip: (page - 1) * limit,
             limit,
             populate: [
+                { path: "companyId", select: "name" },
                 { path: "createdBy", select: "fullName userType" },
             ],
         };
