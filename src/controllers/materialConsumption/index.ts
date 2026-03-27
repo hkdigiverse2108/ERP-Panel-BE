@@ -45,7 +45,9 @@ export const addMaterialConsumption = async (req, res) => {
 
     value.number = await getAndIncrementPrefix({
       companyId: value.companyId,
-      prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION
+      prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION,
+      model: materialConsumptionModel,
+      fieldName: "number",
     });
 
     const isExist = await getFirstMatch(materialConsumptionModel, { companyId: value.companyId, number: value?.number, isDeleted: false }, {}, {});

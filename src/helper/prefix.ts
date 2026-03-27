@@ -5,19 +5,24 @@ import { IPrefix } from "../types";
 interface PrefixOptions {
   companyId: string;
   prefixType: string;
+  model?: any;
+  fieldName?: string;
 }
 
 /**
  * Generates a dynamic document number based on company-specific or global prefix settings.
  * It atomically increments the sequence number to prevent duplicates in high-concurrency.
+ * If model and fieldName are provided, it will retry up to 10 times to find a unique number.
  * 
- * @param {PrefixOptions} options - Contains companyId and the type of module (from PREFIX_MODULES enum)
+ * @param {PrefixOptions} options - Contains companyId, prefixType, and optional DB checking parameters.
  * @returns {Promise<string>} The generated document number (e.g., "INV-101")
  */
-export const getAndIncrementPrefix = async ({ companyId, prefixType }: PrefixOptions): Promise<string> => {
+export const getAndIncrementPrefix = async ({ companyId, prefixType, model, fieldName }: PrefixOptions): Promise<string> => {
   const companyFilter: any = { companyId: companyId as any, prefixType, isDeleted: false };
+  let attempts = 0;
+  let resultNumber: string = "";
 
-  // 1. Try to find the correct prefix string (Company-specific -> Global Template -> Default)
+  // 1. Try to find the correct prefix string once (Company-specific -> Global Template -> Default)
   let prefixDoc = await PrefixModel.findOne(companyFilter).lean();
   let prefixString = prefixDoc?.prefix;
 
@@ -26,26 +31,34 @@ export const getAndIncrementPrefix = async ({ companyId, prefixType }: PrefixOpt
     prefixString = globalTemplate?.prefix || String(prefixType).toUpperCase().substring(0, 3);
   }
 
-  // 2. Atomically increment (or create) the company-specific record
-  // This ensures each company has its own isolated sequence.
-  const updatedDoc = await PrefixModel.findOneAndUpdate(
-    companyFilter,
-    {
-      $inc: { sequenceNumber: 1 },
-      $setOnInsert: {
-        prefix: prefixString,
-        companyId: companyId as any,
-        prefixType,
-        isDeleted: false,
-        isActive: true,
+  // 2. Loop to atomic increment and uniqueness check
+  do {
+    const updatedDoc = await PrefixModel.findOneAndUpdate(
+      companyFilter,
+      {
+        $inc: { sequenceNumber: 1 },
+        $setOnInsert: {
+          prefix: prefixString,
+          companyId: companyId as any,
+          prefixType,
+          isDeleted: false,
+          isActive: true,
+        },
       },
-    },
-    { upsert: true, new: false, setDefaultsOnInsert: true }
-  ).lean();
+      { upsert: true, new: false, setDefaultsOnInsert: true }
+    ).lean();
 
-  // 3. Return the formatted document number
-  // If updatedDoc is null, it means a new record was inserted (sequenceNumber is now 2 in DB, first was 1)
-  const sequenceNumber = updatedDoc ? (updatedDoc.sequenceNumber ?? 1) : 1;
+    const sequenceNumber = updatedDoc ? (updatedDoc.sequenceNumber ?? 1) : 1;
+    resultNumber = `${prefixString}-${sequenceNumber}`;
 
-  return `${prefixString}-${sequenceNumber}`;
+    if (!model || !fieldName) break;
+
+    // 3. Uniqueness check
+    const isExist = await model.findOne({ companyId: companyId as any, [fieldName]: resultNumber, isDeleted: false }).lean();
+    if (!isExist) break;
+
+    attempts++;
+  } while (attempts < 10);
+
+  return resultNumber;
 };
