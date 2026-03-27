@@ -1,6 +1,6 @@
-import { apiResponse, ESTIMATE_STATUS, HTTP_STATUS, SALES_ORDER_STATUS } from "../../common";
+import { apiResponse, ESTIMATE_STATUS, HTTP_STATUS, SALES_ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel, EstimateModel, userModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
 import { addSalesOrderSchema, deleteSalesOrderSchema, editSalesOrderSchema, getSalesOrderSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -74,9 +74,14 @@ export const addSalesOrder = async (req, res) => {
       if (!(await checkIdExist(contactModel, value.shippingDetails.transporterId, "Transporter", res))) return;
     }
 
-    // Generate document number if not provided
+    // Generate document number if not provided using dynamic prefix helper
     if (!value.salesOrderNo) {
-      value.salesOrderNo = await generateSequenceNumber({ model: SalesOrderModel, prefix: "SO", fieldName: "salesOrderNo", companyId: value.companyId });
+      value.salesOrderNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: PREFIX_MODULES.SALES_ORDER,
+        model: SalesOrderModel,
+        fieldName: "salesOrderNo",
+      });
     }
 
     value.createdBy = user?._id || null;
@@ -291,7 +296,9 @@ export const getAllSalesOrder = async (req, res) => {
         { path: "additionalCharges.chargeId", select: "name" },
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "termsAndConditionIds", select: "name" },
+        { path: "paymentTermsId", select: "name day" },
         { path: "shippingDetails.transporterId", select: "name" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -408,8 +415,9 @@ export const getOneSalesOrder = async (req, res) => {
           { path: "items.taxId", select: "name percentage type" },
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
-          { path: "createdBy", select: "firstName lastName" },
-          { path: "updatedBy", select: "firstName lastName" },
+          { path: "paymentTermsId", select: "name day" },
+          { path: "createdBy", select: "fullName userType" },
+          { path: "updatedBy", select: "name userType" },
         ],
       },
     );

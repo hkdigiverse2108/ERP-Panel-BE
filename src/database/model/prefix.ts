@@ -2,12 +2,14 @@ import mongoose, { Schema } from "mongoose";
 import { baseSchemaFields, baseSchemaOptions } from "./base";
 import { IPrefix } from "../../types";
 
+import { PREFIX_MODULES } from "../../common";
+
 const prefixSchema = new Schema<IPrefix>({
     ...baseSchemaFields,
-    module: { type: String, required: true },
+    prefixType: { type: String, required: true, enum: Object.values(PREFIX_MODULES) },
     prefix: { type: String, required: true },
-    startNumber: { type: Number, default: 1 },
-    currentNumber: { type: Number, default: 1 }
+    sequenceNumber: { type: Number, default: 1 },
+    
 }, baseSchemaOptions);
 
 export const PrefixModel = mongoose.model<IPrefix>('prefix', prefixSchema);

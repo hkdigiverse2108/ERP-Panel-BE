@@ -123,7 +123,7 @@ export const getAllProductRequest = async (req, res) => {
 
     const options: any = {
       sort: { createdAt: -1 },
-      populate: [{ path: "companyId", select: "name" }],
+      populate: [{ path: "companyId", select: "name" }, { path: "createdBy", select: "name userType" }],
     };
 
     if (page && limit) {
@@ -161,7 +161,7 @@ export const getOneProductRequest = async (req, res) => {
       { _id: value?.id, isDeleted: false },
       {},
       {
-        populate: [{ path: "companyId", select: "name" }],
+        populate: [{ path: "companyId", select: "name" }, { path: "createdBy", select: "name userType" }],
       },
     );
 

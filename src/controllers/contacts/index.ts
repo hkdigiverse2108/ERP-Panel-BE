@@ -383,7 +383,9 @@ export const getAllContact = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
+        { path: "paymentTermsId", select: "name day" },
         { path: "membershipId", select: "name" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "address.country", select: "name code" },
         { path: "address.state", select: "name code" },
         { path: "address.city", select: "name code" },
@@ -458,6 +460,8 @@ export const getContactById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "membershipId", select: "name" },
+          { path: "paymentTermsId", select: "name day" },
+          { path: "createdBy", select: "fullName userType" },
           { path: "address.country", select: "name code" },
           { path: "address.state", select: "name code" },
           { path: "address.city", select: "name code" },

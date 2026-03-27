@@ -76,6 +76,12 @@ export const get_permission_by_userId = async (req, res) => {
     match.isActive = true;
     match.isDeleted = false;
 
+    const options: any = {
+      populate: [
+        { path: "createdBy", select: "fullName userType" },
+      ],
+    };
+
     let moduleData = await moduleModel.aggregate([
       { $match: match },
       {

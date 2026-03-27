@@ -342,13 +342,13 @@ export const ESTIMATE_STATUS = {
   INVOICE_CREATED: "invoice-created",
 } as const;
 
-export const PAYMENT_TERMS_ENUM = {
-  SEVEN_DAYS: "7_days",
-  FIFTEEN_DAYS: "15_days",
-  THIRTY_DAYS: "30_days",
-  SIXTY_DAYS: "60_days",
-  NINETY_DAYS: "90_days",
-} as const;
+// export const PAYMENT_TERMS_ENUM = {
+//   SEVEN_DAYS: "7_days",
+//   FIFTEEN_DAYS: "15_days",
+//   THIRTY_DAYS: "30_days",
+//   SIXTY_DAYS: "60_days",
+//   NINETY_DAYS: "90_days",
+// } as const;
 
 export const SALES_ORDER_STATUS = {
   PENDING: "pending",
@@ -394,4 +394,33 @@ export const ADJUSTMENT_TYPE = {
 export const EXPENSEDATA_TYPE = {
   INCOME: "income",
   EXPENSE: "expense",
+} as const;
+
+export const PREFIX_MODULES = {
+  INVOICE: "Invoice",
+  PURCHASE_ORDER: "Purchase_Order",
+  SALES_ORDER: "Sales_Order",
+  ESTIMATE: "Estimate",
+  DELIVERY_CHALLAN: "Delivery_Challan",
+  PURCHASE_DEBIT_NOTE: "Purchase_Debit_Note",
+  SALES_CREDIT_NOTE: "Sales_Credit_Note",
+  POS_ORDER: "POS_Order",
+  POS_CREDIT_NOTE: "POS_Credit_Note",
+  RECEIPT: "Receipt",
+  PAYMENT: "Payment",
+  EXPENSE: "Expense",
+  JOURNAL_VOUCHER: "Journal_Voucher",
+  CONTRA_VOUCHER: "Contra_Voucher",
+  SUPPLIER_BILL: "Supplier_Bill",
+  SUPPLIER_BILL_REFERENCE: "Supplier_Bill_Reference",
+  MATERIAL_CONSUMPTION: "Material_Consumption",
+  STOCK_VERIFICATION: "Stock_Verification",
+  STOCK: "Stock",
+  RETURN_POS_ORDER: "Return_POS_Order",
+  RECIPE: "Recipe",
+  POS_PAYMENT: "POS_Payment",
+  POS_CASH_REGISTER: "POS_Cash_Register",
+  DEBIT_NOTE: "Debit_Note",
+  CREDIT_NOTE: "Credit_Note",
+  BANK_TRANSACTION: "Bank_Transaction",
 } as const;

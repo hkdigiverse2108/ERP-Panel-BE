@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel, posCreditNoteModel, discountModel } from "../../database";
-import { applyDateFilter, checkCompany, checkIdExist, checkStockQty, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkCompany, checkIdExist, checkStockQty, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
 import { applyCoupon, applyLoyalty, applyPosDiscount, applyRedeemCredit, revertCoupon, revertDiscount, revertLoyalty, revertRedeemCredit } from "./helper";
 
@@ -67,11 +67,11 @@ export const addPosOrder = async (req, res) => {
     value.posCashRegisterId = openRegister._id;
     // -------------------------------
 
-    value.orderNo = await generateSequenceNumber({
-      model: PosOrderModel,
-      prefix: "POS",
-      fieldName: "orderNo",
+    value.orderNo = await getAndIncrementPrefix({
       companyId: value.companyId,
+      prefixType: PREFIX_MODULES.POS_ORDER,
+      model: PosOrderModel,
+      fieldName: "orderNo",
     });
 
     // Set hold date if status is hold
@@ -203,11 +203,11 @@ export const addPosOrder = async (req, res) => {
             paymentMode: payment.method,
             voucherType: POS_VOUCHER_TYPE.SALES,
             paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
-            paymentNo: await generateSequenceNumber({
-              model: PosPaymentModel,
-              prefix: "RCP",
-              fieldName: "paymentNo",
+            paymentNo: await getAndIncrementPrefix({
               companyId: response.companyId,
+              prefixType: PREFIX_MODULES.RECEIPT,
+              model: PosPaymentModel,
+              fieldName: "paymentNo",
             }),
             createdBy: user?._id || null,
             updatedBy: user?._id || null,
@@ -228,11 +228,11 @@ export const addPosOrder = async (req, res) => {
           paymentMode: value.paymentMethod || PAYMENT_MODE.CASH,
           voucherType: POS_VOUCHER_TYPE.SALES,
           paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
-          paymentNo: await generateSequenceNumber({
-            model: PosPaymentModel,
-            prefix: "RCP",
-            fieldName: "paymentNo",
+          paymentNo: await getAndIncrementPrefix({
             companyId: response.companyId,
+            prefixType: PREFIX_MODULES.RECEIPT,
+            model: PosPaymentModel,
+            fieldName: "paymentNo",
           }),
           createdBy: user?._id || null,
           updatedBy: user?._id || null,
@@ -502,11 +502,11 @@ export const editPosOrder = async (req, res) => {
               paymentMode: payment.method,
               voucherType: POS_VOUCHER_TYPE.SALES,
               paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
-              paymentNo: await generateSequenceNumber({
-                model: PosPaymentModel,
-                prefix: "SAL",
-                fieldName: "paymentNo",
+              paymentNo: await getAndIncrementPrefix({
                 companyId: response.companyId,
+                prefixType: PREFIX_MODULES.RECEIPT,
+                model: PosPaymentModel,
+                fieldName: "paymentNo",
               }),
               createdBy: user?._id || null,
               updatedBy: user?._id || null,
@@ -525,11 +525,11 @@ export const editPosOrder = async (req, res) => {
           paymentMode: value.paymentMethod || PAYMENT_MODE.CASH,
           voucherType: POS_VOUCHER_TYPE.SALES,
           paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
-          paymentNo: await generateSequenceNumber({
-            model: PosPaymentModel,
-            prefix: "SAL",
-            fieldName: "paymentNo",
+          paymentNo: await getAndIncrementPrefix({
             companyId: response.companyId,
+            prefixType: PREFIX_MODULES.RECEIPT,
+            model: PosPaymentModel,
+            fieldName: "paymentNo",
           }),
           createdBy: user?._id || null,
           updatedBy: user?._id || null,
@@ -797,6 +797,8 @@ export const getAllPosOrder = async (req, res) => {
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "additionalCharges.chargeId", select: "name" },
         { path: "posCashRegisterId", select: "registerNo status" },
+        { path: "payLater.paymentTermsId", select: "name day" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       ...(lastBillFilter !== "true" && { skip: (page - 1) * limit, limit }),
     };
@@ -881,6 +883,8 @@ export const getOnePosOrder = async (req, res) => {
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "additionalCharges.chargeId", select: "name" },
           { path: "posCashRegisterId", select: "name status" },
+          { path: "payLater.paymentTermsId", select: "name day" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );
@@ -985,10 +989,12 @@ export const getAllHoldOrders = async (req, res) => {
         { path: "salesManId", select: "fullName" },
         { path: "customerId", select: "firstName lastName companyName phoneNo" },
         { path: "posCashRegisterId", select: "registerNo status" },
+        { path: "payLater.paymentTermsId", select: "name day" },
         {
           path: "items.productId",
           select: "-isDeleted -isActive -createdAt -updatedAt -createdBy -updatedBy -images -nutrition",
         },
+        { path: "createdBy", select: "fullName userType" },
       ],
       limit: 100,
     };
@@ -1266,6 +1272,7 @@ export const getPosCashControl = async (req, res) => {
         populate: [
           { path: "branchId", select: "name" },
           { path: "closedBy", select: "firstName lastName" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );
@@ -1465,6 +1472,7 @@ export const getCombinedPayments = async (req, res) => {
       populate: [
         { path: "partyId", select: "firstName lastName companyName" },
         { path: "bankAccountId", select: "name" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -1597,6 +1605,7 @@ export const quickAddProduct = async (req, res) => {
         populate: [
           { path: "categoryId", select: "name" },
           { path: "salesTaxId", select: "name percentage" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

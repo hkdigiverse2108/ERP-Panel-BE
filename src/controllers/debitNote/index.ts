@@ -1,6 +1,6 @@
-import { ADJUSTMENT_TYPE, apiResponse, HTTP_STATUS } from "../../common";
+import { ADJUSTMENT_TYPE, apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { adjustmentNoteModel, bankModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
 import { addDebitNoteSchema, deleteDebitNoteSchema, editDebitNoteSchema, getDebitNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -28,7 +28,12 @@ export const addDebitNote = async (req, res) => {
       }
     }
 
-    value.voucherNumber = await generateSequenceNumber({ model: adjustmentNoteModel, prefix: "DN", fieldName: "voucherNumber", companyId: value.companyId });
+    value.voucherNumber = await getAndIncrementPrefix({
+      companyId: value.companyId,
+      prefixType: PREFIX_MODULES.DEBIT_NOTE,
+      model: adjustmentNoteModel,
+      fieldName: "voucherNumber",
+    });
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
@@ -146,6 +151,7 @@ export const getAllDebitNote = async (req, res) => {
       populate: [
         { path: "bankAccountId", select: "name" },
         { path: "companyId", select: "name" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -186,6 +192,7 @@ export const getOneDebitNote = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "bankAccountId", select: "name" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

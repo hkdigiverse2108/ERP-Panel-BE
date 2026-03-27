@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS, PREFIX_MODULES } from "../../common";
 import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, PosPaymentModel, additionalChargeModel, taxModel, PosCashRegisterModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkStockQty } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkStockQty, getAndIncrementPrefix } from "../../helper";
 import { addReturnPosOrderSchema, editReturnPosOrderSchema, getReturnPosOrderSchema, deleteReturnPosOrderSchema, returnPosOrderDropDownSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -68,7 +68,12 @@ export const addReturnPosOrder = async (req, res) => {
     }
     // -------------------------------
 
-    value.returnOrderNo = await generateSequenceNumber({ model: returnPosOrderModel, prefix: "RETPOS", fieldName: "returnOrderNo", companyId: value.companyId });
+    value.returnOrderNo = await getAndIncrementPrefix({ 
+      companyId: value.companyId, 
+      prefixType: PREFIX_MODULES.RETURN_POS_ORDER,
+      model: returnPosOrderModel,
+      fieldName: "returnOrderNo",
+    });
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
@@ -132,7 +137,12 @@ export const addReturnPosOrder = async (req, res) => {
         returnPosOrderId: response._id,
         totalAmount: response.total,
         creditsRemaining: response.total,
-        creditNoteNo: await generateSequenceNumber({ model: posCreditNoteModel, prefix: "POSCN", fieldName: "creditNoteNo", companyId: response.companyId }),
+        creditNoteNo: await getAndIncrementPrefix({ 
+          companyId: response.companyId, 
+          prefixType: PREFIX_MODULES.POS_CREDIT_NOTE,
+          model: posCreditNoteModel,
+          fieldName: "creditNoteNo",
+        }),
         createdBy: user?._id || null,
         updatedBy: user?._id || null,
       };
@@ -565,8 +575,10 @@ export const getAllReturnPosOrder = async (req, res) => {
     ];
 
     const result = await returnPosOrderModel.aggregate(pipeline);
-    const response = result[0].data;
+    let response = result[0].data;
     const totalData = result[0].metadata[0]?.total || 0;
+
+    response = await returnPosOrderModel.populate(response, { path: "createdBy", select: "name userType" });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), { returnPosOrder_data: response, totalData, state: { page, limit, totalPages: Math.ceil(totalData / limit) } }, {}));
   } catch (error) {
@@ -801,7 +813,9 @@ export const getOneReturnPosOrder = async (req, res) => {
 
     if (!response || response.length === 0) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Return POS Order"), {}, {}));
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), response[0], {}));
+    const populatedResponse = await returnPosOrderModel.populate(response[0], { path: "createdBy", select: "name userType" });
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), populatedResponse, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));

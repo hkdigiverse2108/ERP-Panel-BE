@@ -281,6 +281,7 @@ export const getAllCashControl = async (req, res) => {
         { path: "registerId", select: "registerNo" },
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
+        { path: "createdBy", select: "fullName userType" },
       ],
     };
 
@@ -353,6 +354,7 @@ export const getOneCashControl = async (req, res) => {
           { path: "registerId" },
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

@@ -5,7 +5,6 @@ import {
   CONTACT_TYPE,
   CUSTOMER_TYPE,
   SUPPLIER_TYPE,
-  PAYMENT_TERMS_ENUM,
 } from "../common";
 
 const addressSchema = Joi.object({
@@ -52,9 +51,7 @@ export const addContactSchema = Joi.object({
   anniversaryDate: Joi.date().optional(),
 
   paymentMode: Joi.string().optional(),
-  paymentTerms: Joi.string()
-    .valid(...Object.values(PAYMENT_TERMS_ENUM))
-    .optional(),
+  paymentTermsId: objectId().optional(),
 
   openingBalance: Joi.object({
     debitBalance: Joi.string().optional(),
@@ -129,9 +126,7 @@ export const editContactSchema = Joi.object({
   anniversaryDate: Joi.date().optional(),
 
   paymentMode: Joi.string().optional(),
-  paymentTerms: Joi.string()
-    .valid(...Object.values(PAYMENT_TERMS_ENUM))
-    .optional(),
+  paymentTermsId: objectId().optional(),
 
   openingBalance: Joi.object({
     debitBalance: Joi.string().optional(),
@@ -196,9 +191,7 @@ export const addBulkContactSchema = Joi.object({
   anniversaryDate: Joi.date().optional(),
 
   paymentMode: Joi.string().optional(),
-  paymentTerms: Joi.string()
-    .valid(...Object.values(PAYMENT_TERMS_ENUM))
-    .optional(),
+  paymentTermsId: objectId().optional(),
 
   debitBalance: Joi.number().optional(),
   creditBalance: Joi.number().optional(),

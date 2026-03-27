@@ -54,7 +54,7 @@ export interface IContact extends IBase {
   status: "active" | "inactive";
 
   paymentMode: string;
-  paymentTerms: string;
+  paymentTermsId: Schema.Types.ObjectId;
   openingBalance: {
     debitBalance: string;
     creditBalance: string;

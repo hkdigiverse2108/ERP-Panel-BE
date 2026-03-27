@@ -208,6 +208,7 @@ export const getAllPosCreditNote = async (req, res) => {
         },
         { path: "companyId", select: "name" },
         { path: "usedOnOrderIds", select: "orderNo" },
+        { path: "createdBy", select: "fullName userType" },
       ],
     };
 
@@ -261,6 +262,7 @@ export const getOnePosCreditNote = async (req, res) => {
           },
           { path: "companyId", select: "name" },
           { path: "usedOnOrderIds", select: "orderNo" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

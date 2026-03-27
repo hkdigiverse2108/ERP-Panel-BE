@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS, INVOICE_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS, INVOICE_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, termsConditionModel, deliveryChallanModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
 import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -75,9 +75,14 @@ export const addInvoice = async (req, res) => {
       }
     }
 
-    // Generate document number if not provided
+    // Generate document number if not provided using dynamic prefix helper
     if (!value.invoiceNo) {
-      value.invoiceNo = await generateSequenceNumber({ model: InvoiceModel, prefix: "INV", fieldName: "invoiceNo", companyId: value.companyId });
+      value.invoiceNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: PREFIX_MODULES.INVOICE,
+        model: InvoiceModel,
+        fieldName: "invoiceNo",
+      });
     }
 
     // Get customer name
@@ -386,6 +391,7 @@ export const getAllInvoice = async (req, res) => {
             { path: "address.city", select: "name" },
           ],
         },
+        { path: "createdBy", select: "fullName userType" },
         { path: "salesOrderIds", select: "salesOrderNo" },
         { path: "deliveryChallanIds", select: "deliveryChallanNo" },
         { path: "salesManId", select: "firstName lastName" },
@@ -394,6 +400,7 @@ export const getAllInvoice = async (req, res) => {
         { path: "items.uomId", select: "name" },
         { path: "companyId", select: "name " },
         { path: "branchId", select: "name " },
+        { path: "paymentTermsId", select: "name day" },
         { path: "additionalCharges.chargeId", select: "name " },
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "termsAndConditionIds", select: "name " },
@@ -520,6 +527,7 @@ export const getOneInvoice = async (req, res) => {
               { path: "address.city", select: "name" },
             ],
           },
+          { path: "createdBy", select: "fullName userType" },
           { path: "salesOrderIds", select: "salesOrderNo date netAmount" },
           { path: "deliveryChallanIds", select: "deliveryChallanNo date netAmount" },
           { path: "salesManId", select: "firstName lastName" },
@@ -528,6 +536,7 @@ export const getOneInvoice = async (req, res) => {
           { path: "items.uomId", select: "name" },
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
+          { path: "paymentTermsId", select: "name day" },
           { path: "additionalCharges.chargeId", select: "name " },
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "termsAndConditionIds", select: "name " },

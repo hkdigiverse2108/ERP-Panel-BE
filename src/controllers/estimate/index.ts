@@ -1,7 +1,6 @@
-import { apiResponse, HTTP_STATUS, ESTIMATE_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, ESTIMATE_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, EstimateModel, productModel, taxModel, termsConditionModel, uomModel, additionalChargeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
-import { generateSequenceNumber } from "../../helper/generateSequenceNumber";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addEstimateSchema, deleteEstimateSchema, editEstimateSchema, getEstimateSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -70,7 +69,12 @@ export const addEstimate = async (req, res) => {
 
     // Generate document number if not provided
     if (!value.estimateNo) {
-      value.estimateNo = await generateSequenceNumber({ model: EstimateModel, prefix: "EST", fieldName: "estimateNo", companyId: value.companyId });
+      value.estimateNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: PREFIX_MODULES.ESTIMATE,
+        model: EstimateModel,
+        fieldName: "estimateNo",
+      });
     }
 
     value.createdBy = user?._id || null;
@@ -263,11 +267,13 @@ export const getAllEstimate = async (req, res) => {
             { path: "address.city", select: "name" },
           ],
         },
+        { path: "createdBy", select: "fullName userType" },
         { path: "items.productId", select: "name itemCode" },
         { path: "items.taxId", select: "name percentage" },
         { path: "items.uomId", select: "name" },
         { path: "companyId", select: "name " },
         { path: "branchId", select: "name " },
+        { path: "paymentTermsId", select: "name day" },
         { path: "termsAndConditionIds", select: "termsCondition " },
         { path: "additionalCharges.chargeId", select: "name type" },
         { path: "additionalCharges.taxId", select: "name percentage" },
@@ -380,11 +386,13 @@ export const getOneEstimate = async (req, res) => {
               { path: "address.city", select: "name" },
             ],
           },
+          { path: "createdBy", select: "fullName userType" },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },
           { path: "items.taxId", select: "name percentage" },
           { path: "items.uomId", select: "name" },
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
+          { path: "paymentTermsId", select: "name day" },
           { path: "termsAndConditionIds", select: "termsCondition " },
           { path: "additionalCharges.chargeId", select: "name type" },
           { path: "additionalCharges.taxId", select: "name percentage" },

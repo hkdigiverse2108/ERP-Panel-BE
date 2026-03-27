@@ -1,14 +1,14 @@
-// import express from "express";
-// import { paymentTermController } from "../controllers";
+import express from "express";
+import { paymentTermsController } from "../controllers";
 
-// const router = express.Router();
+const router = express.Router();
 
-// router.get("/all", paymentTermController.getAllPaymentTerm);
-// router.post("/add", paymentTermController.addPaymentTerm);
-// router.put("/edit", paymentTermController.editPaymentTerm);
-// router.delete("/:id", paymentTermController.deletePaymentTermById);
-// router.get("/:id", paymentTermController.getPaymentTermById);
+router.get("/all", paymentTermsController.getAllPaymentTerm);
+router.post("/add", paymentTermsController.addPaymentTerm);
+router.put("/edit", paymentTermsController.editPaymentTerm);
+router.get("/dropdown", paymentTermsController.getPaymentTermDropdown);
+router.delete("/:id", paymentTermsController.deletePaymentTermById);
+router.get("/:id", paymentTermsController.getPaymentTermById);
 
-// router.get("/dropdown", paymentTermController.getPaymentTermDropdown);
 
-// export const paymentTermRouter = router;
+export const paymentTermRouter = router;

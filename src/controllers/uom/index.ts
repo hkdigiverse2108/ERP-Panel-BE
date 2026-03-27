@@ -135,6 +135,10 @@ export const getAllUOM = async (req, res) => {
 
     const options: any = {
       sort: { name: 1 },
+      populate: [
+        { path: "createdBy", select: "fullName userType" },
+        { path: "updatedBy", select: "name userType" },
+      ],
       skip: (page - 1) * limit,
       limit,
     };
@@ -192,7 +196,12 @@ export const getUOMById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const response = await getFirstMatch(uomModel, { _id: value?.id, isDeleted: false }, {}, {});
+    const response = await getFirstMatch(uomModel, { _id: value?.id, isDeleted: false }, {}, {
+      populate: [
+        { path: "createdBy", select: "fullName userType" },
+        { path: "updatedBy", select: "name userType" },
+      ],
+    });
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("UOM"), {}, {}));
 

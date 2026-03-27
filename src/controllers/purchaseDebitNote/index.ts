@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, purchaseDebitNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, purchaseOrderModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addPurchaseDebitNoteSchema, deletePurchaseDebitNoteSchema, editPurchaseDebitNoteSchema, getPurchaseDebitNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -72,13 +72,12 @@ export const addPurchaseDebitNote = async (req, res) => {
       }
     }
 
-    // Generate debit note number if not provided
     if (!value?.debitNoteNo) {
-      value.debitNoteNo = await generateSequenceNumber({
-        model: purchaseDebitNoteModel,
-        prefix: "PDN",
-        fieldName: "debitNoteNo",
+      value.debitNoteNo = await getAndIncrementPrefix({
         companyId: value.companyId,
+        prefixType: PREFIX_MODULES.PURCHASE_DEBIT_NOTE,
+        model: purchaseDebitNoteModel,
+        fieldName: "debitNoteNo",
       });
     }
 
@@ -272,8 +271,9 @@ export const getAllPurchaseDebitNote = async (req, res) => {
         { path: "productDetails.taxId", select: "name percentage" },
         { path: "additionalCharges.chargeId", select: "name type" },
         { path: "additionalCharges.taxId", select: "name percentage" },
+        { path: "paymentTermsId", select: "name day" },
         { path: "companyId", select: "name" },
-
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -378,7 +378,9 @@ export const getOnePurchaseDebitNote = async (req, res) => {
           { path: "productDetails.taxId", select: "name percentage" },
           { path: "additionalCharges.chargeId", select: "name type" },
           { path: "additionalCharges.taxId", select: "name percentage" },
+          { path: "paymentTermsId", select: "name day" },
           { path: "companyId", select: "name gstNo" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

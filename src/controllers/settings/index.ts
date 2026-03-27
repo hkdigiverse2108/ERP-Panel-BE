@@ -11,7 +11,12 @@ export const getSettings = async (req: Request | any, res: Response | any) => {
             settingsModel,
             { isDeleted: false },
             {},
-            {}
+            {
+                populate: [
+                    { path: "createdBy", select: "fullName userType" },
+                    { path: "updatedBy", select: "name userType" },
+                ]
+            }
         );
 
         if (!response) {

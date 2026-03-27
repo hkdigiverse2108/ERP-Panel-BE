@@ -262,6 +262,7 @@ export const getAllBillOfLiveProduct = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "recipeId", select: "name" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "productDetails.productId", select: "name" },
         { path: "productDetails.ingredients.productId", select: "name" },
       ],
@@ -320,6 +321,7 @@ export const getBillOfLiveProductById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "recipeId", select: "name" },
+          { path: "createdBy", select: "fullName userType" },
           {
             path: "productDetails.productId",
             select: "name",

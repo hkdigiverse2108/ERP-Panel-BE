@@ -16,7 +16,7 @@ export interface ISalesDocument extends IBase {
   termsAndConditionIds?: Schema.Types.ObjectId[];
   status: string;
   reverseCharge: boolean;
-  paymentTerms?: string;
+  paymentTermsId?: Schema.Types.ObjectId;
   taxType?: string;
   sez?: string;
   placeOfSupply?: string;

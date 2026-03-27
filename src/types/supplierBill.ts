@@ -52,7 +52,7 @@ export interface ISupplierBill extends IBase {
   gstIn?: string;
   billingAddress?: Schema.Types.ObjectId;
 
-  paymentTerm?: string;
+  paymentTermsId?: Schema.Types.ObjectId;
   dueDate?: Date;
 
   reverseCharge?: boolean;

@@ -68,7 +68,7 @@ export const addUser = async (req, res) => {
             delete: permission?.delete,
             isActive: true,
           };
-          if(module?._id && response?._id) await updateData(permissionModel, { userId: new ObjectId(response?._id), moduleId: new ObjectId(module?._id) }, permissionData, { upsert: true, new: true });
+          if (module?._id && response?._id) await updateData(permissionModel, { userId: new ObjectId(response?._id), moduleId: new ObjectId(module?._id) }, permissionData, { upsert: true, new: true });
         }
       } else {
         let allModules = await getData(moduleModel, { isActive: true, isDeleted: false, default: true }, {}, {});
@@ -230,6 +230,8 @@ export const getAllUser = async (req, res) => {
         { path: "address.country", select: "name code" },
         { path: "address.state", select: "name code" },
         { path: "address.city", select: "name code" },
+        { path: "createdBy", select: "fullName userType" },
+        { path: "updatedBy", select: "name userType" },
       ],
     };
 
@@ -276,6 +278,8 @@ export const getUserById = async (req, res) => {
           { path: "address.country", select: "name code" },
           { path: "address.state", select: "name code" },
           { path: "address.city", select: "name code" },
+          { path: "createdBy", select: "fullName userType" },
+          { path: "updatedBy", select: "name userType" },
         ],
       },
     );

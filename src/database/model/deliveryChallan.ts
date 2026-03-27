@@ -8,7 +8,7 @@ import {
   commonShippingSchema,
 } from "./base";
 import { IDeliveryChallan } from "../../types";
-import { DELIVERY_CHALLAN_STATUS, TAX_TYPE, PAYMENT_TERMS_ENUM } from "../../common";
+import { DELIVERY_CHALLAN_STATUS, TAX_TYPE } from "../../common";
 // TODO: Continue This After The Estimate, Sales Order And Invoice Is Completed
 const itemsSchema = new Schema({
   ...salesItemSchema.obj,
@@ -27,7 +27,7 @@ const deliveryChallanSchema = new Schema<IDeliveryChallan>(
     createdFrom: { type: String, enum: ["invoice", "sales-order", ""] },
     invoiceIds: [{ type: Schema.Types.ObjectId, ref: "invoice" }],
     salesOrderIds: [{ type: Schema.Types.ObjectId, ref: "sales-order" }],
-    paymentTerms: { type: String, enum: Object.values(PAYMENT_TERMS_ENUM) },
+    paymentTermsId: { type: mongoose.Schema.Types.ObjectId, ref: "paymentTerms" },
     dueDate: { type: Date, required: true },
     taxType: { type: String, enum: Object.values(TAX_TYPE), default: TAX_TYPE.DEFAULT },
     shippingDetails: { type: commonShippingSchema },

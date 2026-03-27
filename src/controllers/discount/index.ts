@@ -17,8 +17,8 @@ const discountPopulate = [
   { path: "excludedProductIds", select: "name" },
   { path: "buyXGetY.getProductIds", select: "name" },
   { path: "productAtFixAmount.freeProductIds", select: "name" },
-  { path: "createdBy", select: "fullName" },
-  { path: "updatedBy", select: "fullName" },
+  { path: "createdBy", select: "fullName userType" },
+  { path: "updatedBy", select: "fullName userType" },
 ];
 
 export const addDiscount = async (req, res) => {

@@ -231,7 +231,7 @@ export const bulkAddProduct = async (req, res) => {
     }
 
     if (errors.length > 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Bulk upload failed due to some errors.", {  }, {errors}));
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Bulk upload failed due to some errors.", {}, { errors }));
     }
 
     const response = await productModel.insertMany(productsToAdd);
@@ -425,6 +425,7 @@ export const getAllProduct = async (req, res) => {
         { path: "brandId", select: "name" },
         { path: "subBrandId", select: "name" },
         { path: "productTypeId", select: "name" },
+        { path: "createdBy", select: "fullName userType" },
         // { path: "purchaseTaxId", select: "name percentage" },
         // { path: "salesTaxId", select: "name percentage" },
       ],
@@ -743,6 +744,7 @@ export const getOneProduct = async (req, res) => {
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
           { path: "productTypeId", select: "name" },
+          { path: "createdBy", select: "fullName userType" },
           // { path: "purchaseTaxId", select: "name percentage" },
           // { path: "salesTaxId", select: "name percentage" },
         ],

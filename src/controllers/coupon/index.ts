@@ -172,6 +172,7 @@ export const getAllCoupon = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "customerIds.id", select: "firstName lastName" },
+        { path: "createdBy", select: "fullName userType" },
       ],
     };
 
@@ -202,7 +203,7 @@ export const getOneCoupon = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const response = await getFirstMatch(couponModel, { _id: value?.id, isDeleted: false }, {}, { populate: [{ path: "companyId", select: "name" }, { path: "branchId", select: "name" }, { path: "customerIds.id", select: "firstName lastName" }] });
+    const response = await getFirstMatch(couponModel, { _id: value?.id, isDeleted: false }, {}, { populate: [{ path: "companyId", select: "name" }, { path: "branchId", select: "name" }, { path: "createdBy", select: "fullName userType" }, { path: "customerIds.id", select: "firstName lastName" }] });
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Coupon"), {}, {}));

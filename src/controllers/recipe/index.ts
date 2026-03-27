@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS, USER_ROLES } from "../../common";
+import { apiResponse, HTTP_STATUS, USER_ROLES, PREFIX_MODULES } from "../../common";
 import { companyModel, productModel, recipeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
 import { addRecipeSchema, deleteRecipeSchema, editRecipeSchema, getRecipeSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -17,14 +17,12 @@ export const addRecipe = async (req, res) => {
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
-    value.number = await generateSequenceNumber(
-      {
-        model: recipeModel,
-        prefix: "RC",
-        fieldName: "number",
-        companyId: value.companyId,
-      }
-    );
+    value.number = await getAndIncrementPrefix({
+      companyId: value.companyId,
+      prefixType: PREFIX_MODULES.RECIPE,
+      model: recipeModel,
+      fieldName: "number",
+    });
 
     console.log(value);
 
@@ -128,6 +126,7 @@ export const getAllRecipe = async (req, res) => {
         { path: "branchId", select: "name" },
         { path: "rawProducts.productId", select: "name" },
         { path: "finalProducts.productId", select: "name" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -168,6 +167,7 @@ export const getRecipeById = async (req, res) => {
           { path: "branchId", select: "name" },
           { path: "rawProducts.productId", select: "name" },
           { path: "finalProducts.productId", select: "name" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

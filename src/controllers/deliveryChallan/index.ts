@@ -1,6 +1,6 @@
-import { apiResponse, DELIVERY_CHALLAN_STATUS, HTTP_STATUS, INVOICE_STATUS, SALES_ORDER_STATUS } from "../../common";
+import { apiResponse, DELIVERY_CHALLAN_STATUS, HTTP_STATUS, INVOICE_STATUS, SALES_ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, deliveryChallanModel, InvoiceModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
 import { addDeliveryChallanSchema, deleteDeliveryChallanSchema, editDeliveryChallanSchema, getDeliveryChallanSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -91,7 +91,12 @@ export const addDeliveryChallan = async (req, res) => {
 
     // Generate document number if not provided
     if (!value.deliveryChallanNo) {
-      value.deliveryChallanNo = await generateSequenceNumber({ model: deliveryChallanModel, prefix: "DC", fieldName: "deliveryChallanNo", companyId: value.companyId });
+      value.deliveryChallanNo = await getAndIncrementPrefix({
+        companyId: value.companyId,
+        prefixType: PREFIX_MODULES.DELIVERY_CHALLAN,
+        model: deliveryChallanModel,
+        fieldName: "deliveryChallanNo",
+      });
     }
 
     value.createdBy = user?._id || null;
@@ -329,6 +334,8 @@ export const getAllDeliveryChallan = async (req, res) => {
             { path: "address.city", select: "name" },
           ],
         },
+        { path: "paymentTermsId", select: "name day" },
+        { path: "createdBy", select: "fullName userType" },
         { path: "salesOrderIds", select: "salesOrderNo" },
         { path: "invoiceIds", select: "invoiceNo" },
         { path: "items.productId", select: "name itemCode" },
@@ -446,6 +453,8 @@ export const getOneDeliveryChallan = async (req, res) => {
               { path: "address.city", select: "name" },
             ],
           },
+          { path: "paymentTermsId", select: "name day" },
+          { path: "createdBy", select: "fullName userType" },
           { path: "salesOrderIds", select: "salesOrderNo date" },
           { path: "invoiceIds", select: "invoiceNo date" },
           { path: "items.productId", select: "name itemCode sellingPrice mrp" },
@@ -533,7 +542,7 @@ export const getDeliveryChallanDropdown = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "customerId", select: "firstName lastName companyName" }],
+      populate: [{ path: "customerId", select: "firstName lastName companyName" }, { path: "createdBy", select: "name userType" }],
     };
 
     const response = await getDataWithSorting(deliveryChallanModel, criteria, { deliveryChallanNo: 1, date: 1, transactionSummary: 1 }, options);

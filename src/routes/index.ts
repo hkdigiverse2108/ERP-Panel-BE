@@ -20,7 +20,6 @@ import { categoryRouter } from "./category";
 import { bankRouter } from "./bank";
 import { materialRouter } from "./material";
 import { materialConsumptionRouter } from "./materialConsumption";
-// import { paymentTermRouter } from "./paymentTerm";
 import { locationRouter } from "./location";
 import { uomRouter } from "./uom";
 import { taxRouter } from "./tax";
@@ -62,6 +61,8 @@ import { companyDriveRouter } from "./companyDrive";
 import { productTypeRouter } from "./productType";
 import { expenseRouter } from "./expense";
 import { salaryRouter } from "./salary";
+import { paymentTermRouter } from "./paymentTerm";
+import { consumptionTypeRouter } from "./consumptionType";
 
 const router = Router();
 
@@ -86,10 +87,11 @@ router.use("/stock-verification", stockVerificationRouter);
 
 router.use("/contacts", contactRouter);
 router.use("/bank", bankRouter);
-// router.use("/payment-term", paymentTermRouter);
+router.use("/payment-term", paymentTermRouter);
 router.use("/location", locationRouter);
 router.use("/uom", uomRouter);
 router.use("/tax", taxRouter);
+router.use("/consumption-type", consumptionTypeRouter);
 router.use("/terms-condition", termsConditionRouter);
 router.use("/purchase-order", purchaseOrderRouter);
 router.use("/supplier-bill", supplierBillRouter);

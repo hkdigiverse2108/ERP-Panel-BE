@@ -1,6 +1,6 @@
 import { PosPaymentModel, PosOrderModel, contactModel, PosCashRegisterModel, taxModel } from "../../database";
-import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, CASH_REGISTER_STATUS } from "../../common";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, generateSequenceNumber, applyDateFilter } from "../../helper";
+import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, generateSequenceNumber, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema, getAllPosPaymentSchema } from "../../validation";
 
 export const addPosPayment = async (req, res) => {
@@ -36,12 +36,12 @@ export const addPosPayment = async (req, res) => {
     }
     // -------------------------------
 
-    let prefix = "PAY";
-    if (value.voucherType === POS_VOUCHER_TYPE.SALES) prefix = "SAL";
-    else if (value.voucherType === POS_VOUCHER_TYPE.PURCHASE) prefix = "PMT";
-    else if (value.voucherType === POS_VOUCHER_TYPE.EXPENSE) prefix = "EXP";
-
-    value.paymentNo = await generateSequenceNumber({ model: PosPaymentModel, prefix, fieldName: "paymentNo", companyId: value.companyId });
+    value.paymentNo = await getAndIncrementPrefix({
+      companyId: value.companyId,
+      prefixType: PREFIX_MODULES.POS_PAYMENT,
+      model: PosPaymentModel,
+      fieldName: "paymentNo",
+    });
 
     if (value.voucherType === POS_VOUCHER_TYPE.SALES && value.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL) {
       const posOrder = await getFirstMatch(PosOrderModel, { _id: value.posOrderId, isDeleted: false }, {}, {});
@@ -214,6 +214,7 @@ export const getAllPosPayment = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "taxId", select: "name percentage" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -249,6 +250,7 @@ export const getOnePosPayment = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "taxId", select: "name percentage" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

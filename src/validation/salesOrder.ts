@@ -6,7 +6,7 @@ import {
   commonShippingSchema,
   baseApiSchema,
 } from "./common";
-import { PAYMENT_TERMS_ENUM, SALES_ORDER_STATUS, TAX_TYPE } from "../common";
+import { SALES_ORDER_STATUS, TAX_TYPE } from "../common";
 
 const salesOrderItemSchema = Joi.object().keys({
   refId: objectId().optional().allow("", null), // Reference to estimate
@@ -33,9 +33,7 @@ export const addSalesOrderSchema = Joi.object().keys({
   placeOfSupply: Joi.string().optional().allow("", null),
   billingAddress: objectId().optional().allow("", null),
   shippingAddress: objectId().optional().allow("", null),
-  paymentTerms: Joi.string()
-    .valid(...Object.values(PAYMENT_TERMS_ENUM))
-    .optional(),
+  paymentTermsId: objectId().optional(),
   taxType: Joi.string()
     .optional()
     .valid(...Object.values(TAX_TYPE)),
@@ -65,9 +63,7 @@ export const editSalesOrderSchema = Joi.object().keys({
   placeOfSupply: Joi.string().optional().allow("", null),
   billingAddress: objectId().optional().allow("", null),
   shippingAddress: objectId().optional().allow("", null),
-  paymentTerms: Joi.string()
-    .valid(...Object.values(PAYMENT_TERMS_ENUM))
-    .optional(),
+  paymentTermsId: objectId().optional(),
   taxType: Joi.string()
     .optional()
     .valid(...Object.values(TAX_TYPE)),

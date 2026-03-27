@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
-import { branchModel, materialConsumptionModel, productModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
+import { branchModel, ConsumptionTypeModel, materialConsumptionModel, productModel, stockModel } from "../../database";
+import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addMaterialConsumptionSchema, deleteMaterialConsumptionSchema, editMaterialConsumptionSchema, getMaterialConsumptionSchema } from "../../validation";
 
 export const addMaterialConsumption = async (req, res) => {
@@ -18,6 +18,8 @@ export const addMaterialConsumption = async (req, res) => {
     if (value.branchId) {
       if (!(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
     }
+
+    if (!(await checkIdExist(ConsumptionTypeModel, value.consumptionTypeId, "Consumption Type", res))) return;
 
     for (const item of value.items || []) {
       if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
@@ -41,7 +43,12 @@ export const addMaterialConsumption = async (req, res) => {
       if (!updatedStock) continue;
     }
 
-    value.number = await generateSequenceNumber({ model: materialConsumptionModel, prefix: "CON", fieldName: "number", companyId: value.companyId });
+    value.number = await getAndIncrementPrefix({
+      companyId: value.companyId,
+      prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION,
+      model: materialConsumptionModel,
+      fieldName: "number",
+    });
 
     const isExist = await getFirstMatch(materialConsumptionModel, { companyId: value.companyId, number: value?.number, isDeleted: false }, {}, {});
 
@@ -74,6 +81,10 @@ export const editMaterialConsumption = async (req, res) => {
 
     const isExist = await getFirstMatch(materialConsumptionModel, criteria, {}, {});
     if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Material Consumption"), {}, {}));
+
+    if (value.consumptionTypeId) {
+      if (!(await checkIdExist(ConsumptionTypeModel, value.consumptionTypeId, "Consumption Type", res))) return;
+    }
 
     if (value.branchId) {
       if (!(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
@@ -193,7 +204,7 @@ export const getAllMaterialConsumption = async (req, res) => {
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
-    if (typeFilter) criteria.type = typeFilter;
+    if (typeFilter) criteria.consumptionTypeId = typeFilter;
     if (branchFilter) criteria.branchId = branchFilter;
 
     if (search) {
@@ -207,7 +218,9 @@ export const getAllMaterialConsumption = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
+        { path: "consumptionTypeId", select: "name" },
         { path: "items.productId", select: "name" },
+        { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -244,7 +257,9 @@ export const getMaterialConsumptionById = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
+          { path: "consumptionTypeId", select: "name" },
           { path: "items.productId", select: "name" },
+          { path: "createdBy", select: "fullName userType" },
         ],
       },
     );

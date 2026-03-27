@@ -1,6 +1,6 @@
-import { apiResponse, APPROVAL_STATUS, HTTP_STATUS } from "../../common";
+import { apiResponse, APPROVAL_STATUS, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { stockVerificationModel, productModel, categoryModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
 import { addStockVerificationSchema, deleteStockVerificationSchema, editStockVerificationSchema, getStockVerificationSchema } from "../../validation";
 
 export const addStockVerification = async (req, res) => {
@@ -24,7 +24,12 @@ export const addStockVerification = async (req, res) => {
       }
     }
 
-    value.stockVerificationNo = await generateSequenceNumber({ model: stockVerificationModel, prefix: "SV", fieldName: "stockVerificationNo", companyId: value.companyId });
+    value.stockVerificationNo = await getAndIncrementPrefix({
+      companyId: value.companyId,
+      prefixType: PREFIX_MODULES.STOCK_VERIFICATION,
+      model: stockVerificationModel,
+      fieldName: "stockVerificationNo",
+    });
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
@@ -188,6 +193,8 @@ export const getAllStockVerification = async (req, res) => {
           select: "name itemCode",
           // populate: [{ path: "uomId", select: "name code" }],
         },
+        { path: "createdBy", select: "fullName userType" },
+        { path: "updatedBy", select: "name userType" },
       ],
       skip: (parseInt(page as string) - 1) * parseInt(limit as string),
       limit: parseInt(limit as string),
@@ -240,6 +247,8 @@ export const getOneStockVerification = async (req, res) => {
               { path: "brandId", select: "name" },
             ],
           },
+          { path: "createdBy", select: "fullName userType" },
+          { path: "updatedBy", select: "name userType" },
         ],
       },
     );

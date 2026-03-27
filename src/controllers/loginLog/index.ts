@@ -73,6 +73,7 @@ export const getAllLoginLog = async (req, res) => {
                 { path: "companyId", select: "name" },
                 { path: "branchId", select: "name" },
                 { path: "userId", select: "fullName email" },
+                { path: "createdBy", select: "fullName userType" },
             ],
         };
 
