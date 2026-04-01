@@ -5,6 +5,7 @@ export const addCredentialSchema = Joi.object().keys({
   projectId: Joi.string().required(),
   publishableKey: Joi.string().required(),
   supabaseUrl: Joi.string().required(),
+  isActive: Joi.boolean().optional(),
 });
 
 export const editCredentialSchema = Joi.object().keys({

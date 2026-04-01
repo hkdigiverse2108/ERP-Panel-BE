@@ -1,4 +1,4 @@
-import axios from "axios";
+import { createClient } from "@supabase/supabase-js";
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { credentialModel, monthlySpecialModel, productModel } from "../../database";
 import { reqInfo, responseMessage } from "../../helper";
@@ -10,6 +10,11 @@ export const analyzeTable = async (req, res) => {
     if (!imageBase64) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "No image provided", {}, {}));
     }
+
+    // Strip the dataURI prefix (e.g., "data:image/jpeg;base64,")
+    const rawBase64 = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
+    
+    console.log(`Analyzing image (stripped length: ${rawBase64.length} chars, ~${Math.round(rawBase64.length / 1024)} KB)`);
 
     // 1. Get next available credential (Rotation logic)
     const credential = await credentialModel.findOne({ isDeleted: false, isActive: true }).sort({ lastUsed: 1 });
@@ -23,14 +28,17 @@ export const analyzeTable = async (req, res) => {
     await credential.save();
 
     // 2. Fetch inventory for the prompt
-    // In this ERP, products are scoped by company. 
-    // Since these are global specials, we might want to include them too.
     const [products, specials] = await Promise.all([
       productModel.find({ isDeleted: false, isActive: true }).select("name sku sellingPrice"),
       monthlySpecialModel.find({ isDeleted: false, isActive: true }).select("name price"),
     ]);
 
-    const productList = products.map(p => `- ${p.name} (SKU: ${(p as any).sku}, ₹${(p as any).sellingPrice})`).join("\n");
+    // Limit inventory if too large for prompt
+    const LIMIT = 100; 
+    const truncatedProducts = products.slice(0, LIMIT);
+    if (products.length > LIMIT) console.log(`Notice: Truncating inventory from ${products.length} to ${LIMIT} for prompt context.`);
+
+    const productList = truncatedProducts.map(p => `- ${p.name} (SKU: ${(p as any).sku}, ₹${(p as any).sellingPrice})`).join("\n");
     const specialsList = specials.map(s => `- ${s.name} (₹${s.price})`).join("\n");
 
     const systemPrompt = `You are a billing assistant for an Indian shopkeeper. You analyze photos of items on a table and identify them.
@@ -57,28 +65,34 @@ Respond ONLY with a JSON array. Each object must have:
 Example: [{"name":"Rice 1kg","price":45,"quantity":2,"matched":true,"sku_code":"RICE001"}]`;
 
     // 3. Call the Supabase Edge Function using the rotated credential
-    // The user wants to use multiple API credentials. 
-    // Usually, the AI logic identifies the items.
-    
     const supabaseUrl = credential.supabaseUrl;
     const supabaseKey = credential.publishableKey;
-    const analyzeFunctionUrl = `${supabaseUrl}/functions/v1/analyze-table`;
+    
+    // Create direct supabase client for function invocation
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const aiResponse = await axios.post(analyzeFunctionUrl, {
-      imageBase64,
-      systemPrompt // Overriding or providing the prompt to the edge function if it supports it
-    }, {
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json'
-      }
+    const { data, error: functionError } = await supabase.functions.invoke("analyze-table", {
+      body: { 
+        imageBase64: rawBase64,
+        systemPrompt 
+      },
     });
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "AI analysis successful", aiResponse.data, {}));
+    if (functionError) {
+        console.error("AI gateway error:", functionError);
+        throw functionError;
+    }
 
-  } catch (error) {
-    console.error("AI analysis error:", error.response?.data || error.message);
+    // Ensure we return an array (handle both [items: []] and direct array)
+    const resultItems = Array.isArray(data) ? data : (data?.items || []);
+    console.log(`AI Analysis complete. Detected ${resultItems.length} items.`);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "AI analysis successful", resultItems, {}));
+
+  } catch (error: any) {
+    const errorData = error.response?.data || error.message || error;
+    console.error("AI analysis error details:", errorData);
     const status = error.response?.status || HTTP_STATUS.INTERNAL_SERVER_ERROR;
-    return res.status(status).json(new apiResponse(status, error.message || responseMessage?.internalServerError, {}, error.response?.data || error));
+    return res.status(status).json(new apiResponse(status, error.message || responseMessage?.internalServerError, {}, errorData));
   }
 };

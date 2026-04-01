@@ -5,6 +5,7 @@ export const addSpecialSchema = Joi.object().keys({
   name: Joi.string().required(),
   price: Joi.number().required(),
   image: Joi.string().allow("", null).optional(),
+  isActive: Joi.boolean().optional(),
 });
 
 export const editSpecialSchema = Joi.object().keys({
