@@ -66,3 +66,5 @@ export * from "./productType";
 export * from "./expense";
 export * from "./paymentTerm"
 export * from "./consumptionType"
+export * from "./monthlySpecial"
+export * from "./credential"

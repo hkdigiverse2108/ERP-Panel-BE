@@ -16,6 +16,7 @@
   "author": "Shakil Gaha",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.101.1",
     "@types/body-parser": "^1.19.6",
     "@types/config": "^3.3.5",
     "@types/cors": "^2.8.19",

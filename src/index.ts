@@ -10,14 +10,15 @@ import path from "path";
 import { apiResponse, HTTP_STATUS } from "./common";
 import { socketServer } from "./helper/socket";
 import { initCronJobs } from "./helper";
+import { automatic_attach } from "./controllers/module";
 
 const app = express();
 
 app.use("/public", express.static(path.join(__dirname, "..", "..", "public")));
 
 app.use(cors());
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json({ limit: "100mb" }));
+app.use(bodyParser.urlencoded({ extended: true, limit: "100mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 connectDb();
@@ -62,4 +63,7 @@ app.use((_, res) => {
 let server = new http.Server(app);
 export const socket = socketServer(server);
 
+automatic_attach()
+
 export default server;
+
