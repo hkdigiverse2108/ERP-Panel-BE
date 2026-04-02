@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, ESTIMATE_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, EstimateModel, productModel, taxModel, termsConditionModel, uomModel, additionalChargeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addEstimateSchema, deleteEstimateSchema, editEstimateSchema, getEstimateSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -17,8 +17,10 @@ export const addEstimate = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     // Validate customer exists and verify billing/shipping addresses if provided
     const customer = await getFirstMatch(contactModel, { _id: value?.customerId, isDeleted: false }, {}, {});
@@ -70,7 +72,7 @@ export const addEstimate = async (req, res) => {
     // Generate document number if not provided
     if (!value.estimateNo) {
       value.estimateNo = await getAndIncrementPrefix({
-        companyId: value.companyId,
+        branchId: value.branchId,
         prefixType: PREFIX_MODULES.ESTIMATE,
         model: EstimateModel,
         fieldName: "estimateNo",

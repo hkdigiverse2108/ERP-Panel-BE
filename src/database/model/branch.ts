@@ -40,6 +40,7 @@ const branchSchema: any = new mongoose.Schema(
     // upiId: { type: String },
 
     outletSize: { type: String },
+    isHeadBranch: { type: Boolean, default: false },
 
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: "company", index: true },
     userIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "user", default: [] }],

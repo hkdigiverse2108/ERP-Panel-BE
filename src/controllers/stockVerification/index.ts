@@ -1,6 +1,6 @@
 import { apiResponse, APPROVAL_STATUS, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { stockVerificationModel, productModel, categoryModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
 import { addStockVerificationSchema, deleteStockVerificationSchema, editStockVerificationSchema, getStockVerificationSchema } from "../../validation";
 
 export const addStockVerification = async (req, res) => {
@@ -13,8 +13,10 @@ export const addStockVerification = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     if (!(await checkIdExist(categoryModel, value?.categoryId, "Category", res))) return;
 
@@ -25,7 +27,7 @@ export const addStockVerification = async (req, res) => {
     }
 
     value.stockVerificationNo = await getAndIncrementPrefix({
-      companyId: value.companyId,
+      branchId: value.branchId,
       prefixType: PREFIX_MODULES.STOCK_VERIFICATION,
       model: stockVerificationModel,
       fieldName: "stockVerificationNo",

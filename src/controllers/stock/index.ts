@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES, PREFIX_MODULES } from "../../common";
 import { branchModel, materialConsumptionModel, productModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix } from "../../helper";
+import {  checkCompany, checkIdExist, countData, createOne,  getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix } from "../../helper";
 import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -153,8 +153,9 @@ export const bulkStockAdjustment = async (req, res) => {
 
     if (processedItems.length) {
       const companyId = user?.companyId?._id || null;
+      const branchId = value?.branchId || user?.branchId?._id || null;
       const consumptionNo = await getAndIncrementPrefix({
-        companyId,
+        branchId,
         prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION,
         model: materialConsumptionModel,
         fieldName: "number",

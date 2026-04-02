@@ -4,12 +4,12 @@ interface GenerateSequenceOptions {
   model: Model<any>;
   prefix: string;
   fieldName?: string;
-  companyId?: string | null;
+  branchId?: string | null;
 }
 
-export const generateSequenceNumber = async ({ model, prefix, fieldName = "number", companyId }: GenerateSequenceOptions): Promise<string> => {
+export const generateSequenceNumber = async ({ model, prefix, fieldName = "number", branchId }: GenerateSequenceOptions): Promise<string> => {
   const baseQuery: any = {
-    ...(companyId ? { companyId } : {}),
+    branchId: branchId as any,
     isDeleted: false,
   };
 

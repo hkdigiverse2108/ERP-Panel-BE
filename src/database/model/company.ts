@@ -99,6 +99,7 @@ const companySchema: any = new mongoose.Schema(
         planStatus: { type: String },
       },
     ],
+    headBranchId: { type: mongoose.Schema.Types.ObjectId, ref: "branch", default: null },
 
     ...baseCommonFields,
   },

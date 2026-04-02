@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
-import { bankModel, companyModel, locationModel, PrefixModel } from "../../database";
+import { bankModel, branchModel, companyModel, locationModel, PrefixModel } from "../../database";
 import { cloneDefaultPaymentTermsToCompany } from "../paymentTerm/helper";
 import {
   checkIdExist,
@@ -144,6 +144,30 @@ export const addCompany = async (req, res) => {
       console.error("Error creating prefixes for company:", prefixError);
       // We don't fail the company creation if prefix creation fails, but we log it
     }
+    // Auto-create Head Branch for the company
+    let headBranch = null;
+    try {
+      const branchPayload = {
+        companyId: response._id,
+        name: `${response.name} - Head Branch`,
+        displayName: response.displayName,
+        contactName: response.contactName,
+        email: response.email,
+        phoneNo: response.phoneNo,
+        address: response.address,
+        isHeadBranch: true,
+        createdBy: user?._id || null,
+        updatedBy: user?._id || null,
+      };
+      headBranch = await createOne(branchModel, branchPayload);
+      if (headBranch) {
+        await updateData(companyModel, { _id: response._id }, { headBranchId: headBranch._id }, {});
+      }
+    } catch (branchError) {
+      console.error("Error creating head branch for company:", branchError);
+      // We log it but proceed, although a company without a head branch is not ideal
+    }
+
     // Clone global default payment terms to the newly created company
     await cloneDefaultPaymentTermsToCompany(response._id, user?._id);
 

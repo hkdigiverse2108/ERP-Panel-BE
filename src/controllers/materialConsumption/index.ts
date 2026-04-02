@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { branchModel, ConsumptionTypeModel, materialConsumptionModel, productModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addMaterialConsumptionSchema, deleteMaterialConsumptionSchema, editMaterialConsumptionSchema, getMaterialConsumptionSchema } from "../../validation";
 
 export const addMaterialConsumption = async (req, res) => {
@@ -12,8 +12,10 @@ export const addMaterialConsumption = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     if (value.branchId) {
       if (!(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
@@ -27,10 +29,9 @@ export const addMaterialConsumption = async (req, res) => {
       // check stock qty and update stock
       const stockCriteria: any = {
         productId: item?.productId,
+        branchId: value?.branchId,
         isDeleted: false,
       };
-
-      stockCriteria.companyId = value?.companyId;
 
       const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
       if (!stock) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
@@ -44,7 +45,7 @@ export const addMaterialConsumption = async (req, res) => {
     }
 
     value.number = await getAndIncrementPrefix({
-      companyId: value.companyId,
+      branchId: value.branchId,
       prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION,
       model: materialConsumptionModel,
       fieldName: "number",
@@ -120,7 +121,7 @@ export const editMaterialConsumption = async (req, res) => {
         const stockCriteria: any = {
           productId: productId,
           isDeleted: false,
-          companyId: isExist.companyId, // Use existing company ID
+          branchId: isExist.branchId, // Use existing branch ID
         };
         // branchId logic if needed (assuming stock is company-wide or branch-specific based on existing patterns)
         // if (isExist.branchId) stockCriteria.branchId = isExist.branchId;

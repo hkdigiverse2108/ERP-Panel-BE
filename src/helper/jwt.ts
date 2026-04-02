@@ -132,6 +132,17 @@ export const superAdminJwt = async (req, res, next) => {
       );
     }
 
+    if (user?.branchId) {
+      const populateModel = [{ path: "branchId", select: "name" }];
+      user = await findOneAndPopulate(
+        userModel,
+        { _id: new ObjectId(user?._id), isDeleted: false },
+        {},
+        {},
+        populateModel,
+      );
+    }
+
     req.headers.user = user;
     next();
   } catch (error) {
@@ -224,6 +235,17 @@ export const adminJwt = async (req, res, next) => {
 
     if (user?.role) {
       const populateModel = [{ path: "role", select: "name" }];
+      user = await findOneAndPopulate(
+        userModel,
+        { _id: new ObjectId(user?._id), isDeleted: false },
+        {},
+        {},
+        populateModel,
+      );
+    }
+
+    if (user?.branchId) {
+      const populateModel = [{ path: "branchId", select: "name" }];
       user = await findOneAndPopulate(
         userModel,
         { _id: new ObjectId(user?._id), isDeleted: false },
@@ -381,6 +403,17 @@ export const userJwt = async (req, res, next) => {
 
     if (user?.role) {
       const populateModel = [{ path: "role", select: "name" }];
+      user = await findOneAndPopulate(
+        userModel,
+        { _id: new ObjectId(user?._id), isDeleted: false },
+        {},
+        {},
+        populateModel,
+      );
+    }
+
+    if (user?.branchId) {
+      const populateModel = [{ path: "branchId", select: "name" }];
       user = await findOneAndPopulate(
         userModel,
         { _id: new ObjectId(user?._id), isDeleted: false },

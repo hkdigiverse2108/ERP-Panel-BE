@@ -3,7 +3,7 @@ import { stockModel, productModel } from "../database";
 import { getFirstMatch } from "./databaseServices";
 import { responseMessage } from "./responseMessage";
 
-export const checkStockQty = async (items: any[], companyId: string, res: any, oldItems: any[] = []) => {
+export const checkStockQty = async (items: any[], branchId: string, res: any, oldItems: any[] = []) => {
   try {
     for (const item of items) {
       if (!item.productId) continue;
@@ -16,10 +16,11 @@ export const checkStockQty = async (items: any[], companyId: string, res: any, o
 
       if (netChange <= 0) continue;
 
-      const stock = await getFirstMatch(stockModel, { productId: item.productId, companyId, isDeleted: false }, {}, {});
+      // Filter stock by branch
+      const stock = await getFirstMatch(stockModel, { productId: item.productId, branchId, isDeleted: false }, {}, {});
 
       if (!stock || stock.qty < netChange) {
-        const product = await getFirstMatch(productModel, { _id: item.productId }, { name: 1 }, {});
+        const product = await getFirstMatch(productModel, { _id: item.productId, isDeleted: false }, { name: 1 }, {});
         const productName = product ? product.name : "Product";
         const availableQty = stock ? stock.qty : 0;
 

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel, posCreditNoteModel, discountModel } from "../../database";
-import { applyDateFilter, checkCompany, checkIdExist, checkStockQty, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkStockQty, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
 import { applyCoupon, applyLoyalty, applyPosDiscount, applyRedeemCredit, revertCoupon, revertDiscount, revertLoyalty, revertRedeemCredit } from "./helper";
 
@@ -18,8 +18,10 @@ export const addPosOrder = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     if (value.branchId && !(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
     if (value.salesManId && !(await checkIdExist(userModel, value.salesManId, "Sales Man", res))) return;
@@ -41,7 +43,7 @@ export const addPosOrder = async (req, res) => {
     }
 
     // Check stock qty
-    if (!(await checkStockQty(value.items, value.companyId, res))) return;
+    if (!(await checkStockQty(value.items, value.branchId, res))) return;
 
     for (const item of value.additionalCharges) {
       if (!(await checkIdExist(additionalChargeModel, item?.chargeId, "Additional Charge", res))) return;
@@ -52,7 +54,6 @@ export const addPosOrder = async (req, res) => {
     const openRegister = await getFirstMatch(
       PosCashRegisterModel,
       {
-        companyId: value.companyId,
         branchId: value.branchId,
         status: CASH_REGISTER_STATUS.OPEN,
         isDeleted: false,
@@ -68,7 +69,7 @@ export const addPosOrder = async (req, res) => {
     // -------------------------------
 
     value.orderNo = await getAndIncrementPrefix({
-      companyId: value.companyId,
+      branchId: value.branchId,
       prefixType: PREFIX_MODULES.POS_ORDER,
       model: PosOrderModel,
       fieldName: "orderNo",
@@ -162,7 +163,7 @@ export const addPosOrder = async (req, res) => {
         await stockModel.findOneAndUpdate(
           {
             productId: item.productId,
-            companyId: response.companyId,
+            branchId: response.branchId,
             isDeleted: false,
           },
           { $inc: { qty: -item.qty } },
@@ -204,7 +205,7 @@ export const addPosOrder = async (req, res) => {
             voucherType: POS_VOUCHER_TYPE.SALES,
             paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
             paymentNo: await getAndIncrementPrefix({
-              companyId: response.companyId,
+              branchId: response.branchId,
               prefixType: PREFIX_MODULES.RECEIPT,
               model: PosPaymentModel,
               fieldName: "paymentNo",
@@ -229,7 +230,7 @@ export const addPosOrder = async (req, res) => {
           voucherType: POS_VOUCHER_TYPE.SALES,
           paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
           paymentNo: await getAndIncrementPrefix({
-            companyId: response.companyId,
+            branchId: response.branchId,
             prefixType: PREFIX_MODULES.RECEIPT,
             model: PosPaymentModel,
             fieldName: "paymentNo",
@@ -307,7 +308,7 @@ export const editPosOrder = async (req, res) => {
       }
 
       // Check stock qty
-      if (!(await checkStockQty(value.items, isExist.companyId, res, isExist.items))) return;
+      if (!(await checkStockQty(value.items, isExist.branchId, res, isExist.items))) return;
     }
 
     if (value?.additionalCharges) {
@@ -439,7 +440,7 @@ export const editPosOrder = async (req, res) => {
         await stockModel.findOneAndUpdate(
           {
             productId: item.productId,
-            companyId: isExist.companyId,
+            branchId: isExist.branchId,
             isDeleted: false,
           },
           { $inc: { qty: item.qty } },
@@ -453,7 +454,7 @@ export const editPosOrder = async (req, res) => {
         await stockModel.findOneAndUpdate(
           {
             productId: item.productId,
-            companyId: response.companyId,
+            branchId: response.branchId,
             isDeleted: false,
           },
           { $inc: { qty: -item.qty } },
@@ -503,7 +504,7 @@ export const editPosOrder = async (req, res) => {
               voucherType: POS_VOUCHER_TYPE.SALES,
               paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
               paymentNo: await getAndIncrementPrefix({
-                companyId: response.companyId,
+                branchId: response.branchId,
                 prefixType: PREFIX_MODULES.RECEIPT,
                 model: PosPaymentModel,
                 fieldName: "paymentNo",
@@ -526,7 +527,7 @@ export const editPosOrder = async (req, res) => {
           voucherType: POS_VOUCHER_TYPE.SALES,
           paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
           paymentNo: await getAndIncrementPrefix({
-            companyId: response.companyId,
+            branchId: response.branchId,
             prefixType: PREFIX_MODULES.RECEIPT,
             model: PosPaymentModel,
             fieldName: "paymentNo",
@@ -605,7 +606,7 @@ export const deletePosOrder = async (req, res) => {
         await stockModel.findOneAndUpdate(
           {
             productId: item.productId,
-            companyId: isExist.companyId,
+            branchId: isExist.branchId,
             isDeleted: false,
           },
           { $inc: { qty: item.qty } },

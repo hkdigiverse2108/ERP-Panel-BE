@@ -3,43 +3,44 @@ import { PREFIX_MODULES } from "../common";
 import { IPrefix } from "../types";
 
 interface PrefixOptions {
-  companyId: string;
+  branchId?: string;
   prefixType: string;
   model?: any;
   fieldName?: string;
 }
 
 /**
- * Generates a dynamic document number based on company-specific or global prefix settings.
+ * Generates a dynamic document number based on branch-specific prefix settings.
  * It atomically increments the sequence number to prevent duplicates in high-concurrency.
  * If model and fieldName are provided, it will retry up to 10 times to find a unique number.
  * 
- * @param {PrefixOptions} options - Contains companyId, prefixType, and optional DB checking parameters.
+ * @param {PrefixOptions} options - Contains branchId, prefixType, and optional DB checking parameters.
  * @returns {Promise<string>} The generated document number (e.g., "INV-101")
  */
-export const getAndIncrementPrefix = async ({ companyId, prefixType, model, fieldName }: PrefixOptions): Promise<string> => {
-  const companyFilter: any = { companyId: companyId as any, prefixType, isDeleted: false };
+export const getAndIncrementPrefix = async ({ branchId, prefixType, model, fieldName }: PrefixOptions): Promise<string> => {
+  const queryFilter: any = { branchId: branchId as any, prefixType, isDeleted: false };
   let attempts = 0;
   let resultNumber: string = "";
 
-  // 1. Try to find the correct prefix string once (Company-specific -> Global Template -> Default)
-  let prefixDoc = await PrefixModel.findOne(companyFilter).lean();
-  let prefixString = prefixDoc?.prefix;
+  // 1. Try to find the correct prefix string once (Branch-specific -> Global Template -> Default)
+  let prefixString = "";
+  let prefixDoc = await PrefixModel.findOne(queryFilter).lean();
+  prefixString = prefixDoc?.prefix;
 
   if (!prefixString) {
-    const globalTemplate = await PrefixModel.findOne({ companyId: null as any, prefixType, isDeleted: false }).lean();
+    const globalTemplate = await PrefixModel.findOne({ branchId: null as any, prefixType, isDeleted: false }).lean();
     prefixString = globalTemplate?.prefix || String(prefixType).toUpperCase().substring(0, 3);
   }
 
   // 2. Loop to atomic increment and uniqueness check
   do {
     const updatedDoc = await PrefixModel.findOneAndUpdate(
-      companyFilter,
+      queryFilter,
       {
         $inc: { sequenceNumber: 1 },
         $setOnInsert: {
           prefix: prefixString,
-          companyId: companyId as any,
+          branchId: branchId as any,
           prefixType,
           isDeleted: false,
           isActive: true,
@@ -54,7 +55,7 @@ export const getAndIncrementPrefix = async ({ companyId, prefixType, model, fiel
     if (!model || !fieldName) break;
 
     // 3. Uniqueness check
-    const isExist = await model.findOne({ companyId: companyId as any, [fieldName]: resultNumber, isDeleted: false }).lean();
+    const isExist = await model.findOne({ branchId: branchId as any, [fieldName]: resultNumber, isDeleted: false }).lean();
     if (!isExist) break;
 
     attempts++;

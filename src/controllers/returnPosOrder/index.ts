@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS, PREFIX_MODULES } from "../../common";
-import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, PosPaymentModel, additionalChargeModel, taxModel, PosCashRegisterModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkStockQty, getAndIncrementPrefix } from "../../helper";
+import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, additionalChargeModel, taxModel, PosCashRegisterModel } from "../../database";
+import { checkBranch, checkCompany, checkIdExist, createOne, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkStockQty, getAndIncrementPrefix } from "../../helper";
 import { addReturnPosOrderSchema, editReturnPosOrderSchema, getReturnPosOrderSchema, deleteReturnPosOrderSchema, returnPosOrderDropDownSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -16,7 +16,10 @@ export const addReturnPosOrder = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
+
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     if (value.posOrderId && !(await checkIdExist(PosOrderModel, value.posOrderId, "POS Order", res))) return;
     if (value.customerId && !(await checkIdExist(contactModel, value.customerId, "Customer", res))) return;
@@ -55,7 +58,7 @@ export const addReturnPosOrder = async (req, res) => {
     const openRegister = await getFirstMatch(
       PosCashRegisterModel,
       {
-        companyId: value.companyId,
+        branchId: value.branchId,
         status: CASH_REGISTER_STATUS.OPEN,
         isDeleted: false,
       },
@@ -69,7 +72,7 @@ export const addReturnPosOrder = async (req, res) => {
     // -------------------------------
 
     value.returnOrderNo = await getAndIncrementPrefix({ 
-      companyId: value.companyId, 
+      branchId: value.branchId, 
       prefixType: PREFIX_MODULES.RETURN_POS_ORDER,
       model: returnPosOrderModel,
       fieldName: "returnOrderNo",
@@ -138,7 +141,7 @@ export const addReturnPosOrder = async (req, res) => {
         totalAmount: response.total,
         creditsRemaining: response.total,
         creditNoteNo: await getAndIncrementPrefix({ 
-          companyId: response.companyId, 
+          branchId: response.branchId, 
           prefixType: PREFIX_MODULES.POS_CREDIT_NOTE,
           model: posCreditNoteModel,
           fieldName: "creditNoteNo",
@@ -199,7 +202,7 @@ export const editReturnPosOrder = async (req, res) => {
         const newQty = newItem ? newItem.qty : 0;
         return { productId: item.productId, qty: item.qty - newQty };
       });
-      if (!(await checkStockQty(checkItems, isExist.companyId, res))) return;
+      if (!(await checkStockQty(checkItems, isExist.branchId, res))) return;
     }
 
     const originalOrder = await PosOrderModel.findOne({ _id: isExist.posOrderId, isDeleted: false });
@@ -881,11 +884,11 @@ export const deleteReturnPosOrder = async (req, res) => {
     // When we delete a return, we revert the stock increase (which means we decrease stock).
     // We pass the items as 'new' items to check against current stock.
     const itemsToDeduct = isExist.items.map((item) => ({ productId: item.productId, qty: item.qty }));
-    if (!(await checkStockQty(itemsToDeduct, isExist.companyId, res))) return;
+    if (!(await checkStockQty(itemsToDeduct, isExist.branchId, res))) return;
 
     // Decrease stock for deleted return order
     for (const item of isExist.items) {
-      await stockModel.findOneAndUpdate({ productId: item.productId, companyId: isExist.companyId, isDeleted: false }, { $inc: { qty: -item.qty } });
+      await stockModel.findOneAndUpdate({ productId: item.productId, companyId: isExist.companyId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: -item.qty } });
     }
     // ----------------------------
 

@@ -66,6 +66,7 @@ import { consumptionTypeRouter } from "./consumptionType";
 import { specialRouter } from "./special";
 import { credentialRouter } from "./credential";
 import { aiRouter } from "./ai";
+import migrationRouter from "./migration";
 
 const router = Router();
 
@@ -147,5 +148,6 @@ router.use("/product-type", productTypeRouter);
 router.use("/specials", specialRouter);
 router.use("/credentials", credentialRouter);
 router.use("/ai", aiRouter);
+router.use("/migration", migrationRouter);
 
 export { router };
