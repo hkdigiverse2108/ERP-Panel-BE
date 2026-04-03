@@ -32,34 +32,23 @@ export const getAndIncrementPrefix = async ({ branchId, prefixType, model, field
     prefixString = globalTemplate?.prefix || String(prefixType).toUpperCase().substring(0, 3);
   }
 
-  // 2. Loop to atomic increment and uniqueness check
-  do {
-    const updatedDoc = await PrefixModel.findOneAndUpdate(
-      queryFilter,
-      {
-        $inc: { sequenceNumber: 1 },
-        $setOnInsert: {
-          prefix: prefixString,
-          branchId: branchId as any,
-          prefixType,
-          isDeleted: false,
-          isActive: true,
-        },
+  // 2. Atomic increment and return result
+  const updatedDoc = await PrefixModel.findOneAndUpdate(
+    queryFilter,
+    {
+      $inc: { currentNumber: 1 },
+      $setOnInsert: {
+        prefix: prefixString,
+       branchId: branchId as any,
+        prefixType,
+        sequenceNumber: 1,
+        isDeleted: false,
+        isActive: true,
       },
-      { upsert: true, new: false, setDefaultsOnInsert: true }
-    ).lean();
+    },
+    { upsert: true, new: false, setDefaultsOnInsert: true }
+  ).lean();
 
-    const sequenceNumber = updatedDoc ? (updatedDoc.sequenceNumber ?? 1) : 1;
-    resultNumber = `${prefixString}-${sequenceNumber}`;
-
-    if (!model || !fieldName) break;
-
-    // 3. Uniqueness check
-    const isExist = await model.findOne({ branchId: branchId as any, [fieldName]: resultNumber, isDeleted: false }).lean();
-    if (!isExist) break;
-
-    attempts++;
-  } while (attempts < 10);
-
-  return resultNumber;
+  const sequenceNumber = updatedDoc ? (updatedDoc.currentNumber ?? 1) : 1;
+  return `${prefixString}-${sequenceNumber}`;
 };

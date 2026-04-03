@@ -907,238 +907,349 @@ export const detectProduct = async (req, res) => {
     const companyId = user?.companyId?._id;
     let skuMatchesDetailsArray = [];
 
-    const formData = new FormData();
-    for (const file of files) {
-      formData.append("image", file.buffer, {
-        filename: file.originalname,
-        contentType: file.mimetype,
-      });
-    }
+    // 1. Prepare Base64 Image
+    const firstFile = files[0];
+    const imageBase64 = firstFile.buffer.toString("base64");
 
+    // 2. Call Internal AI Analyze API
     let results: any[] = [];
+    let idMatches: Record<string, number> = {};
+    let idCounts: Record<string, number> = {};
 
     try {
-      const aiResponse = await axios.post("https://train-product.ai-setu.cloud/api/scanimg", formData, {
-        headers: { ...formData.getHeaders() },
-        timeout: 60000,
+      const backendUrl = process.env.BACKEND_URL || "http://localhost:4001";
+      const authHeader = req.headers.authorization;
+
+      const aiApiResponse = await axios.post(`${backendUrl}/ai/analyze`, 
+        { imageBase64 }, 
+        { headers: { Authorization: authHeader } }
+      );
+
+      const aiItems = aiApiResponse.data?.data || [];
+      console.log("aiItems => ",aiItems);
+      
+      const unmatchedItems = [];
+
+      // 3. Map AI Results to Product ID context
+      aiItems.forEach((item: any) => {
+          if (item.matched && item.product_id) {
+              const productId = item.product_id;
+              idMatches[productId] = 0.95; 
+              idCounts[productId] = (idCounts[productId] || 0) + (item.quantity || 1);
+          } else {
+              unmatchedItems.push(item);
+          }
       });
 
-      let responseData = aiResponse?.data || {};
-      let rootData = responseData;
+      results = [{ image: firstFile.originalname, items_count: aiItems.length, unmatched_items: unmatchedItems }];
 
-      if (Array.isArray(responseData)) {
-        rootData = responseData[0] || {};
-      } else if (Array.isArray(responseData.data)) {
-        rootData = responseData.data[0] || {};
-      } else if (responseData.data) {
-        rootData = responseData.data;
-      }
-
-      let skuMatches: Record<string, number> = {};
-      let skuCounts: Record<string, number> = {};
-
-      if (rootData.results && Array.isArray(rootData.results)) {
-        for (const item of rootData.results) {
-          if (item.response) {
-            const itemSkuMatches = item.response.sku_matches || {};
-            for (const [sku, conf] of Object.entries(itemSkuMatches)) {
-              skuMatches[sku] = Math.max(skuMatches[sku] || 0, conf as number);
-            }
-
-            const itemDetections = item.response.detections || [];
-            for (const det of itemDetections) {
-              if (det.matched_sku) {
-                skuCounts[det.matched_sku] = (skuCounts[det.matched_sku] || 0) + 1;
-              }
-            }
-          }
-        }
-      } else {
-        const itemSkuMatches = rootData.sku_matches || {};
-        for (const [sku, conf] of Object.entries(itemSkuMatches)) {
-          skuMatches[sku] = conf as number;
-        }
-
-        if (rootData.sku_counts) {
-          skuCounts = rootData.sku_counts;
-        } else {
-          const itemDetections = rootData.detections || [];
-          for (const det of itemDetections) {
-            if (det.matched_sku) {
-              skuCounts[det.matched_sku] = (skuCounts[det.matched_sku] || 0) + 1;
-            }
-          }
-        }
-      }
-
-      const matchedSkus = Object.keys(skuMatches);
-
-      let products: any[] = [];
-      let productsWithStock: any[] = [];
-      const effectiveCompanyId = companyId || null;
-
-      if (matchedSkus.length > 0) {
-        let criteria: any = {
-          isDeleted: false,
-          sku: { $in: matchedSkus },
-          isActive: true,
-        };
-
+      // 4. Data Hydration (Stock Lookups)
+      const matchedIds = Object.keys(idMatches);
+      if (matchedIds.length > 0) {
+        let criteria: any = { isDeleted: false, _id: { $in: matchedIds }, isActive: true };
+        
+        // Ownership check for products
         if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
           criteria.$or = [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }];
         }
-
-        let populate = [
+        console.log("criteria => ",criteria);
+        const enrichedProducts = await findAllAndPopulateWithSorting(productModel, criteria, {}, {}, [
           { path: "categoryId", select: "name" },
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
-        ];
-        products = await findAllAndPopulateWithSorting(
-          productModel,
-          criteria,
-          {},
-          {},
-          populate
-        );
-
-        productsWithStock = await Promise.all(
-          products.map(async (product: any) => {
+        ]);
+        console.log("enrichedProducts => ",enrichedProducts);
+        skuMatchesDetailsArray = await Promise.all(
+          enrichedProducts.map(async (product: any) => {
             const productObj = product.toObject ? product.toObject() : product;
-            const linkedStockIds = (productObj.stockIds || []).filter((id: any) => id);
+            const productIdStr = product._id.toString();
+            const stockCriteria: any = { isDeleted: false, productId: product._id };
+            if (companyId) stockCriteria.companyId = new ObjectId(companyId.toString());
 
-            let stockCriteria: any = { isDeleted: false };
-
-            if (linkedStockIds.length > 0) {
-              stockCriteria._id = { $in: linkedStockIds.map((id: any) => new ObjectId(id.toString())) };
-              if (effectiveCompanyId) {
-                stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
-              }
-            } else {
-              stockCriteria.productId = product._id;
-              if (effectiveCompanyId) {
-                stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
-              }
-            }
-
-            const stockAggregation = await stockModel.aggregate([
-              { $match: stockCriteria },
-              {
-                $lookup: {
-                  from: "taxes",
-                  localField: "purchaseTaxId",
-                  foreignField: "_id",
-                  as: "purchaseTax",
-                },
-              },
-              {
-                $unwind: {
-                  path: "$purchaseTax",
-                  preserveNullAndEmptyArrays: true,
-                },
-              },
-              {
-                $lookup: {
-                  from: "taxes",
-                  localField: "salesTaxId",
-                  foreignField: "_id",
-                  as: "salesTax",
-                },
-              },
-              {
-                $unwind: {
-                  path: "$salesTax",
-                  preserveNullAndEmptyArrays: true,
-                },
-              },
-              {
-                $lookup: {
-                  from: "uoms",
-                  localField: "uomId",
-                  foreignField: "_id",
-                  as: "uomData",
-                },
-              },
-              {
-                $unwind: {
-                  path: "$uomData",
-                  preserveNullAndEmptyArrays: true,
-                },
-              },
-              {
-                $project: {
-                  _id: 0,
-                  qty: 1,
-                  mrp: 1,
-                  sellingPrice: 1,
-                  sellingDiscount: 1,
-                  landingCost: 1,
-                  purchasePrice: 1,
-                  sellingMargin: 1,
-                  isPurchaseTaxIncluding: 1,
-                  isSalesTaxIncluding: 1,
-                  purchaseTaxId: {
-                    _id: "$purchaseTax._id",
-                    name: "$purchaseTax.name",
-                    percentage: "$purchaseTax.percentage",
-                  },
-                  salesTaxId: {
-                    _id: "$salesTax._id",
-                    name: "$salesTax.name",
-                    percentage: "$salesTax.percentage",
-                  },
-                  uomData: {
-                    _id: "$uomData._id",
-                    name: "$uomData.name",
-                    code: "$uomData.code",
-                  },
-                },
-              },
-              { $limit: 1 }
+            // Pull first available stock for this item
+            const stockInfo = await stockModel.findOne(stockCriteria).populate([
+                { path: "purchaseTaxId", select: "name percentage" },
+                { path: "salesTaxId", select: "name percentage" },
+                { path: "uomId", select: "name code" }
             ]);
-
-            const stockInfo = stockAggregation.length > 0 ? stockAggregation[0] : null;
 
             return {
               ...productObj,
-              mrp: stockInfo ? stockInfo.mrp : (productObj.mrp || 0),
-              sellingPrice: stockInfo ? stockInfo.sellingPrice : (productObj.sellingPrice || 0),
-              sellingDiscount: stockInfo ? stockInfo.sellingDiscount : (productObj.sellingDiscount || 0),
-              landingCost: stockInfo ? stockInfo.landingCost : (productObj.landingCost || 0),
-              purchasePrice: stockInfo ? stockInfo.purchasePrice : (productObj.purchasePrice || 0),
-              sellingMargin: stockInfo ? stockInfo.sellingMargin : (productObj.sellingMargin || 0),
-              qty: stockInfo ? stockInfo.qty : 0,
-              uomId: stockInfo ? stockInfo.uomData : null,
-              purchaseTaxId: (stockInfo && stockInfo.purchaseTaxId && stockInfo.purchaseTaxId._id) ? stockInfo.purchaseTaxId : null,
-              salesTaxId: (stockInfo && stockInfo.salesTaxId && stockInfo.salesTaxId._id) ? stockInfo.salesTaxId : null,
-              isPurchaseTaxIncluding: stockInfo ? stockInfo.isPurchaseTaxIncluding : false,
-              isSalesTaxIncluding: stockInfo ? stockInfo.isSalesTaxIncluding : false,
+              mrp: stockInfo?.mrp || productObj.mrp || 0,
+              sellingPrice: stockInfo?.sellingPrice || productObj.sellingPrice || 0,
+              sellingDiscount: stockInfo?.sellingDiscount || 0,
+              qty: stockInfo?.qty || 0,
+              uomId: stockInfo?.uomId || null,
+              purchaseTaxId: stockInfo?.purchaseTaxId || null,
+              salesTaxId: stockInfo?.salesTaxId || null,
+              ai_confidence: idMatches[productIdStr] || 0,
+              detect_qty: idCounts[productIdStr] || 1
             };
-          }),
+          })
         );
       }
-
-      skuMatchesDetailsArray = productsWithStock.map((p: any) => ({
-        ...p,
-        ai_confidence: skuMatches[p.sku] || 0,
-        detect_qty: skuCounts[p.sku] || 1
-      }));
-
-      // Return unified results block
-      results = [{
-        ...rootData,
-      }];
     } catch (err: any) {
-      console.error("Error processing batch image detection", err?.message);
-      results = [{
-        success: false,
-        message: err?.message || "Detection failed for batch images",
-      }];
+      console.error("Internal AI Delegation error:", err?.response?.data || err?.message);
+      results = [{ success: false, message: "Detection service temporarily unavailable" }];
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, (responseMessage as any)?.getDataSuccess?.("AI Detections") || "Products detected successfully", { results, sku_matches_details: skuMatchesDetailsArray || [] }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Products detected successfully", { results, sku_matches_details: skuMatchesDetailsArray }, {}));
   } catch (error) {
     console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, (responseMessage as any)?.internalServerError || "Internal server error", {}, error));
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, "Internal server error", {}, error));
   }
 };
+
+// export const detectProduct = async (req, res) => {
+//   reqInfo(req);
+//   try {
+//     let files = req.files ? (req.files as any[]) : [];
+//     if (!files || files.length === 0) {
+//       if (req.file) {
+//         files = [req.file];
+//       } else {
+//         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "At least one image file is required", {}, {}));
+//       }
+//     }
+
+//     const { user } = req.headers;
+//     const userType = user?.userType;
+//     const companyId = user?.companyId?._id;
+//     let skuMatchesDetailsArray = [];
+
+//     const formData = new FormData();
+//     for (const file of files) {
+//       formData.append("image", file.buffer, {
+//         filename: file.originalname,
+//         contentType: file.mimetype,
+//       });
+//     }
+
+//     let results: any[] = [];
+
+//     try {
+//       const aiResponse = await axios.post("https://train-product.ai-setu.cloud/api/scanimg", formData, {
+//         headers: { ...formData.getHeaders() },
+//         timeout: 60000,
+//       });
+
+//       let responseData = aiResponse?.data || {};
+//       let rootData = responseData;
+
+//       if (Array.isArray(responseData)) {
+//         rootData = responseData[0] || {};
+//       } else if (Array.isArray(responseData.data)) {
+//         rootData = responseData.data[0] || {};
+//       } else if (responseData.data) {
+//         rootData = responseData.data;
+//       }
+
+//       let skuMatches: Record<string, number> = {};
+//       let skuCounts: Record<string, number> = {};
+
+//       if (rootData.results && Array.isArray(rootData.results)) {
+//         for (const item of rootData.results) {
+//           if (item.response) {
+//             const itemSkuMatches = item.response.sku_matches || {};
+//             for (const [sku, conf] of Object.entries(itemSkuMatches)) {
+//               skuMatches[sku] = Math.max(skuMatches[sku] || 0, conf as number);
+//             }
+
+//             const itemDetections = item.response.detections || [];
+//             for (const det of itemDetections) {
+//               if (det.matched_sku) {
+//                 skuCounts[det.matched_sku] = (skuCounts[det.matched_sku] || 0) + 1;
+//               }
+//             }
+//           }
+//         }
+//       } else {
+//         const itemSkuMatches = rootData.sku_matches || {};
+//         for (const [sku, conf] of Object.entries(itemSkuMatches)) {
+//           skuMatches[sku] = conf as number;
+//         }
+
+//         if (rootData.sku_counts) {
+//           skuCounts = rootData.sku_counts;
+//         } else {
+//           const itemDetections = rootData.detections || [];
+//           for (const det of itemDetections) {
+//             if (det.matched_sku) {
+//               skuCounts[det.matched_sku] = (skuCounts[det.matched_sku] || 0) + 1;
+//             }
+//           }
+//         }
+//       }
+
+//       const matchedSkus = Object.keys(skuMatches);
+
+//       let products: any[] = [];
+//       let productsWithStock: any[] = [];
+//       const effectiveCompanyId = companyId || null;
+
+//       if (matchedSkus.length > 0) {
+//         let criteria: any = {
+//           isDeleted: false,
+//           sku: { $in: matchedSkus },
+//           isActive: true,
+//         };
+
+//         if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+//           criteria.$or = [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }];
+//         }
+
+//         let populate = [
+//           { path: "categoryId", select: "name" },
+//           { path: "subCategoryId", select: "name" },
+//           { path: "brandId", select: "name" },
+//           { path: "subBrandId", select: "name" },
+//         ];
+//         products = await findAllAndPopulateWithSorting(
+//           productModel,
+//           criteria,
+//           {},
+//           {},
+//           populate
+//         );
+
+//         productsWithStock = await Promise.all(
+//           products.map(async (product: any) => {
+//             const productObj = product.toObject ? product.toObject() : product;
+//             const linkedStockIds = (productObj.stockIds || []).filter((id: any) => id);
+
+//             let stockCriteria: any = { isDeleted: false };
+
+//             if (linkedStockIds.length > 0) {
+//               stockCriteria._id = { $in: linkedStockIds.map((id: any) => new ObjectId(id.toString())) };
+//               if (effectiveCompanyId) {
+//                 stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
+//               }
+//             } else {
+//               stockCriteria.productId = product._id;
+//               if (effectiveCompanyId) {
+//                 stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
+//               }
+//             }
+
+//             const stockAggregation = await stockModel.aggregate([
+//               { $match: stockCriteria },
+//               {
+//                 $lookup: {
+//                   from: "taxes",
+//                   localField: "purchaseTaxId",
+//                   foreignField: "_id",
+//                   as: "purchaseTax",
+//                 },
+//               },
+//               {
+//                 $unwind: {
+//                   path: "$purchaseTax",
+//                   preserveNullAndEmptyArrays: true,
+//                 },
+//               },
+//               {
+//                 $lookup: {
+//                   from: "taxes",
+//                   localField: "salesTaxId",
+//                   foreignField: "_id",
+//                   as: "salesTax",
+//                 },
+//               },
+//               {
+//                 $unwind: {
+//                   path: "$salesTax",
+//                   preserveNullAndEmptyArrays: true,
+//                 },
+//               },
+//               {
+//                 $lookup: {
+//                   from: "uoms",
+//                   localField: "uomId",
+//                   foreignField: "_id",
+//                   as: "uomData",
+//                 },
+//               },
+//               {
+//                 $unwind: {
+//                   path: "$uomData",
+//                   preserveNullAndEmptyArrays: true,
+//                 },
+//               },
+//               {
+//                 $project: {
+//                   _id: 0,
+//                   qty: 1,
+//                   mrp: 1,
+//                   sellingPrice: 1,
+//                   sellingDiscount: 1,
+//                   landingCost: 1,
+//                   purchasePrice: 1,
+//                   sellingMargin: 1,
+//                   isPurchaseTaxIncluding: 1,
+//                   isSalesTaxIncluding: 1,
+//                   purchaseTaxId: {
+//                     _id: "$purchaseTax._id",
+//                     name: "$purchaseTax.name",
+//                     percentage: "$purchaseTax.percentage",
+//                   },
+//                   salesTaxId: {
+//                     _id: "$salesTax._id",
+//                     name: "$salesTax.name",
+//                     percentage: "$salesTax.percentage",
+//                   },
+//                   uomData: {
+//                     _id: "$uomData._id",
+//                     name: "$uomData.name",
+//                     code: "$uomData.code",
+//                   },
+//                 },
+//               },
+//               { $limit: 1 }
+//             ]);
+
+//             const stockInfo = stockAggregation.length > 0 ? stockAggregation[0] : null;
+
+//             return {
+//               ...productObj,
+//               mrp: stockInfo ? stockInfo.mrp : (productObj.mrp || 0),
+//               sellingPrice: stockInfo ? stockInfo.sellingPrice : (productObj.sellingPrice || 0),
+//               sellingDiscount: stockInfo ? stockInfo.sellingDiscount : (productObj.sellingDiscount || 0),
+//               landingCost: stockInfo ? stockInfo.landingCost : (productObj.landingCost || 0),
+//               purchasePrice: stockInfo ? stockInfo.purchasePrice : (productObj.purchasePrice || 0),
+//               sellingMargin: stockInfo ? stockInfo.sellingMargin : (productObj.sellingMargin || 0),
+//               qty: stockInfo ? stockInfo.qty : 0,
+//               uomId: stockInfo ? stockInfo.uomData : null,
+//               purchaseTaxId: (stockInfo && stockInfo.purchaseTaxId && stockInfo.purchaseTaxId._id) ? stockInfo.purchaseTaxId : null,
+//               salesTaxId: (stockInfo && stockInfo.salesTaxId && stockInfo.salesTaxId._id) ? stockInfo.salesTaxId : null,
+//               isPurchaseTaxIncluding: stockInfo ? stockInfo.isPurchaseTaxIncluding : false,
+//               isSalesTaxIncluding: stockInfo ? stockInfo.isSalesTaxIncluding : false,
+//             };
+//           }),
+//         );
+//       }
+
+//       skuMatchesDetailsArray = productsWithStock.map((p: any) => ({
+//         ...p,
+//         ai_confidence: skuMatches[p.sku] || 0,
+//         detect_qty: skuCounts[p.sku] || 1
+//       }));
+
+//       // Return unified results block
+//       results = [{
+//         ...rootData,
+//       }];
+//     } catch (err: any) {
+//       console.error("Error processing batch image detection", err?.message);
+//       results = [{
+//         success: false,
+//         message: err?.message || "Detection failed for batch images",
+//       }];
+//     }
+
+//     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, (responseMessage as any)?.getDataSuccess?.("AI Detections") || "Products detected successfully", { results, sku_matches_details: skuMatchesDetailsArray || [] }, {}));
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, (responseMessage as any)?.internalServerError || "Internal server error", {}, error));
+//   }
+// };
