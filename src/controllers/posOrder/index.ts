@@ -420,7 +420,6 @@ export const editPosOrder = async (req, res) => {
     }
     // ------------------------------------------------
 
-
     const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, value, {});
 
     if (!response) {
@@ -654,7 +653,6 @@ export const deletePosOrder = async (req, res) => {
       await revertRedeemCredit(isExist.redeemCreditId, isExist.redeemCreditType, isExist.redeemCreditAmount, isExist._id);
     }
 
-
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Order"), response, {}));
   } catch (error) {
     console.error(error);
@@ -790,7 +788,8 @@ export const getAllPosOrder = async (req, res) => {
         { path: "salesManId", select: "fullName" },
         {
           path: "customerId",
-          select: "firstName lastName companyName email phoneNo",
+          select: "firstName lastName companyName email phoneNo address.state",
+          populate: [{ path: "address.state", select: "name" }],
         },
         { path: "items.productId", select: "name " },
         { path: "invoiceId", select: "documentNo" },
@@ -877,7 +876,10 @@ export const getOnePosOrder = async (req, res) => {
           {
             path: "items.productId",
             select: "-isDeleted -isActive -createdAt -updatedAt -createdBy -updatedBy -images -nutrition",
-            populate: [{ path: "brandId", select: "name" }, { path: "categoryId", select: "name" }],
+            populate: [
+              { path: "brandId", select: "name" },
+              { path: "categoryId", select: "name" },
+            ],
           },
           { path: "invoiceId", select: "documentNo" },
           { path: "additionalCharges.taxId", select: "name percentage" },
@@ -1092,9 +1094,7 @@ export const getShortHoldOrders = async (req, res) => {
 
     const options = {
       sort: { holdDate: -1 },
-      populate: [
-        { path: "customerId", select: "firstName lastName phoneNo " },
-      ],
+      populate: [{ path: "customerId", select: "firstName lastName phoneNo " }],
       limit: 100,
     };
 
