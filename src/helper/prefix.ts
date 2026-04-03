@@ -10,8 +10,8 @@ interface PrefixOptions {
 }
 
 /**
- * Generates a dynamic document number based on company-specific or global prefix settings.
- * It atomically increments the sequence number to prevent duplicates in high-concurrency.
+ * Generates a dynamic document number based on company-specific prefix settings.
+ * It atomically increments the current number to prevent duplicates in high-concurrency.
  * If model and fieldName are provided, it will retry up to 10 times to find a unique number.
  * 
  * @param {PrefixOptions} options - Contains companyId, prefixType, and optional DB checking parameters.
@@ -22,7 +22,7 @@ export const getAndIncrementPrefix = async ({ companyId, prefixType, model, fiel
   let attempts = 0;
   let resultNumber: string = "";
 
-  // 1. Try to find the correct prefix string once (Company-specific -> Global Template -> Default)
+  // 1. Try to find the correct prefix string once (Company-specific -> Default)
   let prefixDoc = await PrefixModel.findOne(companyFilter).lean();
   let prefixString = prefixDoc?.prefix;
 
@@ -31,34 +31,23 @@ export const getAndIncrementPrefix = async ({ companyId, prefixType, model, fiel
     prefixString = globalTemplate?.prefix || String(prefixType).toUpperCase().substring(0, 3);
   }
 
-  // 2. Loop to atomic increment and uniqueness check
-  do {
-    const updatedDoc = await PrefixModel.findOneAndUpdate(
-      companyFilter,
-      {
-        $inc: { sequenceNumber: 1 },
-        $setOnInsert: {
-          prefix: prefixString,
-          companyId: companyId as any,
-          prefixType,
-          isDeleted: false,
-          isActive: true,
-        },
+  // 2. Atomic increment and return result
+  const updatedDoc = await PrefixModel.findOneAndUpdate(
+    companyFilter,
+    {
+      $inc: { currentNumber: 1 },
+      $setOnInsert: {
+        prefix: prefixString,
+        companyId: companyId as any,
+        prefixType,
+        sequenceNumber: 1,
+        isDeleted: false,
+        isActive: true,
       },
-      { upsert: true, new: false, setDefaultsOnInsert: true }
-    ).lean();
+    },
+    { upsert: true, new: false, setDefaultsOnInsert: true }
+  ).lean();
 
-    const sequenceNumber = updatedDoc ? (updatedDoc.sequenceNumber ?? 1) : 1;
-    resultNumber = `${prefixString}-${sequenceNumber}`;
-
-    if (!model || !fieldName) break;
-
-    // 3. Uniqueness check
-    const isExist = await model.findOne({ companyId: companyId as any, [fieldName]: resultNumber, isDeleted: false }).lean();
-    if (!isExist) break;
-
-    attempts++;
-  } while (attempts < 10);
-
-  return resultNumber;
+  const sequenceNumber = updatedDoc ? (updatedDoc.currentNumber ?? 1) : 1;
+  return `${prefixString}-${sequenceNumber}`;
 };
