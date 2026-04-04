@@ -63,7 +63,5 @@ app.use((_, res) => {
 let server = new http.Server(app);
 export const socket = socketServer(server);
 
-automatic_attach()
-
 export default server;
 
