@@ -10,7 +10,6 @@ import path from "path";
 import { apiResponse, HTTP_STATUS } from "./common";
 import { socketServer } from "./helper/socket";
 import { initCronJobs } from "./helper";
-import { automatic_attach } from "./controllers/module";
 
 const app = express();
 
