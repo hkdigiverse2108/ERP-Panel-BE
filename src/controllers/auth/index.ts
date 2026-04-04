@@ -34,9 +34,6 @@ export const register = async (req, res) => {
       }
     }
 
-    existingUser = await getFirstMatch(userModel, { "phoneNo.phoneNo": phoneNo, isDeleted: false }, {}, {});
-    if (existingUser) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Phone Number"), {}, {}));
-
     value.password = await generateHash(value.password);
 
     let response = await createOne(userModel, value);
@@ -292,7 +289,7 @@ export const verifyOtp = async (req, res) => {
 
     if (response?.otpExpireTime < new Date()) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.expireOTP, {}, {}));
 
-    // response = await updateData(userModel, { _id: response?._id }, { otp: null, otpExpireTime: null }, {});
+    response = await updateData(userModel, { _id: response?._id }, { otp: null, otpExpireTime: null }, {});
     const { password, otp, otpExpireTime, ...rest } = response;
 
     response = rest;

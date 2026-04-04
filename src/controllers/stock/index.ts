@@ -129,6 +129,7 @@ export const bulkStockAdjustment = async (req, res) => {
 
       if (user?.userType !== USER_TYPES.SUPER_ADMIN && user?.companyId?._id) {
         stockCriteria.companyId = user?.companyId?._id;
+        stockCriteria.branchId = user?.branchId?._id;
       }
 
       const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});

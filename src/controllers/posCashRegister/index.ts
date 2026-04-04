@@ -293,11 +293,12 @@ export const getCashRegisterDetails = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-
+    const branchId = user?.branchId?._id;
     const openRegister = await getFirstMatch(
       PosCashRegisterModel,
       {
         companyId: companyId,
+        branchId: branchId,
         status: CASH_REGISTER_STATUS.OPEN,
         isDeleted: false,
       },

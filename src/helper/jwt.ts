@@ -73,6 +73,8 @@ export const adminJwt = async (req, res, next) => {
 
     let user = await getFirstMatch(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {});
 
+    if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
+
     if (user?.companyId) {
       const populateModel = [{ path: "companyId", select: "name" }];
       user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
@@ -87,7 +89,6 @@ export const adminJwt = async (req, res, next) => {
       const populateModel = [{ path: "branchId", select: "name" }];
       user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
     }
-    if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
 
     if (user?.userType !== USER_TYPES.SUPER_ADMIN && user?.companyId) {
       const company = await getFirstMatch(companyModel, { _id: new ObjectId(user?.companyId), isDeleted: false }, {}, {});
