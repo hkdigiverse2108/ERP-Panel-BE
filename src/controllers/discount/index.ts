@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, DISCOUNT_MODE, DISCOUNT_APPLICABLE, DISCOUNT_APPLIES_TO, MINIMUM_REQUIREMENT, DISCOUNT_STATUS, VALUE_TYPE } from "../../common";
 import { discountModel, productModel, PosOrderModel } from "../../database";
 
-import { checkCompany, checkIdExist, countData, createOne, findAllAndPopulate, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, findAllAndPopulate, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addDiscountSchema, deleteDiscountSchema, editDiscountSchema, getDiscountSchema, verifyDiscountSchema, applyDiscountSchema, removeDiscountSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -33,8 +33,9 @@ export const addDiscount = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
-
+    value.branchId = await checkBranch(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     // Validate date range when end date is set
     if (value.hasEndDate && value.endDateTime && new Date(value.startDateTime) >= new Date(value.endDateTime)) {
@@ -165,6 +166,7 @@ export const getAllDiscount = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
     let { page, limit, search, status, startDateTime, endDateTime, activeFilter, companyFilter, discountMode, appliesTo, branchFilter } = req.query;
 
     page = Number(page);
@@ -177,6 +179,14 @@ export const getAllDiscount = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = new ObjectId(branchId);
+    }
+
+    if (branchFilter) {
+      criteria.branchId = new ObjectId(branchFilter);
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -195,10 +205,6 @@ export const getAllDiscount = async (req, res) => {
 
     if (appliesTo) {
       criteria.appliesTo = appliesTo;
-    }
-
-    if (branchFilter) {
-      criteria.branchIds = new ObjectId(branchFilter);
     }
 
     if (startDateTime && endDateTime) {
@@ -260,6 +266,10 @@ export const getAllDiscount = async (req, res) => {
       statsCriteria.companyId = criteria.companyId;
     }
 
+    if (criteria.branchId) {
+      statsCriteria.branchId = criteria.branchId;
+    }
+
     const globalStats = await PosOrderModel.aggregate([
       { $match: statsCriteria },
       {
@@ -275,6 +285,10 @@ export const getAllDiscount = async (req, res) => {
     const activeCriteria: any = { status: "active", isDeleted: false };
     if (criteria.companyId) {
       activeCriteria.companyId = criteria.companyId;
+    }
+
+    if (criteria.branchId) {
+      activeCriteria.branchId = criteria.branchId;
     }
     const activeDiscounts = await countData(discountModel, activeCriteria);
 
@@ -340,6 +354,7 @@ export const getDropdownDiscount = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
     let { search, status, startDateTime, endDateTime, activeFilter, companyFilter, discountMode, appliesTo, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -349,6 +364,14 @@ export const getDropdownDiscount = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = new ObjectId(branchId);
+    }
+
+    if (branchFilter) {
+      criteria.branchId = new ObjectId(branchFilter);
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -369,9 +392,9 @@ export const getDropdownDiscount = async (req, res) => {
       criteria.appliesTo = appliesTo;
     }
 
-    if (branchFilter) {
-      criteria.branchIds = new ObjectId(branchFilter);
-    }
+    // if (branchFilter) {
+    //   criteria.branchIds = new ObjectId(branchFilter);
+    // }
 
     if (startDateTime && endDateTime) {
       const start = new Date(startDateTime as string);

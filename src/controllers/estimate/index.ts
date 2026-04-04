@@ -225,7 +225,8 @@ export const getAllEstimate = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, startDate, endDate, companyFilter, activeFilter, customerFilter, statusFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, startDate, endDate, companyFilter, activeFilter, customerFilter, statusFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -241,6 +242,14 @@ export const getAllEstimate = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = new ObjectId(branchId);
+    }
+
+    if (branchFilter) {
+      criteria.branchId = new ObjectId(branchFilter);
     }
 
     if (customerFilter) {
@@ -328,6 +337,9 @@ export const getAllEstimate = async (req, res) => {
       statsCriteria.companyId = criteria.companyId;
     }
 
+    if (criteria.branchId) {
+      statsCriteria.branchId = criteria.branchId;
+    }
     const summaryResults = await EstimateModel.aggregate([
       { $match: statsCriteria },
       {
@@ -450,11 +462,24 @@ export const getEstimateDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { search, customerId } = req.query;
+    const branchId = user?.branchId?._id;
+    let { search, customerId, branchFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false, status: "pending" }; // Usually dropdowns only show pending estimates
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerId) {

@@ -343,7 +343,8 @@ export const getAllInvoice = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, status, paymentStatus, startDate, endDate, customerFilter, statusFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, activeFilter, companyFilter, status, paymentStatus, startDate, endDate, customerFilter, statusFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -355,6 +356,14 @@ export const getAllInvoice = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerFilter) {
@@ -455,6 +464,10 @@ export const getAllInvoice = async (req, res) => {
       statsCriteria.companyId = criteria.companyId;
     }
 
+    if (criteria.branchId) {
+      statsCriteria.branchId = criteria.branchId;
+    }
+
     const summaryResults = await InvoiceModel.aggregate([
       { $match: statsCriteria },
       {
@@ -498,7 +511,6 @@ export const getAllInvoice = async (req, res) => {
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice"), { invoice_data: finalResponse, totalData, summary, state }, {}));
-
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -595,11 +607,24 @@ export const getInvoiceDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { customerId, status, paymentStatus, search } = req.query; // Optional filters
+    const branchId = user?.branchId?._id;
+    const { customerId, status, paymentStatus, search, branchFilter, companyFilter } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false, isActive: true };
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerId) {

@@ -88,13 +88,16 @@ export const deleteBrandById = async (req, res) => {
 export const getAllBrand = async (req, res) => {
   reqInfo(req);
   try {
-
-    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (search) {

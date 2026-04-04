@@ -71,8 +71,8 @@ export const addReturnPosOrder = async (req, res) => {
     }
     // -------------------------------
 
-    value.returnOrderNo = await getAndIncrementPrefix({ 
-      branchId: value.branchId, 
+    value.returnOrderNo = await getAndIncrementPrefix({
+      branchId: value.branchId,
       prefixType: PREFIX_MODULES.RETURN_POS_ORDER,
       model: returnPosOrderModel,
       fieldName: "returnOrderNo",
@@ -140,8 +140,8 @@ export const addReturnPosOrder = async (req, res) => {
         returnPosOrderId: response._id,
         totalAmount: response.total,
         creditsRemaining: response.total,
-        creditNoteNo: await getAndIncrementPrefix({ 
-          branchId: response.branchId, 
+        creditNoteNo: await getAndIncrementPrefix({
+          branchId: response.branchId,
           prefixType: PREFIX_MODULES.POS_CREDIT_NOTE,
           model: posCreditNoteModel,
           fieldName: "creditNoteNo",
@@ -331,13 +331,26 @@ export const getAllReturnPosOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, customerId, type, startDate, endDate, activeFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, customerId, type, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     page = Number(page) || 1;
     limit = Number(limit) || 10;
 
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
+    }
+
     if (customerId) criteria.customerId = new ObjectId(customerId);
     if (type) criteria.type = type;
     if (activeFilter) criteria.isActive = activeFilter === "true" ? true : false;
@@ -914,12 +927,18 @@ export const returnPosOrderDropDown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { error, value } = returnPosOrderDropDownSchema.validate(req.query);
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    const branchId = user?.branchId?._id;
+    // const { error, value } = returnPosOrderDropDownSchema.validate(req.query);
+    // if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const { search, customerId, type } = value;
+    const { search, customerId, type, companyFilter, branchFilter } = req.query;
+    
     let criteria: any = { isDeleted: false, isActive: true };
+   
     if (companyId) criteria.companyId = companyId;
+    if (companyFilter) criteria.companyId = companyFilter;
+    if (branchId) criteria.branchId = branchId;
+    if (branchFilter) criteria.branchId = branchFilter;
     if (customerId) criteria.customerId = new ObjectId(customerId);
     if (type) criteria.type = type;
 

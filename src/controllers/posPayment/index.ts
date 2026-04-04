@@ -187,18 +187,20 @@ export const getAllPosPayment = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-
-    let { page, limit, search, posOrderFilter, voucherTypeFilter, paymentTypeFilter, startDate, endDate, companyFilter, partyFilter, activeFilter, date } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, posOrderFilter, voucherTypeFilter, paymentTypeFilter, startDate, endDate, companyFilter, branchFilter, partyFilter, activeFilter, date } = req.query;
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
+    if (companyFilter) criteria.companyId = companyFilter;
+    if (branchId) criteria.branchId = branchId;
+    if (branchFilter) criteria.branchId = branchFilter;
     if (posOrderFilter) criteria.posOrderId = posOrderFilter;
     if (voucherTypeFilter) criteria.voucherType = voucherTypeFilter;
     if (paymentTypeFilter) criteria.paymentType = paymentTypeFilter;
     if (partyFilter) criteria.partyId = partyFilter;
-    if (companyFilter) criteria.companyId = companyId;
     if (activeFilter) criteria.isActive = activeFilter === "true" ? true : false;
     if (date) criteria.date = date;
 

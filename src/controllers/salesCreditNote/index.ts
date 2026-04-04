@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
-import { contactModel, salesCreditNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, employeeModel, SalesOrderModel, InvoiceModel, userModel } from "../../database";
+import { contactModel, salesCreditNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, SalesOrderModel, InvoiceModel, userModel } from "../../database";
 import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addSalesCreditNoteSchema, deleteSalesCreditNoteSchema, editSalesCreditNoteSchema, getSalesCreditNoteSchema } from "../../validation";
 
@@ -156,7 +156,7 @@ export const editSalesCreditNote = async (req, res) => {
     }
 
     if (value?.salesManId && value?.salesManId !== isExist?.salesManId?.toString()) {
-      if (!(await checkIdExist(employeeModel, value?.salesManId, "Salesman", res))) return;
+      if (!(await checkIdExist(userModel, value?.salesManId, "Salesman", res))) return;
     }
 
     if (value?.termsAndConditionIds) {
@@ -236,7 +236,8 @@ export const getAllSalesCreditNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, statusFilter, startDate, endDate, customerFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, activeFilter, companyFilter, branchFilter, statusFilter, startDate, endDate, customerFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -248,6 +249,14 @@ export const getAllSalesCreditNote = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (search) {
@@ -443,7 +452,8 @@ export const getSalesCreditNoteDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { customerFilter, search, companyFilter, statusFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    const { customerFilter, search, companyFilter, statusFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -452,6 +462,14 @@ export const getSalesCreditNoteDropdown = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerFilter) {

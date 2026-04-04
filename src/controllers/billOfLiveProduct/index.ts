@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { billOfLiveProductModel, productModel, recipeModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
 import { addBillOfLiveProductSchema, deleteBillOfLiveProductSchema, editBillOfLiveProductSchema, getBillOfLiveProductSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -15,8 +15,9 @@ export const addBillOfLiveProduct = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
-
+    value.branchId = await checkBranch(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     const isExist = await getFirstMatch(billOfLiveProductModel, { companyId: value.companyId, number: value.number, isDeleted: false }, {}, {});
 
@@ -55,17 +56,11 @@ export const addBillOfLiveProduct = async (req, res) => {
         // Decrease ingredient stock (raw materials consumed)
         if (product?.ingredients?.length) {
           for (const ingredient of product.ingredients) {
-            await stockModel.findOneAndUpdate(
-              { productId: ingredient.productId, companyId: value.companyId, isDeleted: false },
-              { $inc: { qty: -(ingredient.useQty || 0) } }
-            );
+            await stockModel.findOneAndUpdate({ productId: ingredient.productId, companyId: value.companyId, isDeleted: false }, { $inc: { qty: -(ingredient.useQty || 0) } });
           }
         }
         // Increase created product stock (finished goods produced)
-        await stockModel.findOneAndUpdate(
-          { productId: product.productId, companyId: value.companyId, isDeleted: false },
-          { $inc: { qty: product.qty || 0 } }
-        );
+        await stockModel.findOneAndUpdate({ productId: product.productId, companyId: value.companyId, isDeleted: false }, { $inc: { qty: product.qty || 0 } });
       }
     }
 
@@ -137,17 +132,11 @@ export const editBillOfLiveProductById = async (req, res) => {
         // Restore old ingredient stock (add back what was consumed)
         if (oldProduct?.ingredients?.length) {
           for (const oldIngredient of oldProduct.ingredients) {
-            await stockModel.findOneAndUpdate(
-              { productId: oldIngredient.productId, companyId: value.companyId, isDeleted: false },
-              { $inc: { qty: oldIngredient.useQty || 0 } }
-            );
+            await stockModel.findOneAndUpdate({ productId: oldIngredient.productId, companyId: value.companyId, isDeleted: false }, { $inc: { qty: oldIngredient.useQty || 0 } });
           }
         }
         // Remove old created product stock (subtract what was produced)
-        await stockModel.findOneAndUpdate(
-          { productId: oldProduct.productId, companyId: value.companyId, isDeleted: false },
-          { $inc: { qty: -(oldProduct.qty || 0) } }
-        );
+        await stockModel.findOneAndUpdate({ productId: oldProduct.productId, companyId: value.companyId, isDeleted: false }, { $inc: { qty: -(oldProduct.qty || 0) } });
       }
     }
 
@@ -157,17 +146,11 @@ export const editBillOfLiveProductById = async (req, res) => {
         // Decrease ingredient stock (raw materials consumed)
         if (newProduct?.ingredients?.length) {
           for (const newIngredient of newProduct.ingredients) {
-            await stockModel.findOneAndUpdate(
-              { productId: newIngredient.productId, companyId: value.companyId, isDeleted: false },
-              { $inc: { qty: -(newIngredient.useQty || 0) } }
-            );
+            await stockModel.findOneAndUpdate({ productId: newIngredient.productId, companyId: value.companyId, isDeleted: false }, { $inc: { qty: -(newIngredient.useQty || 0) } });
           }
         }
         // Increase created product stock (finished goods produced)
-        await stockModel.findOneAndUpdate(
-          { productId: newProduct.productId, companyId: value.companyId, isDeleted: false },
-          { $inc: { qty: newProduct.qty || 0 } }
-        );
+        await stockModel.findOneAndUpdate({ productId: newProduct.productId, companyId: value.companyId, isDeleted: false }, { $inc: { qty: newProduct.qty || 0 } });
       }
     }
 
@@ -206,17 +189,11 @@ export const deleteBillOfLiveProductById = async (req, res) => {
         // Restore ingredient stock (add back what was consumed)
         if (product?.ingredients?.length) {
           for (const ingredient of product.ingredients) {
-            await stockModel.findOneAndUpdate(
-              { productId: ingredient.productId, companyId: billOfLiveProduct.companyId, isDeleted: false },
-              { $inc: { qty: ingredient.useQty || 0 } }
-            );
+            await stockModel.findOneAndUpdate({ productId: ingredient.productId, companyId: billOfLiveProduct.companyId, isDeleted: false }, { $inc: { qty: ingredient.useQty || 0 } });
           }
         }
         // Remove created product stock (subtract what was produced)
-        await stockModel.findOneAndUpdate(
-          { productId: product.productId, companyId: billOfLiveProduct.companyId, isDeleted: false },
-          { $inc: { qty: -(product.qty || 0) } }
-        );
+        await stockModel.findOneAndUpdate({ productId: product.productId, companyId: billOfLiveProduct.companyId, isDeleted: false }, { $inc: { qty: -(product.qty || 0) } });
       }
     }
 
@@ -234,7 +211,8 @@ export const getAllBillOfLiveProduct = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -244,6 +222,14 @@ export const getAllBillOfLiveProduct = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (search) {
@@ -350,13 +336,16 @@ export const getBillOfLiveProductDropdown = async (req, res) => {
   try {
     let { user } = req?.headers,
       companyId = user?.companyId?._id;
-
-    const { companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    const { companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (companyId) criteria.companyId = companyId;
     if (companyFilter) criteria.companyId = companyFilter;
+
+    if (branchId) criteria.branchId = branchId;
+    if (branchFilter) criteria.branchId = branchFilter;
 
     const response = await getDataWithSorting(
       billOfLiveProductModel,
@@ -378,4 +367,3 @@ export const getBillOfLiveProductDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-

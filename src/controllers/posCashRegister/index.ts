@@ -2,7 +2,7 @@ import { PosCashRegisterModel, bankModel, branchModel, CashControlModel, PosOrde
 import { apiResponse, HTTP_STATUS, CASH_REGISTER_STATUS, CASH_CONTROL_TYPE, POS_VOUCHER_TYPE, PAYMENT_MODE, POS_ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import mongoose from "mongoose";
 import { checkBranch, checkCompany, checkIdExist, createOne, getFirstMatch, updateData, reqInfo, countData, getDataWithSorting, responseMessage, applyDateFilter, getAndIncrementPrefix } from "../../helper";
-import { addPosCashRegisterSchema, editPosCashRegisterSchema, getPosCashRegisterSchema, deletePosCashRegisterSchema,  posCashRegisterDropDownSchema } from "../../validation";
+import { addPosCashRegisterSchema, editPosCashRegisterSchema, getPosCashRegisterSchema, deletePosCashRegisterSchema, posCashRegisterDropDownSchema } from "../../validation";
 
 export const addPosCashRegister = async (req, res) => {
   reqInfo(req);
@@ -133,7 +133,7 @@ export const getAllPosCashRegister = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-
+    const branchId = user?.branchId?._id;
     // const { error, value } = getAllPosCashRegisterSchema.validate(req.query);
     // if (error) {
     //   return res
@@ -155,8 +155,9 @@ export const getAllPosCashRegister = async (req, res) => {
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
     if (companyFilter) criteria.companyId = companyFilter;
-    if (salesManFilter) criteria.salesManId = salesManFilter;
+    if (branchId) criteria.branchId = branchId;
     if (branchFilter) criteria.branchId = branchFilter;
+    if (salesManFilter) criteria.salesManId = salesManFilter;
     if (statusFilter) criteria.status = statusFilter;
 
     applyDateFilter(criteria, startDate as string, endDate as string);
@@ -260,17 +261,16 @@ export const posCashRegisterDropDown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
 
-    const { error, value } = posCashRegisterDropDownSchema.validate(req.query);
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
+    const { statusFilter, companyFilter, branchFilter } = req.query;
 
-    const { branchId, status } = value;
     let criteria: any = { isDeleted: false, isActive: true };
     if (companyId) criteria.companyId = companyId;
+    if (companyFilter) criteria.companyId = companyFilter;
     if (branchId) criteria.branchId = branchId;
-    if (status) criteria.status = status;
+    if (branchFilter) criteria.branchId = branchFilter;
+    if (statusFilter) criteria.status = statusFilter;
 
     const response = await PosCashRegisterModel.find(criteria, {
       _id: 1,

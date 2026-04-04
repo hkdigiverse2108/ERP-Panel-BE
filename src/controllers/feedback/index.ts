@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { feedbackModel, PosOrderModel, contactModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
 import { addFeedbackSchema, deleteFeedbackSchema, editFeedbackSchema, getFeedbackSchema } from "../../validation/feedback";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -17,9 +17,9 @@ export const addFeedback = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
-
+    value.branchId = await checkBranch(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
     // Validate invoice if provided
     if (value.orderId && !(await checkIdExist(PosOrderModel, value.orderId, "Order", res))) return;
 
@@ -119,7 +119,8 @@ export const getAllFeedback = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, customerId, rating, startDate, endDate, activeFilter, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, customerId, rating, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -131,6 +132,14 @@ export const getAllFeedback = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";

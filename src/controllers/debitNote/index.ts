@@ -127,7 +127,8 @@ export const getAllDebitNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, startDate, endDate, companyFilter, activeFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, startDate, endDate, companyFilter, activeFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -140,6 +141,15 @@ export const getAllDebitNote = async (req, res) => {
     if (companyFilter) {
       criteria.companyId = companyFilter;
     }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
+    }
+
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {

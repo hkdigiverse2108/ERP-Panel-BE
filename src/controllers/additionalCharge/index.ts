@@ -1,7 +1,7 @@
-import { USER_TYPES } from './../../common/enum';
+import { USER_TYPES } from "./../../common/enum";
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { additionalChargeModel, taxModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
 import { addAdditionalChargeSchema, deleteAdditionalChargeSchema, editAdditionalChargeSchema, getAdditionalChargeSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -15,6 +15,7 @@ export const addAdditionalCharge = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!(await checkIdExist(taxModel, value?.taxId, "Tax", res))) return;
 
@@ -97,16 +98,21 @@ export const getAllAdditionalCharge = async (req, res) => {
   try {
     const { user } = req.headers;
 
-    let { page, limit, search, startDate, endDate, activeFilter, companyFilter, typeFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter, typeFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
     if (user?.userType !== USER_TYPES.SUPER_ADMIN) {
       criteria.companyId = user?.companyId;
+      criteria.branchId = user?.branchId;
     }
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchFilter) {
+      criteria.branchId = new ObjectId(branchFilter);
     }
 
     if (typeFilter) {
@@ -207,9 +213,7 @@ export const getAdditionalChargeDropdown = async (req, res) => {
       { _id: 1, name: 1, type: 1, defaultValue: 1, taxId: 1 },
       {
         sort: { name: 1 },
-        populate: [
-          { path: "taxId", select: "name taxPercentage" },
-        ],
+        populate: [{ path: "taxId", select: "name taxPercentage" }],
       },
     );
 

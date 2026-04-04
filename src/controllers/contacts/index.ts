@@ -1,26 +1,7 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { contactModel, locationModel } from "../../database";
-import {
-  checkCompany,
-  checkIdExist,
-  countData,
-  createOne,
-  getData,
-  getDataWithSorting,
-  getFirstMatch,
-  reqInfo,
-  responseMessage,
-  updateData,
-  applyDateFilter,
-  extractDataFromFile,
-} from "../../helper";
-import {
-  addContactSchema,
-  deleteContactSchema,
-  editContactSchema,
-  getContactSchema,
-  addBulkContactSchema,
-} from "../../validation";
+import { checkCompany, checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, extractDataFromFile, checkBranch } from "../../helper";
+import { addContactSchema, deleteContactSchema, editContactSchema, getContactSchema, addBulkContactSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -31,32 +12,12 @@ export const addContact = async (req, res) => {
 
     let { error, value } = addContactSchema.validate(req.body);
 
-    if (error)
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
-
-    if (!value.companyId) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            responseMessage?.fieldIsRequired("Company Id"),
-            {},
-            {},
-          ),
-        );
-    }
+    value.branchId = await checkBranch(user, value);
+    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     const phoneNo = value?.phoneNo?.phoneNo;
     const whatsappNo = value?.whatsappNo?.phoneNo;
@@ -69,34 +30,18 @@ export const addContact = async (req, res) => {
     let isExist = null;
 
     if (orCondition.length) {
-      isExist = await getFirstMatch(
-        contactModel,
-        { $or: orCondition, isDeleted: false },
-        {},
-        {},
-      );
+      isExist = await getFirstMatch(contactModel, { $or: orCondition, isDeleted: false }, {}, {});
 
       if (isExist) {
         let errorText = "";
 
         if (isExist?.email === value?.email) errorText = "Email";
-        else if (Number(isExist?.phoneNo?.phoneNo) === Number(phoneNo))
-          errorText = "Phone number";
-        else if (Number(isExist?.whatsappNo?.phoneNo) === Number(whatsappNo))
-          errorText = "Whatsapp number";
+        else if (Number(isExist?.phoneNo?.phoneNo) === Number(phoneNo)) errorText = "Phone number";
+        else if (Number(isExist?.whatsappNo?.phoneNo) === Number(whatsappNo)) errorText = "Whatsapp number";
         else if (isExist?.panNo === value?.panNo) errorText = "PAN Number";
         else errorText = "User";
 
-        return res
-          .status(HTTP_STATUS.CONFLICT)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.CONFLICT,
-              responseMessage.dataAlreadyExist(errorText),
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(errorText), {}, {}));
       }
     }
 
@@ -104,40 +49,12 @@ export const addContact = async (req, res) => {
     value.updatedBy = user?._id || null;
 
     const response = await createOne(contactModel, value);
-    if (!response)
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            responseMessage?.addDataError,
-            {},
-            {},
-          ),
-        );
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
-    return res
-      .status(HTTP_STATUS.CREATED)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.CREATED,
-          responseMessage?.addDataSuccess("Contact"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Contact"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -149,36 +66,12 @@ export const editContactById = async (req, res) => {
 
     const { error, value } = editContactSchema.validate(req.body);
 
-    if (error)
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0].message,
-            {},
-            {},
-          ),
-        );
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
-    let isExist = await getFirstMatch(
-      contactModel,
-      { _id: value?.contactId, isDeleted: false },
-      {},
-      {},
-    );
+    let isExist = await getFirstMatch(contactModel, { _id: value?.contactId, isDeleted: false }, {}, {});
 
     if (!isExist) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("Contact"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Contact"), {}, {}));
     }
 
     const phoneNo = value?.phoneNo?.phoneNo;
@@ -191,80 +84,31 @@ export const editContactById = async (req, res) => {
     if (value?.panNo) orCondition.push({ panNo: value?.panNo });
 
     if (orCondition.length) {
-      isExist = await getFirstMatch(
-        contactModel,
-        { $or: orCondition, isDeleted: false, _id: { $ne: value?.contactId } },
-        {},
-        {},
-      );
+      isExist = await getFirstMatch(contactModel, { $or: orCondition, isDeleted: false, _id: { $ne: value?.contactId } }, {}, {});
 
       if (isExist) {
         let errorText = "";
 
         if (isExist?.email === value?.email) errorText = "Email";
-        else if (Number(isExist?.phoneNo?.phoneNo) === Number(phoneNo))
-          errorText = "Phone number";
-        else if (Number(isExist?.whatsappNo?.phoneNo) === Number(whatsappNo))
-          errorText = "Whatsapp number";
+        else if (Number(isExist?.phoneNo?.phoneNo) === Number(phoneNo)) errorText = "Phone number";
+        else if (Number(isExist?.whatsappNo?.phoneNo) === Number(whatsappNo)) errorText = "Whatsapp number";
         else if (isExist?.panNo === value?.panNo) errorText = "PAN Number";
         else errorText = "User";
 
-        return res
-          .status(HTTP_STATUS.CONFLICT)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.CONFLICT,
-              responseMessage.dataAlreadyExist(errorText),
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(errorText), {}, {}));
       }
     }
 
     value.updatedBy = user?._id || null;
 
-    const response = await updateData(
-      contactModel,
-      { _id: value?.contactId, isDeleted: false },
-      value,
-      {},
-    );
+    const response = await updateData(contactModel, { _id: value?.contactId, isDeleted: false }, value, {});
 
-    if (!response)
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            responseMessage?.updateDataError("Contact"),
-            {},
-            {},
-          ),
-        );
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Contact"), {}, {}));
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.updateDataSuccess("Contact details"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Contact details"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -274,17 +118,7 @@ export const deleteContactById = async (req, res) => {
     const { user } = req?.headers;
     let { error, value } = deleteContactSchema.validate(req.params);
 
-    if (error)
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     if (!(await checkIdExist(contactModel, value?.id, "Contact", res))) return;
 
@@ -293,47 +127,14 @@ export const deleteContactById = async (req, res) => {
       updatedBy: user?._id || null,
     };
 
-    const response = await updateData(
-      contactModel,
-      { _id: new ObjectId(value?.id) },
-      payload,
-      {},
-    );
+    const response = await updateData(contactModel, { _id: new ObjectId(value?.id) }, payload, {});
 
-    if (!response)
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            responseMessage?.deleteDataError("Contact details"),
-            {},
-            {},
-          ),
-        );
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Contact details"), {}, {}));
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.deleteDataSuccess("Contact details"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Contact details"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -342,16 +143,8 @@ export const getAllContact = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let {
-      page,
-      limit,
-      search,
-      startDate,
-      endDate,
-      activeFilter,
-      typeFilter,
-      companyFilter,
-    } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, startDate, endDate, activeFilter, typeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -363,14 +156,16 @@ export const getAllContact = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
+    }
+
     if (search) {
-      criteria.$or = [
-        { email: { $regex: search, $options: "si" } },
-        { panNo: { $regex: search, $options: "si" } },
-        { phoneNo: { $regex: search, $options: "si" } },
-        { companyName: { $regex: search, $options: "si" } },
-        { whatsappNo: { $regex: search, $options: "si" } },
-      ];
+      criteria.$or = [{ email: { $regex: search, $options: "si" } }, { panNo: { $regex: search, $options: "si" } }, { phoneNo: { $regex: search, $options: "si" } }, { companyName: { $regex: search, $options: "si" } }, { whatsappNo: { $regex: search, $options: "si" } }];
     }
 
     if (typeFilter) criteria.contactType = typeFilter;
@@ -397,40 +192,17 @@ export const getAllContact = async (req, res) => {
       options.limit = parseInt(limit);
     }
 
-    const response = await getDataWithSorting(
-      contactModel,
-      criteria,
-      {},
-      options,
-    );
+    const response = await getDataWithSorting(contactModel, criteria, {}, options);
     const totalData = await countData(contactModel, criteria);
 
     const totalPages = Math.ceil(totalData / limit) || 1;
 
     const stateObj = { page, limit, totalPages };
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("Contact"),
-          { contact_data: response, totalData, state: stateObj },
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Contact"), { contact_data: response, totalData, state: stateObj }, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -439,17 +211,7 @@ export const getContactById = async (req, res) => {
   try {
     const { error, value } = getContactSchema.validate(req.params);
 
-    if (error)
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0].message,
-            {},
-            {},
-          ),
-        );
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
     const response = await getFirstMatch(
       contactModel,
@@ -469,40 +231,12 @@ export const getContactById = async (req, res) => {
       },
     );
 
-    if (!response)
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("Contact"),
-            {},
-            {},
-          ),
-        );
+    if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Contact"), {}, {}));
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("Contact"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Contact"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -511,7 +245,8 @@ export const getContactDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { typeFilter, search, companyFilter, startDate, endDate } = req.query; // typeFilter: 'supplier', 'customer', 'both'
+    const branchId = user?.branchId?._id;
+    const { typeFilter, search, companyFilter, branchFilter, startDate, endDate } = req.query; // typeFilter: 'supplier', 'customer', 'both'
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -521,6 +256,14 @@ export const getContactDropdown = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     // Filter by contact type
@@ -540,13 +283,7 @@ export const getContactDropdown = async (req, res) => {
     // Search filter
     if (search) {
       const searchCriteria = {
-        $or: [
-          { firstName: { $regex: search, $options: "si" } },
-          { lastName: { $regex: search, $options: "si" } },
-          { companyName: { $regex: search, $options: "si" } },
-          { email: { $regex: search, $options: "si" } },
-          { "phoneNo.phoneNo": { $regex: search, $options: "si" } },
-        ],
+        $or: [{ firstName: { $regex: search, $options: "si" } }, { lastName: { $regex: search, $options: "si" } }, { companyName: { $regex: search, $options: "si" } }, { email: { $regex: search, $options: "si" } }, { "phoneNo.phoneNo": { $regex: search, $options: "si" } }],
       };
       criteria = { ...criteria, ...searchCriteria };
     }
@@ -584,8 +321,7 @@ export const getContactDropdown = async (req, res) => {
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
-      name:
-        item.companyName || `${item.firstName} ${item.lastName || ""}`.trim(),
+      name: item.companyName || `${item.firstName} ${item.lastName || ""}`.trim(),
       firstName: item.firstName,
       lastName: item.lastName,
       customerType: item.customerType,
@@ -597,28 +333,10 @@ export const getContactDropdown = async (req, res) => {
       dob: item.dob,
     }));
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("Contact Dropdown"),
-          dropdownData,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Contact Dropdown"), dropdownData, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -628,37 +346,16 @@ export const addBulkContact = async (req, res) => {
     const { user } = req.headers;
 
     if (!req.file) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            responseMessage?.fieldIsRequired("File"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("File"), {}, {}));
     }
 
     const { data, error: extractError } = extractDataFromFile(req.file);
     if (extractError) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(new apiResponse(HTTP_STATUS.BAD_REQUEST, extractError, {}, {}));
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, extractError, {}, {}));
     }
 
-
     if (!Array.isArray(data) || data.length === 0) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "No data found in the file",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "No data found in the file", {}, {}));
     }
 
     const contactsToAdd = [];
@@ -679,16 +376,7 @@ export const addBulkContact = async (req, res) => {
       });
 
       // 2. Handle phone numbers and other fields that might come as numbers from Excel
-      [
-        "phoneNo",
-        "whatsappNo",
-        "contactNo",
-        "panNo",
-        "gstIn",
-        "pinCode",
-        "accountNumber",
-        "telephoneNo",
-      ].forEach((field) => {
+      ["phoneNo", "whatsappNo", "contactNo", "panNo", "gstIn", "pinCode", "accountNumber", "telephoneNo"].forEach((field) => {
         if (item[field] !== undefined && item[field] !== null) {
           item[field] = String(item[field]).trim();
         }
@@ -720,9 +408,13 @@ export const addBulkContact = async (req, res) => {
       }
 
       value.companyId = await checkCompany(user, value);
-
+      value.branchId = await checkBranch(user, value);
       if (!value.companyId) {
         errors.push({ row: i + 1, error: "Company ID is required" });
+        continue;
+      }
+      if (!value.branchId) {
+        errors.push({ row: i + 1, error: "Branch ID is required" });
         continue;
       }
 
@@ -818,36 +510,16 @@ export const addBulkContact = async (req, res) => {
       value.address = [addressObj];
 
       // Clean up flattened address fields
-      [
-        "gstType",
-        "gstIn",
-        "contactFirstName",
-        "contactLastName",
-        "contactCompanyName",
-        "contactNo",
-        "contactEmail",
-        "addressLine1",
-        "addressLine2",
-        "country",
-        "state",
-        "city",
-        "pinCode",
-      ].forEach((f) => delete value[f]);
+      ["gstType", "gstIn", "contactFirstName", "contactLastName", "contactCompanyName", "contactNo", "contactEmail", "addressLine1", "addressLine2", "country", "state", "city", "pinCode"].forEach((f) => delete value[f]);
 
       // --- Duplicate Check ---
       const orCondition = [];
       if (value.email) orCondition.push({ email: value.email });
-      if (value.phoneNo?.phoneNo)
-        orCondition.push({ "phoneNo.phoneNo": value.phoneNo.phoneNo });
+      if (value.phoneNo?.phoneNo) orCondition.push({ "phoneNo.phoneNo": value.phoneNo.phoneNo });
       if (value.panNo) orCondition.push({ panNo: value.panNo });
 
       if (orCondition.length) {
-        const isExist = await getFirstMatch(
-          contactModel,
-          { $or: orCondition, isDeleted: false, companyId: value.companyId },
-          {},
-          {},
-        );
+        const isExist = await getFirstMatch(contactModel, { $or: orCondition, isDeleted: false, companyId: value.companyId }, {}, {});
         if (isExist) {
           errors.push({
             row: i + 1,
@@ -863,53 +535,17 @@ export const addBulkContact = async (req, res) => {
     }
 
     if (errors.length > 0) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "Bulk upload failed due to some errors.",
-            {},
-            { errors },
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Bulk upload failed due to some errors.", {}, { errors }));
     }
 
     const response = await contactModel.insertMany(contactsToAdd);
     if (!response) {
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            responseMessage?.addDataError,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.addDataSuccess("Bulk Contacts"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Bulk Contacts"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };

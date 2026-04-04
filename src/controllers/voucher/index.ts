@@ -141,7 +141,8 @@ export const getAllVoucher = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, type, startDate, endDate, activeFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, type, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -149,6 +150,18 @@ export const getAllVoucher = async (req, res) => {
     let criteria: any = { isDeleted: false };
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (type) {

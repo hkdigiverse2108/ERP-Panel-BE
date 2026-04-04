@@ -171,16 +171,19 @@ export const getAllPosCreditNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
 
-    let { page, limit, search, customerFilter, startDate, endDate, companyFilter, statusFilter } = req.query;
+    let { page, limit, search, customerFilter, startDate, endDate, companyFilter, branchFilter, statusFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
-    if (customerFilter) criteria.customerId = new ObjectId(customerFilter);
     if (companyFilter) criteria.companyId = new ObjectId(companyFilter);
+    if (branchId) criteria.branchId = branchId;
+    if (branchFilter) criteria.branchId = new ObjectId(branchFilter);
+    if (customerFilter) criteria.customerId = new ObjectId(customerFilter);
     if (statusFilter) criteria.status = statusFilter;
 
     if (search) {
@@ -365,19 +368,21 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { error, value } = getCreditNoteDropdownSchema.validate(req.query);
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
+    // const { error, value } = getCreditNoteDropdownSchema.validate(req.query);
+    // if (error) {
+    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    // }
 
-    const { customerFilter, typeFilter, companyFilter } = value;
+    const { customerFilter, typeFilter, companyFilter, branchFilter } = req.query;
 
     let companyId = companyFilter || user?.companyId?._id;
+    let branchId = branchFilter || user?.branchId?._id;
     let response: any[] = [];
 
     if (typeFilter === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
       let criteria: any = { isDeleted: false, creditsRemaining: { $gt: 0 }, status: POS_CREDIT_NOTE_STATUS.AVAILABLE };
       if (companyId) criteria.companyId = new ObjectId(companyId);
+      if (branchId) criteria.branchId = new ObjectId(branchId);
       if (customerFilter) criteria.customerId = new ObjectId(customerFilter);
 
       const data = await posCreditNoteModel.find(criteria).select("creditNoteNo customerId").sort({ createdAt: -1 });
@@ -394,6 +399,7 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
         amount: { $gt: 0 },
       };
       if (companyId) criteria.companyId = new ObjectId(companyId);
+      if (branchId) criteria.branchId = new ObjectId(branchId);
       if (customerFilter) criteria.partyId = new ObjectId(customerFilter);
 
       const data = await PosPaymentModel.find(criteria).select("paymentNo partyId").sort({ createdAt: -1 });

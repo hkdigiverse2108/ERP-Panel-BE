@@ -666,7 +666,7 @@ export const posOrderDropDown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-
+    const branchId = user?.branchId?._id;
     const { customerFilter, branchFilter, companyFilter, duePaymentFilter, search, returnableFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
@@ -675,17 +675,19 @@ export const posOrderDropDown = async (req, res) => {
       criteria.companyId = companyId;
     }
 
-    if (customerFilter) {
-      criteria.customerId = new ObjectId(customerFilter);
-    }
-
-    if (branchFilter) {
-      criteria.branchId = new ObjectId(branchFilter);
-    }
-
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
     }
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+    if (branchFilter) {
+      criteria.branchId = new ObjectId(branchFilter);
+    }
+    if (customerFilter) {
+      criteria.customerId = new ObjectId(customerFilter);
+    } 
+
 
     if (duePaymentFilter === true || duePaymentFilter === "true") {
       criteria.dueAmount = { $gt: 0 };
@@ -721,6 +723,7 @@ export const getAllPosOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
     let { page, limit, search, activeFilter, companyFilter, statusFilter, customerFilter, duePaymentFilter, paymentStatusFilter, methodFilter, branchFilter, tableNoFilter, orderTypeFilter, startDate, endDate, lastBillFilter, orderListFilter } = req.query;
 
     page = Number(page);
@@ -736,6 +739,12 @@ export const getAllPosOrder = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+    if (branchFilter) {
+      criteria.branchId = new ObjectId(branchFilter);
+    }
     if (customerFilter) {
       criteria.customerId = new ObjectId(customerFilter);
     }
@@ -765,11 +774,6 @@ export const getAllPosOrder = async (req, res) => {
     if (orderTypeFilter) {
       criteria.orderType = orderTypeFilter;
     }
-
-    if (branchFilter) {
-      criteria.branchId = branchFilter;
-    }
-
     if (tableNoFilter) {
       criteria.tableNo = tableNoFilter;
     }
@@ -1082,11 +1086,21 @@ export const getShortHoldOrders = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { search } = req.query;
+    const branchId = user?.branchId?._id;
+    const { search, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false, status: POS_ORDER_STATUS.HOLD };
     if (companyId) {
       criteria.companyId = companyId;
+    }
+    if (companyFilter) {
+      criteria.companyId = new ObjectId(companyFilter);
+    }
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+    if (branchFilter) {
+      criteria.branchId = new ObjectId(branchFilter);
     }
 
     if (search) {
@@ -1231,540 +1245,6 @@ export const releasePosOrder = async (req, res) => {
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order released from hold successfully", response, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
-
-// ================================== Not used functions ==================================
-
-export const getPosCashControl = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
-
-    const { error, value } = getPosCashControlSchema.validate(req.query);
-
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
-
-    const { branchId, date } = value;
-
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
-
-    // Validate Branch
-    if (!(await checkIdExist(branchModel, branchId, "Branch", res))) return;
-
-    // Use today's date if not provided
-    const targetDate = date ? new Date(date as string) : new Date();
-    targetDate.setHours(0, 0, 0, 0);
-
-    // Find or create cash control for the day
-    let cashControl = await getFirstMatch(
-      PosCashControlModel,
-      { companyId, branchId, date: targetDate, isDeleted: false },
-      {},
-      {
-        populate: [
-          { path: "branchId", select: "name" },
-          { path: "closedBy", select: "firstName lastName" },
-          { path: "createdBy", select: "fullName userType" },
-        ],
-      },
-    );
-
-    // If not found, create a new one with default values
-    if (!cashControl) {
-      // Get yesterday's closing cash as today's opening cash
-      const yesterday = new Date(targetDate);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayCash = await getFirstMatch(PosCashControlModel, { companyId, branchId, date: yesterday, isDeleted: false }, {}, {});
-
-      const cashControlData = {
-        companyId,
-        branchId,
-        date: targetDate,
-        openingCash: yesterdayCash?.closingCash || 0,
-        closingCash: 0,
-        expectedCash: yesterdayCash?.closingCash || 0,
-        actualCash: 0,
-        difference: 0,
-        isClosed: false,
-        createdBy: user?._id || null,
-        updatedBy: user?._id || null,
-      };
-
-      cashControl = await createOne(PosCashControlModel, cashControlData);
-    }
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Cash Control"), cashControl, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
-
-export const updatePosCashControl = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
-
-    const { error, value } = updatePosCashControlSchema.validate(req.body);
-
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
-
-    const { branchId, date, openingCash, actualCash, notes, isClosed } = value;
-
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
-
-    if (!branchId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Branch ID is required", {}, {}));
-    }
-
-    // Validate Branch
-    if (!(await checkIdExist(branchModel, branchId, "Branch", res))) return;
-
-    // Use today's date if not provided
-    const targetDate = date ? new Date(date) : new Date();
-    targetDate.setHours(0, 0, 0, 0);
-
-    // Find existing cash control
-    let cashControl = await getFirstMatch(PosCashControlModel, { companyId, branchId, date: targetDate, isDeleted: false }, {}, {});
-
-    if (!cashControl) {
-      // Create new if doesn't exist
-      const cashControlData = {
-        companyId,
-        branchId,
-        date: targetDate,
-        openingCash: openingCash || 0,
-        actualCash: actualCash || 0,
-        notes: notes || "",
-        isClosed: isClosed || false,
-        createdBy: user?._id || null,
-        updatedBy: user?._id || null,
-      };
-
-      cashControl = await createOne(PosCashControlModel, cashControlData);
-    } else {
-      // Update existing
-      const updateDataPayload: any = {
-        updatedBy: user?._id || null,
-      };
-
-      if (openingCash !== undefined) updateDataPayload.openingCash = openingCash;
-      if (actualCash !== undefined) updateDataPayload.actualCash = actualCash;
-      if (notes !== undefined) updateDataPayload.notes = notes;
-      if (isClosed !== undefined) {
-        updateDataPayload.isClosed = isClosed;
-        if (isClosed) {
-          updateDataPayload.closedBy = user?._id || null;
-          updateDataPayload.closedAt = new Date();
-        }
-      }
-
-      // Calculate expected cash (opening + sales - expenses)
-      // Get total sales for the day
-      const startOfDay = new Date(targetDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(targetDate);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      const salesResult = await PosOrderModel.aggregate([
-        {
-          $match: {
-            companyId: new ObjectId(companyId),
-            branchId: new ObjectId(branchId),
-            date: { $gte: startOfDay, $lte: endOfDay },
-            paymentMethod: "cash",
-            paymentStatus: "paid",
-            isDeleted: false,
-          },
-        },
-        { $group: { _id: null, total: { $sum: "$paidAmount" } } },
-      ]);
-
-      const totalSales = salesResult.length > 0 ? salesResult[0].total : 0;
-
-      // Get total expenses for the day
-      const expensesResult = await voucherModel.aggregate([
-        {
-          $match: {
-            companyId: new ObjectId(companyId),
-            type: VOUCHAR_TYPE.EXPENSE,
-            date: { $gte: startOfDay, $lte: endOfDay },
-            bankAccountId: { $exists: true }, // Cash account
-            isDeleted: false,
-          },
-        },
-        { $group: { _id: null, total: { $sum: "$amount" } } },
-      ]);
-
-      const totalExpenses = expensesResult.length > 0 ? expensesResult[0].total : 0;
-
-      const opening = updateDataPayload.openingCash !== undefined ? updateDataPayload.openingCash : cashControl.openingCash;
-      updateDataPayload.expectedCash = opening + totalSales - totalExpenses;
-      updateDataPayload.closingCash = updateDataPayload.actualCash !== undefined ? updateDataPayload.actualCash : cashControl.actualCash;
-      updateDataPayload.difference = updateDataPayload.expectedCash - updateDataPayload.closingCash;
-
-      cashControl = await updateData(PosCashControlModel, { _id: cashControl._id }, updateDataPayload, {});
-    }
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("POS Cash Control"), cashControl, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
-
-export const getCombinedPayments = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
-
-    const { error, value } = getCombinedPaymentsSchema.validate(req.query);
-
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
-
-    let { page, limit, search, startDate, endDate, branchId } = value;
-
-    page = Number(page);
-    limit = Number(limit);
-
-    if (!companyId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Company"), {}, {}));
-    }
-
-    let criteria: any = {
-      isDeleted: false,
-      companyId,
-      type: {
-        $in: [VOUCHAR_TYPE.RECEIPT, VOUCHAR_TYPE.PAYMENT, VOUCHAR_TYPE.EXPENSE],
-      },
-    };
-
-    if (search) {
-      criteria.$or = [{ voucherNo: { $regex: search, $options: "si" } }, { notes: { $regex: search, $options: "si" } }];
-    }
-
-    if (startDate && endDate) {
-      const start = new Date(startDate as string);
-      const end = new Date(endDate as string);
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.date = { $gte: start, $lte: end };
-      }
-    }
-
-    const options = {
-      sort: { createdAt: -1 },
-      populate: [
-        { path: "partyId", select: "firstName lastName companyName" },
-        { path: "bankAccountId", select: "name" },
-        { path: "createdBy", select: "fullName userType" },
-      ],
-      skip: (page - 1) * limit,
-      limit,
-    };
-
-    const response = await getDataWithSorting(voucherModel, criteria, {}, options);
-    const totalData = await countData(voucherModel, criteria);
-
-    const totalPages = Math.ceil(totalData / limit) || 1;
-
-    const state = {
-      page,
-      limit,
-      totalPages,
-    };
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payments"), { payments_data: response, state }, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
-export const convertToInvoice = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { user } = req?.headers;
-    const { error, value } = convertToInvoiceSchema.validate(req.body);
-
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
-
-    const posOrder = await getFirstMatch(PosOrderModel, { _id: value?.posOrderId, isDeleted: false }, {}, {});
-
-    if (!posOrder) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
-    }
-
-    if (!posOrder.customerId) {
-      const walkInCustomer = await getFirstMatch(
-        contactModel,
-        {
-          companyName: "Walk-in Customer",
-          companyId: posOrder.companyId,
-          isDeleted: false,
-        },
-        {},
-        {},
-      );
-      if (!walkInCustomer) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Please create a default 'Walk-in Customer' contact for POS orders", {}, {}));
-      }
-      posOrder.customerId = walkInCustomer._id;
-      posOrder.customerName = walkInCustomer.companyName || "Walk-in Customer";
-    }
-
-    const invoiceData = {
-      documentNo: posOrder.orderNo.replace("POS", "INV"),
-      date: posOrder.date,
-      customerId: posOrder.customerId,
-      customerName: posOrder.customerName || "Walk-in Customer",
-      items: posOrder.items,
-      grossAmount: posOrder.grossAmount,
-      discountAmount: posOrder.discountAmount,
-      taxAmount: posOrder.taxAmount,
-      roundOff: posOrder.roundOff,
-      netAmount: posOrder.netAmount,
-      paidAmount: posOrder.paidAmount,
-      balanceAmount: posOrder.balanceAmount,
-      paymentStatus: posOrder.paymentStatus,
-      status: "active",
-      notes: posOrder.notes,
-      companyId: posOrder.companyId,
-      createdBy: user?._id || null,
-      updatedBy: user?._id || null,
-    };
-
-    const invoice = await createOne(InvoiceModel, invoiceData);
-
-    if (!invoice) {
-      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, "Failed to create invoice", {}, {}));
-    }
-
-    // Update POS order with invoice ID and mark as completed
-    await updateData(
-      PosOrderModel,
-      { _id: value?.posOrderId },
-      {
-        invoiceId: invoice._id,
-        status: "completed",
-        updatedBy: user?._id || null,
-      },
-      {},
-    );
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order converted to invoice successfully", { posOrder, invoice }, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
-
-// Quick add product by name (for POS)
-export const quickAddProduct = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { productName } = req.body;
-
-    if (!productName) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Product name is required", {}, {}));
-    }
-
-    const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
-
-    let criteria: any = {
-      isDeleted: false,
-      isActive: true,
-      name: { $regex: productName, $options: "si" },
-    };
-    if (companyId) {
-      criteria.companyId = companyId;
-    }
-
-    const product = await getFirstMatch(
-      productModel,
-      criteria,
-      {},
-      {
-        populate: [
-          { path: "categoryId", select: "name" },
-          { path: "salesTaxId", select: "name percentage" },
-          { path: "createdBy", select: "fullName userType" },
-        ],
-      },
-    );
-
-    if (!product) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "Product not found", {}, {}));
-    }
-
-    // Return product in POS-friendly format
-    const posProduct = {
-      _id: product._id,
-      name: product.name,
-      itemCode: product.itemCode,
-      sellingPrice: product.sellingPrice || 0,
-      mrp: product.mrp || 0,
-      uom: product.uom,
-      taxId: product.taxId?._id || null,
-      taxPercent: product.taxId?.percentage || 0,
-      stock: product.stock || 0,
-    };
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Product found", posProduct, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
-
-export const holdPosOrder = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { user } = req?.headers;
-    const { error, value } = holdPosOrderSchema.validate(req.body);
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
-
-    const isExist = await getFirstMatch(PosOrderModel, { _id: value?.posOrderId, isDeleted: false }, {}, {});
-
-    if (!isExist) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
-    }
-
-    if (isExist?.status === POS_ORDER_STATUS.HOLD) {
-      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.posAlreadyOnHold, {}, {}));
-    }
-
-    const payload = {
-      status: POS_ORDER_STATUS.HOLD,
-      holdDate: new Date(),
-      updatedBy: user?._id || null,
-    };
-
-    const response = await updateData(PosOrderModel, { _id: value?.posOrderId }, payload, {});
-
-    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Hold POS Order"), {}, {}));
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order put on hold successfully", response, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
-
-export const getCustomerLoyaltyPoints = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { error, value } = getCustomerLoyaltyPointsSchema.validate(req.query);
-
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
-
-    const { customerId } = value;
-
-    if (!customerId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Customer ID is required", {}, {}));
-    }
-
-    // Validate customer
-    if (!(await checkIdExist(contactModel, customerId, "Customer", res))) return;
-
-    const customer = await getFirstMatch(contactModel, { _id: customerId, isDeleted: false }, {}, {});
-
-    if (!customer) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Customer"), {}, {}));
-    }
-
-    return res.status(HTTP_STATUS.OK).json(
-      new apiResponse(
-        HTTP_STATUS.OK,
-        responseMessage?.getDataSuccess("Customer Loyalty Points"),
-        {
-          customerId: customer._id,
-          loyaltyPoints: customer.loyaltyPoints || 0,
-        },
-        {},
-      ),
-    );
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
-
-export const redeemLoyaltyPoints = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { user } = req?.headers;
-
-    const { error, value } = redeemLoyaltyPointsSchema.validate(req.body);
-
-    if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    }
-
-    const { customerId, pointsToRedeem, discountAmount } = value;
-
-    if (!customerId) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Customer ID is required", {}, {}));
-    }
-
-    if (!pointsToRedeem || pointsToRedeem <= 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Points to redeem must be greater than 0", {}, {}));
-    }
-
-    // Validate customer
-    if (!(await checkIdExist(contactModel, customerId, "Customer", res))) return;
-
-    const customer = await getFirstMatch(contactModel, { _id: customerId, isDeleted: false }, {}, {});
-
-    if (!customer) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Customer"), {}, {}));
-    }
-
-    const currentPoints = customer.loyaltyPoints || 0;
-
-    if (currentPoints < pointsToRedeem) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Insufficient loyalty points", {}, {}));
-    }
-
-    // Deduct loyalty points
-    const newPoints = currentPoints - pointsToRedeem;
-    const updatedCustomer = await updateData(contactModel, { _id: customerId }, { loyaltyPoints: newPoints, updatedBy: user?._id || null }, {});
-
-    return res.status(HTTP_STATUS.OK).json(
-      new apiResponse(
-        HTTP_STATUS.OK,
-        "Loyalty points redeemed successfully",
-        {
-          customerId: customer._id,
-          redeemedPoints: pointsToRedeem,
-          remainingPoints: newPoints,
-          discountAmount: discountAmount || 0,
-        },
-        {},
-      ),
-    );
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

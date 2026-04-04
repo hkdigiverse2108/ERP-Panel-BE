@@ -98,8 +98,8 @@ export const getAllRecipe = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-
-    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -111,6 +111,14 @@ export const getAllRecipe = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -249,14 +257,18 @@ export const getRecipeDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { search, companyFilter } = req.query;
+    const { search, companyFilter, branchFilter } = req.query;
 
     let companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (companyId) criteria.companyId = companyId;
     if (companyFilter) criteria.companyId = companyFilter;
+
+    if (branchId) criteria.branchId = branchId;
+    if (branchFilter) criteria.branchId = branchFilter;
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { name: { $regex: search, $options: "si" } }, { number: { $regex: search, $options: "si" } }];

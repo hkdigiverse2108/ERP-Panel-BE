@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { bankModel, branchModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
 import { addBankSchema, deleteBankSchema, editBankSchema, getBankSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -14,8 +14,10 @@ export const addBank = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     if (value?.branchIds?.length) {
       for (const branch of value?.branchIds) {
@@ -98,13 +100,15 @@ export const getAllBank = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
     if (companyId) criteria.companyId = companyId;
-    if (companyFilter) criteria.companyId = new ObjectId(companyFilter)
-
+    if (branchId) criteria.branchId = branchId;
+    if (companyFilter) criteria.companyId = new ObjectId(companyFilter);
+    if (branchFilter) criteria.branchId = new ObjectId(branchFilter);
 
     if (search) criteria.$or = [{ accountHolderName: { $regex: search, $options: "si" }, bankAccountNumber: { $regex: search, $options: "si" } }];
 
@@ -116,6 +120,7 @@ export const getAllBank = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
         { path: "branchIds", select: "name" },
         { path: "address.country", select: "name code" },
         { path: "address.state", select: "name code" },
@@ -185,9 +190,10 @@ export const getBankDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { search, startDate, endDate, companyFilter } = req.query;
+    const { search, startDate, endDate, companyFilter, branchFilter } = req.query;
 
     let companyId = user?.companyId?._id;
+    let branchId = user?.branchId?._id;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -195,6 +201,12 @@ export const getBankDropdown = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) criteria.branchId = branchId;
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (search) {

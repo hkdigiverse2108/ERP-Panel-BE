@@ -189,6 +189,7 @@ export const getAllMaterialConsumption = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
     let { page, limit, search, startDate, endDate, typeFilter, branchFilter, activeFilter, companyFilter } = req.query;
 
     page = Number(page) || 1;
@@ -204,9 +205,16 @@ export const getAllMaterialConsumption = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
+    }
+
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
     if (typeFilter) criteria.consumptionTypeId = typeFilter;
-    if (branchFilter) criteria.branchId = branchFilter;
 
     if (search) {
       criteria.$or = [{ number: { $regex: search, $options: "si" } }, { remark: { $regex: search, $options: "si" } }];

@@ -93,12 +93,17 @@ export const editPrefix = async (req, res) => {
 
     // If changing prefixType, check for duplicates in the same company scope
     if (value.prefixType && value.prefixType !== isExist.prefixType) {
-      const typeExist = await getFirstMatch(PrefixModel, {
-        prefixType: value.prefixType,
-        companyId: isExist.companyId || null,
-        isDeleted: false,
-        _id: { $ne: value.prefixId }
-      }, {}, {});
+      const typeExist = await getFirstMatch(
+        PrefixModel,
+        {
+          prefixType: value.prefixType,
+          companyId: isExist.companyId || null,
+          isDeleted: false,
+          _id: { $ne: value.prefixId },
+        },
+        {},
+        {},
+      );
       if (typeExist) {
         return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist(`Prefix for module ${value.prefixType}`), {}, {}));
       }
@@ -108,10 +113,7 @@ export const editPrefix = async (req, res) => {
 
     if (!isExist.companyId && value.isActive !== undefined) {
       // Global prefix template: propagate isActive status to all related company prefixes
-      await PrefixModel.updateMany(
-        { prefixType: isExist.prefixType, isDeleted: false },
-        { $set: { isActive: value.isActive, updatedBy: user?._id || null } }
-      );
+      await PrefixModel.updateMany({ prefixType: isExist.prefixType, isDeleted: false }, { $set: { isActive: value.isActive, updatedBy: user?._id || null } });
     }
 
     const response = await updateData(PrefixModel, { _id: value?.prefixId }, value, {});
@@ -183,7 +185,8 @@ export const getAllPrefix = async (req, res) => {
     const { user } = req?.headers;
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, prefixType, activeFilter, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, prefixType, activeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -194,7 +197,11 @@ export const getAllPrefix = async (req, res) => {
       } else if (companyFilter !== "all") {
         criteria.companyId = companyFilter; // Specific company
       }
-      // if companyFilter is "all", we don't apply any companyId criteria, returning all data
+      if (!branchFilter) {
+        criteria.branchId = branchId;
+      } else if (branchFilter !== "all") {
+        criteria.branchId = branchFilter; // Specific branch
+      }
     } else {
       criteria.companyId = companyId;
     }
@@ -276,38 +283,38 @@ export const getOnePrefix = async (req, res) => {
   }
 };
 
-// Get prefix by prefixType
-export const getPrefixByType = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
-    const { type } = req.params;
+// // Get prefix by prefixType
+// export const getPrefixByType = async (req, res) => {
+//   reqInfo(req);
+//   try {
+//     const { user } = req?.headers;
+//     const companyId = user?.companyId?._id;
+//     const { type } = req.params;
 
-    if (!type) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Prefix type is required", {}, {}));
-    }
+//     if (!type) {
+//       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Prefix type is required", {}, {}));
+//     }
 
-    if (!Object.values(PREFIX_MODULES).includes(type as any)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid prefix type", {}, {}));
-    }
+//     if (!Object.values(PREFIX_MODULES).includes(type as any)) {
+//       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid prefix type", {}, {}));
+//     }
 
-    let criteria: any = { prefixType: type, isDeleted: false };
-    if (companyId) {
-      criteria.companyId = companyId;
-    } else {
-      criteria.companyId = null; // Get template if no companyId
-    }
+//     let criteria: any = { prefixType: type, isDeleted: false };
+//     if (companyId) {
+//       criteria.companyId = companyId;
+//     } else {
+//       criteria.companyId = null; // Get template if no companyId
+//     }
 
-    const response = await getFirstMatch(PrefixModel, criteria, {}, {});
+//     const response = await getFirstMatch(PrefixModel, criteria, {}, {});
 
-    if (!response) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Prefix"), {}, {}));
-    }
+//     if (!response) {
+//       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Prefix"), {}, {}));
+//     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Prefix"), response, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
+//     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Prefix"), response, {}));
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+//   }
+// };

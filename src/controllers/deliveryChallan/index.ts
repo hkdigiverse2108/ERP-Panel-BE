@@ -294,7 +294,8 @@ export const getAllDeliveryChallan = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, customerFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, branchFilter, customerFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -306,6 +307,14 @@ export const getAllDeliveryChallan = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerFilter) {
@@ -344,7 +353,6 @@ export const getAllDeliveryChallan = async (req, res) => {
         { path: "items.taxId", select: "name percentage" },
         { path: "companyId", select: "name " },
         { path: "branchId", select: "name " },
-
       ],
       skip: (page - 1) * limit,
       limit,
@@ -394,6 +402,10 @@ export const getAllDeliveryChallan = async (req, res) => {
       statsCriteria.companyId = criteria.companyId;
     }
 
+    if (criteria.branchId) {
+      statsCriteria.branchId = criteria.branchId;
+    }
+
     const summaryResults = await deliveryChallanModel.aggregate([
       { $match: statsCriteria },
       {
@@ -424,7 +436,6 @@ export const getAllDeliveryChallan = async (req, res) => {
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan"), { deliveryChallan_data: finalResponse, totalData, summary, state }, {}));
-
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -463,7 +474,6 @@ export const getOneDeliveryChallan = async (req, res) => {
           { path: "items.taxId", select: "name percentage type" },
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
-
         ],
       },
     );
@@ -517,7 +527,8 @@ export const getDeliveryChallanDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { customerFilter, statusFilter, search, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { customerFilter, statusFilter, search, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -525,6 +536,14 @@ export const getDeliveryChallanDropdown = async (req, res) => {
     }
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerFilter) {
@@ -544,7 +563,10 @@ export const getDeliveryChallanDropdown = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "customerId", select: "firstName lastName companyName" }, { path: "createdBy", select: "name userType" }],
+      populate: [
+        { path: "customerId", select: "firstName lastName companyName" },
+        { path: "createdBy", select: "name userType" },
+      ],
     };
 
     const response = await getDataWithSorting(deliveryChallanModel, criteria, { deliveryChallanNo: 1, date: 1, transactionSummary: 1 }, options);

@@ -1,10 +1,10 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES, PREFIX_MODULES } from "../../common";
 import { branchModel, materialConsumptionModel, productModel, stockModel } from "../../database";
-import {  checkCompany, checkIdExist, countData, createOne,  getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix, checkBranch } from "../../helper";
 import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
-// TODO: need to add validation for stock
+
 export const addStock = async (req, res) => {
   reqInfo(req);
   try {
@@ -14,9 +14,9 @@ export const addStock = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
-
+    value.branchId = await checkBranch(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
     if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     if (!(await checkIdExist(productModel, value?.productId, "Product", res))) return;
 
@@ -225,9 +225,19 @@ export const getAllStock = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    const { page, limit, search, activeFilter, companyFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, branchFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const { page, limit, search, activeFilter, companyFilter, branchFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
 
     const stockMatchCriteria: any = { isDeleted: false };
+
+    if (branchId) {
+      stockMatchCriteria.branchId = branchId;
+    }
+
+    if (companyId) {
+      stockMatchCriteria.companyId = companyId;
+    }
 
     if (branchFilter) stockMatchCriteria.branchId = new ObjectId(branchFilter as string);
     if (companyFilter) stockMatchCriteria.companyId = new ObjectId(companyFilter as string);
@@ -238,7 +248,6 @@ export const getAllStock = async (req, res) => {
     if (!companyFilter && user?.companyId?._id) {
       stockMatchCriteria.companyId = user?.companyId?._id;
     }
-
 
     const stockAggregationPipeline: any[] = [
       { $match: stockMatchCriteria },

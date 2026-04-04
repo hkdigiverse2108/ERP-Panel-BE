@@ -167,7 +167,8 @@ export const getAllPurchaseOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, supplierFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, branchFilter, supplierFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -180,6 +181,14 @@ export const getAllPurchaseOrder = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (supplierFilter) {
@@ -259,6 +268,10 @@ export const getAllPurchaseOrder = async (req, res) => {
       statsCriteria.companyId = criteria.companyId;
     }
 
+    if (criteria.branchId) {
+      statsCriteria.branchId = criteria.branchId;
+    }
+
     const summaryResults = await purchaseOrderModel.aggregate([
       { $match: statsCriteria },
       {
@@ -293,7 +306,6 @@ export const getAllPurchaseOrder = async (req, res) => {
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Order"), { purchaseOrder_data: response, state, totalData, summary }, {}));
-
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -380,7 +392,8 @@ export const getPurchaseOrderDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { supplierId, supplierFilter, status, statusFilter, search, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { supplierId, supplierFilter, status, statusFilter, search, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -389,6 +402,14 @@ export const getPurchaseOrderDropdown = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     const sId = supplierId || supplierFilter;

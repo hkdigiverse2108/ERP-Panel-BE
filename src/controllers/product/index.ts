@@ -3,7 +3,6 @@ import { branchModel, companyModel, productModel, productTypeModel, stockModel, 
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, findAllAndPopulateWithSorting, extractDataFromFile } from "../../helper";
 import { addBulkProductSchema, addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation";
 import axios from "axios";
-import FormData from "form-data";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -129,7 +128,10 @@ export const bulkAddProduct = async (req, res) => {
       // 2. Handle nutrition (string like 'item1:value1, item2:value2' to array of objects)
       if (value.nutrition && typeof value.nutrition === "string") {
         const nutritionArray = [];
-        const pairs = value.nutrition.split(",").map((p) => p.trim()).filter((p) => p !== "");
+        const pairs = value.nutrition
+          .split(",")
+          .map((p) => p.trim())
+          .filter((p) => p !== "");
         for (const pair of pairs) {
           const parts = pair.split(":");
           const name = parts[0]?.trim() || "";
@@ -732,9 +734,7 @@ export const getOneProduct = async (req, res) => {
       {
         _id: value?.id,
         isDeleted: false,
-        ...(userType !== USER_TYPES.SUPER_ADMIN && companyId
-          ? { $or: [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }] }
-          : {}),
+        ...(userType !== USER_TYPES.SUPER_ADMIN && companyId ? { $or: [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }] } : {}),
       },
       {},
       {
@@ -920,25 +920,22 @@ export const detectProduct = async (req, res) => {
       const backendUrl = process.env.BACKEND_URL || "http://localhost:4001";
       const authHeader = req.headers.authorization;
 
-      const aiApiResponse = await axios.post(`${backendUrl}/ai/analyze`, 
-        { imageBase64 }, 
-        { headers: { Authorization: authHeader } }
-      );
+      const aiApiResponse = await axios.post(`${backendUrl}/ai/analyze`, { imageBase64 }, { headers: { Authorization: authHeader } });
 
       const aiItems = aiApiResponse.data?.data || [];
-      console.log("aiItems => ",aiItems);
-      
+      console.log("aiItems => ", aiItems);
+
       const unmatchedItems = [];
 
       // 3. Map AI Results to Product ID context
       aiItems.forEach((item: any) => {
-          if (item.matched && item.product_id) {
-              const productId = item.product_id;
-              idMatches[productId] = 0.95; 
-              idCounts[productId] = (idCounts[productId] || 0) + (item.quantity || 1);
-          } else {
-              unmatchedItems.push(item);
-          }
+        if (item.matched && item.product_id) {
+          const productId = item.product_id;
+          idMatches[productId] = 0.95;
+          idCounts[productId] = (idCounts[productId] || 0) + (item.quantity || 1);
+        } else {
+          unmatchedItems.push(item);
+        }
       });
 
       results = [{ image: firstFile.originalname, items_count: aiItems.length, unmatched_items: unmatchedItems }];
@@ -947,19 +944,19 @@ export const detectProduct = async (req, res) => {
       const matchedIds = Object.keys(idMatches);
       if (matchedIds.length > 0) {
         let criteria: any = { isDeleted: false, _id: { $in: matchedIds }, isActive: true };
-        
+
         // Ownership check for products
         if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
           criteria.$or = [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }];
         }
-        console.log("criteria => ",criteria);
+        console.log("criteria => ", criteria);
         const enrichedProducts = await findAllAndPopulateWithSorting(productModel, criteria, {}, {}, [
           { path: "categoryId", select: "name" },
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
         ]);
-        console.log("enrichedProducts => ",enrichedProducts);
+        console.log("enrichedProducts => ", enrichedProducts);
         skuMatchesDetailsArray = await Promise.all(
           enrichedProducts.map(async (product: any) => {
             const productObj = product.toObject ? product.toObject() : product;
@@ -969,9 +966,9 @@ export const detectProduct = async (req, res) => {
 
             // Pull first available stock for this item
             const stockInfo = await stockModel.findOne(stockCriteria).populate([
-                { path: "purchaseTaxId", select: "name percentage" },
-                { path: "salesTaxId", select: "name percentage" },
-                { path: "uomId", select: "name code" }
+              { path: "purchaseTaxId", select: "name percentage" },
+              { path: "salesTaxId", select: "name percentage" },
+              { path: "uomId", select: "name code" },
             ]);
 
             return {
@@ -984,9 +981,9 @@ export const detectProduct = async (req, res) => {
               purchaseTaxId: stockInfo?.purchaseTaxId || null,
               salesTaxId: stockInfo?.salesTaxId || null,
               ai_confidence: idMatches[productIdStr] || 0,
-              detect_qty: idCounts[productIdStr] || 1
+              detect_qty: idCounts[productIdStr] || 1,
             };
-          })
+          }),
         );
       }
     } catch (err: any) {

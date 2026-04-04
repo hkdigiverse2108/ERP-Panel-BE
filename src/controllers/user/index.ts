@@ -1,6 +1,6 @@
 import { apiResponse, generateHash, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
 import { branchModel, companyModel, locationModel, moduleModel, permissionModel, roleModel, userModel } from "../../database";
-import { checkCompany, checkIdExist, checkLocationExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, checkLocationExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
 import { addUserSchema, deleteUserSchema, editUserSchema, getUserSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -14,7 +14,7 @@ export const addUser = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
-
+    value.branchId = await checkBranch(user, value);
     if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     if (!(await checkIdExist(roleModel, value?.role, "Role", res))) return;
 
@@ -187,6 +187,7 @@ export const getAllUser = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
     let { page, limit, search, startDate, endDate, activeFilter, branchFilter, companyFilter, typeFilter } = req.query;
 
     // let criteria: any = { isDeleted: false, role: USER_ROLES.USER };
@@ -194,6 +195,10 @@ export const getAllUser = async (req, res) => {
 
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
     }
 
     let roles = await getData(roleModel, { name: USER_ROLES.SUPER_ADMIN, isDeleted: false }, { _id: 1 }, {});
@@ -328,8 +333,8 @@ export const getUserDropDown = async (req, res) => {
   try {
     let { user } = req?.headers;
     let companyId = user?.companyId?._id;
-
-    let { typeFilter, companyFilter, roleFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { typeFilter, companyFilter, roleFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -339,6 +344,14 @@ export const getUserDropDown = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (typeFilter) {

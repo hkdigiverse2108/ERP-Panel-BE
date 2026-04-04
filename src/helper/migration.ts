@@ -1,4 +1,4 @@
-import { companyModel, branchModel, InvoiceModel, SalesOrderModel, purchaseOrderModel, deliveryChallanModel, EstimateModel, supplierBillModel, adjustmentNoteModel, voucherModel, ExpenseModel, productModel, contactModel, materialConsumptionModel, PosOrderModel, stockModel, PrefixModel, stockVerificationModel, materialInwardModel, productRequestModel, billOfLiveProductModel, PosPaymentModel, PosCashRegisterModel, PosCashControlModel, returnPosOrderModel, posCreditNoteModel, BankTransactionModel, employeeModel, feedbackModel, additionalChargeModel, termsConditionModel, discountModel, couponModel, loyaltyPointsModel, bankModel, materialModel, callRequestModel, ConsumptionTypeModel, brandModel, categoryModel, taxModel, companyDriveModel, departmentModel, stockAdjustmentModel, loyaltyModel, membershipModel, notificationModel, recipeModel, salesCreditNoteModel, purchaseDebitNoteModel, settingsModel, paymentTermsModel, PayLaterModel, CashControlModel } from "../database";
+import { companyModel, branchModel, InvoiceModel, SalesOrderModel, purchaseOrderModel, deliveryChallanModel, EstimateModel, supplierBillModel, adjustmentNoteModel, voucherModel, ExpenseModel, productModel, contactModel, materialConsumptionModel, PosOrderModel, stockModel, PrefixModel, stockVerificationModel, materialInwardModel, productRequestModel, billOfLiveProductModel, PosPaymentModel, PosCashRegisterModel, PosCashControlModel, returnPosOrderModel, posCreditNoteModel, BankTransactionModel, feedbackModel, additionalChargeModel, termsConditionModel, discountModel, couponModel, loyaltyPointsModel, bankModel, materialModel, callRequestModel, ConsumptionTypeModel, brandModel, categoryModel, taxModel, companyDriveModel, departmentModel, loyaltyModel, membershipModel, notificationModel, recipeModel, salesCreditNoteModel, purchaseDebitNoteModel, settingsModel, paymentTermsModel, CashControlModel } from "../database";
 import { createOne, updateData } from "./databaseServices";
 
 /**
@@ -70,7 +70,6 @@ export const patchHeadBranchesForAllCompanies = async (userId: string | null = n
         returnPosOrderModel,
         posCreditNoteModel,
         BankTransactionModel,
-        employeeModel,
         feedbackModel,
         additionalChargeModel,
         termsConditionModel,
@@ -86,7 +85,6 @@ export const patchHeadBranchesForAllCompanies = async (userId: string | null = n
         taxModel,
         companyDriveModel,
         departmentModel,
-        stockAdjustmentModel,
         loyaltyModel,
         membershipModel,
         notificationModel,
@@ -95,7 +93,6 @@ export const patchHeadBranchesForAllCompanies = async (userId: string | null = n
         purchaseDebitNoteModel,
         settingsModel,
         paymentTermsModel,
-        PayLaterModel,
         CashControlModel
       ];
       for (const modelRef of modelsToUpdate) {

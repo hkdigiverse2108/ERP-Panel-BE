@@ -228,7 +228,8 @@ export const getAllPurchaseDebitNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, statusFilter, startDate, endDate } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, activeFilter, companyFilter, branchFilter, statusFilter, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -240,6 +241,14 @@ export const getAllPurchaseDebitNote = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (search) {
@@ -342,7 +351,6 @@ export const getAllPurchaseDebitNote = async (req, res) => {
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Debit Note"), { purchaseDebitNote_data: response, totalData, totalAmount, state }, {}));
-
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -437,7 +445,8 @@ export const getPurchaseDebitNoteDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { supplierFilter, search, companyFilter, statusFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    const { supplierFilter, search, companyFilter, branchFilter, statusFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -450,6 +459,14 @@ export const getPurchaseDebitNoteDropdown = async (req, res) => {
 
     if (supplierFilter) {
       criteria.supplierId = supplierFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (statusFilter) {

@@ -12,12 +12,10 @@ export * from "./announcement";
 export * from "./branch";
 export * from "./callRequest";
 export * from "./recipe";
-export * from "./stockItem";
 export * from "./materials";
 export * from "./materialConsumption";
 export * from "./operation";
 export * from "./permissions";
-export * from "./employee";
 export * from "./coupon";
 export * from "./adjustmentNote";
 // export * from "./debitNote";
@@ -51,21 +49,19 @@ export * from "./salesCreditNote";
 export * from "./purchaseDebitNote";
 export * from "./bank";
 export * from "./posPayment";
-export * from "./payLater";
 export * from "./loyaltyPoints";
 export * from "./cashControl";
 export * from "./posCashRegister";
 export * from "./returnPosOrder";
 export * from "./posCreditNote";
 export * from "./loginLog";
-// export * from "./journalVoucher";
 export * from "./bankTransaction";
 export * from "./companyDrive";
 export * from "./estimate";
 export * from "./productType";
 export * from "./expense";
-export * from "./paymentTerm"
-export * from "./consumptionType"
-export * from "./monthlySpecial"
-export * from "./credential"
-export * from "./notification"
+export * from "./paymentTerm";
+export * from "./consumptionType";
+export * from "./monthlySpecial";
+export * from "./credential";
+export * from "./notification";

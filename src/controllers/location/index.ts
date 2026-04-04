@@ -223,16 +223,10 @@ export const deleteLocationById = async (req, res) => {
 export const getAllLocation = async (req, res) => {
   reqInfo(req);
   try {
-    const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
-
     let { page, limit, search, startDate, endDate, activeFilter, typeFilter, parentFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
-    if (companyId) {
-      criteria.companyId = companyId;
-    }
 
     if (!parentFilter && typeFilter) {
       criteria.type = typeFilter;

@@ -207,7 +207,8 @@ export const getAllSupplierBill = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, statusFilter, paymentStatus, startDate, endDate, supplierFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, activeFilter, companyFilter, branchFilter, statusFilter, paymentStatus, startDate, endDate, supplierFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -219,6 +220,14 @@ export const getAllSupplierBill = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (supplierFilter) {
@@ -331,6 +340,10 @@ export const getAllSupplierBill = async (req, res) => {
     const statsCriteria: any = { isDeleted: false };
     if (criteria.companyId) {
       statsCriteria.companyId = criteria.companyId;
+    }
+
+    if (criteria.branchId) {
+      statsCriteria.branchId = criteria.branchId;
     }
 
     const summaryResults = await supplierBillModel.aggregate([
@@ -469,7 +482,8 @@ export const getSupplierBillDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { supplierId, status, paymentStatus, search, companyFilter } = req.query; // Optional filters
+    const branchId = user?.branchId?._id;
+    const { supplierId, status, paymentStatus, search, companyFilter, branchFilter } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -478,6 +492,14 @@ export const getSupplierBillDropdown = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (supplierId) {

@@ -38,9 +38,10 @@ export const getAllSalary = async (req, res) => {
     reqInfo(req);
     try {
         const { user } = req?.headers;
-        const companyId = user?.companyId?._id;
+        const companyId = user?.companyId?._id; 
+        const branchId = user?.branchId?._id;
 
-        let { page, limit, search, startDate, endDate, companyFilter } = req.query;
+        let { page, limit, search, startDate, endDate, companyFilter, branchFilter } = req.query;
 
         let criteria: any = { isDeleted: false, isSalary: true };
 
@@ -50,6 +51,14 @@ export const getAllSalary = async (req, res) => {
 
         if (companyFilter) {
             criteria.companyId = companyFilter;
+        }
+
+        if (branchId) {
+            criteria.branchId = branchId;
+        }
+
+        if (branchFilter) {
+            criteria.branchId = branchFilter;
         }
 
         if (search) {

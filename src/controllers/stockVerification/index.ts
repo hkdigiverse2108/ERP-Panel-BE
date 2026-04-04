@@ -148,7 +148,8 @@ export const getAllStockVerification = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { page, limit, search, startDate, endDate, status, branchId, activeFilter, companyFilter, statusFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    const { page, limit, search, startDate, endDate, status, branchFilter, activeFilter, companyFilter, statusFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -166,16 +167,19 @@ export const getAllStockVerification = async (req, res) => {
       criteria.status = statusFilter;
     }
 
-    if (branchId) {
-      criteria.branchId = branchId;
-    }
-
     if (companyId) {
       criteria.companyId = companyId;
     }
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (startDate && endDate) {

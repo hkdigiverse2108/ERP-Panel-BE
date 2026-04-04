@@ -249,7 +249,8 @@ export const getAllSalesOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, customerFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, customerFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -260,6 +261,14 @@ export const getAllSalesOrder = async (req, res) => {
     }
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (search) {
@@ -348,6 +357,10 @@ export const getAllSalesOrder = async (req, res) => {
     const statsCriteria: any = { isDeleted: false };
     if (criteria.companyId) {
       statsCriteria.companyId = criteria.companyId;
+    }
+
+    if (criteria.branchId) {
+      statsCriteria.branchId = criteria.branchId;
     }
 
     const summaryResults = await SalesOrderModel.aggregate([
@@ -473,7 +486,8 @@ export const getSalesOrderDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { customerId, statusFilter, search, companyFilter } = req.query; // Optional filters
+    const branchId = user?.branchId?._id;
+    const { customerId, statusFilter, search, companyFilter, branchFilter } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -481,6 +495,14 @@ export const getSalesOrderDropdown = async (req, res) => {
     }
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerId) {

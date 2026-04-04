@@ -4,7 +4,7 @@ import { prefixController } from "../controllers";
 const router = express.Router();
 
 router.get("/all", prefixController.getAllPrefix);
-router.get("/type/:type", prefixController.getPrefixByType);
+// router.get("/type/:type", prefixController.getPrefixByType);
 router.post("/add", prefixController.addPrefix);
 router.put("/edit", prefixController.editPrefix);
 router.delete("/:id", prefixController.deletePrefix);
