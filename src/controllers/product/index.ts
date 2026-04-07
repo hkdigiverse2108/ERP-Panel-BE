@@ -341,8 +341,9 @@ export const getAllProduct = async (req, res) => {
     const userType = user?.userType;
 
     const companyId = user?.companyId?._id;
-    const { page, limit, search, startDate, endDate, activeFilter, companyFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, productTypeIdFilter } = req.query;
+    const { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, productTypeIdFilter } = req.query;
     const effectiveCompanyId = companyFilter || (userType !== USER_TYPES.SUPER_ADMIN ? companyId : null);
+    const effectiveBranchId = branchFilter || (userType !== USER_TYPES.SUPER_ADMIN ? user?.branchId?._id : null);
 
     let criteria: any = { isDeleted: false };
 
@@ -385,6 +386,7 @@ export const getAllProduct = async (req, res) => {
       const stockCriteria: any = {
         isDeleted: false,
         companyId: user?.companyId?._id,
+        branchId: user?.branchId?._id,
       };
 
       const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
@@ -398,6 +400,7 @@ export const getAllProduct = async (req, res) => {
       const stockCriteria: any = {
         isDeleted: false,
         companyId: new ObjectId(companyFilter as string),
+        ...(branchFilter && { branchId: new ObjectId(branchFilter as string) }),
       };
 
       const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
@@ -444,10 +447,16 @@ export const getAllProduct = async (req, res) => {
           if (effectiveCompanyId) {
             stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
           }
+          if (effectiveBranchId) {
+            stockCriteria.branchId = new ObjectId(effectiveBranchId.toString());
+          }
         } else {
           stockCriteria.productId = product._id;
           if (effectiveCompanyId) {
             stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
+          }
+          if (effectiveBranchId) {
+            stockCriteria.branchId = new ObjectId(effectiveBranchId.toString());
           }
         }
 
@@ -587,12 +596,17 @@ export const getProductDropdown = async (req, res) => {
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
 
-    const { productType, search, companyFilter, categoryFilter, brandFilter, isNewProduct, stockFilter } = req.query;
+    const { productType, search, companyFilter, branchFilter, categoryFilter, brandFilter, isNewProduct, stockFilter } = req.query;
 
     // Determine the effective company ID for filtering
     let effectiveCompanyId = companyId;
     if (companyFilter && userType === USER_TYPES.SUPER_ADMIN) {
       effectiveCompanyId = new ObjectId(companyFilter as string);
+    }
+
+    let effectiveBranchId = user?.branchId?._id;
+    if (branchFilter && userType === USER_TYPES.SUPER_ADMIN) {
+      effectiveBranchId = new ObjectId(branchFilter as string);
     }
 
     // --- Stock filtering (only when NOT a new product) ---
@@ -603,6 +617,8 @@ export const getProductDropdown = async (req, res) => {
       let stockCriteria: any = { isDeleted: false, isActive: true };
 
       if (effectiveCompanyId) stockCriteria.companyId = effectiveCompanyId;
+      if (effectiveBranchId) stockCriteria.branchId = effectiveBranchId;
+
 
       if (stockFilter === "true") {
         stockCriteria.qty = { $gt: 0 };
@@ -752,6 +768,7 @@ export const getOneProduct = async (req, res) => {
 
     if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
       stockCriteria.companyId = companyId;
+      stockCriteria.branchId = user?.branchId?._id;
     }
 
     const stockAggregation = await stockModel.aggregate([

@@ -4,7 +4,8 @@ import { PREFIX_MODULES } from "../common";
 import { IPrefix } from "../types";
 
 interface PrefixOptions {
-  branchId?: string;
+  branchId?: string | mongoose.Types.ObjectId;
+  companyId?: string | mongoose.Types.ObjectId;
   prefixType: string;
   model?: any;
   fieldName?: string;
@@ -18,9 +19,9 @@ interface PrefixOptions {
  * @param {PrefixOptions} options - Contains branchId, prefixType, and optional DB checking parameters.
  * @returns {Promise<string>} The generated document number (e.g., "INV-101")
  */
-export const getAndIncrementPrefix = async ({ branchId, prefixType, model, fieldName }: PrefixOptions): Promise<string> => {
+export const getAndIncrementPrefix = async (options: PrefixOptions): Promise<string> => {
+  const { branchId, prefixType } = options;
   const queryFilter: any = { branchId: branchId as any, prefixType, isDeleted: false };
-  let attempts = 0;
   let resultNumber: string = "";
 
   // 1. Try to find the correct prefix string once (Branch-specific -> Global Template -> Default)
@@ -33,6 +34,14 @@ export const getAndIncrementPrefix = async ({ branchId, prefixType, model, field
     prefixString = globalTemplate?.prefix || String(prefixType).toUpperCase().substring(0, 3);
   }
 
+  // Determine companyId for the $setOnInsert (mandatory for the model)
+  let companyId = options.companyId;
+  if (!companyId && branchId) {
+    const { branchModel } = require("../database"); // Lazy import to avoid circular dependency
+    const branch = await branchModel.findById(branchId).lean();
+    companyId = branch?.companyId;
+  }
+
   // 2. Atomic increment and return result
   const updatedDoc = await PrefixModel.findOneAndUpdate(
     queryFilter,
@@ -40,7 +49,8 @@ export const getAndIncrementPrefix = async ({ branchId, prefixType, model, field
       $inc: { currentNumber: 1 },
       $setOnInsert: {
         prefix: prefixString,
-       branchId: branchId as any,
+        branchId: branchId as any,
+        companyId: companyId as any,
         prefixType,
         sequenceNumber: 1,
         isDeleted: false,
@@ -53,6 +63,7 @@ export const getAndIncrementPrefix = async ({ branchId, prefixType, model, field
   const sequenceNumber = updatedDoc ? (updatedDoc.currentNumber ?? 1) : 1;
   return `${prefixString}-${sequenceNumber}`;
 };
+
 
 /**
  * Clones prefixes from company templates or global templates to a specific branch.

@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES, PREFIX_MODULES } from "../../common";
-import { PrefixModel, companyModel } from "../../database";
+import { PrefixModel, companyModel, branchModel } from "../../database";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPrefixSchema, deletePrefixSchema, editPrefixSchema, getPrefixSchema } from "../../validation";
 
@@ -38,27 +38,30 @@ export const addPrefix = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
-    // Auto-create prefix for all existing companies
+    // Auto-create prefix for all existing branches
     try {
-      const companies = await companyModel.find({ isDeleted: false });
-      if (companies.length > 0) {
-        const companyPrefixes = companies.map((company: any) => ({
+      const branches = await branchModel.find({ isDeleted: false });
+      if (branches.length > 0) {
+        const branchPrefixes = branches.map((branch: any) => ({
           prefixType: value.prefixType,
           prefix: value.prefix,
           sequenceNumber: value.sequenceNumber,
+          currentNumber: value.sequenceNumber,
           isActive: value.isActive,
-          companyId: company._id,
+          companyId: branch.companyId,
+          branchId: branch._id,
           createdBy: user?._id || null,
           updatedBy: user?._id || null,
         }));
-        await PrefixModel.insertMany(companyPrefixes);
+        await PrefixModel.insertMany(branchPrefixes);
       }
     } catch (prefixError) {
-      console.error("Error creating prefixes for existing companies:", prefixError);
+      console.error("Error creating prefixes for existing branches:", prefixError);
       // We don't fail the template creation if cloning fails, but we log it
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Prefix Template and populated to companies"), response, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Prefix Template and populated to branches"), response, {}));
+
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));

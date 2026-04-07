@@ -1,7 +1,7 @@
-import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, voucherModel, additionalChargeModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel, posCreditNoteModel, discountModel } from "../../database";
+import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
+import { contactModel, productModel, taxModel, branchModel, PosOrderModel, additionalChargeModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel, posCreditNoteModel, discountModel } from "../../database";
 import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkStockQty, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix } from "../../helper";
-import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
+import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, releasePosOrderSchema, getCustomerPosDetailsSchema } from "../../validation";
 import { applyCoupon, applyLoyalty, applyPosDiscount, applyRedeemCredit, revertCoupon, revertDiscount, revertLoyalty, revertRedeemCredit } from "./helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -70,6 +70,7 @@ export const addPosOrder = async (req, res) => {
 
     value.orderNo = await getAndIncrementPrefix({
       branchId: value.branchId,
+      companyId: value.companyId,
       prefixType: PREFIX_MODULES.POS_ORDER,
       model: PosOrderModel,
       fieldName: "orderNo",
@@ -206,6 +207,7 @@ export const addPosOrder = async (req, res) => {
             paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
             paymentNo: await getAndIncrementPrefix({
               branchId: response.branchId,
+              companyId: response.companyId,
               prefixType: PREFIX_MODULES.RECEIPT,
               model: PosPaymentModel,
               fieldName: "paymentNo",
@@ -231,6 +233,7 @@ export const addPosOrder = async (req, res) => {
           paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
           paymentNo: await getAndIncrementPrefix({
             branchId: response.branchId,
+            companyId: response.companyId,
             prefixType: PREFIX_MODULES.RECEIPT,
             model: PosPaymentModel,
             fieldName: "paymentNo",
@@ -502,8 +505,9 @@ export const editPosOrder = async (req, res) => {
               paymentMode: payment.method,
               voucherType: POS_VOUCHER_TYPE.SALES,
               paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
-              paymentNo: await getAndIncrementPrefix({
+            paymentNo: await getAndIncrementPrefix({
                 branchId: response.branchId,
+                companyId: response.companyId,
                 prefixType: PREFIX_MODULES.RECEIPT,
                 model: PosPaymentModel,
                 fieldName: "paymentNo",
@@ -527,6 +531,7 @@ export const editPosOrder = async (req, res) => {
           paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
           paymentNo: await getAndIncrementPrefix({
             branchId: response.branchId,
+            companyId: response.companyId,
             prefixType: PREFIX_MODULES.RECEIPT,
             model: PosPaymentModel,
             fieldName: "paymentNo",
@@ -816,6 +821,7 @@ export const getAllPosOrder = async (req, res) => {
         {
           productId: { $in: productIds },
           companyId: criteria.companyId,
+          ...(criteria.branchId && { branchId: criteria.branchId }),
           isDeleted: false,
         },
         { productId: 1, salesTaxId: 1, purchaseTaxId: 1, isSalesTaxIncluding: 1, isPurchaseTaxIncluding: 1 },
@@ -908,6 +914,7 @@ export const getOnePosOrder = async (req, res) => {
         isDeleted: false,
         isActive: true,
         companyId: response?.companyId,
+        branchId: response?.branchId,
         productId: { $in: productIds },
       },
       {
@@ -983,6 +990,10 @@ export const getAllHoldOrders = async (req, res) => {
     if (companyId) {
       criteria.companyId = companyId;
     }
+    const branchId = user?.branchId?._id;
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
 
     if (search) {
       criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }, { tableNo: { $regex: search, $options: "si" } }];
@@ -1014,7 +1025,8 @@ export const getAllHoldOrders = async (req, res) => {
       {
         isDeleted: false,
         isActive: true,
-        companyId: companyId,
+        companyId: criteria.companyId,
+        ...(criteria.branchId && { branchId: criteria.branchId }),
         productId: { $in: productIds },
       },
       {

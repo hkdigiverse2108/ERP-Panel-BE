@@ -71,13 +71,10 @@ export const editStock = async (req, res) => {
         isDeleted: false,
       };
 
-      if (user?.userType !== USER_TYPES.SUPER_ADMIN && user?.companyId?._id) {
-        stockCriteria.companyId = user?.companyId?._id;
-      }
-
-      if (user?.branchId?._id) {
-        stockCriteria.branchId = user?.branchId?._id;
-      }
+      stockCriteria.companyId = await checkCompany(user, item);
+      stockCriteria.branchId = await checkBranch(user, item);
+      if (!stockCriteria.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+      if (!stockCriteria.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
       const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
       if (!stock) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
@@ -118,6 +115,11 @@ export const bulkStockAdjustment = async (req, res) => {
     const updatedItems = [];
     const processedItems = [];
 
+    const companyId = await checkCompany(user, value);
+    const branchId = await checkBranch(user, value);
+    if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
+
     for (const item of items) {
       const product = await getFirstMatch(productModel, { _id: item?.productId, isDeleted: false }, {}, {});
       if (!product) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
@@ -125,12 +127,9 @@ export const bulkStockAdjustment = async (req, res) => {
       const stockCriteria: any = {
         productId: item?.productId,
         isDeleted: false,
+        companyId,
+        branchId,
       };
-
-      if (user?.userType !== USER_TYPES.SUPER_ADMIN && user?.companyId?._id) {
-        stockCriteria.companyId = user?.companyId?._id;
-        stockCriteria.branchId = user?.branchId?._id;
-      }
 
       const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
       if (!stock) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
@@ -153,8 +152,6 @@ export const bulkStockAdjustment = async (req, res) => {
     let consumptionRecord = null;
 
     if (processedItems.length) {
-      const companyId = user?.companyId?._id || null;
-      const branchId = value?.branchId || user?.branchId?._id || null;
       const consumptionNo = await getAndIncrementPrefix({
         branchId,
         prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION,
@@ -169,7 +166,7 @@ export const bulkStockAdjustment = async (req, res) => {
 
       const consumptionPayload: any = {
         companyId,
-        branchId: value?.branchId || user?.branchId?._id || null,
+        branchId,
         number: consumptionNo,
         date: value?.consumptionDate || new Date(),
         type: type,

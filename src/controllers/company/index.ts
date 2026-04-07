@@ -58,30 +58,12 @@ export const addCompany = async (req, res) => {
     const response = await createOne(companyModel, value);
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
-    // Auto-create prefixes for the new company based on templates
-    try {
-      const templates = await PrefixModel.find({ companyId: null, isDeleted: false });
-      if (templates.length > 0) {
-        const companyPrefixes = templates.map((template: any) => ({
-          prefixType: template.prefixType,
-          prefix: template.prefix,
-          sequenceNumber: template.sequenceNumber,
-          companyId: response._id,
-          createdBy: user?._id || null,
-          updatedBy: user?._id || null,
-        }));
-        await PrefixModel.insertMany(companyPrefixes);
-      }
-    } catch (prefixError) {
-      console.error("Error creating prefixes for company:", prefixError);
-      // We don't fail the company creation if prefix creation fails, but we log it
-    }
     // Auto-create Head Branch for the company
     let headBranch = null;
     try {
       const branchPayload = {
         companyId: response._id,
-        name: `${response.name} - Head Branch`,
+        name: `${response.displayName || response.name || "Head Branch"}`,
         displayName: response.displayName,
         contactName: response.contactName,
         email: response.email,
@@ -91,19 +73,38 @@ export const addCompany = async (req, res) => {
         createdBy: user?._id || null,
         updatedBy: user?._id || null,
       };
+
       headBranch = await createOne(branchModel, branchPayload);
-      if (headBranch) {
-        await updateData(companyModel, { _id: response._id }, { headBranchId: headBranch._id }, {});
-        // Auto-clone prefixes for the Head Branch
-        await clonePrefixesToBranch(response._id, headBranch._id, user?._id);
+      if (!headBranch) {
+        await companyModel.deleteOne({ _id: response._id });
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, "Error while creating Head Branch", {}, {}));
       }
-    } catch (branchError) {
-      console.error("Error creating head branch for company:", branchError);
-      // We log it but proceed, although a company without a head branch is not ideal
+
+      // Link company to the new head branch
+      await updateData(companyModel, { _id: response._id }, { headBranchId: headBranch._id }, {});
+
+      // Auto-clone prefixes for the Head Branch
+      const prefixCloneRes = await clonePrefixesToBranch(response._id, headBranch._id, user?._id);
+      if (prefixCloneRes && !prefixCloneRes.success) {
+        await branchModel.deleteOne({ _id: headBranch._id });
+        await companyModel.deleteOne({ _id: response._id });
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, prefixCloneRes.message, {}, {}));
+      }
+
+      // Clone global default payment terms to the newly created company
+      const paymentTermRes = await cloneDefaultPaymentTermsToCompany(response._id, user?._id);
+      if (paymentTermRes && !paymentTermRes.success) {
+        await branchModel.deleteOne({ _id: headBranch._id });
+        await companyModel.deleteOne({ _id: response._id });
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, paymentTermRes.message, {}, {}));
+      }
+    } catch (unexpectedError) {
+      console.error("Critical error during company setup:", unexpectedError);
+      if (headBranch) await branchModel.deleteOne({ _id: headBranch._id });
+      await companyModel.deleteOne({ _id: response._id });
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, "Company creation failed during initialization.", {}, unexpectedError));
     }
 
-    // Clone global default payment terms to the newly created company
-    await cloneDefaultPaymentTermsToCompany(response._id, user?._id);
 
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Company"), response, {}));
   } catch (error) {
