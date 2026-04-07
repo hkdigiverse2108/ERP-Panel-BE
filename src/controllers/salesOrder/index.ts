@@ -1,6 +1,6 @@
 import { apiResponse, ESTIMATE_STATUS, HTTP_STATUS, SALES_ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel, EstimateModel, userModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addSalesOrderSchema, deleteSalesOrderSchema, editSalesOrderSchema, getSalesOrderSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;

@@ -1,6 +1,6 @@
 import { ADJUSTMENT_TYPE, apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { adjustmentNoteModel, bankModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addDebitNoteSchema, deleteDebitNoteSchema, editDebitNoteSchema, getDebitNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;

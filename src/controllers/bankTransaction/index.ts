@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { bankModel, BankTransactionModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, checkIdExist, checkCompany, checkBranch, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
+import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, checkIdExist, checkCompany, checkBranch, getAndIncrementPrefix } from "../../helper";
 import { addBankTransactionSchema, editBankTransactionSchema, getBankTransactionSchema, deleteBankTransactionSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;

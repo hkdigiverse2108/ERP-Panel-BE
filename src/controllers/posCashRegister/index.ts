@@ -27,6 +27,7 @@ export const addPosCashRegister = async (req, res) => {
       PosCashRegisterModel,
       {
         companyId: value.companyId,
+        branchId: value.branchId,
         status: CASH_REGISTER_STATUS.OPEN,
         isDeleted: false,
       },

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, VOUCHAR_TYPE, PREFIX_MODULES } from "../../common";
 import { contactModel, voucherModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addVoucherSchema, deleteVoucherSchema, editVoucherSchema, getVoucherSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;

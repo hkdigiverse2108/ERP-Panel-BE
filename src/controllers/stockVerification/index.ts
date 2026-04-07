@@ -1,6 +1,6 @@
 import { apiResponse, APPROVAL_STATUS, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { stockVerificationModel, productModel, categoryModel, stockModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addStockVerificationSchema, deleteStockVerificationSchema, editStockVerificationSchema, getStockVerificationSchema } from "../../validation";
 
 export const addStockVerification = async (req, res) => {

@@ -139,7 +139,8 @@ export const refundPosCredit = async (req, res) => {
     const cashRegister = await getFirstMatch(
       PosCashRegisterModel,
       {
-        createdBy: user?._id,
+        companyId: user?.companyId?._id,
+        branchId: user?.branchId?._id,
         status: CASH_REGISTER_STATUS.OPEN,
         isDeleted: false,
       },

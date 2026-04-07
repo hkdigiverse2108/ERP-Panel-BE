@@ -53,7 +53,9 @@ export const addUser = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
-    if (value?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $push: { userIds: response?._id } }, {});
+    if (value?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $addToSet: { userIds: response?._id } }, {});
+    if (value?.branchId) await updateData(branchModel, { _id: value?.branchId, isDeleted: false }, { $addToSet: { userIds: response?._id } }, {});
+
     if (user?.userType === USER_TYPES.SUPER_ADMIN || user?.userType === USER_TYPES.ADMIN) {
       if (user?.userType === USER_TYPES.ADMIN) {
         let allPermissions = await getData(permissionModel, { userId: user?._id }, {}, {});
@@ -140,6 +142,16 @@ export const editUserById = async (req, res) => {
       value.password = await generateHash(value?.password);
     }
 
+    if (value?.branchId && isUserExist?.branchId?.toString() !== value?.branchId?.toString()) {
+      if (isUserExist?.branchId) await updateData(branchModel, { _id: isUserExist?.branchId, isDeleted: false }, { $pull: { userIds: isUserExist?._id } }, {});
+      await updateData(branchModel, { _id: value?.branchId, isDeleted: false }, { $addToSet: { userIds: isUserExist?._id } }, {});
+    }
+
+    if (value?.companyId && isUserExist?.companyId?.toString() !== value?.companyId?.toString()) {
+      if (isUserExist?.companyId) await updateData(companyModel, { _id: isUserExist?.companyId, isDeleted: false }, { $pull: { userIds: isUserExist?._id } }, {});
+      await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $addToSet: { userIds: isUserExist?._id } }, {});
+    }
+
     let response = await updateData(userModel, { _id: new ObjectId(value?.userId), isDeleted: false }, value, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("User"), {}, {}));
@@ -164,7 +176,8 @@ export const deleteUserById = async (req, res) => {
 
     if (isUserExist.role.name === USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
-    if (isUserExist?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $pull: { userIds: isUserExist?._id } }, {});
+    if (isUserExist?.companyId) await updateData(companyModel, { _id: isUserExist?.companyId, isDeleted: false }, { $pull: { userIds: isUserExist?._id } }, {});
+    if (isUserExist?.branchId) await updateData(branchModel, { _id: isUserExist?.branchId, isDeleted: false }, { $pull: { userIds: isUserExist?._id } }, {});
 
     const payload = {
       isDeleted: true,

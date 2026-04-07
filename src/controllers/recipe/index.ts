@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES, PREFIX_MODULES } from "../../common";
 import { companyModel, productModel, recipeModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addRecipeSchema, deleteRecipeSchema, editRecipeSchema, getRecipeSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 

@@ -22,7 +22,6 @@ export const addRole = async (req, res) => {
     if (value?.name === USER_ROLES.ADMIN && userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
     value.companyId = await checkCompany(user, value);
-    value.branchId = await checkBranch(user, value);
     if (userType === USER_TYPES.ADMIN && !value.companyId) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
     }
@@ -170,7 +169,6 @@ export const getAllRole = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
       ],
     };
@@ -214,7 +212,6 @@ export const getRoleById = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
         ],
       },

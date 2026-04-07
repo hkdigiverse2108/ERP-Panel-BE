@@ -1,15 +1,15 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { baseCompanyApiSchema, objectId } from "./common";
 
 export const addRoleSchema = Joi.object().keys({
   name: Joi.string().required(),
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 export const editRoleSchema = Joi.object().keys({
   roleId: objectId().required(),
   name: Joi.string().optional(),
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 export const deleteRoleSchema = Joi.object().keys({

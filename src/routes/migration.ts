@@ -1,5 +1,5 @@
 import express from "express";
-import { HTTP_STATUS, apiResponse } from "../common";
+import { HTTP_STATUS, USER_TYPES, apiResponse } from "../common";
 import { patchHeadBranchesForAllCompanies } from "../helper/migration";
 import { reqInfo } from "../helper";
 
@@ -9,13 +9,14 @@ router.post("/patch-head-branches", async (req: any, res: any) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
+    console.log("user===>", user);
     // Security: Only super admins should run this
-    if (user?.userType !== "super_admin" && process.env.NODE_ENV !== "development") {
+    if (user?.userType !== USER_TYPES.SUPER_ADMIN && process.env.NODE_ENV !== "development") {
       return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, "Access Denied", {}, {}));
     }
 
     const result = await patchHeadBranchesForAllCompanies(user?._id || null);
-    
+
     if (result.success) {
       return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, result.message, {}, {}));
     } else {

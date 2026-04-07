@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, VOUCHAR_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
-import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, PosCashControlModel, voucherModel, additionalChargeModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel, posCreditNoteModel, discountModel } from "../../database";
+import { contactModel, productModel, taxModel, branchModel, InvoiceModel, PosOrderModel, voucherModel, additionalChargeModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel, posCreditNoteModel, discountModel } from "../../database";
 import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkStockQty, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix } from "../../helper";
-import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getPosCashControlSchema, updatePosCashControlSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
+import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, holdPosOrderSchema, releasePosOrderSchema, convertToInvoiceSchema, getCustomerLoyaltyPointsSchema, redeemLoyaltyPointsSchema, getCombinedPaymentsSchema, getCustomerPosDetailsSchema } from "../../validation";
 import { applyCoupon, applyLoyalty, applyPosDiscount, applyRedeemCredit, revertCoupon, revertDiscount, revertLoyalty, revertRedeemCredit } from "./helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;

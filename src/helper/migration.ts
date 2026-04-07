@@ -14,23 +14,41 @@ export const patchHeadBranchesForAllCompanies = async (userId: string | null = n
       const company = companyRecord as any;
       console.log(`Patching Company: ${company.name} (${company._id})`);
 
-      // 1. Create a Head Branch for the company
-      const branchPayload: any = {
-        companyId: company._id,
-        name: `${company.name} - Head Branch`,
-        displayName: company.displayName,
-        contactName: company.contactName,
-        email: company.email,
-        phoneNo: company.phoneNo,
-        address: company.address,
-        isHeadBranch: true,
-        createdBy: userId,
-        updatedBy: userId,
-      };
+      // 1. Resolve which branch will be the "Head Branch"
+      let headBranch: any = await branchModel.findOne({ companyId: company._id, isHeadBranch: true, isDeleted: false });
 
-      const headBranch: any = await createOne(branchModel, branchPayload);
+      if (headBranch) {
+        console.log(` - Found existing head branch for ${company.name}: ${headBranch.name} (${headBranch._id})`);
+      } else {
+        // 2. Pick the oldest ("First") branch if no head branch exists
+        const oldestBranch: any = await branchModel.findOne({ companyId: company._id, isDeleted: false }).sort({ createdAt: 1 });
+        
+        if (oldestBranch) {
+          console.log(` - Promoting oldest branch to head for ${company.name}: ${oldestBranch.name} (${oldestBranch._id})`);
+          await updateData(branchModel, { _id: oldestBranch._id }, { isHeadBranch: true }, {});
+          headBranch = oldestBranch;
+        } else {
+          // 3. Create a brand new Head Branch as a last resort (zero branches exist)
+          console.log(` - Creating brand new head branch for ${company.name}...`);
+          const branchPayload: any = {
+            companyId: company._id,
+            name: `${company.name} - Head Branch`,
+            displayName: company.displayName,
+            contactName: company.contactName,
+            email: company.email,
+            phoneNo: company.phoneNo,
+            address: company.address,
+            isHeadBranch: true,
+            createdBy: userId,
+            updatedBy: userId,
+          };
+
+          headBranch = await createOne(branchModel, branchPayload);
+        }
+      }
+
       if (!headBranch) {
-        console.error(`Failed to create head branch for company: ${company.name}`);
+        console.error(`Failed to resolve/create head branch for company: ${company.name}`);
         continue;
       }
 
@@ -54,8 +72,6 @@ export const patchHeadBranchesForAllCompanies = async (userId: string | null = n
         adjustmentNoteModel,
         voucherModel,
         ExpenseModel,
-        productModel,
-        contactModel,
         materialConsumptionModel,
         PosOrderModel,
         stockModel,

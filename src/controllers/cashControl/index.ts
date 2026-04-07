@@ -22,6 +22,7 @@ export const addCashControl = async (req, res) => {
       PosCashRegisterModel,
       {
         companyId: value.companyId,
+        branchId: value.branchId,
         status: CASH_REGISTER_STATUS.OPEN,
         isDeleted: false,
       },
@@ -115,6 +116,7 @@ export const getAllCashControl = async (req, res) => {
         PosCashRegisterModel,
         {
           companyId: companyId,
+          branchId: branchId,
           status: CASH_REGISTER_STATUS.OPEN,
           isDeleted: false,
         },
@@ -243,6 +245,7 @@ export const cashControlDropDown = async (req, res) => {
         PosCashRegisterModel,
         {
           companyId: companyId,
+          branchId: branchId,
           status: CASH_REGISTER_STATUS.OPEN,
           isDeleted: false,
         },

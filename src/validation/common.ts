@@ -18,6 +18,11 @@ export const baseApiSchema = {
   isActive: Joi.boolean().optional(),
 };
 
+export const baseCompanyApiSchema = {
+  companyId: objectId().optional().allow("", null),
+  isActive: Joi.boolean().optional(),
+};
+
 export const commonContactSchema = Joi.object().keys({
   countryCode: Joi.string().optional().allow("", null),
   phoneNo: Joi.string()

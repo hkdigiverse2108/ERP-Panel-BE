@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, commonContactSchema, objectId } from "./common";
+import { baseApiSchema, baseCompanyApiSchema, commonContactSchema, objectId } from "./common";
 import {
   CONTACT_STATUS,
   CONTACT_TYPE,
@@ -101,7 +101,7 @@ export const addContactSchema = Joi.object({
     .valid(...Object.values(CONTACT_STATUS))
     .default(CONTACT_STATUS.ACTIVE),
 
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 export const editContactSchema = Joi.object({
@@ -166,7 +166,7 @@ export const editContactSchema = Joi.object({
     .valid(...Object.values(CONTACT_STATUS))
     .default(CONTACT_STATUS.ACTIVE),
 
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 export const addBulkContactSchema = Joi.object({
@@ -252,7 +252,7 @@ export const addBulkContactSchema = Joi.object({
   remarks: Joi.string().optional(),
   loyaltyPoints: Joi.number().optional(),
 
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 export const deleteContactSchema = Joi.object().keys({

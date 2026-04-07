@@ -21,8 +21,6 @@ export const addProduct = async (req, res) => {
     }
 
     if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
-
-    if (value?.branchId && !(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     if (value?.productTypeId && !(await checkIdExist(productTypeModel, value?.productTypeId, "Product Type", res))) return;
 
     let duplicateCriteria: any = { name: value?.name, isDeleted: false };
@@ -202,10 +200,6 @@ export const bulkAddProduct = async (req, res) => {
         continue;
       }
 
-      if (value.branchId && !(await checkIdExist(branchModel, value.branchId, "Branch", null))) {
-        errors.push({ row: i + 1, error: responseMessage?.getDataNotFound("Branch") });
-        continue;
-      }
 
       if (value?.productTypeId && !(await checkIdExist(productTypeModel, value?.productTypeId, "Product Type", null))) {
         errors.push({ row: i + 1, error: responseMessage?.getDataNotFound("Product Type") });
@@ -262,8 +256,6 @@ export const editProduct = async (req, res) => {
     const companyId = value?.companyId || userCompanyId;
 
     if (companyId && !(await checkIdExist(companyModel, companyId, "Company", res))) return;
-
-    if (value?.branchId && !(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
 
     if (value?.productTypeId && !(await checkIdExist(productTypeModel, value?.productTypeId, "Product Type", res))) return;
 

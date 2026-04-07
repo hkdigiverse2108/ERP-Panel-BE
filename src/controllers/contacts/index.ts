@@ -14,10 +14,7 @@ export const addContact = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    value.companyId = await checkCompany(user, value);
-    value.branchId = await checkBranch(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     const phoneNo = value?.phoneNo?.phoneNo;
     const whatsappNo = value?.whatsappNo?.phoneNo;
@@ -143,8 +140,7 @@ export const getAllContact = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const branchId = user?.branchId?._id;
-    let { page, limit, search, startDate, endDate, activeFilter, typeFilter, companyFilter, branchFilter } = req.query;
+    let { page, limit, search, startDate, endDate, activeFilter, typeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -154,14 +150,6 @@ export const getAllContact = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
-    }
-
-    if (branchId) {
-      criteria.branchId = branchId;
-    }
-
-    if (branchFilter) {
-      criteria.branchId = branchFilter;
     }
 
     if (search) {
@@ -177,7 +165,6 @@ export const getAllContact = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
         { path: "paymentTermsId", select: "name day" },
         { path: "membershipId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
@@ -220,7 +207,6 @@ export const getContactById = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
           { path: "membershipId", select: "name" },
           { path: "paymentTermsId", select: "name day" },
           { path: "createdBy", select: "fullName userType" },
@@ -245,8 +231,7 @@ export const getContactDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const branchId = user?.branchId?._id;
-    const { typeFilter, search, companyFilter, branchFilter, startDate, endDate } = req.query; // typeFilter: 'supplier', 'customer', 'both'
+    const { typeFilter, search, companyFilter, startDate, endDate } = req.query; // typeFilter: 'supplier', 'customer', 'both'
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -258,13 +243,6 @@ export const getContactDropdown = async (req, res) => {
       criteria.companyId = new ObjectId(companyFilter);
     }
 
-    if (branchId) {
-      criteria.branchId = branchId;
-    }
-
-    if (branchFilter) {
-      criteria.branchId = branchFilter;
-    }
 
     // Filter by contact type
     if (typeFilter) {
@@ -408,13 +386,8 @@ export const addBulkContact = async (req, res) => {
       }
 
       value.companyId = await checkCompany(user, value);
-      value.branchId = await checkBranch(user, value);
       if (!value.companyId) {
         errors.push({ row: i + 1, error: "Company ID is required" });
-        continue;
-      }
-      if (!value.branchId) {
-        errors.push({ row: i + 1, error: "Branch ID is required" });
         continue;
       }
 

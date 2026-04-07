@@ -1,6 +1,6 @@
 import { PosPaymentModel, PosOrderModel, contactModel, PosCashRegisterModel, taxModel } from "../../database";
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, generateSequenceNumber, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema } from "../../validation";
 
 export const addPosPayment = async (req, res) => {
