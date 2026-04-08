@@ -60,3 +60,5 @@ export * from "./productType";
 export * from "./expense";
 export * from "./salary";
 export * from "./consumptionType";
+export * from "./special";
+export * from "./credential";

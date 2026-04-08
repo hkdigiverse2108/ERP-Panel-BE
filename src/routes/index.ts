@@ -63,6 +63,9 @@ import { expenseRouter } from "./expense";
 import { salaryRouter } from "./salary";
 import { paymentTermRouter } from "./paymentTerm";
 import { consumptionTypeRouter } from "./consumptionType";
+import { specialRouter } from "./special";
+import { credentialRouter } from "./credential";
+import { aiRouter } from "./ai";
 
 const router = Router();
 
@@ -140,5 +143,9 @@ router.use("/dashboard", dashboardRouter);
 router.use("/bank-transaction", bankTransactionRouter);
 router.use("/company-drive", companyDriveRouter);
 router.use("/product-type", productTypeRouter);
+// Global Specials & AI
+router.use("/specials", specialRouter);
+router.use("/credentials", credentialRouter);
+router.use("/ai", aiRouter);
 
 export { router };
