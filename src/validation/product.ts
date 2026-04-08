@@ -221,6 +221,42 @@ export const addBulkProductSchema = Joi.object().keys({
   nutrition: Joi.string().optional(),
   
   ...baseCompanyApiSchema,
+
+  isActive: Joi.boolean().optional(),
+  // nutrition: Joi.array()
+  //   .items(
+  //     Joi.object({
+  //       name: Joi.string().optional().allow("", null),
+  //       value: Joi.string().optional().allow("", null),
+  //     }),
+  //   )
+  //   .optional(),
+
+
+  // purchasePrice: Joi.number().min(0).default(0).optional(),
+  // landingCost: Joi.number().min(0).default(0).optional(),
+  // mrp: Joi.number().min(0).default(0).optional(),
+  // sellingPrice: Joi.number().min(0).default(0).optional(),
+  // sellingDiscount: Joi.number().min(0).default(0).optional(),
+  // sellingMargin: Joi.number().min(0).default(0).optional(),
+  // retailerDiscount: Joi.number().min(0).default(0).optional(),
+  // retailerPrice: Joi.number().min(0).default(0).optional(),
+  // retailerMargin: Joi.number().min(0).default(0).optional(),
+  // wholesalerDiscount: Joi.number().min(0).default(0).optional(),
+  // wholesalerPrice: Joi.number().min(0).default(0).optional(),
+  // wholesalerMargin: Joi.number().min(0).default(0).optional(),
+  // onlinePrice: Joi.number().min(0).default(0).optional(),
+  // minimumQty: Joi.number().min(0).default(0).optional(),
+  // openingQty: Joi.number().min(0).default(0).optional(),
+  // hsnCode: Joi.string().optional(),
+  // purchaseTaxId: objectId().optional(),
+  // salesTaxId: objectId().optional(),
+  // isPurchaseTaxIncluding: Joi.boolean().default(false).optional(),
+  // isSalesTaxIncluding: Joi.boolean().default(false).optional(),
+  // images: Joi.array().items(Joi.string()).optional().allow("", null),
+
+  // additionalInfo: Joi.string().optional().allow("", null),
+  // ...baseApiSchema,
 });
 
 export const deleteProductSchema = Joi.object().keys({

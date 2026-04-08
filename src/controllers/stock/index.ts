@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS, USER_TYPES, PREFIX_MODULES } from "../../common";
-import { branchModel, materialConsumptionModel, productModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix, checkBranch } from "../../helper";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
+import { branchModel, ConsumptionTypeModel, materialConsumptionModel, productModel, stockModel } from "../../database";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -102,13 +102,11 @@ export const bulkStockAdjustment = async (req, res) => {
     const { user } = req.headers;
 
     let items = [];
-    let type: string | null = null;
 
     const { error, value } = bulkStockAdjustmentSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     items = value?.items || [];
-    type = value?.type || null;
 
     if (!items.length) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Stock items are required"), {}, {}));
 
@@ -119,6 +117,10 @@ export const bulkStockAdjustment = async (req, res) => {
     const branchId = await checkBranch(user, value);
     if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
     if (!branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
+    if (value?.consumptionTypeId) {
+      const consumptionType = await getFirstMatch(ConsumptionTypeModel, { _id: value?.consumptionTypeId, isDeleted: false }, {}, {});
+      if (!consumptionType) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Consumption Type"), {}, {}));
+    }
 
     for (const item of items) {
       const product = await getFirstMatch(productModel, { _id: item?.productId, isDeleted: false }, {}, {});
@@ -170,7 +172,7 @@ export const bulkStockAdjustment = async (req, res) => {
         branchId,
         number: consumptionNo,
         date: value?.consumptionDate || new Date(),
-        type: type,
+        consumptionTypeId: value.consumptionTypeId,
         remark: null,
         items: processedItems,
         totalAmount,
@@ -182,7 +184,7 @@ export const bulkStockAdjustment = async (req, res) => {
       consumptionRecord = await createOne(materialConsumptionModel, consumptionPayload);
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), { type, items: updatedItems, consumption: consumptionRecord }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), { items: updatedItems, consumption: consumptionRecord }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
