@@ -68,6 +68,7 @@ export const addSupplierBill = async (req, res) => {
     if (!value?.supplierBillNo) {
       value.supplierBillNo = await getAndIncrementPrefix({
         branchId: value.branchId,
+        companyId: value.companyId,
         prefixType: PREFIX_MODULES.SUPPLIER_BILL,
         model: supplierBillModel,
         fieldName: "supplierBillNo",
@@ -76,6 +77,7 @@ export const addSupplierBill = async (req, res) => {
     if (!value?.referenceBillNo) {
       value.referenceBillNo = await getAndIncrementPrefix({
         branchId: value.branchId,
+        companyId: value.companyId,
         prefixType: PREFIX_MODULES.SUPPLIER_BILL,
         model: supplierBillModel,
         fieldName: "referenceBillNo",

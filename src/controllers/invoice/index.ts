@@ -81,6 +81,7 @@ export const addInvoice = async (req, res) => {
     if (!value.invoiceNo) {
       value.invoiceNo = await getAndIncrementPrefix({
         branchId: value.branchId,
+        companyId: value.companyId,
         prefixType: PREFIX_MODULES.INVOICE,
         model: InvoiceModel,
         fieldName: "invoiceNo",

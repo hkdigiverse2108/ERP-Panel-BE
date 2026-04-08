@@ -83,6 +83,7 @@ export const addSalesCreditNote = async (req, res) => {
     if (!value?.creditNoteNo) {
       value.creditNoteNo = await getAndIncrementPrefix({
         branchId: value.branchId,
+        companyId: value.companyId,
         prefixType: PREFIX_MODULES.SALES_CREDIT_NOTE,
         model: salesCreditNoteModel,
         fieldName: "creditNoteNo",

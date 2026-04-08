@@ -1,7 +1,5 @@
 import mongoose from "mongoose";
 import { PrefixModel, companyModel } from "../database";
-import { PREFIX_MODULES } from "../common";
-import { IPrefix } from "../types";
 
 interface PrefixOptions {
   branchId?: string | mongoose.Types.ObjectId;
@@ -21,10 +19,24 @@ interface PrefixOptions {
  */
 export const getAndIncrementPrefix = async (options: PrefixOptions): Promise<string> => {
   const { branchId, prefixType } = options;
-  const queryFilter: any = { branchId: branchId as any, prefixType, isDeleted: false };
-  let resultNumber: string = "";
+  let companyId = options.companyId;
 
-  // 1. Try to find the correct prefix string once (Branch-specific -> Global Template -> Default)
+  // 1. Optimize: If companyId is missing, resolve it from branchId once
+  if (!companyId && branchId) {
+    const { branchModel } = require("../database"); // Lazy import to avoid circular dependency
+    const branch = await branchModel.findById(branchId).lean();
+    companyId = branch?.companyId;
+  }
+
+  // 2. Strict query filter including companyId for better isolation
+  const queryFilter: any = {
+    branchId: branchId as any,
+    prefixType,
+    isDeleted: false,
+    ...(companyId && { companyId }),
+  };
+
+  // 3. Try to find the correct prefix string (Branch-specific -> Global Template -> Default)
   let prefixString = "";
   let prefixDoc = await PrefixModel.findOne(queryFilter).lean();
   prefixString = prefixDoc?.prefix;
@@ -34,15 +46,7 @@ export const getAndIncrementPrefix = async (options: PrefixOptions): Promise<str
     prefixString = globalTemplate?.prefix || String(prefixType).toUpperCase().substring(0, 3);
   }
 
-  // Determine companyId for the $setOnInsert (mandatory for the model)
-  let companyId = options.companyId;
-  if (!companyId && branchId) {
-    const { branchModel } = require("../database"); // Lazy import to avoid circular dependency
-    const branch = await branchModel.findById(branchId).lean();
-    companyId = branch?.companyId;
-  }
-
-  // 2. Atomic increment and return result
+  // 4. Atomic increment and return result
   const updatedDoc = await PrefixModel.findOneAndUpdate(
     queryFilter,
     {

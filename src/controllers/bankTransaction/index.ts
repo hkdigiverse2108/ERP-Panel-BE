@@ -28,6 +28,7 @@ export const addBankTransaction = async (req, res) => {
 
     const voucherNo = await getAndIncrementPrefix({
       branchId: value.branchId,
+      companyId: value.companyId,
       prefixType: PREFIX_MODULES.BANK_TRANSACTION,
       model: BankTransactionModel,
       fieldName: "voucherNo",

@@ -46,6 +46,7 @@ export const addMaterialConsumption = async (req, res) => {
 
     value.number = await getAndIncrementPrefix({
       branchId: value.branchId,
+      companyId: value.companyId,
       prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION,
       model: materialConsumptionModel,
       fieldName: "number",

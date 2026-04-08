@@ -41,6 +41,7 @@ export const addPosPayment = async (req, res) => {
 
     value.paymentNo = await getAndIncrementPrefix({
       branchId: value.branchId,
+      companyId: value.companyId,
       prefixType: PREFIX_MODULES.POS_PAYMENT,
       model: PosPaymentModel,
       fieldName: "paymentNo",

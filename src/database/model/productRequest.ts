@@ -1,10 +1,10 @@
 import mongoose, { Schema } from "mongoose";
 import { PRODUCT_REQUEST_STATUS, PRODUCT_TYPE } from "../../common";
-import { baseCommonFields, baseSchemaOptions } from "./base";
+import { baseSchemaFields, baseSchemaOptions } from "./base";
 
 const productRequestSchema = new Schema(
   {
-    companyId: { type: Schema.Types.ObjectId, ref: "company" },
+    ...baseSchemaFields,
     images: [{ type: String }],
     productType: { type: String, enum: Object.values(PRODUCT_TYPE), default: PRODUCT_TYPE.FINISHED },
 
@@ -21,7 +21,6 @@ const productRequestSchema = new Schema(
     description: { type: String },
     Price: { type: Number },
     status: { type: String, enum: Object.values(PRODUCT_REQUEST_STATUS), default: PRODUCT_REQUEST_STATUS.PENDING },
-    ...baseCommonFields,
   },
   baseSchemaOptions
 );

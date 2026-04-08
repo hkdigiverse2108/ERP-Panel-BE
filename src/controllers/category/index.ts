@@ -191,7 +191,8 @@ export const deleteCategoryById = async (req, res) => {
 export const getCategoryDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    let { parentCategoryFilter, onlyCategoryFilter } = req.query;
+    const { user } = req?.headers;
+    let { parentCategoryFilter, onlyCategoryFilter, companyFilter } = req.query;
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (Boolean(onlyCategoryFilter) === true) {

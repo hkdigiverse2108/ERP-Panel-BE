@@ -154,6 +154,7 @@ export const bulkStockAdjustment = async (req, res) => {
     if (processedItems.length) {
       const consumptionNo = await getAndIncrementPrefix({
         branchId,
+        companyId,
         prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION,
         model: materialConsumptionModel,
         fieldName: "number",

@@ -95,6 +95,7 @@ export const addDeliveryChallan = async (req, res) => {
     if (!value.deliveryChallanNo) {
       value.deliveryChallanNo = await getAndIncrementPrefix({
         branchId: value.branchId,
+        companyId: value.companyId,
         prefixType: PREFIX_MODULES.DELIVERY_CHALLAN,
         model: deliveryChallanModel,
         fieldName: "deliveryChallanNo",

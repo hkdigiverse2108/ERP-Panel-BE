@@ -21,6 +21,7 @@ export const addRecipe = async (req, res) => {
 
     value.number = await getAndIncrementPrefix({
       branchId: value.branchId,
+      companyId: value.companyId,
       prefixType: PREFIX_MODULES.RECIPE,
       model: recipeModel,
       fieldName: "number",

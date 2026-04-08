@@ -79,6 +79,7 @@ export const addPurchaseDebitNote = async (req, res) => {
     if (!value?.debitNoteNo) {
       value.debitNoteNo = await getAndIncrementPrefix({
         branchId: value.branchId,
+        companyId: value.companyId,
         prefixType: PREFIX_MODULES.PURCHASE_DEBIT_NOTE,
         model: purchaseDebitNoteModel,
         fieldName: "debitNoteNo",

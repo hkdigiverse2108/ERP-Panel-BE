@@ -80,6 +80,7 @@ export const addSalesOrder = async (req, res) => {
     if (!value.salesOrderNo) {
       value.salesOrderNo = await getAndIncrementPrefix({
         branchId: value.branchId,
+        companyId: value.companyId,
         prefixType: PREFIX_MODULES.SALES_ORDER,
         model: SalesOrderModel,
         fieldName: "salesOrderNo",

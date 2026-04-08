@@ -43,6 +43,7 @@ export const addVoucher = async (req, res) => {
 
       value.voucherNo = await getAndIncrementPrefix({
         branchId: value.branchId,
+        companyId: value.companyId,
         prefixType: prefixType,
         model: voucherModel,
         fieldName: "voucherNo",

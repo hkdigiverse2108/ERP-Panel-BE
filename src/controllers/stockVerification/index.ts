@@ -28,6 +28,7 @@ export const addStockVerification = async (req, res) => {
 
     value.stockVerificationNo = await getAndIncrementPrefix({
       branchId: value.branchId,
+      companyId: value.companyId,
       prefixType: PREFIX_MODULES.STOCK_VERIFICATION,
       model: stockVerificationModel,
       fieldName: "stockVerificationNo",
