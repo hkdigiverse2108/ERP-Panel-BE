@@ -254,6 +254,30 @@ export const getAllStock = async (req, res) => {
         $group: {
           _id: "$productId",
           totalQty: { $sum: "$qty" },
+          branchId: { $first: "$branchId" },
+        },
+      },
+      {
+        $lookup: {
+          from: "branches",
+          localField: "branchId",
+          foreignField: "_id",
+          as: "branchData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$branchData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          totalQty: 1,
+          branchData: {
+            _id: "$branchData._id",
+            name: "$branchData.name",
+          },
         },
       },
     ];
@@ -271,8 +295,10 @@ export const getAllStock = async (req, res) => {
     const stockByProduct = await stockModel.aggregate(stockAggregationPipeline);
     const productIdsWithStock = stockByProduct.map((s: any) => s._id);
     const qtyByProductId: Record<string, number> = {};
+    const branchByProductId: Record<string, any> = {};
     stockByProduct.forEach((s: any) => {
       qtyByProductId[s._id.toString()] = s.totalQty;
+      branchByProductId[s._id.toString()] = s.branchData;
     });
     if (productIdsWithStock.length === 0) {
       const stateObj = {
@@ -323,6 +349,7 @@ export const getAllStock = async (req, res) => {
       skip: (parseInt(page as string) - 1) * parseInt(limit as string),
       limit: parseInt(limit as string),
       populate: [
+        { path: "companyId", select: "name" },
         { path: "categoryId", select: "name" },
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
@@ -336,6 +363,7 @@ export const getAllStock = async (req, res) => {
     const stockData = products.map((product: any) => ({
       ...product,
       availableQty: qtyByProductId[product._id.toString()] ?? 0,
+      branchId: branchByProductId[product._id.toString()] ?? null,
     }));
 
     const totalPages = Math.ceil(totalData / parseInt(limit as string)) || 1;

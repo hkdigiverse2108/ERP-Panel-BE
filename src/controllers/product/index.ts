@@ -417,12 +417,14 @@ export const getAllProduct = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       populate: [
+        { path: "companyId", select: "name" },
         { path: "categoryId", select: "name" },
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
         { path: "subBrandId", select: "name" },
         { path: "productTypeId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
+        
         // { path: "purchaseTaxId", select: "name percentage" },
         // { path: "salesTaxId", select: "name percentage" },
       ],
@@ -478,6 +480,15 @@ export const getAllProduct = async (req, res) => {
               salesTaxId: { $first: "$salesTaxId" },
               isPurchaseTaxIncluding: { $first: "$isPurchaseTaxIncluding" },
               isSalesTaxIncluding: { $first: "$isSalesTaxIncluding" },
+              branchId: { $first: "$branchId" },
+            },
+          },
+          {
+            $lookup: {
+              from: "branches",
+              localField: "branchId",
+              foreignField: "_id",
+              as: "branchData",
             },
           },
           {
@@ -522,6 +533,12 @@ export const getAllProduct = async (req, res) => {
               preserveNullAndEmptyArrays: true,
             },
           },
+          {
+            $unwind: {
+              path: "$branchData",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
           // 🎯 Shape the final output
           {
             $project: {
@@ -530,6 +547,10 @@ export const getAllProduct = async (req, res) => {
                 _id: "$uomData._id",
                 name: "$uomData.name",
                 code: "$uomData.code",
+              },
+              branchData: {
+                _id: "$branchData._id",
+                name: "$branchData.name",
               },
               purchaseTaxData: {
                 _id: "$purchaseTaxData._id",
@@ -570,6 +591,7 @@ export const getAllProduct = async (req, res) => {
           isSalesTaxIncluding: stockAggregation.length > 0 ? stockAggregation[0].isSalesTaxIncluding : false,
           qty,
           uomId: stockAggregation.length > 0 ? stockAggregation[0].uomData : null,
+          branchId: stockAggregation.length > 0 ? stockAggregation[0].branchData : null,
         };
       }),
     );
@@ -634,6 +656,8 @@ export const getProductDropdown = async (req, res) => {
             { path: "purchaseTaxId", select: "name percentage" },
             { path: "salesTaxId", select: "name percentage" },
             { path: "uomId", select: "name code" },
+            { path: "companyId", select: "name" },
+            { path: "branchId", select: "name" },
           ],
         },
       );
@@ -747,6 +771,7 @@ export const getOneProduct = async (req, res) => {
       {},
       {
         populate: [
+          { path: "companyId", select: "name" },
           { path: "categoryId", select: "name" },
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
@@ -848,6 +873,21 @@ export const getOneProduct = async (req, res) => {
           isPurchaseTaxIncluding: { $first: "$isPurchaseTaxIncluding" },
           isSalesTaxIncluding: { $first: "$isSalesTaxIncluding" },
           uomData: { $first: "$uomData" },
+          branchId: { $first: "$branchId" },
+        },
+      },
+      {
+        $lookup: {
+          from: "branches",
+          localField: "branchId",
+          foreignField: "_id",
+          as: "branchData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$branchData",
+          preserveNullAndEmptyArrays: true,
         },
       },
 
@@ -866,6 +906,10 @@ export const getOneProduct = async (req, res) => {
           totalLandingCost: 1,
           totalPurchasePrice: 1,
           totalSellingMargin: 1,
+          branchData: {
+            _id: "$branchData._id",
+            name: "$branchData.name",
+          },
           purchaseTaxId: 1,
           salesTaxId: 1,
           isPurchaseTaxIncluding: 1,
@@ -890,6 +934,7 @@ export const getOneProduct = async (req, res) => {
       isPurchaseTaxIncluding: stock.isPurchaseTaxIncluding,
       isSalesTaxIncluding: stock.isSalesTaxIncluding,
       uomId: stock.uomData,
+      branchId: stock.branchData,
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), productsWithStock, {}));
@@ -960,6 +1005,7 @@ export const detectProduct = async (req, res) => {
         }
         console.log("criteria => ", criteria);
         const enrichedProducts = await findAllAndPopulateWithSorting(productModel, criteria, {}, {}, [
+          { path: "companyId", select: "name" },
           { path: "categoryId", select: "name" },
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
@@ -975,6 +1021,8 @@ export const detectProduct = async (req, res) => {
 
             // Pull first available stock for this item
             const stockInfo = await stockModel.findOne(stockCriteria).populate([
+              { path: "companyId", select: "name" },
+              { path: "branchId", select: "name" },
               { path: "purchaseTaxId", select: "name percentage" },
               { path: "salesTaxId", select: "name percentage" },
               { path: "uomId", select: "name code" },
@@ -989,6 +1037,7 @@ export const detectProduct = async (req, res) => {
               uomId: stockInfo?.uomId || null,
               purchaseTaxId: stockInfo?.purchaseTaxId || null,
               salesTaxId: stockInfo?.salesTaxId || null,
+              branchId: stockInfo?.branchId || null,
               ai_confidence: idMatches[productIdStr] || 0,
               detect_qty: idCounts[productIdStr] || 1,
             };
