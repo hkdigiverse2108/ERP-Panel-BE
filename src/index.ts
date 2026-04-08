@@ -10,7 +10,6 @@ import path from "path";
 import { apiResponse, HTTP_STATUS } from "./common";
 import { socketServer } from "./helper/socket";
 import { initCronJobs } from "./helper";
-import { automatic_attach } from "./controllers/module";
 
 const app = express();
 
@@ -62,8 +61,6 @@ app.use((_, res) => {
 
 let server = new http.Server(app);
 export const socket = socketServer(server);
-
-automatic_attach()
 
 export default server;
 
