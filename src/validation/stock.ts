@@ -47,7 +47,7 @@ export const editStockSchema = Joi.object().keys({
 
 export const bulkStockAdjustmentSchema = Joi.object().keys({
   companyId: objectId().optional(),
-  type: Joi.string().allow("", null).optional(),
+  consumptionTypeId: objectId().required(),
   items: Joi.array()
     .items(
       Joi.object().keys({
