@@ -337,7 +337,6 @@ export const addBulkContact = async (req, res) => {
     }
 
     const contactsToAdd = [];
-    const errors = [];
 
     for (let i = 0; i < data.length; i++) {
       let item = data[i];
@@ -381,14 +380,12 @@ export const addBulkContact = async (req, res) => {
       let { error, value } = addBulkContactSchema.validate(item);
 
       if (error) {
-        errors.push({ row: i + 1, error: error.details[0].message });
-        continue;
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: ${error.details[0].message}`, {}, {}));
       }
 
       value.companyId = await checkCompany(user, value);
       if (!value.companyId) {
-        errors.push({ row: i + 1, error: "Company ID is required" });
-        continue;
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: Company ID is required`, {}, {}));
       }
 
       // --- Structured Nesting ---
@@ -494,11 +491,7 @@ export const addBulkContact = async (req, res) => {
       if (orCondition.length) {
         const isExist = await getFirstMatch(contactModel, { $or: orCondition, isDeleted: false, companyId: value.companyId }, {}, {});
         if (isExist) {
-          errors.push({
-            row: i + 1,
-            error: "Contact with this Email, Phone or PAN already exists",
-          });
-          continue;
+          return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: Contact with this Email, Phone or PAN already exists`, {}, {}));
         }
       }
 
@@ -507,9 +500,6 @@ export const addBulkContact = async (req, res) => {
       contactsToAdd.push(value);
     }
 
-    if (errors.length > 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Bulk upload failed due to some errors.", {}, { errors }));
-    }
 
     const response = await contactModel.insertMany(contactsToAdd);
     if (!response) {
