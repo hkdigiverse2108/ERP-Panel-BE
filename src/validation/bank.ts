@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { baseApiSchema, baseCompanyApiSchema, objectId } from "./common";
 
 const addAddressSchema = Joi.object({
   addressLine1: Joi.string().optional(),
@@ -11,16 +11,16 @@ const addAddressSchema = Joi.object({
 });
 
 const editAddressSchemaOptional = Joi.object({
-  addressLine1: Joi.string().optional(),
-  addressLine2: Joi.string().optional(),
-  country: objectId().optional(),
-  state: objectId().optional(),
-  city: objectId().optional(),
-  pinCode: Joi.number().optional(),
+  addressLine1: Joi.string().optional().allow("", null),
+  addressLine2: Joi.string().optional().allow("", null),
+  country: objectId().optional().allow("", null),
+  state: objectId().optional().allow("", null),
+  city: objectId().optional().allow("", null),
+  pinCode: Joi.number().optional().allow("", null),
 });
 
 export const addBankSchema = Joi.object().keys({
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
   name: Joi.string().required(),
   ifscCode: Joi.string().required(),
   branchName: Joi.string().required(),
@@ -40,22 +40,22 @@ export const addBankSchema = Joi.object().keys({
 
 export const editBankSchema = Joi.object().keys({
   bankId: objectId().required(),
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
   name: Joi.string().optional(),
   ifscCode: Joi.string().optional(),
   branchName: Joi.string().optional(),
   accountHolderName: Joi.string().optional(),
   bankAccountNumber: Joi.string().optional(),
-  swiftCode: Joi.string().optional(),
+  swiftCode: Joi.string().optional().allow("", null),
   openingBalance: {
-    creditBalance: Joi.number().optional(),
-    debitBalance: Joi.number().optional(),
+    creditBalance: Joi.number().optional().allow("", null),
+    debitBalance: Joi.number().optional().allow("", null),
   },
-  upiId: Joi.string().optional(),
+  upiId: Joi.string().optional().allow("", null),
 
   address: editAddressSchemaOptional.optional(),
 
-  branchIds: Joi.array().items(objectId()).optional(),
+  branchIds: Joi.array().items(objectId()).optional().allow("", null),
 });
 
 export const deleteBankSchema = Joi.object().keys({

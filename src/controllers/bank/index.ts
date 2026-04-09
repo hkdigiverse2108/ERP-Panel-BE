@@ -11,13 +11,11 @@ export const addBank = async (req, res) => {
     const { user } = req.headers;
 
     const { error, value } = addBankSchema.validate(req.body);
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
-    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     if (value?.branchIds?.length) {
       for (const branch of value?.branchIds) {
@@ -47,7 +45,7 @@ export const editBank = async (req, res) => {
     const { user } = req.headers;
 
     const { error, value } = editBankSchema.validate(req.body);
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     if (!(await checkIdExist(bankModel, value?.bankId, "Bank", res))) return;
 
@@ -78,7 +76,7 @@ export const deleteBankById = async (req, res) => {
     const { user } = req.headers;
     const { error, value } = deleteBankSchema.validate(req.params);
 
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     if (!(await checkIdExist(bankModel, value?.id, "Bank", res))) return;
 
@@ -106,9 +104,9 @@ export const getAllBank = async (req, res) => {
     let criteria: any = { isDeleted: false };
 
     if (companyId) criteria.companyId = companyId;
-    if (branchId) criteria.branchId = branchId;
+    if (branchId) criteria.branchIds = { $in: [branchId] };
     if (companyFilter) criteria.companyId = new ObjectId(companyFilter);
-    if (branchFilter) criteria.branchId = new ObjectId(branchFilter);
+    if (branchFilter) criteria.branchIds = { $in: [new ObjectId(branchFilter)] };
 
     if (search) criteria.$or = [{ accountHolderName: { $regex: search, $options: "si" }, bankAccountNumber: { $regex: search, $options: "si" } }];
 
@@ -120,7 +118,6 @@ export const getAllBank = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
         { path: "branchIds", select: "name" },
         { path: "address.country", select: "name code" },
         { path: "address.state", select: "name code" },
@@ -167,7 +164,6 @@ export const getBankById = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
           { path: "branchIds", select: "name" },
           { path: "address.country", select: "name code" },
           { path: "address.state", select: "name code" },
@@ -204,10 +200,10 @@ export const getBankDropdown = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
-    if (branchId) criteria.branchId = branchId;
+    if (branchId) criteria.branchIds = { $in: [branchId] };
 
     if (branchFilter) {
-      criteria.branchId = branchFilter;
+      criteria.branchIds = { $in: [branchFilter] };
     }
 
     if (search) {
@@ -223,7 +219,7 @@ export const getBankDropdown = async (req, res) => {
       {
         sort: { name: 1 },
         limit: search ? 50 : 1000,
-        populate: [{ path: "branchId", select: "name" }],
+        populate: [{ path: "branchIds", select: "name" }],
       },
     );
     const dropdownData = response.map((item) => ({

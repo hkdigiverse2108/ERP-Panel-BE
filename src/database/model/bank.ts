@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { baseCommonFields, baseSchemaOptions } from "./base";
 
 const bankSchema = new mongoose.Schema(
   {
@@ -23,10 +23,9 @@ const bankSchema = new mongoose.Schema(
       city: { type: mongoose.Schema.Types.ObjectId, ref: "location", default: null },
       pinCode: { type: Number },
     },
-
     branchIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "branch", default: null }],
-
-    ...baseSchemaFields,
+    companyId: { type: mongoose.Schema.Types.ObjectId, ref: "company", index: true },
+    ...baseCommonFields,
   },
   baseSchemaOptions,
 );
