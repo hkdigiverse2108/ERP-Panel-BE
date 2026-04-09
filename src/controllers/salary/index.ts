@@ -74,6 +74,7 @@ export const getAllSalary = async (req, res) => {
             sort: { createdAt: -1 },
             populate: [
                 { path: "companyId", select: "name" },
+                { path: "branchId", select: "name" },
                 { path: "partyId", model: "user", select: "fullName" }, // PartyId refers to Employee in Salary
                 { path: "createdBy", select: "fullName userType" },
                 { path: "updatedBy", select: "fullName userType" },
@@ -117,6 +118,7 @@ export const getSalaryById = async (req, res) => {
             {
                 populate: [
                     { path: "companyId", select: "name" },
+                    { path: "branchId", select: "name" },
                     { path: "partyId", model: "user", select: "name" },
                     { path: "createdBy", select: "fullName userType" },
                     { path: "updatedBy", select: "fullName userType" },
