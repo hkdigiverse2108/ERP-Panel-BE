@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { baseCompanyApiSchema, objectId } from "./common";
 import { COUPON_DISCOUNT_TYPE, COUPON_STATUS } from "../common";
 
 export const addCouponSchema = Joi.object().keys({
@@ -18,7 +18,7 @@ export const addCouponSchema = Joi.object().keys({
     .valid(...Object.values(COUPON_STATUS))
     .default(COUPON_STATUS.ACTIVE)
     .optional(),
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 export const editCouponSchema = Joi.object().keys({
@@ -37,7 +37,7 @@ export const editCouponSchema = Joi.object().keys({
   status: Joi.string()
     .valid(...Object.values(COUPON_STATUS))
     .optional(),
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 export const deleteCouponSchema = Joi.object().keys({

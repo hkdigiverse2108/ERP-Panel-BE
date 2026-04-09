@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { contactModel, couponModel, PosOrderModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCouponSchema, verifyCouponSchema, deleteCouponSchema, editCouponSchema, getCouponSchema, removeCouponSchema } from "../../validation";
 import { COUPON_DISCOUNT_TYPE, COUPON_STATUS } from "../../common";
 
@@ -18,9 +18,7 @@ export const addCoupon = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
-    value.branchId = await checkBranch(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     const isExist = await getFirstMatch(couponModel, { name: value?.name, companyId: value.companyId, isDeleted: false }, {}, {});
     if (isExist) {
@@ -129,8 +127,7 @@ export const getAllCoupon = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const branchId = user?.branchId?._id;
-    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
+    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page) || 1;
     limit = Number(limit) || 10;
@@ -145,13 +142,6 @@ export const getAllCoupon = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
-    if (branchId) {
-      criteria.branchId = branchId;
-    }
-
-    if (branchFilter) {
-      criteria.branchId = branchFilter;
-    }
 
     if (activeFilter) {
       criteria.isActive = activeFilter === "true";
@@ -180,7 +170,6 @@ export const getAllCoupon = async (req, res) => {
       limit,
       populate: [
         { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
         { path: "customerIds.id", select: "firstName lastName" },
         { path: "createdBy", select: "fullName userType" },
       ],
@@ -220,7 +209,6 @@ export const getOneCoupon = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
           { path: "customerIds.id", select: "firstName lastName" },
         ],
@@ -384,8 +372,7 @@ export const getCouponDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const branchId = user?.branchId?._id;
-    const { expiredFilter, limitReachedFilter, search, companyFilter, branchFilter } = req.query;
+    const { expiredFilter, limitReachedFilter, search, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false, status: COUPON_STATUS.ACTIVE, isActive: true };
 
@@ -397,13 +384,6 @@ export const getCouponDropdown = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
-    if (branchId) {
-      criteria.branchId = branchId;
-    }
-
-    if (branchFilter) {
-      criteria.branchId = branchFilter;
-    }
 
     if (search) {
       criteria.name = { $regex: search, $options: "si" };

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { taxModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, checkCompany, checkBranch } from "../../helper";
+import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, checkCompany } from "../../helper";
 import { addTaxSchema, deleteTaxSchema, editTaxSchema, getTaxSchema } from "../../validation";
 
 export const addTax = async (req, res) => {
@@ -12,7 +12,6 @@ export const addTax = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
-    value.branchId = await checkBranch(user, value);
     let existingTax = await getFirstMatch(
       taxModel,
       {
@@ -127,8 +126,7 @@ export const getAllTax = async (req, res) => {
   try {
     const { user } = req.headers;
     const companyId = user?.companyId?._id;
-    const branchId = user?.branchId?._id;
-    let { page, limit, search, activeFilter, companyFilter, branchFilter } = req.query;
+    let { page, limit, search, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -141,14 +139,6 @@ export const getAllTax = async (req, res) => {
 
     if (companyFilter) criteria.companyId = companyFilter;
 
-    if (branchId) {
-      criteria.branchId = branchId;
-    }
-
-    if (branchFilter) {
-      criteria.branchId = branchFilter;
-    }
-
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
@@ -159,7 +149,6 @@ export const getAllTax = async (req, res) => {
       sort: { name: 1 },
       populate: [
         { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
@@ -206,7 +195,6 @@ export const getTaxById = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
           { path: "updatedBy", select: "name userType" },
         ],
@@ -227,8 +215,7 @@ export const getTaxDropdown = async (req, res) => {
   try {
     const { user } = req.headers;
     const companyId = user?.companyId?._id;
-    const branchId = user?.branchId?._id;
-    const { companyFilter, branchFilter } = req.query;
+    const { companyFilter, search } = req.query;
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (user?.userType !== USER_TYPES.SUPER_ADMIN) {
@@ -237,19 +224,13 @@ export const getTaxDropdown = async (req, res) => {
 
     if (companyFilter) criteria.companyId = companyFilter;
 
-    if (branchId) {
-      criteria.branchId = branchId;
-    }
-
-    if (branchFilter) criteria.branchId = branchFilter;
-
     const response = await getDataWithSorting(
       taxModel,
       criteria,
-      { _id: 1, name: 1, percentage: 1, branchId: 1 },
+      { _id: 1, name: 1, percentage: 1 },
       {
         sort: { name: 1 },
-        populate: [{ path: "branchId", select: "name" }],
+        limit: search ? 50 : 1000,
       },
     );
 
@@ -257,7 +238,6 @@ export const getTaxDropdown = async (req, res) => {
       _id: item._id,
       name: item.name,
       percentage: item.percentage,
-      branchId: item.branchId,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Tax"), dropdownData, {}));

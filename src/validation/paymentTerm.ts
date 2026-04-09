@@ -1,17 +1,17 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { baseCompanyApiSchema, objectId } from "./common";
 
 export const addPaymentTermSchema = Joi.object().keys({
   name: Joi.string().trim().required(),
   day: Joi.number().integer().min(0).required(),
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 export const editPaymentTermSchema = Joi.object().keys({
   paymentTermId: objectId().required(),
   name: Joi.string().trim().optional(),
   day: Joi.number().integer().min(0).optional(),
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 export const deletePaymentTermSchema = Joi.object().keys({

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { ConsumptionTypeModel } from "../../database";
-import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { createConsumptionTypeSchema, deleteConsumptionTypeSchema, getConsumptionTypeSchema, updateConsumptionTypeSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -20,9 +20,7 @@ export const addConsumptionType = async (req: any, res: any) => {
       value.isDefault = true;
     } else {
       value.companyId = await checkCompany(user, value);
-      value.branchId = await checkBranch(user, value);
       if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.fieldIsRequired("Company Id"), {}, {}));
-      if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.fieldIsRequired("Branch Id"), {}, {}));
     }
 
     value.createdBy = user._id;
@@ -138,7 +136,6 @@ export const getOneConsumptionType = async (req: any, res: any) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
           { path: "updatedBy", select: "name userType" },
         ],
@@ -184,7 +181,6 @@ export const getAllConsumptionType = async (req: any, res: any) => {
       limit: limit,
       populate: [
         { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { loyaltyPointsModel } from "../../database";
-import { checkBranch, checkCompany, getFirstMatch, reqInfo, responseMessage } from "../../helper";
+import { checkCompany, getFirstMatch, reqInfo, responseMessage } from "../../helper";
 import { addLoyaltyPointsSchema, getLoyaltyPointsSchema } from "../../validation";
 
 export const addOrUpdateLoyaltyPoints = async (req, res) => {
@@ -15,9 +15,7 @@ export const addOrUpdateLoyaltyPoints = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
-    value.branchId = await checkBranch(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
     const isExist = await getFirstMatch(loyaltyPointsModel, { companyId: value.companyId }, {}, {});
 
     if (!isExist) {
@@ -62,7 +60,6 @@ export const getLoyaltyPoints = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
         ],
       },

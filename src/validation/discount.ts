@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { baseCompanyApiSchema, objectId } from "./common";
 import { VALUE_TYPE, DISCOUNT_STATUS, DISCOUNT_MODE, DISCOUNT_APPLICABLE, DISCOUNT_APPLIES_TO, MINIMUM_REQUIREMENT } from "../common";
 
 // --- Sub-schemas ---
@@ -131,15 +131,12 @@ export const addDiscountSchema = Joi.object().keys({
     otherwise: Joi.date().optional().allow(null),
   }),
 
-  // Branch Scoping
-  branchIds: Joi.array().items(objectId()).optional(),
-
   // Status
   status: Joi.string()
     .valid(...Object.values(DISCOUNT_STATUS))
     .default(DISCOUNT_STATUS.ACTIVE)
     .optional(),
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 // --- Edit Discount ---
@@ -193,12 +190,10 @@ export const editDiscountSchema = Joi.object().keys({
   hasEndDate: Joi.boolean().optional(),
   endDateTime: Joi.date().optional().allow(null),
 
-  branchIds: Joi.array().items(objectId()).optional(),
-
   status: Joi.string()
     .valid(...Object.values(DISCOUNT_STATUS))
     .optional(),
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 // --- Delete / Get ---

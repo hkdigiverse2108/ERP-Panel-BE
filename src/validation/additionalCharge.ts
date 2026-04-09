@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { baseCompanyApiSchema, objectId } from "./common";
 import { ADDITIONAL_CHARGE_TYPE } from "../common";
 
 export const addAdditionalChargeSchema = Joi.object({
@@ -11,7 +11,7 @@ export const addAdditionalChargeSchema = Joi.object({
   taxId: objectId().optional().allow("", null),
   isTaxIncluding: Joi.boolean().optional(),
   hsnSac: Joi.string().trim().optional().allow(""),
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 export const editAdditionalChargeSchema = Joi.object({
@@ -24,7 +24,7 @@ export const editAdditionalChargeSchema = Joi.object({
   taxId: objectId().optional().allow("", null),
   isTaxIncluding: Joi.boolean().optional(),
   hsnSac: Joi.string().trim().optional().allow(""),
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 export const deleteAdditionalChargeSchema = Joi.object({

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { paymentTermsModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addPaymentTermSchema, deletePaymentTermSchema, editPaymentTermSchema, getPaymentTermSchema } from "../../validation";
 import { propagateDefaultPaymentTermToAllCompanies } from "./helper";
 
@@ -13,9 +13,7 @@ export const addPaymentTerm = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
-    value.branchId = await checkBranch(user, value);
     if (!value.companyId && user.userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-    if (!value.branchId && user.userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
     const isExist = await getFirstMatch(paymentTermsModel, { name: value?.name, companyId: value.companyId, isDeleted: false }, {}, {});
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Payment Term"), {}, {}));
 
@@ -109,8 +107,7 @@ export const getAllPaymentTerm = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const branchId = user?.branchId?._id;
-    let { page, limit, search, activeFilter, companyFilter, branchFilter, startDate, endDate } = req.query;
+    let { page, limit, search, activeFilter, companyFilter, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -125,13 +122,6 @@ export const getAllPaymentTerm = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
-    if (branchId) {
-      criteria.branchId = branchId;
-    }
-
-    if (branchFilter) {
-      criteria.branchId = branchFilter;
-    }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
@@ -204,8 +194,7 @@ export const getPaymentTermDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const branchId = user?.branchId?._id;
-    const { companyFilter, branchFilter } = req.query;
+    const { companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -217,13 +206,6 @@ export const getPaymentTermDropdown = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
-    if (branchId) {
-      criteria.branchId = branchId;
-    }
-
-    if (branchFilter) {
-      criteria.branchId = branchFilter;
-    }
 
     const response = await getDataWithSorting(
       paymentTermsModel,
