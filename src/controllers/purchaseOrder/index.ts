@@ -434,7 +434,10 @@ export const getPurchaseOrderDropdown = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "supplierId", select: "firstName lastName companyName" }],
+      populate: [
+        { path: "supplierId", select: "firstName lastName companyName" },
+        { path: "branchId", select: "name" },
+      ],
     };
 
     const response = await getDataWithSorting(purchaseOrderModel, criteria, {}, options);

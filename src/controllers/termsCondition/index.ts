@@ -134,6 +134,7 @@ export const getAllTermsCondition = async (req, res) => {
     const options: any = {
       sort: { isDefault: -1, name: 1 },
       populate: [
+        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
@@ -226,9 +227,10 @@ export const getTermsConditionDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       termsConditionModel,
       criteria,
-      { _id: 1, termsCondition: 1, isDefault: 1 },
+      { _id: 1, termsCondition: 1, isDefault: 1, branchId: 1 },
       {
         sort: { isDefault: -1, createdAt: -1 },
+        populate: [{ path: "branchId", select: "name" }],
       },
     );
 
@@ -236,6 +238,7 @@ export const getTermsConditionDropdown = async (req, res) => {
       _id: item._id,
       termsCondition: item.termsCondition,
       isDefault: item.isDefault,
+      branchId: item.branchId,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Terms & Condition"), dropdownData, {}));

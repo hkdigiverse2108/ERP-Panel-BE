@@ -521,10 +521,13 @@ export const getSalesOrderDropdown = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "customerId", select: "firstName lastName companyName" }],
+      populate: [
+        { path: "customerId", select: "firstName lastName companyName" },
+        { path: "branchId", select: "name" },
+      ],
     };
 
-    const response = await getDataWithSorting(SalesOrderModel, criteria, { salesOrderNo: 1, date: 1, netAmount: 1, transactionSummary: 1 }, options);
+    const response = await getDataWithSorting(SalesOrderModel, criteria, { salesOrderNo: 1, date: 1, netAmount: 1, transactionSummary: 1, branchId: 1 }, options);
 
     const dropdownData = response.map((item) => ({
       _id: item._id,

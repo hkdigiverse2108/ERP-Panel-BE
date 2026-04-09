@@ -140,6 +140,7 @@ export const getAllExpense = async (req, res) => {
     // fetch data with aggregate and populate
     const response = await aggregateAndPopulate(ExpenseModel, pipeline, [
       { path: "companyId", select: "name" },
+      { path: "branchId", select: "name" },
       { path: "createdBy", select: "fullName userType" },
     ]);
 
@@ -241,6 +242,7 @@ export const getExpenseById = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
         ],
       },

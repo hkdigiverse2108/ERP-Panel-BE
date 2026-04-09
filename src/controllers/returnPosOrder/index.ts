@@ -429,6 +429,15 @@ export const getAllReturnPosOrder = async (req, res) => {
             { $unwind: { path: "$items.productId", preserveNullAndEmptyArrays: true } },
             {
               $lookup: {
+                from: "branches",
+                localField: "branchId",
+                foreignField: "_id",
+                as: "branchId",
+              },
+            },
+            { $unwind: { path: "$branchId", preserveNullAndEmptyArrays: true } },
+            {
+              $lookup: {
                 from: "stocks",
                 let: { productId: "$items.productId._id", companyName: "$companyId.name" },
                 pipeline: [
@@ -485,9 +494,7 @@ export const getAllReturnPosOrder = async (req, res) => {
                 flatDiscount: { $first: "$flatDiscount" },
                 discountAmount: { $first: "$discountAmount" },
                 total: { $first: "$total" },
-                companyId: { $first: "$companyId" },
-                isDeleted: { $first: "$isDeleted" },
-                isActive: { $first: "$isActive" },
+                branchId: { $first: "$branchId" },
                 createdBy: { $first: "$createdBy" },
                 updatedBy: { $first: "$updatedBy" },
                 createdAt: { $first: "$createdAt" },
@@ -531,6 +538,7 @@ export const getAllReturnPosOrder = async (req, res) => {
                 createdBy: 1,
                 updatedBy: 1,
                 companyId: { _id: 1, name: 1 },
+                branchId: { _id: 1, name: 1 },
                 orderNo: "$returnOrderNo",
                 posOrderId: 1,
                 customerId: {
@@ -670,6 +678,15 @@ export const getOneReturnPosOrder = async (req, res) => {
       { $unwind: { path: "$items.productId", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
+          from: "branches",
+          localField: "branchId",
+          foreignField: "_id",
+          as: "branchId",
+        },
+      },
+      { $unwind: { path: "$branchId", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
           from: "stocks",
           let: { productId: "$items.productId._id", companyName: "$companyId.name" },
           pipeline: [
@@ -726,9 +743,7 @@ export const getOneReturnPosOrder = async (req, res) => {
           flatDiscount: { $first: "$flatDiscount" },
           discountAmount: { $first: "$discountAmount" },
           total: { $first: "$total" },
-          companyId: { $first: "$companyId" },
-          isDeleted: { $first: "$isDeleted" },
-          isActive: { $first: "$isActive" },
+          branchId: { $first: "$branchId" },
           createdBy: { $first: "$createdBy" },
           updatedBy: { $first: "$updatedBy" },
           createdAt: { $first: "$createdAt" },
@@ -772,6 +787,7 @@ export const getOneReturnPosOrder = async (req, res) => {
           createdBy: 1,
           updatedBy: 1,
           companyId: { _id: 1, name: 1 },
+          branchId: { _id: 1, name: 1 },
           orderNo: "$returnOrderNo",
           posOrderId: 1,
           customerId: {
@@ -948,7 +964,10 @@ export const returnPosOrderDropDown = async (req, res) => {
       criteria.$or = [{ returnOrderNo: { $regex: search, $options: "si" } }];
     }
 
-    const response = await returnPosOrderModel.find(criteria, { returnOrderNo: 1, total: 1 }).sort({ createdAt: -1 }).limit(100);
+    const response = await returnPosOrderModel.find(criteria, { returnOrderNo: 1, total: 1, branchId: 1 })
+      .populate([{ path: "branchId", select: "name" }])
+      .sort({ createdAt: -1 })
+      .limit(100);
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order Dropdown"), response, {}));
   } catch (error) {

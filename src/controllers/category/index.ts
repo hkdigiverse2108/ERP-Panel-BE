@@ -204,9 +204,10 @@ export const getCategoryDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       categoryModel,
       criteria,
-      { _id: 1, name: 1, parentCategoryId: 1 },
+      { _id: 1, name: 1, parentCategoryId: 1, branchId: 1 },
       {
         sort: { name: 1 },
+        populate: [{ path: "branchId", select: "name" }],
       },
     );
 
@@ -214,6 +215,7 @@ export const getCategoryDropdown = async (req, res) => {
       _id: item._id,
       name: item.name,
       parentCategoryId: item.parentCategoryId,
+      branchId: item.branchId,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Category"), dropdownData, {}));

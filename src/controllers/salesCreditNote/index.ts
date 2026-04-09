@@ -300,6 +300,7 @@ export const getAllSalesCreditNote = async (req, res) => {
         { path: "shippingDetails.transporterId", select: "firstName lastName" },
         { path: "termsAndConditionIds", select: "termsCondition" },
         { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
         { path: "salesManId", select: "firstName lastName" },
         { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
@@ -397,6 +398,7 @@ export const getOneSalesCreditNote = async (req, res) => {
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "termsAndConditionIds", select: "termsCondition" },
           { path: "companyId", select: "name gstNo" },
+          { path: "branchId", select: "name" },
           { path: "salesManId", select: "firstName lastName" },
           { path: "shippingDetails.transporterId", select: "firstName lastName" },
           { path: "createdBy", select: "fullName userType" },
@@ -488,7 +490,10 @@ export const getSalesCreditNoteDropdown = async (req, res) => {
     const options: any = {
       sort: { creditNoteDate: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "customerId", select: "firstName lastName companyName" }],
+      populate: [
+        { path: "customerId", select: "firstName lastName companyName" },
+        { path: "branchId", select: "name" },
+      ],
     };
 
     const response = await getDataWithSorting(

@@ -167,6 +167,7 @@ export const getBankById = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
           { path: "branchIds", select: "name" },
           { path: "address.country", select: "name code" },
           { path: "address.state", select: "name code" },
@@ -222,6 +223,7 @@ export const getBankDropdown = async (req, res) => {
       {
         sort: { name: 1 },
         limit: search ? 50 : 1000,
+        populate: [{ path: "branchId", select: "name" }],
       },
     );
     const dropdownData = response.map((item) => ({

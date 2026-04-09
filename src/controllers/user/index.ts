@@ -375,7 +375,7 @@ export const getUserDropDown = async (req, res) => {
       criteria.role = new ObjectId(roleFilter);
     }
 
-    const response = await getData(userModel, criteria, { _id: 1, fullName: 1, userType: 1, role: 1 }, { sort: { fullName: 1 }, populate: [{ path: "role", select: "name" }] });
+    const response = await getData(userModel, criteria, { _id: 1, fullName: 1, userType: 1, role: 1, branchId: 1 }, { sort: { fullName: 1 }, populate: [{ path: "role", select: "name" }, { path: "branchId", select: "name" }] });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("User"), response, {}));
   } catch (error) {

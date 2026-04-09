@@ -728,6 +728,7 @@ export const getProductDropdown = async (req, res) => {
         isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
         isSalesTaxIncluding: stock?.isSalesTaxIncluding,
         uomId: stock?.uomId,
+        branchId: stock?.branchId,
         images: product.images ?? [],
       };
     });

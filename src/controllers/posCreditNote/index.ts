@@ -211,6 +211,7 @@ export const getAllPosCreditNote = async (req, res) => {
           ],
         },
         { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
         { path: "usedOnOrderIds", select: "orderNo" },
         { path: "createdBy", select: "fullName userType" },
       ],
@@ -265,6 +266,7 @@ export const getOnePosCreditNote = async (req, res) => {
             ],
           },
           { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
           { path: "usedOnOrderIds", select: "orderNo" },
           { path: "createdBy", select: "fullName userType" },
         ],
@@ -386,12 +388,13 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
       if (branchId) criteria.branchId = new ObjectId(branchId);
       if (customerFilter) criteria.customerId = new ObjectId(customerFilter);
 
-      const data = await posCreditNoteModel.find(criteria).select("creditNoteNo customerId").sort({ createdAt: -1 });
+      const data = await posCreditNoteModel.find(criteria).select("creditNoteNo customerId branchId").populate({ path: "branchId", select: "name" }).sort({ createdAt: -1 });
 
       response = data.map((item) => ({
         id: item._id,
         no: item.creditNoteNo,
         customerId: item.customerId,
+        branchId: item.branchId,
       }));
     } else if (typeFilter === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
       let criteria: any = {
@@ -403,12 +406,13 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
       if (branchId) criteria.branchId = new ObjectId(branchId);
       if (customerFilter) criteria.partyId = new ObjectId(customerFilter);
 
-      const data = await PosPaymentModel.find(criteria).select("paymentNo partyId").sort({ createdAt: -1 });
+      const data = await PosPaymentModel.find(criteria).select("paymentNo partyId branchId").populate({ path: "branchId", select: "name" }).sort({ createdAt: -1 });
 
       response = data.map((item) => ({
         id: item._id,
         no: item.paymentNo,
         customerId: item.partyId,
+        branchId: item.branchId,
       }));
     }
 

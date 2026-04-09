@@ -300,6 +300,7 @@ export const getAllSupplierBill = async (req, res) => {
         { path: "termsAndConditionIds", select: "termsCondition" },
         { path: "paymentTermsId", select: "name day" },
         { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
@@ -437,6 +438,7 @@ export const getOneSupplierBill = async (req, res) => {
           { path: "termsAndConditionIds", select: "termsCondition" },
           { path: "paymentTermsId", select: "name day" },
           { path: "companyId", select: "name gstNo" },
+          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
           { path: "updatedBy", select: "name userType" },
         ],
@@ -526,7 +528,10 @@ export const getSupplierBillDropdown = async (req, res) => {
     const options: any = {
       sort: { supplierBillDate: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "supplierId", select: "firstName lastName companyName" }],
+      populate: [
+        { path: "supplierId", select: "firstName lastName companyName" },
+        { path: "branchId", select: "name" },
+      ],
     };
 
     const response = await getDataWithSorting(
@@ -538,6 +543,7 @@ export const getSupplierBillDropdown = async (req, res) => {
         "summary.netAmount": 1,
         balanceAmount: 1,
         paymentStatus: 1,
+        branchId: 1,
       },
       options,
     );

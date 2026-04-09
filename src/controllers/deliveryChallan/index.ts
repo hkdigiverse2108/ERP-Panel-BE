@@ -567,15 +567,17 @@ export const getDeliveryChallanDropdown = async (req, res) => {
       populate: [
         { path: "customerId", select: "firstName lastName companyName" },
         { path: "createdBy", select: "name userType" },
+        { path: "branchId", select: "name" },
       ],
     };
 
-    const response = await getDataWithSorting(deliveryChallanModel, criteria, { deliveryChallanNo: 1, date: 1, transactionSummary: 1 }, options);
+    const response = await getDataWithSorting(deliveryChallanModel, criteria, { deliveryChallanNo: 1, date: 1, transactionSummary: 1, branchId: 1 }, options);
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
       name: item.deliveryChallanNo,
       deliveryChallanNo: item.deliveryChallanNo,
+      branchId: item.branchId,
       date: item.date,
       netAmount: item.transactionSummary?.netAmount || 0,
     }));

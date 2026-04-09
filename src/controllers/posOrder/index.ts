@@ -712,7 +712,9 @@ export const posOrderDropDown = async (req, res) => {
       dueAmount: 1,
       paidAmount: 1,
       customerId: 1,
+      branchId: 1,
     })
+      .populate([{ path: "branchId", select: "name" }])
       .sort({ createdAt: -1 })
       .limit(100);
 
@@ -1121,11 +1123,14 @@ export const getShortHoldOrders = async (req, res) => {
 
     const options = {
       sort: { holdDate: -1 },
-      populate: [{ path: "customerId", select: "firstName lastName phoneNo " }],
+      populate: [
+        { path: "customerId", select: "firstName lastName phoneNo " },
+        { path: "branchId", select: "name" },
+      ],
       limit: 100,
     };
 
-    const selectedFields = { orderNo: 1, holdDate: 1, totalAmount: 1, customerId: 1, createdAt: 1 };
+    const selectedFields = { orderNo: 1, holdDate: 1, totalAmount: 1, customerId: 1, createdAt: 1, branchId: 1 };
 
     const response = await getDataWithSorting(PosOrderModel, criteria, selectedFields, options);
 

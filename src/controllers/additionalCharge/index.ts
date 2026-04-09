@@ -210,10 +210,13 @@ export const getAdditionalChargeDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       additionalChargeModel,
       criteria,
-      { _id: 1, name: 1, type: 1, defaultValue: 1, taxId: 1 },
+      { _id: 1, name: 1, type: 1, defaultValue: 1, taxId: 1, branchId: 1 },
       {
         sort: { name: 1 },
-        populate: [{ path: "taxId", select: "name taxPercentage" }],
+        populate: [
+          { path: "taxId", select: "name taxPercentage" },
+          { path: "branchId", select: "name" },
+        ],
       },
     );
 
@@ -223,6 +226,7 @@ export const getAdditionalChargeDropdown = async (req, res) => {
       type: item.type,
       defaultValue: item.defaultValue,
       taxId: item.taxId,
+      branchId: item.branchId,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Additional Charge"), dropdownData, {}));

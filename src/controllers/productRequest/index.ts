@@ -134,6 +134,7 @@ export const getAllProductRequest = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
         { path: "createdBy", select: "name userType" },
       ],
     };
@@ -175,6 +176,7 @@ export const getOneProductRequest = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
           { path: "createdBy", select: "name userType" },
         ],
       },

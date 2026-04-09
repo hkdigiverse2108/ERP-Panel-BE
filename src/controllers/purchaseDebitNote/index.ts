@@ -287,6 +287,7 @@ export const getAllPurchaseDebitNote = async (req, res) => {
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "paymentTermsId", select: "name day" },
         { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
@@ -393,6 +394,7 @@ export const getOnePurchaseDebitNote = async (req, res) => {
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "paymentTermsId", select: "name day" },
           { path: "companyId", select: "name gstNo" },
+          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
         ],
       },
@@ -481,7 +483,10 @@ export const getPurchaseDebitNoteDropdown = async (req, res) => {
     const options: any = {
       sort: { debitNoteDate: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "supplierId", select: "firstName lastName companyName" }],
+      populate: [
+        { path: "supplierId", select: "firstName lastName companyName" },
+        { path: "branchId", select: "name" },
+      ],
     };
 
     const response = await getDataWithSorting(
