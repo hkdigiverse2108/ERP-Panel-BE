@@ -164,6 +164,7 @@ export const getAllDebitNote = async (req, res) => {
       populate: [
         { path: "bankAccountId", select: "name" },
         { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
@@ -204,6 +205,7 @@ export const getOneDebitNote = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
           { path: "bankAccountId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
         ],

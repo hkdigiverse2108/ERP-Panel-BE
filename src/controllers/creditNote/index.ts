@@ -164,6 +164,7 @@ export const getAllCreditNote = async (req, res) => {
       populate: [
         { path: "bankAccountId", select: "name" },
         { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
@@ -205,6 +206,7 @@ export const getOneCreditNote = async (req, res) => {
         populate: [
           { path: "bankAccountId", select: "name" },
           { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
         ],
       },
