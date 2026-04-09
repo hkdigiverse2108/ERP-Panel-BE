@@ -61,10 +61,10 @@ export const getAndIncrementPrefix = async (options: PrefixOptions): Promise<str
         isActive: true,
       },
     },
-    { upsert: true, new: false, setDefaultsOnInsert: true }
+    { upsert: true, new: true, setDefaultsOnInsert: true }
   ).lean();
 
-  const sequenceNumber = updatedDoc ? (updatedDoc.currentNumber ?? 1) : 1;
+  const sequenceNumber = updatedDoc?.currentNumber || 1;
   return `${prefixString}-${sequenceNumber}`;
 };
 

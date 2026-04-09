@@ -64,6 +64,8 @@ import { specialRouter } from "./special";
 import { credentialRouter } from "./credential";
 import { aiRouter } from "./ai";
 import migrationRouter from "./migration";
+import { stockTransferRouter } from "./stockTransfer";
+
 
 const router = Router();
 
@@ -84,6 +86,8 @@ router.use("/product-request", productRequestRouter);
 router.use("/call-request", callRequestRouter);
 router.use("/stock", stockRouter);
 router.use("/stock-verification", stockVerificationRouter);
+router.use("/stock-transfer", stockTransferRouter);
+
 
 router.use("/contacts", contactRouter);
 router.use("/bank", bankRouter);

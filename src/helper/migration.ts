@@ -1,8 +1,8 @@
-import { companyModel, branchModel, InvoiceModel, SalesOrderModel, purchaseOrderModel, deliveryChallanModel, EstimateModel, supplierBillModel, adjustmentNoteModel, voucherModel, ExpenseModel, productModel, contactModel, materialConsumptionModel, PosOrderModel, stockModel, PrefixModel, stockVerificationModel, materialInwardModel, productRequestModel, billOfLiveProductModel, PosPaymentModel, PosCashRegisterModel, PosCashControlModel, returnPosOrderModel, posCreditNoteModel, BankTransactionModel, feedbackModel, additionalChargeModel, termsConditionModel, discountModel, couponModel, loyaltyPointsModel, bankModel, materialModel, callRequestModel, ConsumptionTypeModel, brandModel, categoryModel, taxModel, companyDriveModel, departmentModel, loyaltyModel, membershipModel, notificationModel, recipeModel, salesCreditNoteModel, purchaseDebitNoteModel, settingsModel, paymentTermsModel, CashControlModel } from "../database";
+import { companyModel, userModel, branchModel, InvoiceModel, SalesOrderModel, purchaseOrderModel, deliveryChallanModel, EstimateModel, supplierBillModel, adjustmentNoteModel, voucherModel, ExpenseModel, productModel, contactModel, materialConsumptionModel, PosOrderModel, stockModel, PrefixModel, stockVerificationModel, materialInwardModel, productRequestModel, billOfLiveProductModel, PosPaymentModel, PosCashRegisterModel, PosCashControlModel, returnPosOrderModel, posCreditNoteModel, BankTransactionModel, feedbackModel, additionalChargeModel, termsConditionModel, discountModel, couponModel, loyaltyPointsModel, bankModel, materialModel, callRequestModel, ConsumptionTypeModel, brandModel, categoryModel, taxModel, companyDriveModel, departmentModel, loyaltyModel, membershipModel, notificationModel, recipeModel, salesCreditNoteModel, purchaseDebitNoteModel, settingsModel, paymentTermsModel, CashControlModel } from "../database";
 import { createOne, updateData } from "./databaseServices";
 
 /**
- * Migration Function: Creates Head Branches for existing companies and 
+ * Migration Function: Creates Head Branches for existing companies and
  * links all legacy transactional data to that new branch.
  */
 export const patchHeadBranchesForAllCompanies = async (userId: string | null = null) => {
@@ -22,7 +22,7 @@ export const patchHeadBranchesForAllCompanies = async (userId: string | null = n
       } else {
         // 2. Pick the oldest ("First") branch if no head branch exists
         const oldestBranch: any = await branchModel.findOne({ companyId: company._id, isDeleted: false }).sort({ createdAt: 1 });
-        
+
         if (oldestBranch) {
           console.log(` - Promoting oldest branch to head for ${company.name}: ${oldestBranch.name} (${oldestBranch._id})`);
           await updateData(branchModel, { _id: oldestBranch._id }, { isHeadBranch: true }, {});
@@ -32,7 +32,7 @@ export const patchHeadBranchesForAllCompanies = async (userId: string | null = n
           console.log(` - Creating brand new head branch for ${company.name}...`);
           const branchPayload: any = {
             companyId: company._id,
-            name: `${company.name} - Head Branch`,
+            name: `${company.name || company.displayName || "Head Branch"}`,
             displayName: company.displayName,
             contactName: company.contactName,
             email: company.email,
@@ -61,56 +61,8 @@ export const patchHeadBranchesForAllCompanies = async (userId: string | null = n
       const update = { branchId };
 
       console.log(` - Linking legacy transactional data for ${company.name}...`);
-      
-      const modelsToUpdate = [
-        InvoiceModel,
-        SalesOrderModel,
-        purchaseOrderModel,
-        deliveryChallanModel,
-        EstimateModel,
-        supplierBillModel,
-        adjustmentNoteModel,
-        voucherModel,
-        ExpenseModel,
-        materialConsumptionModel,
-        PosOrderModel,
-        stockModel,
-        PrefixModel,
-        stockVerificationModel,
-        materialInwardModel,
-        productRequestModel,
-        billOfLiveProductModel,
-        PosPaymentModel,
-        PosCashRegisterModel,
-        PosCashControlModel,
-        returnPosOrderModel,
-        posCreditNoteModel,
-        BankTransactionModel,
-        feedbackModel,
-        additionalChargeModel,
-        termsConditionModel,
-        discountModel,
-        couponModel,
-        loyaltyPointsModel,
-        bankModel,
-        materialModel,
-        callRequestModel,
-        ConsumptionTypeModel,
-        brandModel,
-        categoryModel,
-        taxModel,
-        companyDriveModel,
-        departmentModel,
-        loyaltyModel,
-        membershipModel,
-        notificationModel,
-        recipeModel,
-        salesCreditNoteModel,
-        purchaseDebitNoteModel,
-        settingsModel,
-        paymentTermsModel,
-        CashControlModel
-      ];
+
+      const modelsToUpdate = [userModel, InvoiceModel, SalesOrderModel, purchaseOrderModel, deliveryChallanModel, EstimateModel, supplierBillModel, adjustmentNoteModel, voucherModel, ExpenseModel, materialConsumptionModel, PosOrderModel, stockModel, PrefixModel, stockVerificationModel, materialInwardModel, productRequestModel, billOfLiveProductModel, PosPaymentModel, PosCashRegisterModel, PosCashControlModel, returnPosOrderModel, posCreditNoteModel, BankTransactionModel, feedbackModel, additionalChargeModel, termsConditionModel, discountModel, couponModel, loyaltyPointsModel, bankModel, materialModel, callRequestModel, ConsumptionTypeModel, brandModel, categoryModel, taxModel, companyDriveModel, departmentModel, loyaltyModel, membershipModel, notificationModel, recipeModel, salesCreditNoteModel, purchaseDebitNoteModel, settingsModel, paymentTermsModel, CashControlModel];
       for (const modelRef of modelsToUpdate) {
         let model = modelRef as any;
         try {

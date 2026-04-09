@@ -1,6 +1,6 @@
-import { apiResponse, HTTP_STATUS } from "../../common";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { billOfLiveProductModel, productModel, recipeModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch, getAndIncrementPrefix } from "../../helper";
 import { addBillOfLiveProductSchema, deleteBillOfLiveProductSchema, editBillOfLiveProductSchema, getBillOfLiveProductSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -19,8 +19,15 @@ export const addBillOfLiveProduct = async (req, res) => {
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
     if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
-    const isExist = await getFirstMatch(billOfLiveProductModel, { companyId: value.companyId, number: value.number, isDeleted: false }, {}, {});
+    value.number = await getAndIncrementPrefix({
+      branchId: value.branchId,
+      companyId: value.companyId,
+      prefixType: PREFIX_MODULES.BILL_OF_LIVE_PRODUCT,
+      model: billOfLiveProductModel,
+      fieldName: "number",
+    });
 
+    const isExist = await getFirstMatch(billOfLiveProductModel, { companyId: value.companyId, number: value.number, isDeleted: false }, {}, {});
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Bill Of Live Product Number"), {}, {}));
 
     if (value?.recipeId?.length) {

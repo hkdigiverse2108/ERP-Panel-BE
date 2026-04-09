@@ -65,3 +65,4 @@ export * from "./consumptionType";
 export * from "./monthlySpecial";
 export * from "./credential";
 export * from "./notification";
+export * from "./stockTransfer";

@@ -59,3 +59,4 @@ export * from "./salary";
 export * from "./consumptionType";
 export * from "./special";
 export * from "./credential";
+export * from "./stockTransfer";
