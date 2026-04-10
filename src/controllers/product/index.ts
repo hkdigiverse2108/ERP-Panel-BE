@@ -71,7 +71,6 @@ export const bulkAddProduct = async (req, res) => {
     }
 
     const productsToAdd = [];
-    const errors = [];
     const namesInFile = new Set();
 
     for (let i = 0; i < data.length; i++) {
@@ -112,8 +111,7 @@ export const bulkAddProduct = async (req, res) => {
       let { error, value } = addBulkProductSchema.validate(item);
 
       if (error) {
-        errors.push({ row: i + 1, error: error.details[0].message });
-        continue;
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: ${error.details[0].message}`, {}, {}));
       }
 
       // --- Post-validation processing ---
@@ -129,7 +127,10 @@ export const bulkAddProduct = async (req, res) => {
       // 2. Handle nutrition (string like 'item1:value1, item2:value2' to array of objects)
       if (value.nutrition && typeof value.nutrition === "string") {
         const nutritionArray = [];
-        const pairs = value.nutrition.split(",").map((p) => p.trim()).filter((p) => p !== "");
+        const pairs = value.nutrition
+          .split(",")
+          .map((p) => p.trim())
+          .filter((p) => p !== "");
         for (const pair of pairs) {
           const parts = pair.split(":");
           const name = parts[0]?.trim() || "";
@@ -154,16 +155,14 @@ export const bulkAddProduct = async (req, res) => {
       if (value.category) {
         const categoryResult = await getFirstMatch(categoryModel, { name: { $regex: new RegExp(`^${value.category.trim()}$`, "i") }, isDeleted: false, parentCategoryId: null }, {}, {});
         if (!categoryResult) {
-          errors.push({ row: i + 1, error: `Category '${value.category}' not found` });
-          continue;
+          return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: Category '${value.category}' not found`, {}, {}));
         }
         value.categoryId = categoryResult._id;
 
         if (value.subCategory) {
           const subCategoryResult = await getFirstMatch(categoryModel, { name: { $regex: new RegExp(`^${value.subCategory.trim()}$`, "i") }, isDeleted: false, parentCategoryId: value.categoryId }, {}, {});
           if (!subCategoryResult) {
-            errors.push({ row: i + 1, error: `Sub-category '${value.subCategory}' not found under '${value.category}'` });
-            continue;
+            return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: Sub-category '${value.subCategory}' not found under '${value.category}'`, {}, {}));
           }
           value.subCategoryId = subCategoryResult._id;
         }
@@ -173,16 +172,14 @@ export const bulkAddProduct = async (req, res) => {
       if (value.brand) {
         const brandResult = await getFirstMatch(brandModel, { name: { $regex: new RegExp(`^${value.brand.trim()}$`, "i") }, isDeleted: false, parentBrandId: null }, {}, {});
         if (!brandResult) {
-          errors.push({ row: i + 1, error: `Brand '${value.brand}' not found` });
-          continue;
+          return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: Brand '${value.brand}' not found`, {}, {}));
         }
         value.brandId = brandResult._id;
 
         if (value.subBrand) {
           const subBrandResult = await getFirstMatch(brandModel, { name: { $regex: new RegExp(`^${value.subBrand.trim()}$`, "i") }, isDeleted: false, parentBrandId: value.brandId }, {}, {});
           if (!subBrandResult) {
-            errors.push({ row: i + 1, error: `Sub-brand '${value.subBrand}' not found under '${value.brand}'` });
-            continue;
+            return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: Sub-brand '${value.subBrand}' not found under '${value.brand}'`, {}, {}));
           }
           value.subBrandId = subBrandResult._id;
         }
@@ -190,32 +187,27 @@ export const bulkAddProduct = async (req, res) => {
 
       const nameKey = value.companyId ? `${value.name}_${value.companyId}` : value.name;
       if (namesInFile.has(nameKey)) {
-        errors.push({ row: i + 1, error: `Duplicate Product Name in file: ${value.name}` });
-        continue;
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: Duplicate Product Name in file: ${value.name}`, {}, {}));
       }
       namesInFile.add(nameKey);
 
       if (value.companyId && !(await checkIdExist(companyModel, value.companyId, "Company", null))) {
-        errors.push({ row: i + 1, error: responseMessage?.getDataNotFound("Company") });
-        continue;
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: ${responseMessage?.getDataNotFound("Company")}`, {}, {}));
       }
 
       if (value.branchId && !(await checkIdExist(branchModel, value.branchId, "Branch", null))) {
-        errors.push({ row: i + 1, error: responseMessage?.getDataNotFound("Branch") });
-        continue;
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: ${responseMessage?.getDataNotFound("Branch")}`, {}, {}));
       }
 
       if (value?.productTypeId && !(await checkIdExist(productTypeModel, value?.productTypeId, "Product Type", null))) {
-        errors.push({ row: i + 1, error: responseMessage?.getDataNotFound("Product Type") });
-        continue;
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: ${responseMessage?.getDataNotFound("Product Type")}`, {}, {}));
       }
 
       let duplicateCriteria: any = { name: value?.name, isDeleted: false };
       if (value?.companyId) duplicateCriteria.companyId = value.companyId;
       let isExist = await getFirstMatch(productModel, duplicateCriteria, {}, {});
       if (isExist) {
-        errors.push({ row: i + 1, error: responseMessage?.dataAlreadyExist("Product with this name") });
-        continue;
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: ${responseMessage?.dataAlreadyExist("Product with this name")}`, {}, {}));
       }
 
       value.createdBy = user?._id || null;
@@ -228,10 +220,6 @@ export const bulkAddProduct = async (req, res) => {
       delete value.subBrand;
 
       productsToAdd.push(value);
-    }
-
-    if (errors.length > 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Bulk upload failed due to some errors.", {}, { errors }));
     }
 
     const response = await productModel.insertMany(productsToAdd);
@@ -732,9 +720,7 @@ export const getOneProduct = async (req, res) => {
       {
         _id: value?.id,
         isDeleted: false,
-        ...(userType !== USER_TYPES.SUPER_ADMIN && companyId
-          ? { $or: [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }] }
-          : {}),
+        ...(userType !== USER_TYPES.SUPER_ADMIN && companyId ? { $or: [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }] } : {}),
       },
       {},
       {
