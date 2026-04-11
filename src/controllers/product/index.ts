@@ -378,6 +378,8 @@ export const getAllProduct = async (req, res) => {
         branchId: user?.branchId?._id,
       };
 
+      applyDateFilter(stockCriteria, startDate as string, endDate as string);
+
       const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
 
       const productIds = (stockEntries || []).filter((s: any) => s.productId).map((s: any) => new ObjectId(s.productId.toString()));
@@ -392,6 +394,8 @@ export const getAllProduct = async (req, res) => {
         ...(branchFilter && { branchId: new ObjectId(branchFilter as string) }),
       };
 
+      applyDateFilter(stockCriteria, startDate as string, endDate as string);
+
       const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
 
       const productIds = (stockEntries || []).filter((s: any) => s.productId).map((s: any) => new ObjectId(s.productId.toString()));
@@ -401,7 +405,7 @@ export const getAllProduct = async (req, res) => {
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
-    applyDateFilter(criteria, startDate as string, endDate as string);
+    // applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options: any = {
       sort: { createdAt: -1 },
@@ -432,6 +436,7 @@ export const getAllProduct = async (req, res) => {
         const linkedStockIds = (productObj.stockIds || []).filter((id: any) => id);
 
         let stockCriteria: any = { isDeleted: false };
+        applyDateFilter(stockCriteria, startDate as string, endDate as string);
 
         if (linkedStockIds.length > 0) {
           stockCriteria._id = { $in: linkedStockIds.map((id: any) => new ObjectId(id.toString())) };
