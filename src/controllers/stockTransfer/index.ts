@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, PREFIX_MODULES, STOCK_TRANSFER_STATUS, USER_TYPES, CONSUMPTION_TYPE } from "../../common";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES, STOCK_TRANSFER_STATUS, USER_TYPES } from "../../common";
 import { stockModel, stockTransferModel, productModel, ConsumptionTypeModel, materialConsumptionModel } from "../../database";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix, checkCompany, checkBranch } from "../../helper";
 import { addStockTransferSchema, approveStockTransferSchema, confirmReceiptStockTransferSchema, rejectStockTransferSchema, cancelStockTransferSchema, getStockTransferSchema, deleteStockTransferSchema, editStockTransferSchema } from "../../validation";
@@ -430,21 +430,20 @@ export const getAllStockTransfer = async (req, res) => {
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
     const { page, limit, search, activeFilter, statusFilter, typeFilter, companyFilter, branchFilter } = req.query;
-    // console.log("typeFilter", typeFilter);
-    // console.log("User", user , companyId,branchId);
+
     let criteria: any = { isDeleted: false };
 
     if (companyId) criteria.companyId = companyId;
     if (companyFilter) criteria.companyId = companyFilter;
 
-    const effectiveBranchId = branchId || branchFilter;
+    const effectiveBranchId = branchFilter || branchId;
 
     if (effectiveBranchId) {
       const branchObjId = new ObjectId(effectiveBranchId.toString());
       if (typeFilter === "incoming") {
-        criteria.requestedToBranchId = branchObjId;
-      } else if (typeFilter === "outgoing") {
         criteria.requestedByBranchId = branchObjId;
+      } else if (typeFilter === "outgoing") {
+        criteria.requestedToBranchId = branchObjId;
       } else {
         criteria.$or = [{ requestedByBranchId: branchObjId }, { requestedToBranchId: branchObjId }];
       }
@@ -468,13 +467,33 @@ export const getAllStockTransfer = async (req, res) => {
     };
 
     if (page && limit) {
-      options.skip = (parseInt(page) - 1) * parseInt(limit);
-      options.limit = parseInt(limit);
+      options.skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+      options.limit = parseInt(limit as string);
     }
 
-    const response = await getDataWithSorting(stockTransferModel, criteria, {}, options);
+    let response = await getDataWithSorting(stockTransferModel, criteria, {}, options);
+
+    if (effectiveBranchId) {
+      const branchIdStr = effectiveBranchId.toString();
+      response = response.map((item: any) => {
+        const itemObj = item.toObject ? item.toObject() : item;
+        let type = "";
+
+        const reqBy = itemObj.requestedByBranchId?._id?.toString() || itemObj.requestedByBranchId?.toString();
+        const reqTo = itemObj.requestedToBranchId?._id?.toString() || itemObj.requestedToBranchId?.toString();
+
+        if (reqBy === branchIdStr) {
+          type = "incoming";
+        } else if (reqTo === branchIdStr) {
+          type = "outgoing";
+        }
+
+        return { ...itemObj, type };
+      });
+    }
+
     const totalData = await countData(stockTransferModel, criteria);
-    const totalPages = Math.ceil(totalData / limit) || 1;
+    const totalPages = Math.ceil(totalData / (limit ? parseInt(limit as string) : totalData)) || 1;
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Transfer"), { stock_transfer: response, totalData, state: { page, limit, totalPages } }, {}));
   } catch (error) {
