@@ -1,17 +1,18 @@
 import { Router } from "express";
-import { requestStockTransfer, approveStockTransfer, confirmReceiptStockTransfer, rejectStockTransfer, cancelStockTransfer, getAllStockTransfer, getStockTransferById, deleteStockTransfer } from "../controllers/stockTransfer";
+import { stockTransferController } from "../controllers";
 
 const router = Router();
 
-router.post("/request", requestStockTransfer);
-router.post("/approve", approveStockTransfer);
-router.post("/confirm-receipt", confirmReceiptStockTransfer);
-router.post("/reject", rejectStockTransfer);
-router.post("/cancel", cancelStockTransfer);
+router.post("/request", stockTransferController.requestStockTransfer);
+router.post("/approve", stockTransferController.approveStockTransfer);
+router.post("/confirm-receipt", stockTransferController.confirmReceiptStockTransfer);
+router.post("/reject", stockTransferController.rejectStockTransfer);
+router.post("/cancel", stockTransferController.cancelStockTransfer);
+router.put("/edit", stockTransferController.editStockTransfer);
 
-router.get("/all", getAllStockTransfer);
-router.get("/:id", getStockTransferById);
+router.get("/all", stockTransferController.getAllStockTransfer);
+router.get("/:id", stockTransferController.getStockTransferById);
 
-router.delete("/:id", deleteStockTransfer);
+router.delete("/:id", stockTransferController.deleteStockTransfer);
 
 export const stockTransferRouter = router;

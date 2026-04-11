@@ -18,7 +18,7 @@ export const addStockTransferSchema = Joi.object().keys({
 });
 
 export const approveStockTransferSchema = Joi.object().keys({
-  transferId: objectId().required(),
+  stockTransferId: objectId().required(),
   approvalNote: Joi.string().allow("", null).optional(),
   items: Joi.array()
     .items(
@@ -33,9 +33,26 @@ export const approveStockTransferSchema = Joi.object().keys({
   ...baseApiSchema,
 });
 
+export const editStockTransferSchema = Joi.object().keys({
+  stockTransferId: objectId().required(),
+  requestedToBranchId: objectId().optional(),
+  requestNote: Joi.string().allow("", null).optional(),
+  items: Joi.array()
+    .items(
+      Joi.object().keys({
+        productId: objectId().required(),
+        price: Joi.number().min(0).optional(),
+        requestedQty: Joi.number().min(0.001).required(),
+      }),
+    )
+    .min(1)
+    .optional(),
+  ...baseApiSchema,
+});
+
 
 export const confirmReceiptStockTransferSchema = Joi.object().keys({
-  transferId: objectId().required(),
+  stockTransferId: objectId().required(),
   receiptNote: Joi.string().allow("", null).optional(),
   items: Joi.array()
     .items(
@@ -50,13 +67,13 @@ export const confirmReceiptStockTransferSchema = Joi.object().keys({
 });
 
 export const rejectStockTransferSchema = Joi.object().keys({
-  transferId: objectId().required(),
+  stockTransferId: objectId().required(),
   approvalNote: Joi.string().allow("", null).optional(),
   ...baseApiSchema,
 });
 
 export const cancelStockTransferSchema = Joi.object().keys({
-  transferId: objectId().required(),
+  stockTransferId: objectId().required(),
   requestNote: Joi.string().allow("", null).optional(),
   ...baseApiSchema,
 });

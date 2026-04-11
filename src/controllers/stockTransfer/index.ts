@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES, STOCK_TRANSFER_STATUS, USER_TYPES, CONSUMPTION_TYPE } from "../../common";
 import { stockModel, stockTransferModel, productModel, ConsumptionTypeModel, materialConsumptionModel } from "../../database";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix, checkCompany, checkBranch } from "../../helper";
-import { addStockTransferSchema, approveStockTransferSchema, confirmReceiptStockTransferSchema, rejectStockTransferSchema, cancelStockTransferSchema, getStockTransferSchema, deleteStockTransferSchema } from "../../validation";
+import { addStockTransferSchema, approveStockTransferSchema, confirmReceiptStockTransferSchema, rejectStockTransferSchema, cancelStockTransferSchema, getStockTransferSchema, deleteStockTransferSchema, editStockTransferSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -16,6 +16,9 @@ export const requestStockTransfer = async (req, res) => {
     const requestedByBranchId = await checkBranch(user, value);
     if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
     if (!requestedByBranchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
+    if (requestedByBranchId.toString() === value.requestedToBranchId.toString()) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Stock cannot be transferred to the same branch"), {}, {}));
+    }
 
     const transferNo = await getAndIncrementPrefix({
       branchId: requestedByBranchId,
@@ -50,7 +53,7 @@ export const approveStockTransfer = async (req, res) => {
     const { error, value } = approveStockTransferSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const transfer = await getFirstMatch(stockTransferModel, { _id: value.transferId, isDeleted: false }, {}, {});
+    const transfer = await getFirstMatch(stockTransferModel, { _id: value.stockTransferId, isDeleted: false }, {}, {});
     if (!transfer) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Transfer"), {}, {}));
 
     const userBranchId = user?.branchId?._id?.toString() || user?.branchId?.toString();
@@ -59,7 +62,7 @@ export const approveStockTransfer = async (req, res) => {
     }
 
     if (transfer.status !== STOCK_TRANSFER_STATUS.PENDING) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Only pending requests can be approved"), {}, {}));
-    
+
     // Check stock availability in the requestedToBranch
     for (const item of value.items) {
       if (item.approvedQty <= 0) continue;
@@ -103,7 +106,7 @@ export const approveStockTransfer = async (req, res) => {
 
     const itemMap = new Map(value.items.map((i) => [i.productId.toString(), i.approvedQty]));
     const updatedItems: any[] = [];
-    
+
     for (const item of transfer.items) {
       const approvedQty = itemMap.has(item.productId.toString()) ? itemMap.get(item.productId.toString()) : 0;
       if (approvedQty > item.requestedQty) {
@@ -127,14 +130,13 @@ export const approveStockTransfer = async (req, res) => {
       updatedBy: user?._id,
     };
 
-    const response = await updateData(stockTransferModel, { _id: value.transferId }, updatePayload, {});
+    const response = await updateData(stockTransferModel, { _id: value.stockTransferId }, updatePayload, {});
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-
 
 export const confirmReceiptStockTransfer = async (req, res) => {
   reqInfo(req);
@@ -143,7 +145,7 @@ export const confirmReceiptStockTransfer = async (req, res) => {
     const { error, value } = confirmReceiptStockTransferSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const transfer = await getFirstMatch(stockTransferModel, { _id: value.transferId, isDeleted: false }, {}, {});
+    const transfer = await getFirstMatch(stockTransferModel, { _id: value.stockTransferId, isDeleted: false }, {}, {});
     if (!transfer) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Transfer"), {}, {}));
 
     const userBranchId = user?.branchId?._id?.toString() || user?.branchId?.toString();
@@ -289,7 +291,7 @@ export const confirmReceiptStockTransfer = async (req, res) => {
       updatedBy: user?._id,
     };
 
-    const response = await updateData(stockTransferModel, { _id: value.transferId }, updatePayload, {});
+    const response = await updateData(stockTransferModel, { _id: value.stockTransferId }, updatePayload, {});
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer Completed"), response, {}));
   } catch (error) {
     console.error(error);
@@ -304,7 +306,7 @@ export const rejectStockTransfer = async (req, res) => {
     const { error, value } = rejectStockTransferSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const transfer = await getFirstMatch(stockTransferModel, { _id: value.transferId, isDeleted: false }, {}, {});
+    const transfer = await getFirstMatch(stockTransferModel, { _id: value.stockTransferId, isDeleted: false }, {}, {});
     if (!transfer) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Transfer"), {}, {}));
 
     const userBranchId = user?.branchId?._id?.toString() || user?.branchId?.toString();
@@ -344,7 +346,7 @@ export const rejectStockTransfer = async (req, res) => {
       updatedBy: user?._id,
     };
 
-    const response = await updateData(stockTransferModel, { _id: value.transferId }, updatePayload, {});
+    const response = await updateData(stockTransferModel, { _id: value.stockTransferId }, updatePayload, {});
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer Rejected"), response, {}));
   } catch (error) {
     console.error(error);
@@ -359,7 +361,7 @@ export const cancelStockTransfer = async (req, res) => {
     const { error, value } = cancelStockTransferSchema.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const transfer = await getFirstMatch(stockTransferModel, { _id: value.transferId, isDeleted: false }, {}, {});
+    const transfer = await getFirstMatch(stockTransferModel, { _id: value.stockTransferId, isDeleted: false }, {}, {});
     if (!transfer) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Transfer"), {}, {}));
 
     const userBranchId = user?.branchId?._id?.toString() || user?.branchId?.toString();
@@ -377,11 +379,47 @@ export const cancelStockTransfer = async (req, res) => {
       updatedBy: user?._id,
     };
 
-    const response = await updateData(stockTransferModel, { _id: value.transferId }, updatePayload, {});
+    const response = await updateData(stockTransferModel, { _id: value.stockTransferId }, updatePayload, {});
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer Cancelled"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const editStockTransfer = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req.headers;
+    const { error, value } = editStockTransferSchema.validate(req.body);
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    const transfer = await getFirstMatch(stockTransferModel, { _id: value.stockTransferId, isDeleted: false }, {}, {});
+    if (!transfer) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Transfer"), {}, {}));
+
+    if (value.requestedToBranchId && transfer.requestedByBranchId.toString() === value.requestedToBranchId.toString()) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Stock cannot be transferred to the same branch"), {}, {}));
+    }
+
+    if (transfer.status !== STOCK_TRANSFER_STATUS.PENDING) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Only pending requests can be edited"), {}, {}));
+    }
+
+    const userBranchId = user?.branchId?._id?.toString() || user?.branchId?.toString();
+    if (user?.userType !== USER_TYPES.SUPER_ADMIN && userBranchId !== transfer.requestedByBranchId.toString()) {
+      return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.customMessage("Only the requesting branch can edit this transfer"), {}, {}));
+    }
+
+    const { stockTransferId, ...updatePayload } = value;
+    updatePayload.updatedBy = user?._id || null;
+
+    const response = await updateData(stockTransferModel, { _id: stockTransferId }, updatePayload, {});
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Stock Transfer"), {}, {}));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -391,9 +429,9 @@ export const getAllStockTransfer = async (req, res) => {
     const { user } = req.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { page, limit, search, status, typeFilter, companyFilter, branchFilter } = req.query;
-    console.log("typeFilter", typeFilter);
-    console.log("User", user , companyId,branchId);
+    const { page, limit, search, activeFilter, statusFilter, typeFilter, companyFilter, branchFilter } = req.query;
+    // console.log("typeFilter", typeFilter);
+    // console.log("User", user , companyId,branchId);
     let criteria: any = { isDeleted: false };
 
     if (companyId) criteria.companyId = companyId;
@@ -412,9 +450,9 @@ export const getAllStockTransfer = async (req, res) => {
       }
     }
 
-    if (status) criteria.status = status;
+    if (statusFilter) criteria.status = statusFilter;
     if (search) criteria.transferNo = { $regex: search, $options: "si" };
-
+    if (activeFilter) criteria.isActive = activeFilter == "true";
     const options: any = {
       sort: { createdAt: -1 },
       populate: [
@@ -424,6 +462,8 @@ export const getAllStockTransfer = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName" },
+        { path: "approvedBy", select: "fullName" },
+        { path: "receivedBy", select: "fullName" },
       ],
     };
 
