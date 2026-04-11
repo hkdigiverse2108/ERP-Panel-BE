@@ -1,7 +1,8 @@
-import { apiResponse, HTTP_STATUS, PREFIX_MODULES, STOCK_TRANSFER_STATUS, USER_TYPES } from "../../common";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES, SOCKET_EVENTS, STOCK_TRANSFER_STATUS, USER_TYPES } from "../../common";
 import { stockModel, stockTransferModel, productModel, ConsumptionTypeModel, materialConsumptionModel } from "../../database";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix, checkCompany, checkBranch } from "../../helper";
-import { addStockTransferSchema, approveStockTransferSchema, confirmReceiptStockTransferSchema, rejectStockTransferSchema, cancelStockTransferSchema, getStockTransferSchema, deleteStockTransferSchema, editStockTransferSchema } from "../../validation";
+import { sendNotification } from "../../helper/socket";
+import { addStockTransferSchema, approveStockTransferSchema, confirmReceiptStockTransferSchema, rejectStockTransferSchema, getStockTransferSchema, deleteStockTransferSchema, editStockTransferSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -38,6 +39,15 @@ export const requestStockTransfer = async (req, res) => {
 
     const response = await createOne(stockTransferModel, value);
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+
+    await sendNotification({
+      companyId: response?.companyId?._id,
+      branchId: response?.requestedToBranchId?._id,
+      title: "New Stock Transfer Request",
+      message: `${response.transferNo || "Stock Transfer"} requested`,
+      eventType: SOCKET_EVENTS.NOTIFICATION_NEW,
+      meta: { type: "stockTransfer", action: "created", userId: String((response as any)?._id), userName: response?.transferNo },
+    });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock Transfer Request"), response, {}));
   } catch (error) {
@@ -131,6 +141,17 @@ export const approveStockTransfer = async (req, res) => {
     };
 
     const response = await updateData(stockTransferModel, { _id: value.stockTransferId }, updatePayload, {});
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Stock Transfer"), {}, {}));
+
+    await sendNotification({
+      companyId: transfer?.companyId?._id,
+      branchId: transfer?.requestedByBranchId?._id,
+      title: "Stock Transfer Approved",
+      message: `${transfer.transferNo || "Stock Transfer"} approved`,
+      eventType: SOCKET_EVENTS.NOTIFICATION_NEW,
+      meta: { type: "stockTransfer", action: "approved", userId: String((transfer as any)?._id), userName: transfer?.transferNo },
+    });
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer"), response, {}));
   } catch (error) {
     console.error(error);
@@ -292,6 +313,17 @@ export const confirmReceiptStockTransfer = async (req, res) => {
     };
 
     const response = await updateData(stockTransferModel, { _id: value.stockTransferId }, updatePayload, {});
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Stock Transfer"), {}, {}));
+
+    await sendNotification({
+      companyId: transfer?.companyId?._id,
+      branchId: transfer?.requestedToBranchId?._id,
+      title: "Stock Transfer Completed",
+      message: `${transfer.transferNo || "Stock Transfer"} completed`,
+      eventType: SOCKET_EVENTS.NOTIFICATION_NEW,
+      meta: { type: "stockTransfer", action: "completed", userId: String((transfer as any)?._id), userName: transfer?.transferNo },
+    });
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer Completed"), response, {}));
   } catch (error) {
     console.error(error);
@@ -347,6 +379,17 @@ export const rejectStockTransfer = async (req, res) => {
     };
 
     const response = await updateData(stockTransferModel, { _id: value.stockTransferId }, updatePayload, {});
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Stock Transfer"), {}, {}));
+
+    await sendNotification({
+      companyId: transfer?.companyId?._id,
+      branchId: transfer?.requestedByBranchId?._id,
+      title: "Stock Transfer Rejected",
+      message: `${transfer.transferNo || "Stock Transfer"} rejected`,
+      eventType: SOCKET_EVENTS.NOTIFICATION_NEW,
+      meta: { type: "stockTransfer", action: "rejected", userId: String((transfer as any)?._id), userName: transfer?.transferNo },
+    });
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer Rejected"), response, {}));
   } catch (error) {
     console.error(error);
@@ -354,38 +397,40 @@ export const rejectStockTransfer = async (req, res) => {
   }
 };
 
-export const cancelStockTransfer = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { user } = req.headers;
-    const { error, value } = cancelStockTransferSchema.validate(req.body);
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+// export const cancelStockTransfer = async (req, res) => {
+//   reqInfo(req);
+//   try {
+//     const { user } = req.headers;
+//     const { error, value } = cancelStockTransferSchema.validate(req.body);
+//     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const transfer = await getFirstMatch(stockTransferModel, { _id: value.stockTransferId, isDeleted: false }, {}, {});
-    if (!transfer) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Transfer"), {}, {}));
+//     const transfer = await getFirstMatch(stockTransferModel, { _id: value.stockTransferId, isDeleted: false }, {}, {});
+//     if (!transfer) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Transfer"), {}, {}));
 
-    const userBranchId = user?.branchId?._id?.toString() || user?.branchId?.toString();
-    if (user?.userType !== USER_TYPES.SUPER_ADMIN && userBranchId !== transfer.requestedByBranchId.toString()) {
-      return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.customMessage("Only the requesting branch can cancel this transfer"), {}, {}));
-    }
+//     const userBranchId = user?.branchId?._id?.toString() || user?.branchId?.toString();
+//     if (user?.userType !== USER_TYPES.SUPER_ADMIN && userBranchId !== transfer.requestedByBranchId.toString()) {
+//       return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.customMessage("Only the requesting branch can cancel this transfer"), {}, {}));
+//     }
 
-    if (transfer.status !== STOCK_TRANSFER_STATUS.PENDING) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Only pending requests can be cancelled"), {}, {}));
-    }
+//     if (transfer.status !== STOCK_TRANSFER_STATUS.PENDING) {
+//       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Only pending requests can be cancelled"), {}, {}));
+//     }
 
-    const updatePayload = {
-      status: STOCK_TRANSFER_STATUS.CANCELLED,
-      requestNote: value.requestNote,
-      updatedBy: user?._id,
-    };
+//     const updatePayload = {
+//       status: STOCK_TRANSFER_STATUS.CANCELLED,
+//       requestNote: value.requestNote,
+//       updatedBy: user?._id,
+//     };
 
-    const response = await updateData(stockTransferModel, { _id: value.stockTransferId }, updatePayload, {});
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer Cancelled"), response, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
+//     const response = await updateData(stockTransferModel, { _id: value.stockTransferId }, updatePayload, {});
+//     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Stock Transfer"), {}, {}));
+
+//     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer Cancelled"), response, {}));
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+//   }
+// };
 
 export const editStockTransfer = async (req, res) => {
   reqInfo(req);
@@ -440,10 +485,15 @@ export const getAllStockTransfer = async (req, res) => {
 
     if (effectiveBranchId) {
       const branchObjId = new ObjectId(effectiveBranchId.toString());
+      // if (typeFilter === "incoming") {
+      //   criteria.requestedByBranchId = branchObjId;
+      // } else if (typeFilter === "outgoing") {
+      //   criteria.requestedToBranchId = branchObjId;
+      // } else {
       if (typeFilter === "incoming") {
-        criteria.requestedByBranchId = branchObjId;
+        criteria.requestedToBranchId = branchObjId; // ✅ correct
       } else if (typeFilter === "outgoing") {
-        criteria.requestedToBranchId = branchObjId;
+        criteria.requestedByBranchId = branchObjId; // ✅ correct
       } else {
         criteria.$or = [{ requestedByBranchId: branchObjId }, { requestedToBranchId: branchObjId }];
       }
@@ -482,10 +532,15 @@ export const getAllStockTransfer = async (req, res) => {
         const reqBy = itemObj.requestedByBranchId?._id?.toString() || itemObj.requestedByBranchId?.toString();
         const reqTo = itemObj.requestedToBranchId?._id?.toString() || itemObj.requestedToBranchId?.toString();
 
+        // if (reqBy === branchIdStr) {
+        //   type = "incoming";
+        // } else if (reqTo === branchIdStr) {
+        //   type = "outgoing";
+        // }
         if (reqBy === branchIdStr) {
-          type = "incoming";
+          type = "outgoing"; // ✅ you initiated → outgoing
         } else if (reqTo === branchIdStr) {
-          type = "outgoing";
+          type = "incoming"; // ✅ you receive → incoming
         }
 
         return { ...itemObj, type };

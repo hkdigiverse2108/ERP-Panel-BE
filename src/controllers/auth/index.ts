@@ -5,7 +5,6 @@ import { forgotPasswordSchema, loginSchema, registerSchema, resendOtpSchema, res
 
 import bcryptjs from "bcryptjs";
 import { createLoginLogEntry } from "../loginLog";
-import { sendNotification } from "../../helper/socket";
 
 export const register = async (req, res) => {
   reqInfo(req);
@@ -143,13 +142,6 @@ export const login = async (req, res) => {
       token,
     };
 
-    await sendNotification({
-      companyId: response?.companyId?._id,
-      title: "New User Login",
-      message: `${response.fullName || "User"} logged in`,
-      eventType: SOCKET_EVENTS.NOTIFICATION_NEW,
-      meta: { type: "login", action: "created", userId: String((response as any)?._id), userName: response?.fullName },
-    });
     if (!isTypeSuperAdmin) {
       createLoginLogEntry(req, response, "LOGIN", `${response?.companyId?.name || "Company"} Logged In`);
     }
