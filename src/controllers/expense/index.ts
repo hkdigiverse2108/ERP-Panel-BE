@@ -49,10 +49,10 @@ export const getAllExpense = async (req, res) => {
 
     // company filter
     if (companyId) criteria.companyId = companyId;
-    if (companyFilter) criteria.companyId = companyFilter;
+    if (companyFilter) criteria.companyId = new ObjectId(companyFilter);
     // branch filter
     if (branchId) criteria.branchId = branchId;
-    if (branchFilter) criteria.branchId = branchFilter;
+    if (branchFilter) criteria.branchId = new ObjectId(branchFilter);
     // type filter
     if (typeFilter) criteria.type = typeFilter;
 

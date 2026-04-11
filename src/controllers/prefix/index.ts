@@ -61,7 +61,6 @@ export const addPrefix = async (req, res) => {
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Prefix Template and populated to branches"), response, {}));
-
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));
@@ -192,21 +191,24 @@ export const getAllPrefix = async (req, res) => {
     let { page, limit, search, prefixType, activeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
-
     // Scoping
     if (userType === USER_TYPES.SUPER_ADMIN) {
       if (!companyFilter) {
-        criteria.companyId = null; // Default: only templates
+        criteria.companyId = null; // Default: templates
+        if (!branchFilter) {
+          criteria.branchId = null; // Default: templates
+        }
       } else if (companyFilter !== "all") {
-        criteria.companyId = companyFilter; // Specific company
+        criteria.companyId = new ObjectId(companyFilter as string); // Specific company
       }
-      if (!branchFilter) {
-        criteria.branchId = branchId;
-      } else if (branchFilter !== "all") {
-        criteria.branchId = branchFilter; // Specific branch
+
+      if (branchFilter && branchFilter !== "all") {
+        criteria.branchId = new ObjectId(branchFilter as string); // Specific branch
       }
     } else {
-      criteria.companyId = companyId;
+      // Regular users are scoped to their company and branch
+      criteria.companyId = companyId ? new ObjectId(companyId) : null;
+      criteria.branchId = branchId ? new ObjectId(branchId) : null;
     }
 
     if (search) {

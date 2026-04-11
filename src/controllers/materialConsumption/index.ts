@@ -52,7 +52,7 @@ export const addMaterialConsumption = async (req, res) => {
       fieldName: "number",
     });
 
-    const isExist = await getFirstMatch(materialConsumptionModel, { companyId: value.companyId, number: value?.number, isDeleted: false }, {}, {});
+    const isExist = await getFirstMatch(materialConsumptionModel, { companyId: value.companyId, branchId: value.branchId, number: value?.number, isDeleted: false }, {}, {});
 
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Number"), {}, {}));
 
