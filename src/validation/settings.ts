@@ -22,5 +22,31 @@ export const updateSettingsValidation = Joi.object({
         endTime: Joi.string().allow(null, ""),
         timezone: Joi.string().allow(null, ""),
     }).allow(null),
-    links: Joi.array().items(settingsLinkSchema).optional()
+    links: Joi.array().items(settingsLinkSchema).optional(),
+    reportFormats: Joi.array().items(Joi.object({
+        type: Joi.string(),
+        formats: Joi.array().items(Joi.object({
+            name: Joi.string(),
+            isSelected: Joi.boolean()
+        }))
+    })).optional()
 });
+
+export const addReportFormatValidation = Joi.object({
+    type: Joi.string().required(),
+    formats: Joi.array().items(Joi.object({
+        name: Joi.string().required(),
+        isSelected: Joi.boolean().default(false)
+    })).required()
+});
+
+export const updateReportFormatValidation = Joi.object({
+    reportFormatId: Joi.string().required(),
+    type: Joi.string().optional(),
+    formats: Joi.array().items(Joi.object({
+        name: Joi.string().required(),
+        isSelected: Joi.boolean().required(),
+        _id: Joi.string().optional()
+    })).optional()
+});
+

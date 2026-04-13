@@ -23,4 +23,11 @@ export interface ISettings extends Document {
         timezone: string;
     }
     links: ISettingsLink[];
+    reportFormats: {
+        type: string;
+        formats: {
+            name: string;
+            isSelected: boolean;
+        }[];
+    }[];
 }
