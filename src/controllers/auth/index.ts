@@ -1,6 +1,6 @@
-import { apiResponse, generateHash, generateToken, getOtpExpireTime, getUniqueOtp, HTTP_STATUS, LOGIN_SOURCES, SOCKET_EVENTS, USER_ROLES, USER_TYPES } from "../../common";
+import { apiResponse, generateHash, generateToken, getOtpExpireTime, getUniqueOtp, HTTP_STATUS, LOGIN_SOURCES, USER_TYPES } from "../../common";
 import { companyModel, roleModel, userModel } from "../../database";
-import { checkIdExist, createOne, emailVerificationMail, findAllAndPopulateWithSorting, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkIdExist, createOne, emailVerificationMail, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { forgotPasswordSchema, loginSchema, registerSchema, resendOtpSchema, resetPasswordSchema, updatePasswordSchema, verifyOtpSchema } from "../../validation";
 
 import bcryptjs from "bcryptjs";

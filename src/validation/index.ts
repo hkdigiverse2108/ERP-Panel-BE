@@ -60,3 +60,4 @@ export * from "./consumptionType";
 export * from "./special";
 export * from "./credential";
 export * from "./stockTransfer";
+export * from "./notification";

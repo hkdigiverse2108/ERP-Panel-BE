@@ -13,10 +13,10 @@ export let Io;
 
 const ioEvents = (io) => {
   io.on("connection", (socket) => {
-    console.log("A Company connected");
+    // console.log("A Branch connected ", socket.id);
 
     socket.on("joinRoom", (data) => {
-      //   console.log("Company joined room 1", data);
+      // console.log("Company joined room 1", data);
       socket.join(data.roomId);
     });
 
@@ -35,7 +35,7 @@ export const sendRealTimeUpdate = async (roomId, payload) => {
   let { eventType, data } = payload;
   try {
     // for (let roomId of roomIds) {
-    await Io.to(String(roomId)).emit(eventType, data);
+    Io.to(String(roomId)).emit(eventType, data);
     //   console.log(`${eventType} event sent to room ${roomId}`);
     // }
   } catch (error) {

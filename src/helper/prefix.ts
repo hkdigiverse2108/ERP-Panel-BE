@@ -85,7 +85,7 @@ export const clonePrefixesToBranch = async (
     // 1. Fetch company to identify the Head Branch
     const company = await companyModel.findById(companyId).lean();
     if (!company) {
-      console.log(`Company not found: ${companyId}`);
+      // console.log(`Company not found: ${companyId}`);
       return { success: false, message: "Company not found." };
     }
 
@@ -122,7 +122,7 @@ export const clonePrefixesToBranch = async (
     }
 
     if (!templates || templates.length === 0) {
-      console.log(`No prefix templates found to clone for branch ${branchId}`);
+      // console.log(`No prefix templates found to clone for branch ${branchId}`);
       return { success: true, message: "No prefixes to clone." };
     }
 

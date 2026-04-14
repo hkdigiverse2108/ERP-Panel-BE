@@ -19,6 +19,7 @@ export const transactionDetails = async (req, res) => {
 
     let finalCompanyId = user?.companyId?._id;
     let finalBranchId = user?.branchId?._id;
+
     if (companyFilter) {
       finalCompanyId = new mongoose.Types.ObjectId(companyFilter as string);
     } else if (finalCompanyId) {
@@ -31,9 +32,15 @@ export const transactionDetails = async (req, res) => {
       finalBranchId = new mongoose.Types.ObjectId(finalBranchId as string);
     }
 
+    console.log("uuser", user);
+
     const commonCriteria: any = { isDeleted: false };
     if (finalCompanyId) commonCriteria.companyId = finalCompanyId;
     if (finalBranchId) commonCriteria.branchId = finalBranchId;
+
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete commonCriteria.branchId;
+    }
 
     const dateCriteria: any = { ...commonCriteria };
     applyDateFilter(dateCriteria, startDate as string, endDate as string, "createdAt");
@@ -47,7 +54,7 @@ export const transactionDetails = async (req, res) => {
 
     // Execute aggregations in parallel
     const results: any = await Promise.all([
-      // 🔹 Sales & Revenue
+      //  Sales & Revenue
       PosOrderModel.aggregate([
         { $match: { ...dateCriteria, status: POS_ORDER_STATUS.COMPLETED } },
         {
@@ -269,6 +276,10 @@ export const topCustomers = async (req, res) => {
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
     if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete criteria.branchId;
+    }
+
     applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
 
     const data = await PosOrderModel.aggregate([
@@ -342,6 +353,10 @@ export const categoryWiseCustomersCount = async (req, res) => {
     if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
     if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete criteria.branchId;
+    }
 
     applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
 
@@ -455,6 +470,10 @@ export const categoryWiseCustomers = async (req, res) => {
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
     if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete criteria.branchId;
+    }
+
     if (customerFilter) criteria.customerId = new mongoose.Types.ObjectId(customerFilter as string);
 
     applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
@@ -559,6 +578,10 @@ export const bestSellingProducts = async (req, res) => {
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
     if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete criteria.branchId;
+    }
+
     applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
 
     const data = await PosOrderModel.aggregate([
@@ -660,6 +683,10 @@ export const leastSellingProducts = async (req, res) => {
     if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
     if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete criteria.branchId;
+    }
 
     applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
 
@@ -763,6 +790,10 @@ export const topExpenses = async (req, res) => {
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
     if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete criteria.branchId;
+    }
+
     applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
 
     const data = await PosPaymentModel.aggregate([
@@ -824,6 +855,10 @@ export const topCoupons = async (req, res) => {
     if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
     if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete criteria.branchId;
+    }
 
     applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
 
@@ -899,6 +934,11 @@ export const receivable = async (req, res) => {
       const branchFilterObjId = new mongoose.Types.ObjectId(branchFilter as string);
       criteria.branchId = branchFilterObjId;
       invoiceCriteria.branchId = branchFilterObjId;
+    }
+
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete criteria.branchId;
+      delete invoiceCriteria.branchId;
     }
 
     applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
@@ -992,6 +1032,10 @@ export const payable = async (req, res) => {
       supplierCriteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
     }
 
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete supplierCriteria.branchId;
+    }
+
     applyDateFilter(supplierCriteria, startDate as string, endDate as string, "supplierBillDate");
 
     const data = await supplierBillModel.aggregate([
@@ -1059,6 +1103,11 @@ export const salesAndPurchaseGraph = async (req, res) => {
       const branchFilterObjId = new mongoose.Types.ObjectId(branchFilter as string);
       criteria.branchId = branchFilterObjId;
       statusCriteria.branchId = branchFilterObjId;
+    }
+
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete criteria.branchId;
+      delete statusCriteria.branchId;
     }
     const dateFields = {
       posOrder: "createdAt",
@@ -1249,6 +1298,11 @@ export const transactionGraph = async (req, res) => {
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
     if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete criteria.branchId;
+    }
+    
+
     let start = startDate ? new Date(startDate as string) : new Date(new Date().setDate(new Date().getDate() - 30));
     let end = endDate ? new Date(endDate as string) : new Date();
 
@@ -1272,6 +1326,11 @@ export const transactionGraph = async (req, res) => {
     if (companyFilter) vCriteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) vCriteria.branchId = new mongoose.Types.ObjectId(branchId as string);
     if (branchFilter) vCriteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete vCriteria.branchId;
+    }
+    
     vCriteria.date = { $gte: start, $lte: end };
 
     const groupByDateStr = (dateField) => ({
@@ -1405,6 +1464,10 @@ export const getCategorySales = async (req, res) => {
     if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
     if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+
+    if (user?.branchId?.isHeadBranch && branchFilter === "all") {
+      delete criteria.branchId;
+    }
 
     applyDateFilter(criteria, startDate as string, endDate as string, "createdAt");
 

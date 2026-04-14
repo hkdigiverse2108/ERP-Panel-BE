@@ -27,7 +27,6 @@ export const addRecipe = async (req, res) => {
       fieldName: "number",
     });
 
-    console.log(value);
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;

@@ -9,7 +9,7 @@ router.post("/patch-head-branches", async (req: any, res: any) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    console.log("user===>", user);
+    // console.log("user===>", user);
     // Security: Only super admins should run this
     if (user?.userType !== USER_TYPES.SUPER_ADMIN && process.env.NODE_ENV !== "development") {
       return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, "Access Denied", {}, {}));

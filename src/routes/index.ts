@@ -64,6 +64,7 @@ import { specialRouter } from "./special";
 import { credentialRouter } from "./credential";
 import { aiRouter } from "./ai";
 import migrationRouter from "./migration";
+import { notificationRouter } from "./notification";
 import { stockTransferRouter } from "./stockTransfer";
 
 
@@ -87,6 +88,7 @@ router.use("/call-request", callRequestRouter);
 router.use("/stock", stockRouter);
 router.use("/stock-verification", stockVerificationRouter);
 router.use("/stock-transfer", stockTransferRouter);
+router.use("/notification", notificationRouter);
 
 
 router.use("/contacts", contactRouter);

@@ -972,7 +972,6 @@ export const detectProduct = async (req, res) => {
       const aiApiResponse = await axios.post(`${backendUrl}/ai/analyze`, { imageBase64 }, { headers: { Authorization: authHeader } });
 
       const aiItems = aiApiResponse.data?.data || [];
-      console.log("aiItems => ", aiItems);
 
       const unmatchedItems = [];
 

@@ -1,11 +1,17 @@
 import jwt from "jsonwebtoken";
-import { findOneAndPopulate, getFirstMatch, updateData } from "./databaseServices";
+import { findOneAndPopulate, updateData } from "./databaseServices";
 import { companyModel, userModel } from "../database";
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../common";
 import { responseMessage } from "./responseMessage";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 const jwtSecretKey = process.env.JWT_TOKEN_SECRET;
+
+const commonPopulate = [
+  { path: "companyId", select: "name isActive planEndDate" },
+  { path: "role", select: "name" },
+  { path: "branchId", select: "name isHeadBranch" }
+];
 
 export const superAdminJwt = async (req, res, next) => {
   let { authorization } = req.headers;
@@ -24,28 +30,13 @@ export const superAdminJwt = async (req, res, next) => {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
     }
 
-    let user = await getFirstMatch(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {});
+    const user: any = await findOneAndPopulate(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {}, commonPopulate);
 
     if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
 
     if (user?.isActive === false) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.accountBlock, {}, {}));
 
     if (user.userType !== USER_TYPES.SUPER_ADMIN) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.accessDenied, {}, {}));
-
-    if (user?.companyId) {
-      const populateModel = [{ path: "companyId", select: "name" }];
-      user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
-    }
-
-    if (user?.role) {
-      const populateModel = [{ path: "role", select: "name" }];
-      user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
-    }
-
-    if (user?.branchId) {
-      const populateModel = [{ path: "branchId", select: "name" }];
-      user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
-    }
 
     req.headers.user = user;
     next();
@@ -71,32 +62,15 @@ export const adminJwt = async (req, res, next) => {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
     }
 
-    let user = await getFirstMatch(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {});
+    const user: any = await findOneAndPopulate(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {}, commonPopulate);
 
     if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
 
-    if (user?.companyId) {
-      const populateModel = [{ path: "companyId", select: "name" }];
-      user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
-    }
-
-    if (user?.role) {
-      const populateModel = [{ path: "role", select: "name" }];
-      user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
-    }
-
-    if (user?.branchId) {
-      const populateModel = [{ path: "branchId", select: "name" }];
-      user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
-    }
-
     if (user?.userType !== USER_TYPES.SUPER_ADMIN && user?.companyId) {
-      const company = await getFirstMatch(companyModel, { _id: new ObjectId(user?.companyId), isDeleted: false }, {}, {});
-
-      if (!company) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
+      const company = user.companyId;
 
       if (company?.isActive !== false && company?.planEndDate < new Date()) {
-        await updateData(companyModel, { _id: new ObjectId(user?.companyId) }, { isActive: false }, {});
+        await updateData(companyModel, { _id: new ObjectId(company?._id) }, { isActive: false }, {});
         company.isActive = false;
       }
       if (company?.isActive === false) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.companyPlanExpired, {}, {}));
@@ -129,22 +103,7 @@ export const userJwt = async (req, res, next) => {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
     }
 
-    let user = await getFirstMatch(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {});
-
-    if (user?.companyId) {
-      const populateModel = [{ path: "companyId", select: "name" }];
-      user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
-    }
-
-    if (user?.role) {
-      const populateModel = [{ path: "role", select: "name" }];
-      user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
-    }
-
-    if (user?.branchId) {
-      const populateModel = [{ path: "branchId", select: "name" }];
-      user = await findOneAndPopulate(userModel, { _id: new ObjectId(user?._id), isDeleted: false }, {}, {}, populateModel);
-    }
+    const user: any = await findOneAndPopulate(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {}, commonPopulate);
 
     if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
 
@@ -156,3 +115,4 @@ export const userJwt = async (req, res, next) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
