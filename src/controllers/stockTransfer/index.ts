@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, PREFIX_MODULES, SOCKET_EVENTS, STOCK_TRANSFER_STATUS, USER_TYPES } from "../../common";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES, SOCKET_EVENTS, SOCKET_TYPE, STOCK_TRANSFER_STATUS, USER_TYPES } from "../../common";
 import { stockModel, stockTransferModel, productModel, ConsumptionTypeModel, materialConsumptionModel } from "../../database";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix, checkCompany, checkBranch } from "../../helper";
 import { sendNotification } from "../../helper/socket";
@@ -46,7 +46,7 @@ export const requestStockTransfer = async (req, res) => {
       title: "New Stock Transfer Request",
       message: `${response.transferNo || "Stock Transfer"} requested`,
       eventType: SOCKET_EVENTS.STOCK_TRANSFER,
-      meta: { type: "stockTransfer", action: "requested", actionId: String((response as any)?._id), text: response?.transferNo },
+      meta: { type: SOCKET_TYPE.STOCK_TRANSFER, action: "requested", actionId: String((response as any)?._id), text: response?.transferNo },
     });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock Transfer Request"), response, {}));
@@ -149,7 +149,7 @@ export const approveStockTransfer = async (req, res) => {
       title: "Stock Transfer Approved",
       message: `${transfer.transferNo || "Stock Transfer"} approved`,
       eventType: SOCKET_EVENTS.STOCK_TRANSFER,
-      meta: { type: "stockTransfer", action: "approved", actionId: String((transfer as any)?._id), text: transfer?.transferNo },
+      meta: { type: SOCKET_TYPE.STOCK_TRANSFER, action: "approved", actionId: String((transfer as any)?._id), text: transfer?.transferNo },
     });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer"), response, {}));
@@ -321,7 +321,7 @@ export const confirmReceiptStockTransfer = async (req, res) => {
       title: "Stock Transfer Completed",
       message: `${transfer.transferNo || "Stock Transfer"} completed`,
       eventType: SOCKET_EVENTS.STOCK_TRANSFER,
-      meta: { type: "stockTransfer", action: "completed", actionId: String((transfer as any)?._id), text: transfer?.transferNo },
+      meta: { type: SOCKET_TYPE.STOCK_TRANSFER, action: "completed", actionId: String((transfer as any)?._id), text: transfer?.transferNo },
     });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer Completed"), response, {}));
@@ -387,7 +387,7 @@ export const rejectStockTransfer = async (req, res) => {
       title: "Stock Transfer Rejected",
       message: `${transfer.transferNo || "Stock Transfer"} rejected`,
       eventType: SOCKET_EVENTS.STOCK_TRANSFER,
-      meta: { type: "stockTransfer", action: "rejected", actionId: String((transfer as any)?._id), text: transfer?.transferNo },
+      meta: { type: SOCKET_TYPE.STOCK_TRANSFER, action: "rejected", actionId: String((transfer as any)?._id), text: transfer?.transferNo },
     });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer Rejected"), response, {}));

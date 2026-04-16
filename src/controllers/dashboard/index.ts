@@ -22,21 +22,21 @@ export const transactionDetails = async (req, res) => {
 
     if (companyFilter) {
       finalCompanyId = new mongoose.Types.ObjectId(companyFilter as string);
-    } else if (finalCompanyId) {
+    } else if (finalCompanyId !== "all") {
       finalCompanyId = new mongoose.Types.ObjectId(finalCompanyId as string);
     }
 
-    if (branchFilter) {
+    if (branchFilter !== "all") {
       finalBranchId = new mongoose.Types.ObjectId(branchFilter as string);
     } else if (finalBranchId) {
       finalBranchId = new mongoose.Types.ObjectId(finalBranchId as string);
     }
 
-    console.log("uuser", user);
+    // console.log("uuser", user);
 
     const commonCriteria: any = { isDeleted: false };
     if (finalCompanyId) commonCriteria.companyId = finalCompanyId;
-    if (finalBranchId) commonCriteria.branchId = finalBranchId;
+    if (finalBranchId !== "all") commonCriteria.branchId = finalBranchId;
 
     if (user?.branchId?.isHeadBranch && branchFilter === "all") {
       delete commonCriteria.branchId;
@@ -274,7 +274,7 @@ export const topCustomers = async (req, res) => {
     if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
     if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
-    if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+    if (branchFilter !== "all") criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
     if (user?.branchId?.isHeadBranch && branchFilter === "all") {
       delete criteria.branchId;
@@ -352,7 +352,7 @@ export const categoryWiseCustomersCount = async (req, res) => {
     if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
     if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
-    if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+    if (branchFilter !== "all") criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
     if (user?.branchId?.isHeadBranch && branchFilter === "all") {
       delete criteria.branchId;
@@ -468,7 +468,7 @@ export const categoryWiseCustomers = async (req, res) => {
     if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
     if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
-    if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+    if (branchFilter !== "all") criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
     if (user?.branchId?.isHeadBranch && branchFilter === "all") {
       delete criteria.branchId;
@@ -576,7 +576,7 @@ export const bestSellingProducts = async (req, res) => {
     if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
     if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
-    if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+    if (branchFilter !== "all") criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
     if (user?.branchId?.isHeadBranch && branchFilter === "all") {
       delete criteria.branchId;
@@ -682,7 +682,7 @@ export const leastSellingProducts = async (req, res) => {
     if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
     if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
-    if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+    if (branchFilter !== "all") criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
     if (user?.branchId?.isHeadBranch && branchFilter === "all") {
       delete criteria.branchId;
@@ -788,7 +788,7 @@ export const topExpenses = async (req, res) => {
     if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
     if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
-    if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+    if (branchFilter !== "all") criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
     if (user?.branchId?.isHeadBranch && branchFilter === "all") {
       delete criteria.branchId;
@@ -854,7 +854,7 @@ export const topCoupons = async (req, res) => {
     if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
     if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
-    if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+    if (branchFilter !== "all") criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
     if (user?.branchId?.isHeadBranch && branchFilter === "all") {
       delete criteria.branchId;
@@ -930,7 +930,7 @@ export const receivable = async (req, res) => {
       criteria.branchId = branchObjId;
       invoiceCriteria.branchId = branchObjId;
     }
-    if (branchFilter) {
+    if (branchFilter !== "all") {
       const branchFilterObjId = new mongoose.Types.ObjectId(branchFilter as string);
       criteria.branchId = branchFilterObjId;
       invoiceCriteria.branchId = branchFilterObjId;
@@ -1028,7 +1028,7 @@ export const payable = async (req, res) => {
     if (branchId) {
       supplierCriteria.branchId = new mongoose.Types.ObjectId(branchId as string);
     }
-    if (branchFilter) {
+    if (branchFilter !== "all") {
       supplierCriteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
     }
 
@@ -1099,7 +1099,7 @@ export const salesAndPurchaseGraph = async (req, res) => {
       criteria.branchId = branchObjId;
       statusCriteria.branchId = branchObjId;
     }
-    if (branchFilter) {
+    if (branchFilter !== "all") {
       const branchFilterObjId = new mongoose.Types.ObjectId(branchFilter as string);
       criteria.branchId = branchFilterObjId;
       statusCriteria.branchId = branchFilterObjId;
@@ -1296,12 +1296,11 @@ export const transactionGraph = async (req, res) => {
     if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
     if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
-    if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+    if (branchFilter !== "all") criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
     if (user?.branchId?.isHeadBranch && branchFilter === "all") {
       delete criteria.branchId;
     }
-    
 
     let start = startDate ? new Date(startDate as string) : new Date(new Date().setDate(new Date().getDate() - 30));
     let end = endDate ? new Date(endDate as string) : new Date();
@@ -1325,12 +1324,12 @@ export const transactionGraph = async (req, res) => {
     if (companyId) vCriteria.companyId = new mongoose.Types.ObjectId(companyId as string);
     if (companyFilter) vCriteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) vCriteria.branchId = new mongoose.Types.ObjectId(branchId as string);
-    if (branchFilter) vCriteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+    if (branchFilter !== "all") vCriteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
     if (user?.branchId?.isHeadBranch && branchFilter === "all") {
       delete vCriteria.branchId;
     }
-    
+
     vCriteria.date = { $gte: start, $lte: end };
 
     const groupByDateStr = (dateField) => ({
@@ -1463,7 +1462,7 @@ export const getCategorySales = async (req, res) => {
     if (companyId) criteria.companyId = new mongoose.Types.ObjectId(companyId as string);
     if (companyFilter) criteria.companyId = new mongoose.Types.ObjectId(companyFilter as string);
     if (branchId) criteria.branchId = new mongoose.Types.ObjectId(branchId as string);
-    if (branchFilter) criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
+    if (branchFilter !== "all") criteria.branchId = new mongoose.Types.ObjectId(branchFilter as string);
 
     if (user?.branchId?.isHeadBranch && branchFilter === "all") {
       delete criteria.branchId;

@@ -243,7 +243,7 @@ export const getAllUser = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
+        { path: "branchId", select: "name isHeadBranch" },
         { path: "role", select: "name" },
         { path: "address.country", select: "name code" },
         { path: "address.state", select: "name code" },
@@ -291,7 +291,7 @@ export const getUserById = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
+          { path: "branchId", select: "name isHeadBranch" },
           { path: "role", select: "name" },
           { path: "address.country", select: "name code" },
           { path: "address.state", select: "name code" },
