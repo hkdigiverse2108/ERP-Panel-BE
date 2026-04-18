@@ -34,7 +34,7 @@ export const addBranchSchema = Joi.object().keys({
   yearInterval: Joi.string().required(),
 
   // GST / Legal
-  gstRegistrationType: Joi.string().required(),
+  gstRegistrationType: Joi.string().optional(),
   gstIdentificationNumber: Joi.string().optional(),
   panNo: Joi.string().optional(),
 
