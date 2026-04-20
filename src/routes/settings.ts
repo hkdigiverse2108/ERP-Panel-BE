@@ -10,8 +10,8 @@ router.put("/update", settingsController.updateSettings);
 
 router.get("/report-format/all", settingsController.getAllReportFormats);
 router.post("/report-format/add", settingsController.addReportFormat);
-router.put("/report-format/update", settingsController.updateReportFormat);
-router.delete("/report-format/delete/:id", settingsController.deleteReportFormat);
+router.put("/report-format/edit", settingsController.updateReportFormat);
+router.delete("/report-format/:id", settingsController.deleteReportFormat);
 
 
 export const settingsRouter = router;

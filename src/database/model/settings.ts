@@ -3,43 +3,44 @@ import { baseCommonFields, baseSchemaOptions } from "./base";
 import { ISettings } from "../../types/settings";
 
 const settingsLinkSchema = new mongoose.Schema({
-    title: { type: String },
-    link: { type: String },
-    icon: { type: String },
-    isActive: { type: Boolean, default: true }
+  title: { type: String },
+  link: { type: String },
+  icon: { type: String },
+  isActive: { type: Boolean, default: true },
 });
 
 const settingsSchema = new mongoose.Schema<ISettings>(
-    {
-        logo: { type: String },
-        favicon: { type: String },
-        themeImage: { type: String },
-        phoneNo: {
-            countryCode: { type: String },
-            phoneNo: { type: Number },
-        },
-        email: { type: String },
-        address: { type: String },
-        workingHours: {
-            startTime: { type: String }, // "09:00"
-            endTime: { type: String },   // "21:00"
-            timezone: { type: String, default: "IST" }
-        },
-        links: { type: [settingsLinkSchema], default: [] },
-        reportFormats: [
-            {
-                type: { type: String }, //pos offline
-                formats: [
-                    {
-                        name: { type: String },
-                        isSelected: { type: Boolean },
-                    },
-                ],
-            },
-        ],
-        ...baseCommonFields,
+  {
+    logo: { type: String },
+    favicon: { type: String },
+    themeImage: { type: String },
+    phoneNo: {
+      countryCode: { type: String },
+      phoneNo: { type: Number },
     },
-    baseSchemaOptions,
+    email: { type: String },
+    address: { type: String },
+    workingHours: {
+      startTime: { type: String }, // "09:00"
+      endTime: { type: String }, // "21:00"
+      timezone: { type: String, default: "IST" },
+    },
+    links: { type: [settingsLinkSchema], default: [] },
+    reportFormats: [
+      {
+        type: { type: String }, //pos offline
+        formats: [
+          {
+            name: { type: String },
+            isSelected: { type: Boolean },
+            isActive: { type: Boolean, default: true },
+          },
+        ],
+      },
+    ],
+    ...baseCommonFields,
+  },
+  baseSchemaOptions,
 );
 
 export const settingsModel = mongoose.model<ISettings>("settings", settingsSchema);
