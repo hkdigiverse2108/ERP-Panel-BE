@@ -23,30 +23,36 @@ export const addStockSchema = Joi.object().keys({
   ...baseApiSchema,
 });
 
-export const editStockSchema = Joi.object().keys({
-  stockId: objectId().required(),
-  companyId: objectId().optional(),
-  branchId: objectId().optional(),
-  productId: objectId().optional(),
-  variantId: objectId().optional(),
-  batchNo: Joi.string().optional(),
-  qty: Joi.number().min(0).optional(),
-  mfgDate: Joi.date().optional(),
-  expiryDate: Joi.date().optional(),
-  sellingPrice: Joi.number().min(0).optional(),
-  mrp: Joi.number().min(0).optional(),
-  uomId: objectId().optional(),
+export const editStockSchema = Joi.array()
+  .items(
+    Joi.object().keys({
+      stockId: objectId().required(),
+      companyId: objectId().optional(),
+      branchId: objectId().optional(),
+      productId: objectId().optional(),
+      variantId: objectId().optional(),
+      batchNo: Joi.string().optional(),
+      qty: Joi.number().min(0).optional(),
+      mfgDate: Joi.date().optional(),
+      expiryDate: Joi.date().optional(),
+      sellingPrice: Joi.number().min(0).optional(),
+      mrp: Joi.number().min(0).optional(),
+      uomId: objectId().optional(),
 
-  purchaseTaxId: objectId().optional().allow("", null),
-  salesTaxId: objectId().optional().allow("", null),
-  isPurchaseTaxIncluding: Joi.boolean().default(false).optional(),
-  isSalesTaxIncluding: Joi.boolean().default(false).optional(),
+      purchaseTaxId: objectId().optional().allow("", null),
+      salesTaxId: objectId().optional().allow("", null),
+      isPurchaseTaxIncluding: Joi.boolean().default(false).optional(),
+      isSalesTaxIncluding: Joi.boolean().default(false).optional(),
 
-  ...baseApiSchema,
-});
+      ...baseApiSchema,
+    }),
+  )
+  .min(1)
+  .required();
 
 export const bulkStockAdjustmentSchema = Joi.object().keys({
   companyId: objectId().optional(),
+  branchId: objectId().optional(),
   consumptionTypeId: objectId().required(),
   items: Joi.array()
     .items(

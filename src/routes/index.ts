@@ -6,9 +6,7 @@ import { branchRouter } from "./branch";
 import { callRequestRouter } from "./callRequest";
 import { companyRouter } from "./company";
 import { contactRouter } from "./contacts";
-// import { employeeRouter } from "./employee";
 import { productRouter } from "./product";
-import { employeeRouter } from "./employee";
 import { stockRouter } from "./stock";
 import { stockVerificationRouter } from "./stockVerification";
 import { roleRouter } from "./role";
@@ -54,7 +52,6 @@ import { returnPosOrderRouter } from "./returnPosOrder";
 import { posCreditNoteRouter } from "./posCreditNote";
 import { loginLogRouter } from "./loginLog";
 import { settingsRouter } from "./settings";
-// import { journalVoucherRouter } from "./journalVoucher";
 import { dashboardRouter } from "./dashboard";
 import { bankTransactionRouter } from "./bankTransaction";
 import { companyDriveRouter } from "./companyDrive";
@@ -66,6 +63,10 @@ import { consumptionTypeRouter } from "./consumptionType";
 import { specialRouter } from "./special";
 import { credentialRouter } from "./credential";
 import { aiRouter } from "./ai";
+import migrationRouter from "./migration";
+import { notificationRouter } from "./notification";
+import { stockTransferRouter } from "./stockTransfer";
+
 
 const router = Router();
 
@@ -83,10 +84,12 @@ router.use("/role", roleRouter);
 
 router.use("/product", productRouter);
 router.use("/product-request", productRequestRouter);
-router.use("/employee", employeeRouter);
 router.use("/call-request", callRequestRouter);
 router.use("/stock", stockRouter);
 router.use("/stock-verification", stockVerificationRouter);
+router.use("/stock-transfer", stockTransferRouter);
+router.use("/notification", notificationRouter);
+
 
 router.use("/contacts", contactRouter);
 router.use("/bank", bankRouter);
@@ -128,7 +131,6 @@ router.use("/material", materialRouter);
 router.use("/material-consumption", materialConsumptionRouter);
 router.use("/bill-of-live-product", billOfLiveProductRouter);
 router.use("/settings", settingsRouter);
-// router.use("/journal-voucher", journalVoucherRouter);
 
 // === For Super Admin
 router.use("/company", companyRouter);
@@ -138,7 +140,6 @@ router.use("/brand", brandRouter);
 router.use("/category", categoryRouter);
 router.use("/additional-charge", additionalChargeRouter);
 router.use("/login-log", loginLogRouter);
-// router.use("/employee", employeeRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/bank-transaction", bankTransactionRouter);
 router.use("/company-drive", companyDriveRouter);
@@ -147,5 +148,6 @@ router.use("/product-type", productTypeRouter);
 router.use("/specials", specialRouter);
 router.use("/credentials", credentialRouter);
 router.use("/ai", aiRouter);
+router.use("/migration", migrationRouter);
 
 export { router };

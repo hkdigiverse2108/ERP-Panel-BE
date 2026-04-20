@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, VOUCHAR_TYPE, PREFIX_MODULES } from "../../common";
 import { contactModel, voucherModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addVoucherSchema, deleteVoucherSchema, editVoucherSchema, getVoucherSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -17,8 +17,10 @@ export const addVoucher = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     // Validate party (customer/supplier) for Payment/Receipt
     if ((value.type === VOUCHAR_TYPE.PAYMENT || value.type === VOUCHAR_TYPE.RECEIPT) && value.partyId) {
@@ -40,6 +42,7 @@ export const addVoucher = async (req, res) => {
       const prefixType = typeMap[value.type] || PREFIX_MODULES.RECEIPT; // Defaulting to Receipt if unknown
 
       value.voucherNo = await getAndIncrementPrefix({
+        branchId: value.branchId,
         companyId: value.companyId,
         prefixType: prefixType,
         model: voucherModel,
@@ -139,7 +142,8 @@ export const getAllVoucher = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, type, startDate, endDate, activeFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, type, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -147,6 +151,18 @@ export const getAllVoucher = async (req, res) => {
     let criteria: any = { isDeleted: false };
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (type) {
@@ -165,6 +181,7 @@ export const getAllVoucher = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "partyId", select: "firstName lastName companyName" },
+        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
@@ -206,6 +223,7 @@ export const getOneVoucher = async (req, res) => {
       {
         populate: [
           { path: "partyId", select: "firstName lastName companyName email phoneNo address" },
+          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
           { path: "updatedBy", select: "name userType" },
         ],

@@ -18,7 +18,6 @@ export const addCoupon = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
-
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     const isExist = await getFirstMatch(couponModel, { name: value?.name, companyId: value.companyId, isDeleted: false }, {}, {});
@@ -143,6 +142,7 @@ export const getAllCoupon = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
+
     if (activeFilter) {
       criteria.isActive = activeFilter === "true";
     }
@@ -170,7 +170,6 @@ export const getAllCoupon = async (req, res) => {
       limit,
       populate: [
         { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
         { path: "customerIds.id", select: "firstName lastName" },
         { path: "createdBy", select: "fullName userType" },
       ],
@@ -203,7 +202,18 @@ export const getOneCoupon = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const response = await getFirstMatch(couponModel, { _id: value?.id, isDeleted: false }, {}, { populate: [{ path: "companyId", select: "name" }, { path: "branchId", select: "name" }, { path: "createdBy", select: "fullName userType" }, { path: "customerIds.id", select: "firstName lastName" }] });
+    const response = await getFirstMatch(
+      couponModel,
+      { _id: value?.id, isDeleted: false },
+      {},
+      {
+        populate: [
+          { path: "companyId", select: "name" },
+          { path: "createdBy", select: "fullName userType" },
+          { path: "customerIds.id", select: "firstName lastName" },
+        ],
+      },
+    );
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Coupon"), {}, {}));
@@ -362,7 +372,7 @@ export const getCouponDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { expiredFilter, limitReachedFilter, search } = req.query;
+    const { expiredFilter, limitReachedFilter, search, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false, status: COUPON_STATUS.ACTIVE, isActive: true };
 
@@ -370,15 +380,16 @@ export const getCouponDropdown = async (req, res) => {
       criteria.companyId = companyId;
     }
 
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
+
     if (search) {
       criteria.name = { $regex: search, $options: "si" };
     }
 
-    const coupons = await couponModel
-      .find(criteria)
-      .select("name couponPrice redeemValue usageLimit expiryDays usedCount startDate endDate createdAt")
-      .sort({ createdAt: -1 })
-      .lean();
+    const coupons = await couponModel.find(criteria).select("name couponPrice redeemValue usageLimit expiryDays usedCount startDate endDate createdAt").sort({ createdAt: -1 }).lean();
 
     const now = new Date();
     let response = coupons;

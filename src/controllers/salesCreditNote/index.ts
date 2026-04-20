@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
-import { contactModel, salesCreditNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, employeeModel, SalesOrderModel, InvoiceModel, userModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { contactModel, salesCreditNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, SalesOrderModel, InvoiceModel, userModel } from "../../database";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addSalesCreditNoteSchema, deleteSalesCreditNoteSchema, editSalesCreditNoteSchema, getSalesCreditNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -17,9 +17,13 @@ export const addSalesCreditNote = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    }
+    if (!value.branchId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
     }
 
     // Validate customer exists and verify billing/shipping addresses if provided
@@ -78,6 +82,7 @@ export const addSalesCreditNote = async (req, res) => {
     // Generate credit note number if not provided using dynamic prefix helper
     if (!value?.creditNoteNo) {
       value.creditNoteNo = await getAndIncrementPrefix({
+        branchId: value.branchId,
         companyId: value.companyId,
         prefixType: PREFIX_MODULES.SALES_CREDIT_NOTE,
         model: salesCreditNoteModel,
@@ -152,7 +157,7 @@ export const editSalesCreditNote = async (req, res) => {
     }
 
     if (value?.salesManId && value?.salesManId !== isExist?.salesManId?.toString()) {
-      if (!(await checkIdExist(employeeModel, value?.salesManId, "Salesman", res))) return;
+      if (!(await checkIdExist(userModel, value?.salesManId, "Salesman", res))) return;
     }
 
     if (value?.termsAndConditionIds) {
@@ -232,7 +237,8 @@ export const getAllSalesCreditNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, statusFilter, startDate, endDate, customerFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, activeFilter, companyFilter, branchFilter, statusFilter, startDate, endDate, customerFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -244,6 +250,14 @@ export const getAllSalesCreditNote = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (search) {
@@ -286,6 +300,7 @@ export const getAllSalesCreditNote = async (req, res) => {
         { path: "shippingDetails.transporterId", select: "firstName lastName" },
         { path: "termsAndConditionIds", select: "termsCondition" },
         { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
         { path: "salesManId", select: "firstName lastName" },
         { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
@@ -383,6 +398,7 @@ export const getOneSalesCreditNote = async (req, res) => {
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "termsAndConditionIds", select: "termsCondition" },
           { path: "companyId", select: "name gstNo" },
+          { path: "branchId", select: "name" },
           { path: "salesManId", select: "firstName lastName" },
           { path: "shippingDetails.transporterId", select: "firstName lastName" },
           { path: "createdBy", select: "fullName userType" },
@@ -439,7 +455,8 @@ export const getSalesCreditNoteDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { customerFilter, search, companyFilter, statusFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    const { customerFilter, search, companyFilter, statusFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -448,6 +465,14 @@ export const getSalesCreditNoteDropdown = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerFilter) {
@@ -465,7 +490,10 @@ export const getSalesCreditNoteDropdown = async (req, res) => {
     const options: any = {
       sort: { creditNoteDate: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "customerId", select: "firstName lastName companyName" }],
+      populate: [
+        { path: "customerId", select: "firstName lastName companyName" },
+        { path: "branchId", select: "name" },
+      ],
     };
 
     const response = await getDataWithSorting(

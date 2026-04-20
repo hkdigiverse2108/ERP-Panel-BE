@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES, PREFIX_MODULES } from "../../common";
-import { PrefixModel, companyModel } from "../../database";
+import { PrefixModel, companyModel, branchModel } from "../../database";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPrefixSchema, deletePrefixSchema, editPrefixSchema, getPrefixSchema } from "../../validation";
 
@@ -38,27 +38,29 @@ export const addPrefix = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
-    // Auto-create prefix for all existing companies
+    // Auto-create prefix for all existing branches
     try {
-      const companies = await companyModel.find({ isDeleted: false });
-      if (companies.length > 0) {
-        const companyPrefixes = companies.map((company: any) => ({
+      const branches = await branchModel.find({ isDeleted: false });
+      if (branches.length > 0) {
+        const branchPrefixes = branches.map((branch: any) => ({
           prefixType: value.prefixType,
           prefix: value.prefix,
           sequenceNumber: value.sequenceNumber,
+          currentNumber: value.sequenceNumber,
           isActive: value.isActive,
-          companyId: company._id,
+          companyId: branch.companyId,
+          branchId: branch._id,
           createdBy: user?._id || null,
           updatedBy: user?._id || null,
         }));
-        await PrefixModel.insertMany(companyPrefixes);
+        await PrefixModel.insertMany(branchPrefixes);
       }
     } catch (prefixError) {
-      console.error("Error creating prefixes for existing companies:", prefixError);
+      console.error("Error creating prefixes for existing branches:", prefixError);
       // We don't fail the template creation if cloning fails, but we log it
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Prefix Template and populated to companies"), response, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Prefix Template and populated to branches"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage?.internalServerError, {}, error));
@@ -93,12 +95,17 @@ export const editPrefix = async (req, res) => {
 
     // If changing prefixType, check for duplicates in the same company scope
     if (value.prefixType && value.prefixType !== isExist.prefixType) {
-      const typeExist = await getFirstMatch(PrefixModel, {
-        prefixType: value.prefixType,
-        companyId: isExist.companyId || null,
-        isDeleted: false,
-        _id: { $ne: value.prefixId }
-      }, {}, {});
+      const typeExist = await getFirstMatch(
+        PrefixModel,
+        {
+          prefixType: value.prefixType,
+          companyId: isExist.companyId || null,
+          isDeleted: false,
+          _id: { $ne: value.prefixId },
+        },
+        {},
+        {},
+      );
       if (typeExist) {
         return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist(`Prefix for module ${value.prefixType}`), {}, {}));
       }
@@ -108,10 +115,7 @@ export const editPrefix = async (req, res) => {
 
     if (!isExist.companyId && value.isActive !== undefined) {
       // Global prefix template: propagate isActive status to all related company prefixes
-      await PrefixModel.updateMany(
-        { prefixType: isExist.prefixType, isDeleted: false },
-        { $set: { isActive: value.isActive, updatedBy: user?._id || null } }
-      );
+      await PrefixModel.updateMany({ prefixType: isExist.prefixType, isDeleted: false }, { $set: { isActive: value.isActive, updatedBy: user?._id || null } });
     }
 
     const response = await updateData(PrefixModel, { _id: value?.prefixId }, value, {});
@@ -183,20 +187,28 @@ export const getAllPrefix = async (req, res) => {
     const { user } = req?.headers;
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, prefixType, activeFilter, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, prefixType, activeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
-
     // Scoping
     if (userType === USER_TYPES.SUPER_ADMIN) {
       if (!companyFilter) {
-        criteria.companyId = null; // Default: only templates
+        criteria.companyId = null; // Default: templates
+        if (!branchFilter) {
+          criteria.branchId = null; // Default: templates
+        }
       } else if (companyFilter !== "all") {
-        criteria.companyId = companyFilter; // Specific company
+        criteria.companyId = new ObjectId(companyFilter as string); // Specific company
       }
-      // if companyFilter is "all", we don't apply any companyId criteria, returning all data
+
+      if (branchFilter && branchFilter !== "all") {
+        criteria.branchId = new ObjectId(branchFilter as string); // Specific branch
+      }
     } else {
-      criteria.companyId = companyId;
+      // Regular users are scoped to their company and branch
+      criteria.companyId = companyId ? new ObjectId(companyId) : null;
+      criteria.branchId = branchId ? new ObjectId(branchId) : null;
     }
 
     if (search) {
@@ -276,38 +288,38 @@ export const getOnePrefix = async (req, res) => {
   }
 };
 
-// Get prefix by prefixType
-export const getPrefixByType = async (req, res) => {
-  reqInfo(req);
-  try {
-    const { user } = req?.headers;
-    const companyId = user?.companyId?._id;
-    const { type } = req.params;
+// // Get prefix by prefixType
+// export const getPrefixByType = async (req, res) => {
+//   reqInfo(req);
+//   try {
+//     const { user } = req?.headers;
+//     const companyId = user?.companyId?._id;
+//     const { type } = req.params;
 
-    if (!type) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Prefix type is required", {}, {}));
-    }
+//     if (!type) {
+//       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Prefix type is required", {}, {}));
+//     }
 
-    if (!Object.values(PREFIX_MODULES).includes(type as any)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid prefix type", {}, {}));
-    }
+//     if (!Object.values(PREFIX_MODULES).includes(type as any)) {
+//       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Invalid prefix type", {}, {}));
+//     }
 
-    let criteria: any = { prefixType: type, isDeleted: false };
-    if (companyId) {
-      criteria.companyId = companyId;
-    } else {
-      criteria.companyId = null; // Get template if no companyId
-    }
+//     let criteria: any = { prefixType: type, isDeleted: false };
+//     if (companyId) {
+//       criteria.companyId = companyId;
+//     } else {
+//       criteria.companyId = null; // Get template if no companyId
+//     }
 
-    const response = await getFirstMatch(PrefixModel, criteria, {}, {});
+//     const response = await getFirstMatch(PrefixModel, criteria, {}, {});
 
-    if (!response) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Prefix"), {}, {}));
-    }
+//     if (!response) {
+//       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Prefix"), {}, {}));
+//     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Prefix"), response, {}));
-  } catch (error) {
-    console.error(error);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
-  }
-};
+//     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Prefix"), response, {}));
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+//   }
+// };

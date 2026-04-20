@@ -1,6 +1,7 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, supplierBillModel, productModel, termsConditionModel, additionalChargeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+// import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addSupplierBillSchema, deleteSupplierBillSchema, editSupplierBillSchema, getSupplierBillSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -17,8 +18,10 @@ export const addSupplierBill = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     // Validate supplier exists and verify billing address if provided
     const supplier = await getFirstMatch(contactModel, { _id: value?.supplierId, isDeleted: false }, {}, {});
@@ -64,6 +67,7 @@ export const addSupplierBill = async (req, res) => {
     // Generate bill number if not provided using dynamic prefix helper
     if (!value?.supplierBillNo) {
       value.supplierBillNo = await getAndIncrementPrefix({
+        branchId: value.branchId,
         companyId: value.companyId,
         prefixType: PREFIX_MODULES.SUPPLIER_BILL,
         model: supplierBillModel,
@@ -72,6 +76,7 @@ export const addSupplierBill = async (req, res) => {
     }
     if (!value?.referenceBillNo) {
       value.referenceBillNo = await getAndIncrementPrefix({
+        branchId: value.branchId,
         companyId: value.companyId,
         prefixType: PREFIX_MODULES.SUPPLIER_BILL,
         model: supplierBillModel,
@@ -204,7 +209,8 @@ export const getAllSupplierBill = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, statusFilter, paymentStatus, startDate, endDate, supplierFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, activeFilter, companyFilter, branchFilter, statusFilter, paymentStatus, startDate, endDate, supplierFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -216,6 +222,14 @@ export const getAllSupplierBill = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (supplierFilter) {
@@ -286,6 +300,7 @@ export const getAllSupplierBill = async (req, res) => {
         { path: "termsAndConditionIds", select: "termsCondition" },
         { path: "paymentTermsId", select: "name day" },
         { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
@@ -328,6 +343,10 @@ export const getAllSupplierBill = async (req, res) => {
     const statsCriteria: any = { isDeleted: false };
     if (criteria.companyId) {
       statsCriteria.companyId = criteria.companyId;
+    }
+
+    if (criteria.branchId) {
+      statsCriteria.branchId = criteria.branchId;
     }
 
     const summaryResults = await supplierBillModel.aggregate([
@@ -419,6 +438,7 @@ export const getOneSupplierBill = async (req, res) => {
           { path: "termsAndConditionIds", select: "termsCondition" },
           { path: "paymentTermsId", select: "name day" },
           { path: "companyId", select: "name gstNo" },
+          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
           { path: "updatedBy", select: "name userType" },
         ],
@@ -466,7 +486,8 @@ export const getSupplierBillDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { supplierId, status, paymentStatus, search, companyFilter } = req.query; // Optional filters
+    const branchId = user?.branchId?._id;
+    const { supplierId, status, paymentStatus, search, companyFilter, branchFilter } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -475,6 +496,14 @@ export const getSupplierBillDropdown = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (supplierId) {
@@ -499,7 +528,10 @@ export const getSupplierBillDropdown = async (req, res) => {
     const options: any = {
       sort: { supplierBillDate: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "supplierId", select: "firstName lastName companyName" }],
+      populate: [
+        { path: "supplierId", select: "firstName lastName companyName" },
+        { path: "branchId", select: "name" },
+      ],
     };
 
     const response = await getDataWithSorting(
@@ -511,6 +543,7 @@ export const getSupplierBillDropdown = async (req, res) => {
         "summary.netAmount": 1,
         balanceAmount: 1,
         paymentStatus: 1,
+        branchId: 1,
       },
       options,
     );

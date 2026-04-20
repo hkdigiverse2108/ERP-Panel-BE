@@ -15,9 +15,7 @@ export const addOrUpdateLoyaltyPoints = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
-
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-
     const isExist = await getFirstMatch(loyaltyPointsModel, { companyId: value.companyId }, {}, {});
 
     if (!isExist) {
@@ -62,7 +60,6 @@ export const getLoyaltyPoints = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
         ],
       },

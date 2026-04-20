@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { ExpenseModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addSalarySchema, deleteSalarySchema, editSalarySchema, getSalarySchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -14,6 +14,9 @@ export const addSalary = async (req, res) => {
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
         value.companyId = await checkCompany(user, value);
+        value.branchId = await checkBranch(user, value);
+        if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+        if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
         value.isSalary = true;
         value.createdBy = user?._id || null;
         value.updatedBy = user?._id || null;
@@ -35,9 +38,10 @@ export const getAllSalary = async (req, res) => {
     reqInfo(req);
     try {
         const { user } = req?.headers;
-        const companyId = user?.companyId?._id;
+        const companyId = user?.companyId?._id; 
+        const branchId = user?.branchId?._id;
 
-        let { page, limit, search, startDate, endDate, companyFilter } = req.query;
+        let { page, limit, search, startDate, endDate, companyFilter, branchFilter } = req.query;
 
         let criteria: any = { isDeleted: false, isSalary: true };
 
@@ -47,6 +51,14 @@ export const getAllSalary = async (req, res) => {
 
         if (companyFilter) {
             criteria.companyId = companyFilter;
+        }
+
+        if (branchId) {
+            criteria.branchId = branchId;
+        }
+
+        if (branchFilter) {
+            criteria.branchId = branchFilter;
         }
 
         if (search) {
@@ -62,6 +74,7 @@ export const getAllSalary = async (req, res) => {
             sort: { createdAt: -1 },
             populate: [
                 { path: "companyId", select: "name" },
+                { path: "branchId", select: "name" },
                 { path: "partyId", model: "user", select: "fullName" }, // PartyId refers to Employee in Salary
                 { path: "createdBy", select: "fullName userType" },
                 { path: "updatedBy", select: "fullName userType" },
@@ -105,6 +118,7 @@ export const getSalaryById = async (req, res) => {
             {
                 populate: [
                     { path: "companyId", select: "name" },
+                    { path: "branchId", select: "name" },
                     { path: "partyId", model: "user", select: "name" },
                     { path: "createdBy", select: "fullName userType" },
                     { path: "updatedBy", select: "fullName userType" },
@@ -132,6 +146,7 @@ export const editSalaryById = async (req, res) => {
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
         await checkCompany(user, value);
+        await checkBranch(user, value);
 
         value.updatedBy = user?._id || null;
 

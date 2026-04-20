@@ -1,7 +1,7 @@
 import { PosPaymentModel, PosOrderModel, contactModel, PosCashRegisterModel, taxModel } from "../../database";
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, generateSequenceNumber, applyDateFilter, getAndIncrementPrefix } from "../../helper";
-import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema, getAllPosPaymentSchema } from "../../validation";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema } from "../../validation";
 
 export const addPosPayment = async (req, res) => {
   reqInfo(req);
@@ -14,7 +14,10 @@ export const addPosPayment = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
+
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     if (value.posOrderId && !(await checkIdExist(PosOrderModel, value.posOrderId, "POS Order", res))) return;
     if (value.partyId && !(await checkIdExist(contactModel, value.partyId, "Party", res))) return;
@@ -23,7 +26,7 @@ export const addPosPayment = async (req, res) => {
     const openRegister = await getFirstMatch(
       PosCashRegisterModel,
       {
-        companyId: value.companyId,
+        branchId: value.branchId,
         status: CASH_REGISTER_STATUS.OPEN,
         isDeleted: false,
       },
@@ -37,6 +40,7 @@ export const addPosPayment = async (req, res) => {
     // -------------------------------
 
     value.paymentNo = await getAndIncrementPrefix({
+      branchId: value.branchId,
       companyId: value.companyId,
       prefixType: PREFIX_MODULES.POS_PAYMENT,
       model: PosPaymentModel,
@@ -184,18 +188,20 @@ export const getAllPosPayment = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-
-    let { page, limit, search, posOrderFilter, voucherTypeFilter, paymentTypeFilter, startDate, endDate, companyFilter, partyFilter, activeFilter, date } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, posOrderFilter, voucherTypeFilter, paymentTypeFilter, startDate, endDate, companyFilter, branchFilter, partyFilter, activeFilter, date } = req.query;
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
+    if (companyFilter) criteria.companyId = companyFilter;
+    if (branchId) criteria.branchId = branchId;
+    if (branchFilter) criteria.branchId = branchFilter;
     if (posOrderFilter) criteria.posOrderId = posOrderFilter;
     if (voucherTypeFilter) criteria.voucherType = voucherTypeFilter;
     if (paymentTypeFilter) criteria.paymentType = paymentTypeFilter;
     if (partyFilter) criteria.partyId = partyFilter;
-    if (companyFilter) criteria.companyId = companyId;
     if (activeFilter) criteria.isActive = activeFilter === "true" ? true : false;
     if (date) criteria.date = date;
 

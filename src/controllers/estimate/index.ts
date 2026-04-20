@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, ESTIMATE_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, EstimateModel, productModel, taxModel, termsConditionModel, uomModel, additionalChargeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addEstimateSchema, deleteEstimateSchema, editEstimateSchema, getEstimateSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -17,8 +17,10 @@ export const addEstimate = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     // Validate customer exists and verify billing/shipping addresses if provided
     const customer = await getFirstMatch(contactModel, { _id: value?.customerId, isDeleted: false }, {}, {});
@@ -70,6 +72,7 @@ export const addEstimate = async (req, res) => {
     // Generate document number if not provided
     if (!value.estimateNo) {
       value.estimateNo = await getAndIncrementPrefix({
+        branchId: value.branchId,
         companyId: value.companyId,
         prefixType: PREFIX_MODULES.ESTIMATE,
         model: EstimateModel,
@@ -223,7 +226,8 @@ export const getAllEstimate = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, startDate, endDate, companyFilter, activeFilter, customerFilter, statusFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, startDate, endDate, companyFilter, activeFilter, customerFilter, statusFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -239,6 +243,14 @@ export const getAllEstimate = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = new ObjectId(branchId);
+    }
+
+    if (branchFilter) {
+      criteria.branchId = new ObjectId(branchFilter);
     }
 
     if (customerFilter) {
@@ -326,6 +338,9 @@ export const getAllEstimate = async (req, res) => {
       statsCriteria.companyId = criteria.companyId;
     }
 
+    if (criteria.branchId) {
+      statsCriteria.branchId = criteria.branchId;
+    }
     const summaryResults = await EstimateModel.aggregate([
       { $match: statsCriteria },
       {
@@ -448,11 +463,24 @@ export const getEstimateDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { search, customerId } = req.query;
+    const branchId = user?.branchId?._id;
+    let { search, customerId, branchFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false, status: "pending" }; // Usually dropdowns only show pending estimates
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerId) {

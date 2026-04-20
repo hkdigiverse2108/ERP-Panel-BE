@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { branchModel, ConsumptionTypeModel, materialConsumptionModel, productModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addMaterialConsumptionSchema, deleteMaterialConsumptionSchema, editMaterialConsumptionSchema, getMaterialConsumptionSchema } from "../../validation";
 
 export const addMaterialConsumption = async (req, res) => {
@@ -12,8 +12,10 @@ export const addMaterialConsumption = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     if (value.branchId) {
       if (!(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
@@ -27,10 +29,9 @@ export const addMaterialConsumption = async (req, res) => {
       // check stock qty and update stock
       const stockCriteria: any = {
         productId: item?.productId,
+        branchId: value?.branchId,
         isDeleted: false,
       };
-
-      stockCriteria.companyId = value?.companyId;
 
       const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
       if (!stock) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
@@ -44,13 +45,14 @@ export const addMaterialConsumption = async (req, res) => {
     }
 
     value.number = await getAndIncrementPrefix({
+      branchId: value.branchId,
       companyId: value.companyId,
       prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION,
       model: materialConsumptionModel,
       fieldName: "number",
     });
 
-    const isExist = await getFirstMatch(materialConsumptionModel, { companyId: value.companyId, number: value?.number, isDeleted: false }, {}, {});
+    const isExist = await getFirstMatch(materialConsumptionModel, { companyId: value.companyId, branchId: value.branchId, number: value?.number, isDeleted: false }, {}, {});
 
     if (isExist) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Number"), {}, {}));
 
@@ -120,7 +122,7 @@ export const editMaterialConsumption = async (req, res) => {
         const stockCriteria: any = {
           productId: productId,
           isDeleted: false,
-          companyId: isExist.companyId, // Use existing company ID
+          branchId: isExist.branchId, // Use existing branch ID
         };
         // branchId logic if needed (assuming stock is company-wide or branch-specific based on existing patterns)
         // if (isExist.branchId) stockCriteria.branchId = isExist.branchId;
@@ -188,6 +190,7 @@ export const getAllMaterialConsumption = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
     let { page, limit, search, startDate, endDate, typeFilter, branchFilter, activeFilter, companyFilter } = req.query;
 
     page = Number(page) || 1;
@@ -203,9 +206,16 @@ export const getAllMaterialConsumption = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
+    }
+
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
     if (typeFilter) criteria.consumptionTypeId = typeFilter;
-    if (branchFilter) criteria.branchId = branchFilter;
 
     if (search) {
       criteria.$or = [{ number: { $regex: search, $options: "si" } }, { remark: { $regex: search, $options: "si" } }];

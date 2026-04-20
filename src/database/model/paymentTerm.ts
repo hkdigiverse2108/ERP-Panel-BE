@@ -1,13 +1,14 @@
 import mongoose, { Schema } from "mongoose";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { baseCommonFields, baseSchemaOptions } from "./base";
 import { IPaymentTerms } from "../../types";
 
 const paymentTermsSchema = new Schema<IPaymentTerms>(
   {
-    ...baseSchemaFields,
     name: { type: String },
     day: { type: Number },
     isDefault: { type: Boolean, default: true },
+    companyId: { type: Schema.Types.ObjectId, ref: "company", index: true },
+    ...baseCommonFields,
   },
   baseSchemaOptions,
 );

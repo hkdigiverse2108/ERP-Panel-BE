@@ -1,11 +1,10 @@
-import { apiResponse, generateHash, generateToken, getOtpExpireTime, getUniqueOtp, HTTP_STATUS, LOGIN_SOURCES, SOCKET_EVENTS, USER_ROLES, USER_TYPES } from "../../common";
+import { apiResponse, generateHash, generateToken, getOtpExpireTime, getUniqueOtp, HTTP_STATUS, LOGIN_SOURCES, USER_TYPES } from "../../common";
 import { companyModel, roleModel, userModel } from "../../database";
-import { checkIdExist, createOne, emailVerificationMail, findAllAndPopulateWithSorting, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkIdExist, createOne, emailVerificationMail, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { forgotPasswordSchema, loginSchema, registerSchema, resendOtpSchema, resetPasswordSchema, updatePasswordSchema, verifyOtpSchema } from "../../validation";
 
 import bcryptjs from "bcryptjs";
 import { createLoginLogEntry } from "../loginLog";
-import { sendNotification } from "../../helper/socket";
 
 export const register = async (req, res) => {
   reqInfo(req);
@@ -33,9 +32,6 @@ export const register = async (req, res) => {
         return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("User"), {}, {}));
       }
     }
-
-    existingUser = await getFirstMatch(userModel, { "phoneNo.phoneNo": phoneNo, isDeleted: false }, {}, {});
-    if (existingUser) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Phone Number"), {}, {}));
 
     value.password = await generateHash(value.password);
 
@@ -146,13 +142,6 @@ export const login = async (req, res) => {
       token,
     };
 
-    await sendNotification({
-      companyId: response?.companyId?._id,
-      title: "New User Login",
-      message: `${response.fullName || "User"} logged in`,
-      eventType: SOCKET_EVENTS.NOTIFICATION_NEW,
-      meta: { type: "login", action: "created", userId: String((response as any)?._id), userName: response?.fullName },
-    });
     if (!isTypeSuperAdmin) {
       createLoginLogEntry(req, response, "LOGIN", `${response?.companyId?.name || "Company"} Logged In`);
     }
@@ -292,7 +281,7 @@ export const verifyOtp = async (req, res) => {
 
     if (response?.otpExpireTime < new Date()) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.expireOTP, {}, {}));
 
-    // response = await updateData(userModel, { _id: response?._id }, { otp: null, otpExpireTime: null }, {});
+    response = await updateData(userModel, { _id: response?._id }, { otp: null, otpExpireTime: null }, {});
     const { password, otp, otpExpireTime, ...rest } = response;
 
     response = rest;

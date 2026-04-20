@@ -43,7 +43,7 @@ export const getOtpExpireTime = () => {
 
 export const generateHash = async (password = "") => {
   const salt = await bcryptjs.genSalt(10);
-  const hashPassword = bcryptjs.hash(password, salt);
+  const hashPassword = await bcryptjs.hash(password, salt);
   return hashPassword;
 };
 

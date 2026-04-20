@@ -1,6 +1,6 @@
 import { apiResponse, generateHash, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
 import { branchModel, companyModel, locationModel, moduleModel, permissionModel, roleModel, userModel } from "../../database";
-import { checkCompany, checkIdExist, checkLocationExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, checkLocationExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
 import { addUserSchema, deleteUserSchema, editUserSchema, getUserSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -14,7 +14,7 @@ export const addUser = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
-
+    value.branchId = await checkBranch(user, value);
     if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     if (!(await checkIdExist(roleModel, value?.role, "Role", res))) return;
 
@@ -53,7 +53,9 @@ export const addUser = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
-    if (value?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $push: { userIds: response?._id } }, {});
+    if (value?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $addToSet: { userIds: response?._id } }, {});
+    if (value?.branchId) await updateData(branchModel, { _id: value?.branchId, isDeleted: false }, { $addToSet: { userIds: response?._id } }, {});
+
     if (user?.userType === USER_TYPES.SUPER_ADMIN || user?.userType === USER_TYPES.ADMIN) {
       if (user?.userType === USER_TYPES.ADMIN) {
         let allPermissions = await getData(permissionModel, { userId: user?._id }, {}, {});
@@ -140,6 +142,16 @@ export const editUserById = async (req, res) => {
       value.password = await generateHash(value?.password);
     }
 
+    if (value?.branchId && isUserExist?.branchId?.toString() !== value?.branchId?.toString()) {
+      if (isUserExist?.branchId) await updateData(branchModel, { _id: isUserExist?.branchId, isDeleted: false }, { $pull: { userIds: isUserExist?._id } }, {});
+      await updateData(branchModel, { _id: value?.branchId, isDeleted: false }, { $addToSet: { userIds: isUserExist?._id } }, {});
+    }
+
+    if (value?.companyId && isUserExist?.companyId?.toString() !== value?.companyId?.toString()) {
+      if (isUserExist?.companyId) await updateData(companyModel, { _id: isUserExist?.companyId, isDeleted: false }, { $pull: { userIds: isUserExist?._id } }, {});
+      await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $addToSet: { userIds: isUserExist?._id } }, {});
+    }
+
     let response = await updateData(userModel, { _id: new ObjectId(value?.userId), isDeleted: false }, value, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("User"), {}, {}));
@@ -164,7 +176,8 @@ export const deleteUserById = async (req, res) => {
 
     if (isUserExist.role.name === USER_ROLES.SUPER_ADMIN) return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.accessDenied, {}, {}));
 
-    if (isUserExist?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $pull: { userIds: isUserExist?._id } }, {});
+    if (isUserExist?.companyId) await updateData(companyModel, { _id: isUserExist?.companyId, isDeleted: false }, { $pull: { userIds: isUserExist?._id } }, {});
+    if (isUserExist?.branchId) await updateData(branchModel, { _id: isUserExist?.branchId, isDeleted: false }, { $pull: { userIds: isUserExist?._id } }, {});
 
     const payload = {
       isDeleted: true,
@@ -187,6 +200,7 @@ export const getAllUser = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
     let { page, limit, search, startDate, endDate, activeFilter, branchFilter, companyFilter, typeFilter } = req.query;
 
     // let criteria: any = { isDeleted: false, role: USER_ROLES.USER };
@@ -194,6 +208,10 @@ export const getAllUser = async (req, res) => {
 
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
     }
 
     let roles = await getData(roleModel, { name: USER_ROLES.SUPER_ADMIN, isDeleted: false }, { _id: 1 }, {});
@@ -225,7 +243,7 @@ export const getAllUser = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
+        { path: "branchId", select: "name isHeadBranch" },
         { path: "role", select: "name" },
         { path: "address.country", select: "name code" },
         { path: "address.state", select: "name code" },
@@ -273,7 +291,7 @@ export const getUserById = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
+          { path: "branchId", select: "name isHeadBranch" },
           { path: "role", select: "name" },
           { path: "address.country", select: "name code" },
           { path: "address.state", select: "name code" },
@@ -328,8 +346,8 @@ export const getUserDropDown = async (req, res) => {
   try {
     let { user } = req?.headers;
     let companyId = user?.companyId?._id;
-
-    let { typeFilter, companyFilter, roleFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { typeFilter, companyFilter, roleFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -341,6 +359,14 @@ export const getUserDropDown = async (req, res) => {
       criteria.companyId = new ObjectId(companyFilter);
     }
 
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
+    }
+
     if (typeFilter) {
       criteria.userType = typeFilter;
     }
@@ -349,7 +375,7 @@ export const getUserDropDown = async (req, res) => {
       criteria.role = new ObjectId(roleFilter);
     }
 
-    const response = await getData(userModel, criteria, { _id: 1, fullName: 1, userType: 1, role: 1 }, { sort: { fullName: 1 }, populate: [{ path: "role", select: "name" }] });
+    const response = await getData(userModel, criteria, { _id: 1, fullName: 1, userType: 1, role: 1, branchId: 1 }, { sort: { fullName: 1 }, populate: [{ path: "role", select: "name" }, { path: "branchId", select: "name" }] });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("User"), response, {}));
   } catch (error) {

@@ -1,6 +1,6 @@
 import { ADJUSTMENT_TYPE, apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { adjustmentNoteModel, bankModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, checkIdExist, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkIdExist, getAndIncrementPrefix } from "../../helper";
 import { addCreditNoteSchema, deleteCreditNoteSchema, editCreditNoteSchema, getCreditNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -17,8 +17,10 @@ export const addCreditNote = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     if (!(await checkIdExist(bankModel, value?.bankAccountId, "Bank", res))) return;
 
@@ -29,6 +31,7 @@ export const addCreditNote = async (req, res) => {
     }
 
     value.voucherNumber = await getAndIncrementPrefix({
+      branchId: value.branchId,
       companyId: value.companyId,
       prefixType: PREFIX_MODULES.CREDIT_NOTE,
       model: adjustmentNoteModel,
@@ -125,7 +128,8 @@ export const getAllCreditNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, startDate, endDate, companyFilter, activeFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, startDate, endDate, companyFilter, activeFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -137,6 +141,14 @@ export const getAllCreditNote = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -152,6 +164,7 @@ export const getAllCreditNote = async (req, res) => {
       populate: [
         { path: "bankAccountId", select: "name" },
         { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
@@ -193,6 +206,7 @@ export const getOneCreditNote = async (req, res) => {
         populate: [
           { path: "bankAccountId", select: "name" },
           { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
         ],
       },

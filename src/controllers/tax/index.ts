@@ -12,7 +12,6 @@ export const addTax = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
-
     let existingTax = await getFirstMatch(
       taxModel,
       {
@@ -125,16 +124,17 @@ export const deleteTax = async (req, res) => {
 export const getAllTax = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req.headers;
+    const companyId = user?.companyId?._id;
     let { page, limit, search, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
 
-    const { user } = req.headers;
     let criteria: any = { isDeleted: false };
 
     if (user?.userType !== USER_TYPES.SUPER_ADMIN) {
-      criteria.$or = [{ companyId: null }, { companyId: user?.companyId }];
+      criteria.$or = [{ companyId: null }, { companyId: companyId }];
     }
 
     if (companyFilter) criteria.companyId = companyFilter;
@@ -149,7 +149,6 @@ export const getAllTax = async (req, res) => {
       sort: { name: 1 },
       populate: [
         { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
@@ -196,7 +195,6 @@ export const getTaxById = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
           { path: "updatedBy", select: "name userType" },
         ],
@@ -216,11 +214,12 @@ export const getTaxDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    const { companyFilter } = req.query;
+    const companyId = user?.companyId?._id;
+    const { companyFilter, search } = req.query;
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (user?.userType !== USER_TYPES.SUPER_ADMIN) {
-      criteria.$or = [{ companyId: null }, { companyId: user?.companyId }];
+      criteria.$or = [{ companyId: null }, { companyId: companyId }];
     }
 
     if (companyFilter) criteria.companyId = companyFilter;
@@ -231,6 +230,7 @@ export const getTaxDropdown = async (req, res) => {
       { _id: 1, name: 1, percentage: 1 },
       {
         sort: { name: 1 },
+        limit: search ? 50 : 1000,
       },
     );
 

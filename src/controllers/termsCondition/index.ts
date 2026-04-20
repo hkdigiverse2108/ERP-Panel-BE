@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { termsConditionModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addTermsConditionSchema, deleteTermsConditionSchema, editTermsConditionSchema, getTermsConditionSchema } from "../../validation";
 
 export const addTermsCondition = async (req, res) => {
@@ -12,9 +12,9 @@ export const addTermsCondition = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
-
+    value.branchId = await checkBranch(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
     // If setting as default, unset other defaults in this company
     // if (value.isDefault) {
     //   await termsConditionModel.updateMany({ companyId: value.companyId, isDefault: true, isDeleted: false }, { isDefault: false });
@@ -97,8 +97,8 @@ export const getAllTermsCondition = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-
-    let { page, limit, search, activeFilter, isDefaultFilter, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, activeFilter, isDefaultFilter, companyFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -111,6 +111,14 @@ export const getAllTermsCondition = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -126,6 +134,7 @@ export const getAllTermsCondition = async (req, res) => {
     const options: any = {
       sort: { isDefault: -1, name: 1 },
       populate: [
+        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
         { path: "updatedBy", select: "name userType" },
       ],
@@ -186,7 +195,8 @@ export const getTermsConditionDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { search, isDefault, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    const { search, isDefault, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -196,6 +206,14 @@ export const getTermsConditionDropdown = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (isDefault !== undefined) {
@@ -209,9 +227,10 @@ export const getTermsConditionDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       termsConditionModel,
       criteria,
-      { _id: 1, termsCondition: 1, isDefault: 1 },
+      { _id: 1, termsCondition: 1, isDefault: 1, branchId: 1 },
       {
         sort: { isDefault: -1, createdAt: -1 },
+        populate: [{ path: "branchId", select: "name" }],
       },
     );
 
@@ -219,6 +238,7 @@ export const getTermsConditionDropdown = async (req, res) => {
       _id: item._id,
       termsCondition: item.termsCondition,
       isDefault: item.isDefault,
+      branchId: item.branchId,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Terms & Condition"), dropdownData, {}));

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES, PREFIX_MODULES } from "../../common";
 import { companyModel, productModel, recipeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addRecipeSchema, deleteRecipeSchema, editRecipeSchema, getRecipeSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -14,17 +14,19 @@ export const addRecipe = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     value.number = await getAndIncrementPrefix({
+      branchId: value.branchId,
       companyId: value.companyId,
       prefixType: PREFIX_MODULES.RECIPE,
       model: recipeModel,
       fieldName: "number",
     });
 
-    console.log(value);
 
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
@@ -96,8 +98,8 @@ export const getAllRecipe = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-
-    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -109,6 +111,14 @@ export const getAllRecipe = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -247,14 +257,18 @@ export const getRecipeDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { search, companyFilter } = req.query;
+    const { search, companyFilter, branchFilter } = req.query;
 
     let companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (companyId) criteria.companyId = companyId;
     if (companyFilter) criteria.companyId = companyFilter;
+
+    if (branchId) criteria.branchId = branchId;
+    if (branchFilter) criteria.branchId = branchFilter;
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { name: { $regex: search, $options: "si" } }, { number: { $regex: search, $options: "si" } }];

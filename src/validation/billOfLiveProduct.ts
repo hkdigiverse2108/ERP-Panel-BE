@@ -26,7 +26,6 @@ export const addBillOfLiveProductSchema = Joi.object().keys({
   ...baseApiSchema,
 
   date: Joi.string().required(),
-  number: Joi.string().required(),
 
   recipeId: Joi.array().items(objectId()).optional(),
 

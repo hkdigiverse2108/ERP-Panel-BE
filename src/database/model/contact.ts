@@ -1,11 +1,12 @@
 import mongoose, { Schema } from "mongoose";
 import { CONTACT_STATUS, CONTACT_TYPE, CUSTOMER_TYPE, SUPPLIER_TYPE } from "../../common";
 import { IContact } from "../../types";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { baseCommonFields, baseSchemaOptions } from "./base";
 
 const contactSchema = new Schema<IContact>(
   {
-    ...baseSchemaFields,
+    ...baseCommonFields,
+    companyId: { type: Schema.Types.ObjectId, ref: "company", index: true },
     firstName: { type: String, required: true, index: true },
     lastName: { type: String, index: true },
     companyName: { type: String },

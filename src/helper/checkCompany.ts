@@ -1,5 +1,5 @@
 import { USER_TYPES } from "../common";
-import { companyModel } from "../database";
+import { branchModel, companyModel } from "../database";
 import { getFirstMatch } from "./databaseServices";
 import { responseMessage } from "./responseMessage";
 
@@ -25,4 +25,23 @@ export const checkCompany = async (user, value) => {
   }
 
   return companyId;
+};
+
+export const checkBranch = async (user: any, value: any) => {
+  const userType = user?.userType;
+  if (!userType) return null;
+
+  let branchId = null;
+  if (userType !== USER_TYPES.SUPER_ADMIN) {
+    branchId = user?.branchId?._id || user?.branchId;
+  } else {
+    branchId = value.branchId;
+  }
+
+  if (branchId) {
+    const isBranchExist = await getFirstMatch(branchModel, { _id: branchId, isDeleted: false }, {}, {});
+    if (!isBranchExist) throw new Error(responseMessage?.getDataNotFound("Branch"));
+  }
+
+  return branchId;
 };

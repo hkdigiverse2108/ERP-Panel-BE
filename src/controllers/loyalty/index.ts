@@ -3,7 +3,6 @@ import { contactModel, loyaltyModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addLoyaltySchema, deleteLoyaltySchema, editLoyaltySchema, getLoyaltySchema, redeemLoyaltySchema, removeLoyaltySchema } from "../../validation";
 
-
 const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addLoyalty = async (req, res) => {
@@ -18,9 +17,7 @@ export const addLoyalty = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
-
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-
     // Check if loyalty campaign name already exists
     const isExist = await getFirstMatch(loyaltyModel, { name: value?.name, companyId: value.companyId, isDeleted: false }, {}, {});
     if (isExist) {
@@ -151,7 +148,6 @@ export const getAllLoyalty = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
         { path: "customerIds.id", select: "firstName lastName" },
         { path: "createdBy", select: "fullName userType" },
       ],
@@ -193,7 +189,6 @@ export const getOneLoyalty = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
           { path: "customerIds.id", select: "firstName lastName" },
           { path: "createdBy", select: "fullName userType" },
         ],
@@ -341,7 +336,6 @@ export const loyaltyDropDown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-
     const { search, customerId, totalAmount, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
@@ -359,10 +353,7 @@ export const loyaltyDropDown = async (req, res) => {
     }
 
     const now = new Date();
-    criteria.$and = [
-      { $or: [{ campaignExpiryDate: { $exists: false } }, { campaignExpiryDate: null }, { campaignExpiryDate: { $gte: now } }] },
-      { $or: [{ usageLimit: { $exists: false } }, { usageLimit: null }, { $expr: { $lt: ["$usedCount", "$usageLimit"] } }] },
-    ];
+    criteria.$and = [{ $or: [{ campaignExpiryDate: { $exists: false } }, { campaignExpiryDate: null }, { campaignExpiryDate: { $gte: now } }] }, { $or: [{ usageLimit: { $exists: false } }, { usageLimit: null }, { $expr: { $lt: ["$usedCount", "$usageLimit"] } }] }];
 
     if (totalAmount) {
       criteria.$and.push({ $or: [{ minimumPurchaseAmount: { $exists: false } }, { minimumPurchaseAmount: null }, { minimumPurchaseAmount: { $lte: totalAmount } }] });
@@ -375,7 +366,7 @@ export const loyaltyDropDown = async (req, res) => {
       });
     }
 
-    const response = await loyaltyModel.find(criteria, { name: 1, type: 1, minimumPurchaseAmount: 1, }).sort({ name: 1 }).limit(100);
+    const response = await loyaltyModel.find(criteria, { name: 1, type: 1, minimumPurchaseAmount: 1 }).sort({ name: 1 }).limit(100);
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Loyalty Dropdown"), response, {}));
   } catch (error) {
@@ -383,4 +374,3 @@ export const loyaltyDropDown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-

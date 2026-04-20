@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS, PREFIX_MODULES } from "../../common";
-import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, PosPaymentModel, additionalChargeModel, taxModel, PosCashRegisterModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkStockQty, getAndIncrementPrefix } from "../../helper";
+import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, additionalChargeModel, taxModel, PosCashRegisterModel } from "../../database";
+import { checkBranch, checkCompany, checkIdExist, createOne, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkStockQty, getAndIncrementPrefix } from "../../helper";
 import { addReturnPosOrderSchema, editReturnPosOrderSchema, getReturnPosOrderSchema, deleteReturnPosOrderSchema, returnPosOrderDropDownSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -16,7 +16,10 @@ export const addReturnPosOrder = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
+
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     if (value.posOrderId && !(await checkIdExist(PosOrderModel, value.posOrderId, "POS Order", res))) return;
     if (value.customerId && !(await checkIdExist(contactModel, value.customerId, "Customer", res))) return;
@@ -55,7 +58,7 @@ export const addReturnPosOrder = async (req, res) => {
     const openRegister = await getFirstMatch(
       PosCashRegisterModel,
       {
-        companyId: value.companyId,
+        branchId: value.branchId,
         status: CASH_REGISTER_STATUS.OPEN,
         isDeleted: false,
       },
@@ -68,8 +71,9 @@ export const addReturnPosOrder = async (req, res) => {
     }
     // -------------------------------
 
-    value.returnOrderNo = await getAndIncrementPrefix({ 
-      companyId: value.companyId, 
+    value.returnOrderNo = await getAndIncrementPrefix({
+      branchId: value.branchId,
+      companyId: value.companyId,
       prefixType: PREFIX_MODULES.RETURN_POS_ORDER,
       model: returnPosOrderModel,
       fieldName: "returnOrderNo",
@@ -137,8 +141,9 @@ export const addReturnPosOrder = async (req, res) => {
         returnPosOrderId: response._id,
         totalAmount: response.total,
         creditsRemaining: response.total,
-        creditNoteNo: await getAndIncrementPrefix({ 
-          companyId: response.companyId, 
+        creditNoteNo: await getAndIncrementPrefix({
+          branchId: response.branchId,
+          companyId: response.companyId,
           prefixType: PREFIX_MODULES.POS_CREDIT_NOTE,
           model: posCreditNoteModel,
           fieldName: "creditNoteNo",
@@ -199,7 +204,7 @@ export const editReturnPosOrder = async (req, res) => {
         const newQty = newItem ? newItem.qty : 0;
         return { productId: item.productId, qty: item.qty - newQty };
       });
-      if (!(await checkStockQty(checkItems, isExist.companyId, res))) return;
+      if (!(await checkStockQty(checkItems, isExist.branchId, res))) return;
     }
 
     const originalOrder = await PosOrderModel.findOne({ _id: isExist.posOrderId, isDeleted: false });
@@ -328,13 +333,26 @@ export const getAllReturnPosOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, customerId, type, startDate, endDate, activeFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, customerId, type, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     page = Number(page) || 1;
     limit = Number(limit) || 10;
 
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
+    }
+
     if (customerId) criteria.customerId = new ObjectId(customerId);
     if (type) criteria.type = type;
     if (activeFilter) criteria.isActive = activeFilter === "true" ? true : false;
@@ -411,6 +429,15 @@ export const getAllReturnPosOrder = async (req, res) => {
             { $unwind: { path: "$items.productId", preserveNullAndEmptyArrays: true } },
             {
               $lookup: {
+                from: "branches",
+                localField: "branchId",
+                foreignField: "_id",
+                as: "branchId",
+              },
+            },
+            { $unwind: { path: "$branchId", preserveNullAndEmptyArrays: true } },
+            {
+              $lookup: {
                 from: "stocks",
                 let: { productId: "$items.productId._id", companyName: "$companyId.name" },
                 pipeline: [
@@ -467,9 +494,7 @@ export const getAllReturnPosOrder = async (req, res) => {
                 flatDiscount: { $first: "$flatDiscount" },
                 discountAmount: { $first: "$discountAmount" },
                 total: { $first: "$total" },
-                companyId: { $first: "$companyId" },
-                isDeleted: { $first: "$isDeleted" },
-                isActive: { $first: "$isActive" },
+                branchId: { $first: "$branchId" },
                 createdBy: { $first: "$createdBy" },
                 updatedBy: { $first: "$updatedBy" },
                 createdAt: { $first: "$createdAt" },
@@ -513,6 +538,7 @@ export const getAllReturnPosOrder = async (req, res) => {
                 createdBy: 1,
                 updatedBy: 1,
                 companyId: { _id: 1, name: 1 },
+                branchId: { _id: 1, name: 1 },
                 orderNo: "$returnOrderNo",
                 posOrderId: 1,
                 customerId: {
@@ -652,6 +678,15 @@ export const getOneReturnPosOrder = async (req, res) => {
       { $unwind: { path: "$items.productId", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
+          from: "branches",
+          localField: "branchId",
+          foreignField: "_id",
+          as: "branchId",
+        },
+      },
+      { $unwind: { path: "$branchId", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
           from: "stocks",
           let: { productId: "$items.productId._id", companyName: "$companyId.name" },
           pipeline: [
@@ -708,9 +743,7 @@ export const getOneReturnPosOrder = async (req, res) => {
           flatDiscount: { $first: "$flatDiscount" },
           discountAmount: { $first: "$discountAmount" },
           total: { $first: "$total" },
-          companyId: { $first: "$companyId" },
-          isDeleted: { $first: "$isDeleted" },
-          isActive: { $first: "$isActive" },
+          branchId: { $first: "$branchId" },
           createdBy: { $first: "$createdBy" },
           updatedBy: { $first: "$updatedBy" },
           createdAt: { $first: "$createdAt" },
@@ -754,6 +787,7 @@ export const getOneReturnPosOrder = async (req, res) => {
           createdBy: 1,
           updatedBy: 1,
           companyId: { _id: 1, name: 1 },
+          branchId: { _id: 1, name: 1 },
           orderNo: "$returnOrderNo",
           posOrderId: 1,
           customerId: {
@@ -881,11 +915,11 @@ export const deleteReturnPosOrder = async (req, res) => {
     // When we delete a return, we revert the stock increase (which means we decrease stock).
     // We pass the items as 'new' items to check against current stock.
     const itemsToDeduct = isExist.items.map((item) => ({ productId: item.productId, qty: item.qty }));
-    if (!(await checkStockQty(itemsToDeduct, isExist.companyId, res))) return;
+    if (!(await checkStockQty(itemsToDeduct, isExist.branchId, res))) return;
 
     // Decrease stock for deleted return order
     for (const item of isExist.items) {
-      await stockModel.findOneAndUpdate({ productId: item.productId, companyId: isExist.companyId, isDeleted: false }, { $inc: { qty: -item.qty } });
+      await stockModel.findOneAndUpdate({ productId: item.productId, companyId: isExist.companyId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: -item.qty } });
     }
     // ----------------------------
 
@@ -911,12 +945,18 @@ export const returnPosOrderDropDown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { error, value } = returnPosOrderDropDownSchema.validate(req.query);
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    const branchId = user?.branchId?._id;
+    // const { error, value } = returnPosOrderDropDownSchema.validate(req.query);
+    // if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const { search, customerId, type } = value;
+    const { search, customerId, type, companyFilter, branchFilter } = req.query;
+    
     let criteria: any = { isDeleted: false, isActive: true };
+   
     if (companyId) criteria.companyId = companyId;
+    if (companyFilter) criteria.companyId = companyFilter;
+    if (branchId) criteria.branchId = branchId;
+    if (branchFilter) criteria.branchId = branchFilter;
     if (customerId) criteria.customerId = new ObjectId(customerId);
     if (type) criteria.type = type;
 
@@ -924,7 +964,10 @@ export const returnPosOrderDropDown = async (req, res) => {
       criteria.$or = [{ returnOrderNo: { $regex: search, $options: "si" } }];
     }
 
-    const response = await returnPosOrderModel.find(criteria, { returnOrderNo: 1, total: 1 }).sort({ createdAt: -1 }).limit(100);
+    const response = await returnPosOrderModel.find(criteria, { returnOrderNo: 1, total: 1, branchId: 1 })
+      .populate([{ path: "branchId", select: "name" }])
+      .sort({ createdAt: -1 })
+      .limit(100);
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order Dropdown"), response, {}));
   } catch (error) {

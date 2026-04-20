@@ -1,45 +1,8 @@
-import {
-  PosCashRegisterModel,
-  bankModel,
-  branchModel,
-  CashControlModel,
-  PosOrderModel,
-  returnPosOrderModel,
-  PosPaymentModel,
-} from "../../database";
-import {
-  apiResponse,
-  HTTP_STATUS,
-  CASH_REGISTER_STATUS,
-  CASH_CONTROL_TYPE,
-  POS_VOUCHER_TYPE,
-  PAYMENT_MODE,
-  POS_ORDER_STATUS,
-  PREFIX_MODULES,
-} from "../../common";
+import { PosCashRegisterModel, bankModel, branchModel, CashControlModel, PosOrderModel, returnPosOrderModel, PosPaymentModel } from "../../database";
+import { apiResponse, HTTP_STATUS, CASH_REGISTER_STATUS, CASH_CONTROL_TYPE, POS_VOUCHER_TYPE, PAYMENT_MODE, POS_ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import mongoose from "mongoose";
-import {
-  checkCompany,
-  checkIdExist,
-  createOne,
-  getFirstMatch,
-  updateData,
-  reqInfo,
-  countData,
-  getDataWithSorting,
-  responseMessage,
-  generateSequenceNumber,
-  applyDateFilter,
-  getAndIncrementPrefix,
-} from "../../helper";
-import {
-  addPosCashRegisterSchema,
-  editPosCashRegisterSchema,
-  getPosCashRegisterSchema,
-  deletePosCashRegisterSchema,
-  getAllPosCashRegisterSchema,
-  posCashRegisterDropDownSchema,
-} from "../../validation";
+import { checkBranch, checkCompany, checkIdExist, createOne, getFirstMatch, updateData, reqInfo, countData, getDataWithSorting, responseMessage, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { addPosCashRegisterSchema, editPosCashRegisterSchema, getPosCashRegisterSchema, deletePosCashRegisterSchema, posCashRegisterDropDownSchema } from "../../validation";
 
 export const addPosCashRegister = async (req, res) => {
   reqInfo(req);
@@ -48,36 +11,23 @@ export const addPosCashRegister = async (req, res) => {
     const { error, value } = addPosCashRegisterSchema.validate(req.body);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
     if (!value.companyId) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            responseMessage?.fieldIsRequired("Company Id"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    }
+    if (!value.branchId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
     }
 
     const existingOpenRegister = await getFirstMatch(
       PosCashRegisterModel,
       {
         companyId: value.companyId,
+        branchId: value.branchId,
         status: CASH_REGISTER_STATUS.OPEN,
         isDeleted: false,
       },
@@ -86,22 +36,14 @@ export const addPosCashRegister = async (req, res) => {
     );
 
     if (existingOpenRegister) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "An open register already exists for this company",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "An open register already exists for this company", {}, {}));
     }
 
     value.createdBy = user?._id || null;
     value.salesManId = user?._id || null;
     value.updatedBy = user?._id || null;
     value.registerNo = await getAndIncrementPrefix({
+      branchId: value.branchId,
       companyId: value.companyId,
       prefixType: PREFIX_MODULES.POS_CASH_REGISTER,
       model: PosCashRegisterModel,
@@ -110,16 +52,7 @@ export const addPosCashRegister = async (req, res) => {
 
     const response = await createOne(PosCashRegisterModel, value);
     if (!response) {
-      return res
-        .status(HTTP_STATUS.NOT_IMPLEMENTED)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_IMPLEMENTED,
-            responseMessage?.addDataError,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
     await createOne(CashControlModel, {
@@ -133,28 +66,10 @@ export const addPosCashRegister = async (req, res) => {
       updatedBy: user?._id || null,
     });
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.addDataSuccess("POS Cash Register"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("POS Cash Register"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error?.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -165,59 +80,19 @@ export const editPosCashRegister = async (req, res) => {
     const { error, value } = editPosCashRegisterSchema.validate(req.body);
 
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (
-      value.branchId &&
-      !(await checkIdExist(branchModel, value.branchId, "Branch", res))
-    )
-      return;
-    if (
-      value.bankAccountId &&
-      !(await checkIdExist(bankModel, value.bankAccountId, "Bank", res))
-    )
-      return;
+    if (value.branchId && !(await checkIdExist(branchModel, value.branchId, "Branch", res))) return;
+    if (value.bankAccountId && !(await checkIdExist(bankModel, value.bankAccountId, "Bank", res))) return;
 
-    const isExist = await getFirstMatch(
-      PosCashRegisterModel,
-      { _id: value?.posCashRegisterId, isDeleted: false },
-      {},
-      {},
-    );
+    const isExist = await getFirstMatch(PosCashRegisterModel, { _id: value?.posCashRegisterId, isDeleted: false }, {}, {});
     if (!isExist) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("POS Cash Register"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Cash Register"), {}, {}));
     }
 
     if (isExist?.status === CASH_REGISTER_STATUS.CLOSED) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            "Register is already closed",
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Register is already closed", {}, {}));
     }
 
     if (!value.salesManId) {
@@ -237,62 +112,21 @@ export const editPosCashRegister = async (req, res) => {
         {},
       );
       if (isPosHoldOrderExist) {
-        return res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            new apiResponse(
-              HTTP_STATUS.BAD_REQUEST,
-              "First Settle the all hold orders",
-              {},
-              {},
-            ),
-          );
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "First Settle the all hold orders", {}, {}));
       }
     }
 
     value.updatedBy = user?._id || null;
-    const response = await updateData(
-      PosCashRegisterModel,
-      { _id: value?.posCashRegisterId },
-      value,
-      {},
-    );
+    const response = await updateData(PosCashRegisterModel, { _id: value?.posCashRegisterId }, value, {});
 
     if (!response) {
-      return res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.INTERNAL_SERVER_ERROR,
-            responseMessage?.updateDataError("POS Cash Register"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.updateDataError("POS Cash Register"), {}, {}));
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.updateDataSuccess("POS Cash Register"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("POS Cash Register"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error?.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -301,7 +135,7 @@ export const getAllPosCashRegister = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-
+    const branchId = user?.branchId?._id;
     // const { error, value } = getAllPosCashRegisterSchema.validate(req.query);
     // if (error) {
     //   return res
@@ -316,24 +150,16 @@ export const getAllPosCashRegister = async (req, res) => {
     //     );
     // }
 
-    let {
-      page,
-      limit,
-      salesManFilter,
-      companyFilter,
-      branchFilter,
-      statusFilter,
-      startDate,
-      endDate,
-    } = req.query;
+    let { page, limit, salesManFilter, companyFilter, branchFilter, statusFilter, startDate, endDate } = req.query;
     page = Number(page);
     limit = Number(limit);
 
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
     if (companyFilter) criteria.companyId = companyFilter;
-    if (salesManFilter) criteria.salesManId = salesManFilter;
+    if (branchId) criteria.branchId = branchId;
     if (branchFilter) criteria.branchId = branchFilter;
+    if (salesManFilter) criteria.salesManId = salesManFilter;
     if (statusFilter) criteria.status = statusFilter;
 
     applyDateFilter(criteria, startDate as string, endDate as string);
@@ -351,12 +177,7 @@ export const getAllPosCashRegister = async (req, res) => {
       ],
     };
 
-    const response = await getDataWithSorting(
-      PosCashRegisterModel,
-      criteria,
-      {},
-      options,
-    );
+    const response = await getDataWithSorting(PosCashRegisterModel, criteria, {}, options);
     const totalData = await countData(PosCashRegisterModel, criteria);
 
     return res.status(HTTP_STATUS.OK).json(
@@ -373,16 +194,7 @@ export const getAllPosCashRegister = async (req, res) => {
     );
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error?.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -391,16 +203,7 @@ export const getOnePosCashRegister = async (req, res) => {
   try {
     const { error, value } = getPosCashRegisterSchema.validate(req.params);
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
     const response = await getFirstMatch(
@@ -419,40 +222,13 @@ export const getOnePosCashRegister = async (req, res) => {
     );
 
     if (!response) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("POS Cash Register"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Cash Register"), {}, {}));
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("POS Cash Register"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Cash Register"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error?.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -461,79 +237,24 @@ export const deletePosCashRegister = async (req, res) => {
   try {
     const { error, value } = deletePosCashRegisterSchema.validate(req.params);
     if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const isExist = await getFirstMatch(
-      PosCashRegisterModel,
-      { _id: value?.id, isDeleted: false },
-      {},
-      {},
-    );
+    const isExist = await getFirstMatch(PosCashRegisterModel, { _id: value?.id, isDeleted: false }, {}, {});
     if (!isExist) {
-      return res
-        .status(HTTP_STATUS.NOT_FOUND)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.NOT_FOUND,
-            responseMessage?.getDataNotFound("POS Cash Register"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Cash Register"), {}, {}));
     }
 
-    const response = await updateData(
-      PosCashRegisterModel,
-      { _id: value?.id },
-      { isDeleted: true },
-      {},
-    );
+    const response = await updateData(PosCashRegisterModel, { _id: value?.id }, { isDeleted: true }, {});
 
     if (!response) {
-      return res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.INTERNAL_SERVER_ERROR,
-            responseMessage?.deleteDataError("POS Cash Register"),
-            {},
-            {},
-          ),
-        );
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.deleteDataError("POS Cash Register"), {}, {}));
     }
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.deleteDataSuccess("POS Cash Register"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Cash Register"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error?.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -542,26 +263,16 @@ export const posCashRegisterDropDown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
 
-    const { error, value } = posCashRegisterDropDownSchema.validate(req.query);
-    if (error) {
-      return res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json(
-          new apiResponse(
-            HTTP_STATUS.BAD_REQUEST,
-            error?.details[0]?.message,
-            {},
-            {},
-          ),
-        );
-    }
+    const { statusFilter, companyFilter, branchFilter } = req.query;
 
-    const { branchId, status } = value;
     let criteria: any = { isDeleted: false, isActive: true };
     if (companyId) criteria.companyId = companyId;
+    if (companyFilter) criteria.companyId = companyFilter;
     if (branchId) criteria.branchId = branchId;
-    if (status) criteria.status = status;
+    if (branchFilter) criteria.branchId = branchFilter;
+    if (statusFilter) criteria.status = statusFilter;
 
     const response = await PosCashRegisterModel.find(criteria, {
       _id: 1,
@@ -572,28 +283,10 @@ export const posCashRegisterDropDown = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(100);
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("POS Cash Register Dropdown"),
-          response,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Cash Register Dropdown"), response, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error?.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
 
@@ -602,11 +295,12 @@ export const getCashRegisterDetails = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-
+    const branchId = user?.branchId?._id;
     const openRegister = await getFirstMatch(
       PosCashRegisterModel,
       {
         companyId: companyId,
+        branchId: branchId,
         status: CASH_REGISTER_STATUS.OPEN,
         isDeleted: false,
       },
@@ -802,27 +496,9 @@ export const getCashRegisterDetails = async (req, res) => {
       },
     };
 
-    return res
-      .status(HTTP_STATUS.OK)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.OK,
-          responseMessage?.getDataSuccess("Cash Register Details"),
-          result,
-          {},
-        ),
-      );
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Cash Register Details"), result, {}));
   } catch (error) {
     console.error(error);
-    return res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json(
-        new apiResponse(
-          HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          error?.message || responseMessage?.internalServerError,
-          {},
-          error,
-        ),
-      );
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };

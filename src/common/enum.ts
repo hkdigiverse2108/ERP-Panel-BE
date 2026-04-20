@@ -213,6 +213,7 @@ export const CONSUMPTION_TYPE = {
   SAMPLE: "sample",
   PRODUCTION: "production",
   SCRAP_WASTAGE: "scrap_wastage",
+  STOCK_TRANSFER_LOSS: "stock_transfer_loss",
 } as const;
 
 export const POS_PAYMENT_METHOD = {
@@ -423,4 +424,15 @@ export const PREFIX_MODULES = {
   DEBIT_NOTE: "Debit_Note",
   CREDIT_NOTE: "Credit_Note",
   BANK_TRANSACTION: "Bank_Transaction",
+  STOCK_TRANSFER: "Stock_Transfer",
+  BILL_OF_LIVE_PRODUCT: "Bill_Of_Live_Product",
+} as const;
+
+export const STOCK_TRANSFER_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  PARTIALLY_APPROVED: "partially_approved",
+  REJECTED: "rejected",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
 } as const;

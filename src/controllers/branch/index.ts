@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, clonePrefixesToBranch } from "../../helper";
 import { addBranchSchema, deleteBranchSchema, editBranchSchema, getBranchSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -29,6 +29,9 @@ export const addBranch = async (req, res) => {
 
     const response = await createOne(branchModel, value);
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+
+    // Auto-clone prefixes for the new branch
+    await clonePrefixesToBranch(value.companyId, response._id, user?._id);
 
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Branch"), response, {}));
   } catch (error) {
@@ -86,6 +89,10 @@ export const deleteBranchById = async (req, res) => {
 
     if (!isBranchExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Branch"), {}, {}));
 
+    if (isBranchExist?.isHeadBranch == true) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Cannot delete the Head Branch", {}, {}));
+    }
+
     let payload = {
       isDeleted: true,
       updatedBy: user?._id || null,
@@ -133,7 +140,7 @@ export const getAllBranch = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "bankId", select: "name" },
-        { path: "userIds", select: "name" },
+        { path: "userIds", select: "fullName" },
         { path: "createdBy", select: "fullName userType" },
         { path: "address.country", select: "name code" },
         { path: "address.state", select: "name code" },
@@ -175,7 +182,7 @@ export const getBranchById = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "bankId", select: "name" },
-          { path: "userIds", select: "name" },
+          { path: "userIds", select: "fullName" },
           { path: "createdBy", select: "fullName userType" },
           { path: "address.country", select: "name code" },
           { path: "address.state", select: "name code" },

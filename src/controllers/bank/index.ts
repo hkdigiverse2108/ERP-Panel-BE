@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { bankModel, branchModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
 import { addBankSchema, deleteBankSchema, editBankSchema, getBankSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -11,7 +11,7 @@ export const addBank = async (req, res) => {
     const { user } = req.headers;
 
     const { error, value } = addBankSchema.validate(req.body);
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
 
@@ -45,7 +45,7 @@ export const editBank = async (req, res) => {
     const { user } = req.headers;
 
     const { error, value } = editBankSchema.validate(req.body);
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     if (!(await checkIdExist(bankModel, value?.bankId, "Bank", res))) return;
 
@@ -76,7 +76,7 @@ export const deleteBankById = async (req, res) => {
     const { user } = req.headers;
     const { error, value } = deleteBankSchema.validate(req.params);
 
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_GATEWAY, error?.details[0]?.message, {}, {}));
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     if (!(await checkIdExist(bankModel, value?.id, "Bank", res))) return;
 
@@ -98,13 +98,15 @@ export const getAllBank = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
     if (companyId) criteria.companyId = companyId;
-    if (companyFilter) criteria.companyId = new ObjectId(companyFilter)
-
+    if (branchId) criteria.branchIds = { $in: [branchId] };
+    if (companyFilter) criteria.companyId = new ObjectId(companyFilter);
+    if (branchFilter) criteria.branchIds = { $in: [new ObjectId(branchFilter)] };
 
     if (search) criteria.$or = [{ accountHolderName: { $regex: search, $options: "si" }, bankAccountNumber: { $regex: search, $options: "si" } }];
 
@@ -185,9 +187,10 @@ export const getBankDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { search, startDate, endDate, companyFilter } = req.query;
+    const { search, startDate, endDate, companyFilter, branchFilter } = req.query;
 
     let companyId = user?.companyId?._id;
+    let branchId = user?.branchId?._id;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -195,6 +198,12 @@ export const getBankDropdown = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) criteria.branchIds = { $in: [branchId] };
+
+    if (branchFilter) {
+      criteria.branchIds = { $in: [branchFilter] };
     }
 
     if (search) {
@@ -210,6 +219,7 @@ export const getBankDropdown = async (req, res) => {
       {
         sort: { name: 1 },
         limit: search ? 50 : 1000,
+        populate: [{ path: "branchIds", select: "name" }],
       },
     );
     const dropdownData = response.map((item) => ({

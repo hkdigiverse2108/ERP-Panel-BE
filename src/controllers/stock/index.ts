@@ -1,10 +1,10 @@
-import { apiResponse, HTTP_STATUS, USER_TYPES, PREFIX_MODULES } from "../../common";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { branchModel, ConsumptionTypeModel, materialConsumptionModel, productModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
-// TODO: need to add validation for stock
+
 export const addStock = async (req, res) => {
   reqInfo(req);
   try {
@@ -14,9 +14,9 @@ export const addStock = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
-
+    value.branchId = await checkBranch(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
     if (!(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     if (!(await checkIdExist(productModel, value?.productId, "Product", res))) return;
 
@@ -71,13 +71,10 @@ export const editStock = async (req, res) => {
         isDeleted: false,
       };
 
-      if (user?.userType !== USER_TYPES.SUPER_ADMIN && user?.companyId?._id) {
-        stockCriteria.companyId = user?.companyId?._id;
-      }
-
-      if (user?.branchId?._id) {
-        stockCriteria.branchId = user?.branchId?._id;
-      }
+      stockCriteria.companyId = await checkCompany(user, item);
+      stockCriteria.branchId = await checkBranch(user, item);
+      if (!stockCriteria.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+      if (!stockCriteria.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
       const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
       if (!stock) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
@@ -116,6 +113,10 @@ export const bulkStockAdjustment = async (req, res) => {
     const updatedItems = [];
     const processedItems = [];
 
+    const companyId = await checkCompany(user, value);
+    const branchId = await checkBranch(user, value);
+    if (!companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
     if (value?.consumptionTypeId) {
       const consumptionType = await getFirstMatch(ConsumptionTypeModel, { _id: value?.consumptionTypeId, isDeleted: false }, {}, {});
       if (!consumptionType) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Consumption Type"), {}, {}));
@@ -128,11 +129,9 @@ export const bulkStockAdjustment = async (req, res) => {
       const stockCriteria: any = {
         productId: item?.productId,
         isDeleted: false,
+        companyId,
+        branchId,
       };
-
-      if (user?.userType !== USER_TYPES.SUPER_ADMIN && user?.companyId?._id) {
-        stockCriteria.companyId = user?.companyId?._id;
-      }
 
       const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
       if (!stock) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
@@ -155,8 +154,8 @@ export const bulkStockAdjustment = async (req, res) => {
     let consumptionRecord = null;
 
     if (processedItems.length) {
-      const companyId = user?.companyId?._id || null;
       const consumptionNo = await getAndIncrementPrefix({
+        branchId,
         companyId,
         prefixType: PREFIX_MODULES.MATERIAL_CONSUMPTION,
         model: materialConsumptionModel,
@@ -170,7 +169,7 @@ export const bulkStockAdjustment = async (req, res) => {
 
       const consumptionPayload: any = {
         companyId,
-        branchId: value?.branchId || user?.branchId?._id || null,
+        branchId,
         number: consumptionNo,
         date: value?.consumptionDate || new Date(),
         consumptionTypeId: value.consumptionTypeId,
@@ -227,9 +226,19 @@ export const getAllStock = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    const { page, limit, search, activeFilter, companyFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, branchFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const { page, limit, search, activeFilter, companyFilter, branchFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
 
     const stockMatchCriteria: any = { isDeleted: false };
+
+    if (branchId) {
+      stockMatchCriteria.branchId = branchId;
+    }
+
+    if (companyId) {
+      stockMatchCriteria.companyId = companyId;
+    }
 
     if (branchFilter) stockMatchCriteria.branchId = new ObjectId(branchFilter as string);
     if (companyFilter) stockMatchCriteria.companyId = new ObjectId(companyFilter as string);
@@ -241,13 +250,36 @@ export const getAllStock = async (req, res) => {
       stockMatchCriteria.companyId = user?.companyId?._id;
     }
 
-
     const stockAggregationPipeline: any[] = [
       { $match: stockMatchCriteria },
       {
         $group: {
           _id: "$productId",
           totalQty: { $sum: "$qty" },
+          branchId: { $first: "$branchId" },
+        },
+      },
+      {
+        $lookup: {
+          from: "branches",
+          localField: "branchId",
+          foreignField: "_id",
+          as: "branchData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$branchData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          totalQty: 1,
+          branchData: {
+            _id: "$branchData._id",
+            name: "$branchData.name",
+          },
         },
       },
     ];
@@ -265,8 +297,10 @@ export const getAllStock = async (req, res) => {
     const stockByProduct = await stockModel.aggregate(stockAggregationPipeline);
     const productIdsWithStock = stockByProduct.map((s: any) => s._id);
     const qtyByProductId: Record<string, number> = {};
+    const branchByProductId: Record<string, any> = {};
     stockByProduct.forEach((s: any) => {
       qtyByProductId[s._id.toString()] = s.totalQty;
+      branchByProductId[s._id.toString()] = s.branchData;
     });
     if (productIdsWithStock.length === 0) {
       const stateObj = {
@@ -317,6 +351,7 @@ export const getAllStock = async (req, res) => {
       skip: (parseInt(page as string) - 1) * parseInt(limit as string),
       limit: parseInt(limit as string),
       populate: [
+        { path: "companyId", select: "name" },
         { path: "categoryId", select: "name" },
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
@@ -330,6 +365,7 @@ export const getAllStock = async (req, res) => {
     const stockData = products.map((product: any) => ({
       ...product,
       availableQty: qtyByProductId[product._id.toString()] ?? 0,
+      branchId: branchByProductId[product._id.toString()] ?? null,
     }));
 
     const totalPages = Math.ceil(totalData / parseInt(limit as string)) || 1;

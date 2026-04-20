@@ -42,7 +42,7 @@ export const createOne = async (modelName, objToSave) => {
 };
 
 export const createMany = async (modelName, objToSave) => {
-  return new modelName.insertMany(objToSave);
+  return await modelName.insertMany(objToSave);
 };
 
 // ================ All Create Services ================

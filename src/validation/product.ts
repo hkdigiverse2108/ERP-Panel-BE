@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { PRODUCT_EXPIRY_TYPE, PRODUCT_TYPE } from "../common";
-import { objectId } from "./common";
+import { baseCompanyApiSchema, objectId } from "./common";
 
 export const addProductSchema = Joi.object().keys({
   name: Joi.string().required(),
@@ -83,9 +83,7 @@ export const addProductSchema = Joi.object().keys({
   images: Joi.array().items(Joi.string()).optional().allow("", null),
 
   additionalInfo: Joi.string().optional().allow("", null),
-  isActive: Joi.boolean().optional(),
-
-  // ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 export const editProductSchema = Joi.object().keys({
@@ -163,7 +161,7 @@ export const editProductSchema = Joi.object().keys({
   images: Joi.array().items(Joi.string()).optional().allow("", null),
 
   additionalInfo: Joi.string().optional().allow("", null),
-  isActive: Joi.boolean().optional(),
+  ...baseCompanyApiSchema,
 });
 
 export const addBulkProductSchema = Joi.object().keys({
@@ -221,6 +219,8 @@ export const addBulkProductSchema = Joi.object().keys({
   netWeight: Joi.number().min(0).optional().allow("", null),
 
   nutrition: Joi.string().optional(),
+  
+  ...baseCompanyApiSchema,
 
   isActive: Joi.boolean().optional(),
   // nutrition: Joi.array()

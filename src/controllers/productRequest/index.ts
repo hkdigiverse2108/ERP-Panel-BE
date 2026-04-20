@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { productModel, productRequestModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
 import { addProductRequestSchema, deleteProductRequestSchema, editProductRequestSchema, getProductRequestSchema } from "../../validation";
 
 export const addProductRequest = async (req, res) => {
@@ -13,9 +13,9 @@ export const addProductRequest = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
-
+    value.branchId = await checkBranch(user, value);
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
     let isExist = await getFirstMatch(productModel, { name: value?.name, isDeleted: false }, {}, {});
 
     isExist = await getFirstMatch(productRequestModel, { name: value?.name, isDeleted: false }, {}, {});
@@ -101,7 +101,8 @@ export const getAllProductRequest = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    const { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -111,6 +112,14 @@ export const getAllProductRequest = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (search) {
@@ -123,7 +132,11 @@ export const getAllProductRequest = async (req, res) => {
 
     const options: any = {
       sort: { createdAt: -1 },
-      populate: [{ path: "companyId", select: "name" }, { path: "createdBy", select: "name userType" }],
+      populate: [
+        { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
+        { path: "createdBy", select: "name userType" },
+      ],
     };
 
     if (page && limit) {
@@ -161,7 +174,11 @@ export const getOneProductRequest = async (req, res) => {
       { _id: value?.id, isDeleted: false },
       {},
       {
-        populate: [{ path: "companyId", select: "name" }, { path: "createdBy", select: "name userType" }],
+        populate: [
+          { path: "companyId", select: "name" },
+          { path: "branchId", select: "name" },
+          { path: "createdBy", select: "name userType" },
+        ],
       },
     );
 

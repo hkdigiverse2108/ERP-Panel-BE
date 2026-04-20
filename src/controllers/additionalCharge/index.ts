@@ -1,4 +1,4 @@
-import { USER_TYPES } from './../../common/enum';
+import { USER_TYPES } from "./../../common/enum";
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { additionalChargeModel, taxModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
@@ -125,7 +125,6 @@ export const getAllAdditionalCharge = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "companyId", select: "name" },
-        { path: "branchId", select: "name" },
         { path: "taxId", select: "name taxPercentage" },
         { path: "createdBy", select: "fullName userType" },
       ],
@@ -168,7 +167,6 @@ export const getAdditionalChargeById = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
           { path: "taxId", select: "name taxPercentage" },
           { path: "createdBy", select: "fullName userType" },
         ],
@@ -189,7 +187,7 @@ export const getAdditionalChargeById = async (req, res) => {
 export const getAdditionalChargeDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    let { typeFilter, companyFilter } = req.query;
+    let { typeFilter, companyFilter, search } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -207,9 +205,8 @@ export const getAdditionalChargeDropdown = async (req, res) => {
       { _id: 1, name: 1, type: 1, defaultValue: 1, taxId: 1 },
       {
         sort: { name: 1 },
-        populate: [
-          { path: "taxId", select: "name taxPercentage" },
-        ],
+        limit: search ? 50 : 1000,
+        populate: [{ path: "taxId", select: "name taxPercentage" }],
       },
     );
 

@@ -3,7 +3,6 @@ import { branchModel, companyModel, productModel, productTypeModel, stockModel, 
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, findAllAndPopulateWithSorting, extractDataFromFile } from "../../helper";
 import { addBulkProductSchema, addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation";
 import axios from "axios";
-import FormData from "form-data";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -22,8 +21,6 @@ export const addProduct = async (req, res) => {
     }
 
     if (value?.companyId && !(await checkIdExist(companyModel, value?.companyId, "Company", res))) return;
-
-    if (value?.branchId && !(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
     if (value?.productTypeId && !(await checkIdExist(productTypeModel, value?.productTypeId, "Product Type", res))) return;
 
     let duplicateCriteria: any = { name: value?.name, isDeleted: false };
@@ -249,8 +246,6 @@ export const editProduct = async (req, res) => {
 
     if (companyId && !(await checkIdExist(companyModel, companyId, "Company", res))) return;
 
-    if (value?.branchId && !(await checkIdExist(branchModel, value?.branchId, "Branch", res))) return;
-
     if (value?.productTypeId && !(await checkIdExist(productTypeModel, value?.productTypeId, "Product Type", res))) return;
 
     let isExist = await getFirstMatch(productModel, { _id: value?.productId, isDeleted: false }, {}, {});
@@ -335,8 +330,9 @@ export const getAllProduct = async (req, res) => {
     const userType = user?.userType;
 
     const companyId = user?.companyId?._id;
-    const { page, limit, search, startDate, endDate, activeFilter, companyFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, productTypeIdFilter } = req.query;
+    const { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, productTypeIdFilter } = req.query;
     const effectiveCompanyId = companyFilter || (userType !== USER_TYPES.SUPER_ADMIN ? companyId : null);
+    const effectiveBranchId = branchFilter || (userType !== USER_TYPES.SUPER_ADMIN ? user?.branchId?._id : null);
 
     let criteria: any = { isDeleted: false };
 
@@ -379,7 +375,10 @@ export const getAllProduct = async (req, res) => {
       const stockCriteria: any = {
         isDeleted: false,
         companyId: user?.companyId?._id,
+        branchId: user?.branchId?._id,
       };
+
+      applyDateFilter(stockCriteria, startDate as string, endDate as string);
 
       const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
 
@@ -392,7 +391,10 @@ export const getAllProduct = async (req, res) => {
       const stockCriteria: any = {
         isDeleted: false,
         companyId: new ObjectId(companyFilter as string),
+        ...(branchFilter && { branchId: new ObjectId(branchFilter as string) }),
       };
+
+      applyDateFilter(stockCriteria, startDate as string, endDate as string);
 
       const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
 
@@ -403,17 +405,19 @@ export const getAllProduct = async (req, res) => {
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
-    applyDateFilter(criteria, startDate as string, endDate as string);
+    // applyDateFilter(criteria, startDate as string, endDate as string);
 
     const options: any = {
       sort: { createdAt: -1 },
       populate: [
+        { path: "companyId", select: "name" },
         { path: "categoryId", select: "name" },
         { path: "subCategoryId", select: "name" },
         { path: "brandId", select: "name" },
         { path: "subBrandId", select: "name" },
         { path: "productTypeId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
+        
         // { path: "purchaseTaxId", select: "name percentage" },
         // { path: "salesTaxId", select: "name percentage" },
       ],
@@ -432,16 +436,23 @@ export const getAllProduct = async (req, res) => {
         const linkedStockIds = (productObj.stockIds || []).filter((id: any) => id);
 
         let stockCriteria: any = { isDeleted: false };
+        applyDateFilter(stockCriteria, startDate as string, endDate as string);
 
         if (linkedStockIds.length > 0) {
           stockCriteria._id = { $in: linkedStockIds.map((id: any) => new ObjectId(id.toString())) };
           if (effectiveCompanyId) {
             stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
           }
+          if (effectiveBranchId) {
+            stockCriteria.branchId = new ObjectId(effectiveBranchId.toString());
+          }
         } else {
           stockCriteria.productId = product._id;
           if (effectiveCompanyId) {
             stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
+          }
+          if (effectiveBranchId) {
+            stockCriteria.branchId = new ObjectId(effectiveBranchId.toString());
           }
         }
 
@@ -463,6 +474,15 @@ export const getAllProduct = async (req, res) => {
               salesTaxId: { $first: "$salesTaxId" },
               isPurchaseTaxIncluding: { $first: "$isPurchaseTaxIncluding" },
               isSalesTaxIncluding: { $first: "$isSalesTaxIncluding" },
+              branchId: { $first: "$branchId" },
+            },
+          },
+          {
+            $lookup: {
+              from: "branches",
+              localField: "branchId",
+              foreignField: "_id",
+              as: "branchData",
             },
           },
           {
@@ -507,6 +527,12 @@ export const getAllProduct = async (req, res) => {
               preserveNullAndEmptyArrays: true,
             },
           },
+          {
+            $unwind: {
+              path: "$branchData",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
           // 🎯 Shape the final output
           {
             $project: {
@@ -515,6 +541,10 @@ export const getAllProduct = async (req, res) => {
                 _id: "$uomData._id",
                 name: "$uomData.name",
                 code: "$uomData.code",
+              },
+              branchData: {
+                _id: "$branchData._id",
+                name: "$branchData.name",
               },
               purchaseTaxData: {
                 _id: "$purchaseTaxData._id",
@@ -555,6 +585,7 @@ export const getAllProduct = async (req, res) => {
           isSalesTaxIncluding: stockAggregation.length > 0 ? stockAggregation[0].isSalesTaxIncluding : false,
           qty,
           uomId: stockAggregation.length > 0 ? stockAggregation[0].uomData : null,
+          branchId: stockAggregation.length > 0 ? stockAggregation[0].branchData : null,
         };
       }),
     );
@@ -581,12 +612,17 @@ export const getProductDropdown = async (req, res) => {
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
 
-    const { productType, search, companyFilter, categoryFilter, brandFilter, isNewProduct, stockFilter } = req.query;
+    const { productType, search, companyFilter, branchFilter, categoryFilter, brandFilter, isNewProduct, stockFilter } = req.query;
 
     // Determine the effective company ID for filtering
     let effectiveCompanyId = companyId;
     if (companyFilter && userType === USER_TYPES.SUPER_ADMIN) {
       effectiveCompanyId = new ObjectId(companyFilter as string);
+    }
+
+    let effectiveBranchId = user?.branchId?._id;
+    if (branchFilter && userType === USER_TYPES.SUPER_ADMIN) {
+      effectiveBranchId = new ObjectId(branchFilter as string);
     }
 
     // --- Stock filtering (only when NOT a new product) ---
@@ -597,6 +633,8 @@ export const getProductDropdown = async (req, res) => {
       let stockCriteria: any = { isDeleted: false, isActive: true };
 
       if (effectiveCompanyId) stockCriteria.companyId = effectiveCompanyId;
+      if (effectiveBranchId) stockCriteria.branchId = effectiveBranchId;
+
 
       if (stockFilter === "true") {
         stockCriteria.qty = { $gt: 0 };
@@ -612,6 +650,8 @@ export const getProductDropdown = async (req, res) => {
             { path: "purchaseTaxId", select: "name percentage" },
             { path: "salesTaxId", select: "name percentage" },
             { path: "uomId", select: "name code" },
+            { path: "companyId", select: "name" },
+            { path: "branchId", select: "name" },
           ],
         },
       );
@@ -693,6 +733,7 @@ export const getProductDropdown = async (req, res) => {
         isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
         isSalesTaxIncluding: stock?.isSalesTaxIncluding,
         uomId: stock?.uomId,
+        branchId: stock?.branchId,
         images: product.images ?? [],
       };
     });
@@ -725,6 +766,7 @@ export const getOneProduct = async (req, res) => {
       {},
       {
         populate: [
+          { path: "companyId", select: "name" },
           { path: "categoryId", select: "name" },
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
@@ -746,6 +788,7 @@ export const getOneProduct = async (req, res) => {
 
     if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
       stockCriteria.companyId = companyId;
+      stockCriteria.branchId = user?.branchId?._id;
     }
 
     const stockAggregation = await stockModel.aggregate([
@@ -825,6 +868,21 @@ export const getOneProduct = async (req, res) => {
           isPurchaseTaxIncluding: { $first: "$isPurchaseTaxIncluding" },
           isSalesTaxIncluding: { $first: "$isSalesTaxIncluding" },
           uomData: { $first: "$uomData" },
+          branchId: { $first: "$branchId" },
+        },
+      },
+      {
+        $lookup: {
+          from: "branches",
+          localField: "branchId",
+          foreignField: "_id",
+          as: "branchData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$branchData",
+          preserveNullAndEmptyArrays: true,
         },
       },
 
@@ -843,6 +901,10 @@ export const getOneProduct = async (req, res) => {
           totalLandingCost: 1,
           totalPurchasePrice: 1,
           totalSellingMargin: 1,
+          branchData: {
+            _id: "$branchData._id",
+            name: "$branchData.name",
+          },
           purchaseTaxId: 1,
           salesTaxId: 1,
           isPurchaseTaxIncluding: 1,
@@ -867,6 +929,7 @@ export const getOneProduct = async (req, res) => {
       isPurchaseTaxIncluding: stock.isPurchaseTaxIncluding,
       isSalesTaxIncluding: stock.isSalesTaxIncluding,
       uomId: stock.uomData,
+      branchId: stock.branchData,
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), productsWithStock, {}));
@@ -906,25 +969,21 @@ export const detectProduct = async (req, res) => {
       const backendUrl = process.env.BACKEND_URL || "http://localhost:4001";
       const authHeader = req.headers.authorization;
 
-      const aiApiResponse = await axios.post(`${backendUrl}/ai/analyze`, 
-        { imageBase64 }, 
-        { headers: { Authorization: authHeader } }
-      );
+      const aiApiResponse = await axios.post(`${backendUrl}/ai/analyze`, { imageBase64 }, { headers: { Authorization: authHeader } });
 
       const aiItems = aiApiResponse.data?.data || [];
-      console.log("aiItems => ",aiItems);
-      
+
       const unmatchedItems = [];
 
       // 3. Map AI Results to Product ID context
       aiItems.forEach((item: any) => {
-          if (item.matched && item.product_id) {
-              const productId = item.product_id;
-              idMatches[productId] = 0.95; 
-              idCounts[productId] = (idCounts[productId] || 0) + (item.quantity || 1);
-          } else {
-              unmatchedItems.push(item);
-          }
+        if (item.matched && item.product_id) {
+          const productId = item.product_id;
+          idMatches[productId] = 0.95;
+          idCounts[productId] = (idCounts[productId] || 0) + (item.quantity || 1);
+        } else {
+          unmatchedItems.push(item);
+        }
       });
 
       results = [{ image: firstFile.originalname, items_count: aiItems.length, unmatched_items: unmatchedItems }];
@@ -933,19 +992,20 @@ export const detectProduct = async (req, res) => {
       const matchedIds = Object.keys(idMatches);
       if (matchedIds.length > 0) {
         let criteria: any = { isDeleted: false, _id: { $in: matchedIds }, isActive: true };
-        
+
         // Ownership check for products
         if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
           criteria.$or = [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }];
         }
-        console.log("criteria => ",criteria);
+        console.log("criteria => ", criteria);
         const enrichedProducts = await findAllAndPopulateWithSorting(productModel, criteria, {}, {}, [
+          { path: "companyId", select: "name" },
           { path: "categoryId", select: "name" },
           { path: "subCategoryId", select: "name" },
           { path: "brandId", select: "name" },
           { path: "subBrandId", select: "name" },
         ]);
-        console.log("enrichedProducts => ",enrichedProducts);
+        console.log("enrichedProducts => ", enrichedProducts);
         skuMatchesDetailsArray = await Promise.all(
           enrichedProducts.map(async (product: any) => {
             const productObj = product.toObject ? product.toObject() : product;
@@ -955,9 +1015,11 @@ export const detectProduct = async (req, res) => {
 
             // Pull first available stock for this item
             const stockInfo = await stockModel.findOne(stockCriteria).populate([
-                { path: "purchaseTaxId", select: "name percentage" },
-                { path: "salesTaxId", select: "name percentage" },
-                { path: "uomId", select: "name code" }
+              { path: "companyId", select: "name" },
+              { path: "branchId", select: "name" },
+              { path: "purchaseTaxId", select: "name percentage" },
+              { path: "salesTaxId", select: "name percentage" },
+              { path: "uomId", select: "name code" },
             ]);
 
             return {
@@ -969,10 +1031,11 @@ export const detectProduct = async (req, res) => {
               uomId: stockInfo?.uomId || null,
               purchaseTaxId: stockInfo?.purchaseTaxId || null,
               salesTaxId: stockInfo?.salesTaxId || null,
+              branchId: stockInfo?.branchId || null,
               ai_confidence: idMatches[productIdStr] || 0,
-              detect_qty: idCounts[productIdStr] || 1
+              detect_qty: idCounts[productIdStr] || 1,
             };
-          })
+          }),
         );
       }
     } catch (err: any) {

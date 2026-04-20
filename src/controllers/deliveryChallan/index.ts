@@ -1,6 +1,6 @@
 import { apiResponse, DELIVERY_CHALLAN_STATUS, HTTP_STATUS, INVOICE_STATUS, SALES_ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, deliveryChallanModel, InvoiceModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addDeliveryChallanSchema, deleteDeliveryChallanSchema, editDeliveryChallanSchema, getDeliveryChallanSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -17,8 +17,10 @@ export const addDeliveryChallan = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     // Validate customer exists and verify billing/shipping addresses if provided
     const customer = await getFirstMatch(contactModel, { _id: value?.customerId, isDeleted: false }, {}, {});
@@ -92,6 +94,7 @@ export const addDeliveryChallan = async (req, res) => {
     // Generate document number if not provided
     if (!value.deliveryChallanNo) {
       value.deliveryChallanNo = await getAndIncrementPrefix({
+        branchId: value.branchId,
         companyId: value.companyId,
         prefixType: PREFIX_MODULES.DELIVERY_CHALLAN,
         model: deliveryChallanModel,
@@ -292,7 +295,8 @@ export const getAllDeliveryChallan = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, customerFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, branchFilter, customerFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -304,6 +308,14 @@ export const getAllDeliveryChallan = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerFilter) {
@@ -342,7 +354,6 @@ export const getAllDeliveryChallan = async (req, res) => {
         { path: "items.taxId", select: "name percentage" },
         { path: "companyId", select: "name " },
         { path: "branchId", select: "name " },
-
       ],
       skip: (page - 1) * limit,
       limit,
@@ -392,6 +403,10 @@ export const getAllDeliveryChallan = async (req, res) => {
       statsCriteria.companyId = criteria.companyId;
     }
 
+    if (criteria.branchId) {
+      statsCriteria.branchId = criteria.branchId;
+    }
+
     const summaryResults = await deliveryChallanModel.aggregate([
       { $match: statsCriteria },
       {
@@ -422,7 +437,6 @@ export const getAllDeliveryChallan = async (req, res) => {
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan"), { deliveryChallan_data: finalResponse, totalData, summary, state }, {}));
-
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -461,7 +475,6 @@ export const getOneDeliveryChallan = async (req, res) => {
           { path: "items.taxId", select: "name percentage type" },
           { path: "companyId", select: "name " },
           { path: "branchId", select: "name " },
-
         ],
       },
     );
@@ -515,7 +528,8 @@ export const getDeliveryChallanDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { customerFilter, statusFilter, search, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { customerFilter, statusFilter, search, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -523,6 +537,14 @@ export const getDeliveryChallanDropdown = async (req, res) => {
     }
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerFilter) {
@@ -542,15 +564,20 @@ export const getDeliveryChallanDropdown = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "customerId", select: "firstName lastName companyName" }, { path: "createdBy", select: "name userType" }],
+      populate: [
+        { path: "customerId", select: "firstName lastName companyName" },
+        { path: "createdBy", select: "name userType" },
+        { path: "branchId", select: "name" },
+      ],
     };
 
-    const response = await getDataWithSorting(deliveryChallanModel, criteria, { deliveryChallanNo: 1, date: 1, transactionSummary: 1 }, options);
+    const response = await getDataWithSorting(deliveryChallanModel, criteria, { deliveryChallanNo: 1, date: 1, transactionSummary: 1, branchId: 1 }, options);
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
       name: item.deliveryChallanNo,
       deliveryChallanNo: item.deliveryChallanNo,
+      branchId: item.branchId,
       date: item.date,
       netAmount: item.transactionSummary?.netAmount || 0,
     }));

@@ -9,7 +9,6 @@ const ObjectId = require("mongoose").Types.ObjectId;
 // Populate paths for discount references
 const discountPopulate = [
   { path: "companyId", select: "name" },
-  { path: "branchIds", select: "name" },
   { path: "categoryIds", select: "name" },
   { path: "subcategoryIds", select: "name" },
   { path: "brandIds", select: "name" },
@@ -33,7 +32,6 @@ export const addDiscount = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
-
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     // Validate date range when end date is set
@@ -165,7 +163,7 @@ export const getAllDiscount = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, status, startDateTime, endDateTime, activeFilter, companyFilter, discountMode, appliesTo, branchFilter } = req.query;
+    let { page, limit, search, status, startDateTime, endDateTime, activeFilter, companyFilter, discountMode, appliesTo } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -195,10 +193,6 @@ export const getAllDiscount = async (req, res) => {
 
     if (appliesTo) {
       criteria.appliesTo = appliesTo;
-    }
-
-    if (branchFilter) {
-      criteria.branchIds = new ObjectId(branchFilter);
     }
 
     if (startDateTime && endDateTime) {
@@ -340,7 +334,7 @@ export const getDropdownDiscount = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { search, status, startDateTime, endDateTime, activeFilter, companyFilter, discountMode, appliesTo, branchFilter } = req.query;
+    let { search, status, startDateTime, endDateTime, activeFilter, companyFilter, discountMode, appliesTo } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -369,9 +363,9 @@ export const getDropdownDiscount = async (req, res) => {
       criteria.appliesTo = appliesTo;
     }
 
-    if (branchFilter) {
-      criteria.branchIds = new ObjectId(branchFilter);
-    }
+    // if (branchFilter) {
+    //   criteria.branchIds = new ObjectId(branchFilter);
+    // }
 
     if (startDateTime && endDateTime) {
       const start = new Date(startDateTime as string);
@@ -419,7 +413,7 @@ export const getDropdownDiscount = async (req, res) => {
 
 // ─── Discount Eligibility Check (shared by verify & apply) ───
 
-const checkDiscountEligibility = async (discount: any, branchId: string, customerId: string | null, items: any[], totalAmount: number, totalQty: number) => {
+const checkDiscountEligibility = async (discount: any, customerId: string | null, items: any[], totalAmount: number, totalQty: number) => {
   // 1. Status
   if (discount.status !== DISCOUNT_STATUS.ACTIVE) {
     return `Discount is ${discount.status}`;
@@ -436,11 +430,7 @@ const checkDiscountEligibility = async (discount: any, branchId: string, custome
     if (now > new Date(discount.endDateTime)) return "Discount has expired";
   }
 
-  // 3. Branch scope
-  if (discount.branchIds && discount.branchIds.length > 0 && branchId) {
-    const branchMatch = discount.branchIds.some((b: any) => b.toString() === branchId.toString());
-    if (!branchMatch) return "Discount is not available for this branch";
-  }
+  // 3. Branch scope (REMOVED)
 
   // 4. Minimum requirement
   if (discount.minimumRequirement === MINIMUM_REQUIREMENT.MIN_PURCHASE_AMOUNT) {
@@ -630,7 +620,7 @@ export const verifyDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const { discountId, discountCode, branchId, customerId, items, totalAmount, totalQty } = value;
+    const { discountId, discountCode, customerId, items, totalAmount, totalQty } = value;
 
     const criteria: any = { isDeleted: false };
     if (discountId) {
@@ -644,7 +634,7 @@ export const verifyDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Discount"), {}, {}));
     }
 
-    const eligibilityError = await checkDiscountEligibility(discount, branchId, customerId, items || [], totalAmount || 0, totalQty || 0);
+    const eligibilityError = await checkDiscountEligibility(discount, customerId, items || [], totalAmount || 0, totalQty || 0);
     if (eligibilityError) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, eligibilityError, {}, {}));
     }
@@ -706,7 +696,7 @@ export const applyDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    const { discountId, discountCode, branchId, customerId, items, totalAmount, totalQty } = value;
+    const { discountId, discountCode, customerId, items, totalAmount, totalQty } = value;
 
     const criteria: any = { isDeleted: false };
     if (discountId) {
@@ -720,7 +710,7 @@ export const applyDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Discount"), {}, {}));
     }
 
-    const eligibilityError = await checkDiscountEligibility(discount, branchId, customerId, items || [], totalAmount || 0, totalQty || 0);
+    const eligibilityError = await checkDiscountEligibility(discount, customerId, items || [], totalAmount || 0, totalQty || 0);
     if (eligibilityError) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, eligibilityError, {}, {}));
     }

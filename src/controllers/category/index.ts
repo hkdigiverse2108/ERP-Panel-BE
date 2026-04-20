@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { categoryModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
 import { addCategorySchema, deleteCategorySchema, editCategorySchema, getCategorySchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -14,6 +14,7 @@ export const addCategory = async (req, res) => {
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     const existingCategory = await getFirstMatch(categoryModel, { companyId: value.companyId ?? null, code: value.code, isDeleted: false }, {}, {});
 
@@ -40,8 +41,8 @@ export const getAllCategory = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-
-    let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
 
@@ -51,6 +52,14 @@ export const getAllCategory = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (search) {
@@ -182,7 +191,8 @@ export const deleteCategoryById = async (req, res) => {
 export const getCategoryDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    let { parentCategoryFilter, onlyCategoryFilter } = req.query;
+    const { user } = req?.headers;
+    let { parentCategoryFilter, onlyCategoryFilter, companyFilter } = req.query;
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (Boolean(onlyCategoryFilter) === true) {
@@ -194,9 +204,10 @@ export const getCategoryDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       categoryModel,
       criteria,
-      { _id: 1, name: 1, parentCategoryId: 1 },
+      { _id: 1, name: 1, parentCategoryId: 1, branchId: 1 },
       {
         sort: { name: 1 },
+        populate: [{ path: "branchId", select: "name" }],
       },
     );
 
@@ -204,6 +215,7 @@ export const getCategoryDropdown = async (req, res) => {
       _id: item._id,
       name: item.name,
       parentCategoryId: item.parentCategoryId,
+      branchId: item.branchId,
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Category"), dropdownData, {}));

@@ -1,9 +1,9 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { baseCompanyApiSchema, objectId } from "./common";
 import { LOYALTY_TYPE, LOYALTY_REDEMPTION_TYPE } from "../common";
 
 export const addLoyaltySchema = Joi.object().keys({
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 
   name: Joi.string().required(),
   description: Joi.string().max(200).optional().allow("", null),
@@ -33,7 +33,7 @@ export const editLoyaltySchema = Joi.object().keys({
   campaignExpiryDate: Joi.date().optional().allow("", null),
   minimumPurchaseAmount: Joi.number().min(0).optional(),
   usageLimit: Joi.number().min(1).optional().allow("", null),
-  ...baseApiSchema,
+  ...baseCompanyApiSchema,
 });
 
 export const deleteLoyaltySchema = Joi.object().keys({
@@ -57,13 +57,11 @@ export const removeLoyaltySchema = Joi.object().keys({
 
 export const addLoyaltyPointsSchema = Joi.object().keys({
   companyId: objectId().optional(),
-  branchId: objectId().optional(),
   amount: Joi.number().min(0).required(),
   points: Joi.number().min(0).required(),
 });
 
 export const getLoyaltyPointsSchema = Joi.object().keys({
   companyId: objectId().optional(),
-  branchId: objectId().optional(),
 });
 

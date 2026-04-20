@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { baseCommonFields, baseSchemaOptions } from "./base";
 import { ADDITIONAL_CHARGE_TYPE } from "../../common";
 
 const additionalChargeSchema = new mongoose.Schema(
@@ -33,7 +33,8 @@ const additionalChargeSchema = new mongoose.Schema(
       trim: true,
     },
 
-    ...baseSchemaFields,
+    companyId: { type: mongoose.Schema.Types.ObjectId, ref: "company", index: true },
+    ...baseCommonFields,
   },
   baseSchemaOptions,
 );

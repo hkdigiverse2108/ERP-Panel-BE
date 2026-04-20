@@ -1,6 +1,6 @@
 import { apiResponse, ESTIMATE_STATUS, HTTP_STATUS, SALES_ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel, EstimateModel, userModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addSalesOrderSchema, deleteSalesOrderSchema, editSalesOrderSchema, getSalesOrderSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -17,8 +17,10 @@ export const addSalesOrder = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     // Validate customer exists and verify billing/shipping addresses if provided
     const customer = await getFirstMatch(contactModel, { _id: value?.customerId, isDeleted: false }, {}, {});
@@ -77,6 +79,7 @@ export const addSalesOrder = async (req, res) => {
     // Generate document number if not provided using dynamic prefix helper
     if (!value.salesOrderNo) {
       value.salesOrderNo = await getAndIncrementPrefix({
+        branchId: value.branchId,
         companyId: value.companyId,
         prefixType: PREFIX_MODULES.SALES_ORDER,
         model: SalesOrderModel,
@@ -247,7 +250,8 @@ export const getAllSalesOrder = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, customerFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, customerFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -258,6 +262,14 @@ export const getAllSalesOrder = async (req, res) => {
     }
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (search) {
@@ -346,6 +358,10 @@ export const getAllSalesOrder = async (req, res) => {
     const statsCriteria: any = { isDeleted: false };
     if (criteria.companyId) {
       statsCriteria.companyId = criteria.companyId;
+    }
+
+    if (criteria.branchId) {
+      statsCriteria.branchId = criteria.branchId;
     }
 
     const summaryResults = await SalesOrderModel.aggregate([
@@ -471,7 +487,8 @@ export const getSalesOrderDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { customerId, statusFilter, search, companyFilter } = req.query; // Optional filters
+    const branchId = user?.branchId?._id;
+    const { customerId, statusFilter, search, companyFilter, branchFilter } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -479,6 +496,14 @@ export const getSalesOrderDropdown = async (req, res) => {
     }
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerId) {
@@ -496,10 +521,13 @@ export const getSalesOrderDropdown = async (req, res) => {
     const options: any = {
       sort: { createdAt: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "customerId", select: "firstName lastName companyName" }],
+      populate: [
+        { path: "customerId", select: "firstName lastName companyName" },
+        { path: "branchId", select: "name" },
+      ],
     };
 
-    const response = await getDataWithSorting(SalesOrderModel, criteria, { salesOrderNo: 1, date: 1, netAmount: 1, transactionSummary: 1 }, options);
+    const response = await getDataWithSorting(SalesOrderModel, criteria, { salesOrderNo: 1, date: 1, netAmount: 1, transactionSummary: 1, branchId: 1 }, options);
 
     const dropdownData = response.map((item) => ({
       _id: item._id,

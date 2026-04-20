@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS, INVOICE_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, termsConditionModel, deliveryChallanModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, generateSequenceNumber, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -17,8 +17,10 @@ export const addInvoice = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     // Validate customer exists and verify billing/shipping addresses if provided
     const customer = await getFirstMatch(contactModel, { _id: value?.customerId, isDeleted: false }, {}, {});
@@ -78,6 +80,7 @@ export const addInvoice = async (req, res) => {
     // Generate document number if not provided using dynamic prefix helper
     if (!value.invoiceNo) {
       value.invoiceNo = await getAndIncrementPrefix({
+        branchId: value.branchId,
         companyId: value.companyId,
         prefixType: PREFIX_MODULES.INVOICE,
         model: InvoiceModel,
@@ -341,7 +344,8 @@ export const getAllInvoice = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, status, paymentStatus, startDate, endDate, customerFilter, statusFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, activeFilter, companyFilter, status, paymentStatus, startDate, endDate, customerFilter, statusFilter, branchFilter } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -353,6 +357,14 @@ export const getAllInvoice = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerFilter) {
@@ -453,6 +465,10 @@ export const getAllInvoice = async (req, res) => {
       statsCriteria.companyId = criteria.companyId;
     }
 
+    if (criteria.branchId) {
+      statsCriteria.branchId = criteria.branchId;
+    }
+
     const summaryResults = await InvoiceModel.aggregate([
       { $match: statsCriteria },
       {
@@ -496,7 +512,6 @@ export const getAllInvoice = async (req, res) => {
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice"), { invoice_data: finalResponse, totalData, summary, state }, {}));
-
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -593,11 +608,24 @@ export const getInvoiceDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { customerId, status, paymentStatus, search } = req.query; // Optional filters
+    const branchId = user?.branchId?._id;
+    const { customerId, status, paymentStatus, search, branchFilter, companyFilter } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false, isActive: true };
     if (companyId) {
       criteria.companyId = companyId;
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (companyFilter) {
+      criteria.companyId = companyFilter;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (customerId) {
@@ -620,12 +648,15 @@ export const getInvoiceDropdown = async (req, res) => {
     }
 
     const options: any = {
-      sort: { createdAt: -1 },
+      sort: { invoiceDate: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "customerId", select: "firstName lastName companyName" }],
+      populate: [
+        { path: "customerId", select: "firstName lastName companyName" },
+        { path: "branchId", select: "name" },
+      ],
     };
 
-    const response = await getDataWithSorting(InvoiceModel, criteria, { invoiceNo: 1, customerName: 1, date: 1, transactionSummary: 1, balanceAmount: 1 }, options);
+    const response = await getDataWithSorting(InvoiceModel, criteria, { invoiceNo: 1, customerName: 1, date: 1, transactionSummary: 1, balanceAmount: 1, branchId: 1 }, options);
 
     const dropdownData = response.map((item) => ({
       _id: item._id,

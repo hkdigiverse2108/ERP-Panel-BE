@@ -37,13 +37,17 @@ export const getAllLoginLog = async (req, res) => {
     try {
         const { user } = req?.headers;
         const companyId = user?.companyId?._id;
-
+        const branchId = user?.branchId?._id;
         let { page, limit, search, companyFilter, branchFilter, startDate, endDate } = req.query;
 
         const criteria: any = { isDeleted: false };
 
         if (user?.userType !== USER_TYPES.SUPER_ADMIN && companyId) {
             criteria.companyId = companyId;
+        }
+
+        if (branchId) {
+            criteria.branchId = branchId;
         }
 
         if (companyFilter) criteria.companyId = companyFilter;

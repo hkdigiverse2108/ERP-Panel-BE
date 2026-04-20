@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, purchaseDebitNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, purchaseOrderModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, generateSequenceNumber, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addPurchaseDebitNoteSchema, deletePurchaseDebitNoteSchema, editPurchaseDebitNoteSchema, getPurchaseDebitNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -17,9 +17,13 @@ export const addPurchaseDebitNote = async (req, res) => {
     }
 
     value.companyId = await checkCompany(user, value);
+    value.branchId = await checkBranch(user, value);
 
     if (!value.companyId) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    }
+    if (!value.branchId) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
     }
 
     // Validate supplier exists and verify billing/shipping addresses if provided
@@ -74,6 +78,7 @@ export const addPurchaseDebitNote = async (req, res) => {
 
     if (!value?.debitNoteNo) {
       value.debitNoteNo = await getAndIncrementPrefix({
+        branchId: value.branchId,
         companyId: value.companyId,
         prefixType: PREFIX_MODULES.PURCHASE_DEBIT_NOTE,
         model: purchaseDebitNoteModel,
@@ -224,7 +229,8 @@ export const getAllPurchaseDebitNote = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    let { page, limit, search, activeFilter, companyFilter, statusFilter, startDate, endDate } = req.query;
+    const branchId = user?.branchId?._id;
+    let { page, limit, search, activeFilter, companyFilter, branchFilter, statusFilter, startDate, endDate } = req.query;
 
     page = Number(page);
     limit = Number(limit);
@@ -236,6 +242,14 @@ export const getAllPurchaseDebitNote = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = new ObjectId(companyFilter);
+    }
+
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
     }
 
     if (search) {
@@ -273,6 +287,7 @@ export const getAllPurchaseDebitNote = async (req, res) => {
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "paymentTermsId", select: "name day" },
         { path: "companyId", select: "name" },
+        { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
@@ -338,7 +353,6 @@ export const getAllPurchaseDebitNote = async (req, res) => {
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Debit Note"), { purchaseDebitNote_data: response, totalData, totalAmount, state }, {}));
-
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -380,6 +394,7 @@ export const getOnePurchaseDebitNote = async (req, res) => {
           { path: "additionalCharges.taxId", select: "name percentage" },
           { path: "paymentTermsId", select: "name day" },
           { path: "companyId", select: "name gstNo" },
+          { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
         ],
       },
@@ -433,7 +448,8 @@ export const getPurchaseDebitNoteDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { supplierFilter, search, companyFilter, statusFilter } = req.query;
+    const branchId = user?.branchId?._id;
+    const { supplierFilter, search, companyFilter, branchFilter, statusFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -448,6 +464,14 @@ export const getPurchaseDebitNoteDropdown = async (req, res) => {
       criteria.supplierId = supplierFilter;
     }
 
+    if (branchId) {
+      criteria.branchId = branchId;
+    }
+
+    if (branchFilter) {
+      criteria.branchId = branchFilter;
+    }
+
     if (statusFilter) {
       criteria.status = statusFilter;
     }
@@ -459,7 +483,10 @@ export const getPurchaseDebitNoteDropdown = async (req, res) => {
     const options: any = {
       sort: { debitNoteDate: -1 },
       limit: search ? 50 : 1000,
-      populate: [{ path: "supplierId", select: "firstName lastName companyName" }],
+      populate: [
+        { path: "supplierId", select: "firstName lastName companyName" },
+        { path: "branchId", select: "name" },
+      ],
     };
 
     const response = await getDataWithSorting(

@@ -13,52 +13,53 @@ export let Io;
 
 const ioEvents = (io) => {
   io.on("connection", (socket) => {
-    console.log("A Company connected");
+    // console.log("A Branch connected ", socket.id);
 
     socket.on("joinRoom", (data) => {
-    //   console.log("Company joined room 1", data);
+      // console.log("Company joined room 1", data);
       socket.join(data.roomId);
     });
 
     socket.on("joinAll", () => {
-    //   console.log("Company joined all");
+      //   console.log("Company joined all");
       socket.join("all");
     });
 
     socket.on("disconnect", () => {
-    //   console.log("Company disconnected");
+      //   console.log("Company disconnected");
     });
   });
 };
 
-export const sendRealTimeUpdate = async (roomIds, payload) => {
+export const sendRealTimeUpdate = async (roomId, payload) => {
   let { eventType, data } = payload;
   try {
-    for (let roomId of roomIds) {
-      await Io.to(roomId).emit(eventType, data);
+    // for (let roomId of roomIds) {
+    Io.to(String(roomId)).emit(eventType, data);
     //   console.log(`${eventType} event sent to room ${roomId}`);
-    }
+    // }
   } catch (error) {
     console.error("Socket Error", error);
   }
 };
 
-export const sendNotification = async ({ companyId, title, message, eventType, meta }) => {
-//   console.log("Sending notification to rooms");
+export const sendNotification = async ({ companyId, branchId, title, message, eventType, meta }) => {
+  //   console.log("Sending notification to rooms");
   try {
     const notification = await notificationModel.create({
       companyId,
+      branchId,
       title,
       message,
       eventType,
       meta,
     });
 
-    const targetCompanyIds = [String(companyId)];
-    for (const targetId of targetCompanyIds) {
-      const unreadCount = await countData(notificationModel, { companyId: targetId, isRead: false });
-      await sendRealTimeUpdate([targetId], { eventType, data: { companyId: targetId, unreadCount, title, message, eventType, meta } });
-    }
+    // const targetCompanyIds = [String(companyId)];
+    // for (const targetId of targetCompanyIds) {
+    const unreadCount = await countData(notificationModel, { branchId: branchId, isRead: false });
+    await sendRealTimeUpdate(branchId, { eventType, data: { branchId: branchId, unreadCount, title, message, eventType, meta } });
+    // }
 
     return notification;
   } catch (error) {

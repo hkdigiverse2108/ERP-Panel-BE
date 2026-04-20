@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { DISCOUNT_STATUS, VALUE_TYPE, DISCOUNT_MODE, DISCOUNT_APPLICABLE, DISCOUNT_APPLIES_TO, MINIMUM_REQUIREMENT } from "../../common";
 import { IDiscount } from "../../types";
-import { baseSchemaFields, baseSchemaOptions } from "./base";
+import { baseCommonFields, baseSchemaOptions } from "./base";
 
 // Sub-schema: Range Wise Rules
 const rangeWiseRuleSchema = new Schema(
@@ -38,7 +38,6 @@ const productAtFixAmountSchema = new Schema(
 
 const discountSchema = new Schema<IDiscount>(
   {
-    ...baseSchemaFields,
 
     // Core
     title: { type: String, required: true },
@@ -100,22 +99,21 @@ const discountSchema = new Schema<IDiscount>(
     endDateTime: { type: Date, default: null },
     hasEndDate: { type: Boolean, default: false },
 
-    // Branch Scoping
-    branchIds: [{ type: Schema.Types.ObjectId, ref: "branch" }],
-
     // Status
     status: {
       type: String,
       enum: Object.values(DISCOUNT_STATUS),
       default: DISCOUNT_STATUS.ACTIVE,
     },
+
+    companyId: { type: Schema.Types.ObjectId, ref: "company", index: true },
+    ...baseCommonFields,
   },
   baseSchemaOptions,
 );
 
 // Indexes
 discountSchema.index({ discountCode: 1 }, { unique: true, sparse: true });
-discountSchema.index({ branchIds: 1 });
 discountSchema.index({ startDateTime: 1, endDateTime: 1 });
 
 export const discountModel = mongoose.model<IDiscount>("discount", discountSchema);
