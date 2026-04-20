@@ -221,7 +221,7 @@ export const addBulkProductSchema = Joi.object().keys({
   netWeight: Joi.number().min(0).optional().allow("", null),
 
   nutrition: Joi.string().optional(),
-  
+
   isActive: Joi.boolean().optional(),
   // nutrition: Joi.array()
   //   .items(
