@@ -29,5 +29,6 @@ export interface ISettings extends Document {
             name: string;
             isSelected: boolean;
         }[];
+        isActive: boolean;
     }[];
 }

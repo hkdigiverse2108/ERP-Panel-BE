@@ -50,6 +50,7 @@ export const addReportFormatValidation = Joi.object({
       }),
     )
     .required(),
+  isActive: Joi.boolean().default(true),
 });
 
 export const updateReportFormatValidation = Joi.object({
@@ -65,4 +66,5 @@ export const updateReportFormatValidation = Joi.object({
       }),
     )
     .optional(),
+  isActive: Joi.boolean().default(true),
 });
