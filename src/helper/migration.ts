@@ -7,21 +7,34 @@ import { createOne, updateData } from "./databaseServices";
  */
 export const patchHeadBranchesForAllCompanies = async (userId: string | null = null) => {
   try {
-    const companies: any[] = await companyModel.find({ headBranchId: { $in: [null, undefined] }, isDeleted: false });
-    console.log(`Found ${companies.length} companies missing a head branch.`);
+    // Fetch all active companies to ensure we fix any duplicate head branches across the entire system
+    const companies: any[] = await companyModel.find({ isDeleted: false });
+    console.log(`Found ${companies.length} active companies to verify/patch.`);
 
     for (const companyRecord of companies) {
       const company = companyRecord as any;
       console.log(`Patching Company: ${company.name} (${company._id})`);
 
       // 1. Resolve which branch will be the "Head Branch"
-      let headBranch: any = await branchModel.findOne({ companyId: company._id, isHeadBranch: true, isDeleted: false });
+      // Fetch ALL head branches for this company, sorted by oldest first
+      const existingHeadBranches = await branchModel.find({ companyId: company._id, isHeadBranch: true, isDeleted: false }).sort({ createdAt: 1, _id: 1 });
 
-      if (headBranch) {
+      let headBranch: any = null;
+
+      if (existingHeadBranches.length > 0) {
+        headBranch = existingHeadBranches[0];
         console.log(` - Found existing head branch for ${company.name}: ${headBranch.name} (${headBranch._id})`);
+
+        // If there are multiple head branches due to a previous bug, revert the extra ones
+        if (existingHeadBranches.length > 1) {
+          console.warn(`   -> WARNING: Found ${existingHeadBranches.length} head branches for ${company.name}. Reverting extras.`);
+          const duplicateIds = existingHeadBranches.slice(1).map((b: any) => b._id);
+          await branchModel.updateMany({ _id: { $in: duplicateIds } }, { isHeadBranch: false });
+        }
       } else {
         // 2. Pick the oldest ("First") branch if no head branch exists
-        const oldestBranch: any = await branchModel.findOne({ companyId: company._id, isDeleted: false }).sort({ createdAt: 1 });
+        // Using deterministic sort (_id: 1) prevents race condition from updating different branches concurrently
+        const oldestBranch: any = await branchModel.findOne({ companyId: company._id, isDeleted: false }).sort({ createdAt: 1, _id: 1 });
 
         if (oldestBranch) {
           console.log(` - Promoting oldest branch to head for ${company.name}: ${oldestBranch.name} (${oldestBranch._id})`);
@@ -62,7 +75,7 @@ export const patchHeadBranchesForAllCompanies = async (userId: string | null = n
 
       console.log(` - Linking legacy transactional data for ${company.name}...`);
 
-      const modelsToUpdate = [userModel, InvoiceModel, SalesOrderModel, purchaseOrderModel, deliveryChallanModel, EstimateModel, supplierBillModel, adjustmentNoteModel, voucherModel, ExpenseModel, materialConsumptionModel, PosOrderModel, stockModel, PrefixModel, stockVerificationModel, materialInwardModel, productRequestModel, billOfLiveProductModel, PosPaymentModel, PosCashRegisterModel, PosCashControlModel, returnPosOrderModel, posCreditNoteModel, BankTransactionModel, feedbackModel, additionalChargeModel, termsConditionModel, discountModel, couponModel, loyaltyPointsModel, bankModel, materialModel, callRequestModel, ConsumptionTypeModel, brandModel, categoryModel, taxModel, companyDriveModel, departmentModel, loyaltyModel, membershipModel, notificationModel, recipeModel, salesCreditNoteModel, purchaseDebitNoteModel, settingsModel, paymentTermsModel, CashControlModel];
+      const modelsToUpdate = [userModel, InvoiceModel, SalesOrderModel, purchaseOrderModel, deliveryChallanModel, EstimateModel, supplierBillModel, adjustmentNoteModel, voucherModel, ExpenseModel, materialConsumptionModel, PosOrderModel, stockModel, PrefixModel, stockVerificationModel, materialInwardModel, productRequestModel, billOfLiveProductModel, PosPaymentModel, PosCashRegisterModel, PosCashControlModel, returnPosOrderModel, posCreditNoteModel, BankTransactionModel, feedbackModel, additionalChargeModel, termsConditionModel, discountModel, couponModel, loyaltyPointsModel, bankModel, materialModel, callRequestModel, ConsumptionTypeModel, brandModel, categoryModel, taxModel, companyDriveModel, departmentModel, loyaltyModel, membershipModel, notificationModel, recipeModel, salesCreditNoteModel, purchaseDebitNoteModel, paymentTermsModel, CashControlModel];
       for (const modelRef of modelsToUpdate) {
         let model = modelRef as any;
         try {
