@@ -36,6 +36,7 @@ const settingsSchema = new mongoose.Schema<ISettings>(
             isActive: { type: Boolean, default: true },
           },
         ],
+        isActive: { type: Boolean, default: true },
       },
     ],
     ...baseCommonFields,
