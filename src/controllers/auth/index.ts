@@ -74,7 +74,7 @@ export const login = async (req, res) => {
       {
         populate: [
           { path: "companyId", select: "name" },
-          { path: "branchId", select: "name" },
+          { path: "branchId", select: "name isHeadBranch" },
           { path: "role", select: "name" },
         ],
       },
