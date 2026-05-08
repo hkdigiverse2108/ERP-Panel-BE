@@ -505,7 +505,7 @@ export const editPosOrder = async (req, res) => {
               paymentMode: payment.method,
               voucherType: POS_VOUCHER_TYPE.SALES,
               paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
-            paymentNo: await getAndIncrementPrefix({
+              paymentNo: await getAndIncrementPrefix({
                 branchId: response.branchId,
                 companyId: response.companyId,
                 prefixType: PREFIX_MODULES.RECEIPT,
@@ -691,7 +691,7 @@ export const posOrderDropDown = async (req, res) => {
     }
     if (customerFilter) {
       criteria.customerId = new ObjectId(customerFilter);
-    } 
+    }
 
 
     if (duePaymentFilter === true || duePaymentFilter === "true") {

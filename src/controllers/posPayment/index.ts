@@ -1,4 +1,5 @@
-import { PosPaymentModel, PosOrderModel, contactModel, PosCashRegisterModel, taxModel } from "../../database";
+import { POS_CREDIT_NOTE_STATUS } from './../../common/enum';
+import { PosPaymentModel, PosOrderModel, contactModel, PosCashRegisterModel, taxModel, supplierBillModel, posCreditNoteModel } from "../../database";
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
 import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema } from "../../validation";
@@ -47,6 +48,10 @@ export const addPosPayment = async (req, res) => {
       fieldName: "paymentNo",
     });
 
+    if (value.posCreditNoteId) {
+      if (!(await checkIdExist(posCreditNoteModel, value.posCreditNoteId, "POS Credit Note", res))) return;
+    }
+
     if (value.voucherType === POS_VOUCHER_TYPE.SALES && value.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL) {
       const posOrder = await getFirstMatch(PosOrderModel, { _id: value.posOrderId, isDeleted: false }, {}, {});
       if (!posOrder) {
@@ -78,6 +83,46 @@ export const addPosPayment = async (req, res) => {
         posOrder.dueAmount = posOrder.totalAmount;
       }
       await updateData(PosOrderModel, { _id: value.posOrderId }, posOrder, {});
+    }
+
+    if (value.voucherType === POS_VOUCHER_TYPE.PURCHASE && value.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL) {
+      if (value.purchaseBillId) {
+        const supplierBill = await getFirstMatch(supplierBillModel, { _id: value.purchaseBillId, isDeleted: false }, {}, {});
+        if (!supplierBill) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Supplier Bill"), {}, {}));
+        }
+
+        supplierBill.paidAmount = (supplierBill.paidAmount || 0) + value.amount;
+        supplierBill.balanceAmount = (supplierBill.totalAmount || 0) - supplierBill.paidAmount;
+
+        if (supplierBill.balanceAmount <= 0) {
+          supplierBill.paymentStatus = POS_PAYMENT_STATUS.PAID;
+          supplierBill.balanceAmount = 0;
+        } else if (supplierBill.paidAmount > 0) {
+          supplierBill.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+        } else {
+          supplierBill.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+        }
+        await updateData(supplierBillModel, { _id: value.purchaseBillId }, supplierBill, {});
+      }
+
+      if (value.posCreditNoteId) {
+        const posCreditNote = await getFirstMatch(posCreditNoteModel, { _id: value.posCreditNoteId, isDeleted: false }, {}, {});
+        if (!posCreditNote) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Credit Note"), {}, {}));
+        }
+
+        posCreditNote.refundedAmount = (posCreditNote.refundedAmount || 0) + value.amount;
+        posCreditNote.creditsRemaining = (posCreditNote.totalAmount || 0) - (posCreditNote.creditsUsed || 0) - posCreditNote.refundedAmount;
+
+        if (posCreditNote.creditsRemaining <= 0) {
+          posCreditNote.status = POS_CREDIT_NOTE_STATUS.USED;
+          posCreditNote.creditsRemaining = 0;
+        } else {
+          posCreditNote.status = POS_CREDIT_NOTE_STATUS.AVAILABLE;
+        }
+        await updateData(posCreditNoteModel, { _id: value.posCreditNoteId }, posCreditNote, {});
+      }
     }
 
     if (value.taxId) {
@@ -123,11 +168,19 @@ export const editPosPayment = async (req, res) => {
       if (!(await checkIdExist(PosOrderModel, value.posOrderId, "POS Order", res))) return;
     }
 
+    if (value.purchaseBillId && value.purchaseBillId !== isExist.purchaseBillId?.toString()) {
+      if (!(await checkIdExist(supplierBillModel, value.purchaseBillId, "Supplier Bill", res))) return;
+    }
+
+    if (value.posCreditNoteId && value.posCreditNoteId !== isExist.posCreditNoteId?.toString()) {
+      if (!(await checkIdExist(posCreditNoteModel, value.posCreditNoteId, "POS Credit Note", res))) return;
+    }
+
     if (value.partyId && value.partyId !== isExist.partyId?.toString()) {
       if (!(await checkIdExist(contactModel, value.partyId, "Party", res))) return;
     }
 
-    if (value.voucherType === POS_VOUCHER_TYPE.SALES) {
+    if (value.voucherType === POS_VOUCHER_TYPE.SALES && value.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL) {
       const posOrder = await getFirstMatch(PosOrderModel, { _id: value.posOrderId, isDeleted: false }, {}, {});
       if (!posOrder) {
         return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
@@ -138,7 +191,7 @@ export const editPosPayment = async (req, res) => {
         method: value.paymentMode,
       });
 
-      posOrder.paidAmount = (posOrder.paidAmount || 0) + value.amount;
+      posOrder.paidAmount = (posOrder.paidAmount || 0) - (isExist.amount || 0) + value.amount;
       if (posOrder.paidAmount >= posOrder.totalAmount) {
         posOrder.paymentStatus = POS_PAYMENT_STATUS.PAID;
         posOrder.status = POS_ORDER_STATUS.COMPLETED;
@@ -158,6 +211,46 @@ export const editPosPayment = async (req, res) => {
         posOrder.dueAmount = posOrder.totalAmount;
       }
       await updateData(PosOrderModel, { _id: value.posOrderId }, posOrder, {});
+    }
+
+    if (value.voucherType === POS_VOUCHER_TYPE.PURCHASE && value.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL) {
+      if (value.purchaseBillId) {
+        const supplierBill = await getFirstMatch(supplierBillModel, { _id: value.purchaseBillId, isDeleted: false }, {}, {});
+        if (!supplierBill) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Supplier Bill"), {}, {}));
+        }
+
+        supplierBill.paidAmount = (supplierBill.paidAmount || 0) - (isExist.amount || 0) + (value.amount || 0);
+        supplierBill.balanceAmount = (supplierBill.totalAmount || 0) - supplierBill.paidAmount;
+
+        if (supplierBill.balanceAmount <= 0) {
+          supplierBill.paymentStatus = POS_PAYMENT_STATUS.PAID;
+          supplierBill.balanceAmount = 0;
+        } else if (supplierBill.paidAmount > 0) {
+          supplierBill.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+        } else {
+          supplierBill.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+        }
+        await updateData(supplierBillModel, { _id: value.purchaseBillId }, supplierBill, {});
+      }
+
+      if (value.posCreditNoteId) {
+        const posCreditNote = await getFirstMatch(posCreditNoteModel, { _id: value.posCreditNoteId, isDeleted: false }, {}, {});
+        if (!posCreditNote) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Credit Note"), {}, {}));
+        }
+
+        posCreditNote.refundedAmount = (posCreditNote.refundedAmount || 0) - (isExist.amount || 0) + (value.amount || 0);
+        posCreditNote.creditsRemaining = (posCreditNote.totalAmount || 0) - (posCreditNote.creditsUsed || 0) - posCreditNote.refundedAmount;
+
+        if (posCreditNote.creditsRemaining <= 0) {
+          posCreditNote.status = POS_CREDIT_NOTE_STATUS.USED;
+          posCreditNote.creditsRemaining = 0;
+        } else {
+          posCreditNote.status = POS_CREDIT_NOTE_STATUS.AVAILABLE;
+        }
+        await updateData(posCreditNoteModel, { _id: value.posCreditNoteId }, posCreditNote, {});
+      }
     }
 
     if (value.taxId) {
@@ -216,7 +309,8 @@ export const getAllPosPayment = async (req, res) => {
       populate: [
         { path: "posOrderId", select: "orderNo totalAmount createdAt paidAmount" },
         { path: "partyId", select: "firstName lastName companyName" },
-        { path: "purchaseBillId", select: "documentNo totalAmount" },
+        { path: "purchaseBillId", select: "supplierBillNo totalAmount" },
+        { path: "posCreditNoteId", select: "creditNoteNo totalAmount" },
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "taxId", select: "name percentage" },
@@ -252,7 +346,8 @@ export const getOnePosPayment = async (req, res) => {
         populate: [
           { path: "posOrderId", select: "orderNo totalAmount items" },
           { path: "partyId", select: "firstName lastName companyName email phoneNo" },
-          { path: "purchaseBillId", select: "documentNo totalAmount" },
+          { path: "purchaseBillId", select: "supplierBillNo totalAmount" },
+          { path: "posCreditNoteId", select: "creditNoteNo totalAmount" },
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "taxId", select: "name percentage" },
@@ -283,6 +378,64 @@ export const deletePosPayment = async (req, res) => {
     const isExist = await getFirstMatch(PosPaymentModel, { _id: value?.id, isDeleted: false }, {}, {});
     if (!isExist) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Payment"), {}, {}));
+    }
+
+    if (isExist.voucherType === POS_VOUCHER_TYPE.SALES && isExist.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL && isExist.posOrderId) {
+      const posOrder = await getFirstMatch(PosOrderModel, { _id: isExist.posOrderId, isDeleted: false }, {}, {});
+      if (posOrder) {
+        posOrder.paidAmount = (posOrder.paidAmount || 0) - (isExist.amount || 0);
+        if (posOrder.paidAmount >= posOrder.totalAmount) {
+          posOrder.paymentStatus = POS_PAYMENT_STATUS.PAID;
+          posOrder.status = POS_ORDER_STATUS.COMPLETED;
+          posOrder.payLater.status = PAY_LATER_STATUS.SETTLED;
+          posOrder.dueAmount = 0;
+        } else if (posOrder.paidAmount < posOrder.totalAmount) {
+          posOrder.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+          posOrder.status = POS_ORDER_STATUS.PENDING;
+          posOrder.payLater.status = PAY_LATER_STATUS.PARTIAL;
+          posOrder.dueAmount = posOrder.totalAmount - posOrder.paidAmount;
+        } else {
+          posOrder.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+          posOrder.status = POS_ORDER_STATUS.PENDING;
+          posOrder.payLater.status = PAY_LATER_STATUS.OPEN;
+          posOrder.dueAmount = posOrder.totalAmount;
+        }
+        await updateData(PosOrderModel, { _id: isExist.posOrderId }, posOrder, {});
+      }
+    }
+
+    if (isExist.voucherType === POS_VOUCHER_TYPE.PURCHASE && isExist.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL && isExist.purchaseBillId) {
+      const supplierBill = await getFirstMatch(supplierBillModel, { _id: isExist.purchaseBillId, isDeleted: false }, {}, {});
+      if (supplierBill) {
+        supplierBill.paidAmount = (supplierBill.paidAmount || 0) - (isExist.amount || 0);
+        supplierBill.balanceAmount = (supplierBill.totalAmount || 0) - supplierBill.paidAmount;
+
+        if (supplierBill.balanceAmount <= 0) {
+          supplierBill.paymentStatus = POS_PAYMENT_STATUS.PAID;
+          supplierBill.balanceAmount = 0;
+        } else if (supplierBill.paidAmount > 0) {
+          supplierBill.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+        } else {
+          supplierBill.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+        }
+        await updateData(supplierBillModel, { _id: isExist.purchaseBillId }, supplierBill, {});
+      }
+    }
+
+    if (isExist.voucherType === POS_VOUCHER_TYPE.PURCHASE && isExist.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL && isExist.posCreditNoteId) {
+      const posCreditNote = await getFirstMatch(posCreditNoteModel, { _id: isExist.posCreditNoteId, isDeleted: false }, {}, {});
+      if (posCreditNote) {
+        posCreditNote.refundedAmount = (posCreditNote.refundedAmount || 0) - (isExist.amount || 0);
+        posCreditNote.creditsRemaining = (posCreditNote.totalAmount || 0) - (posCreditNote.creditsUsed || 0) - posCreditNote.refundedAmount;
+
+        if (posCreditNote.creditsRemaining <= 0) {
+          posCreditNote.status = POS_CREDIT_NOTE_STATUS.USED;
+          posCreditNote.creditsRemaining = 0;
+        } else {
+          posCreditNote.status = POS_CREDIT_NOTE_STATUS.AVAILABLE;
+        }
+        await updateData(posCreditNoteModel, { _id: isExist.posCreditNoteId }, posCreditNote, {});
+      }
     }
 
     const response = await updateData(PosPaymentModel, { _id: value?.id }, { isDeleted: true }, {});
