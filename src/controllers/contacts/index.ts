@@ -246,14 +246,13 @@ export const getContactDropdown = async (req, res) => {
 
     // Filter by contact type
     if (typeFilter) {
-      // if (typeFilter === "supplier") {
-      //   criteria.$or = [{ contactType: "supplier" }, { contactType: "both" }];
-      // } else if (typeFilter === "customer") {
-      //   criteria.$or = [{ contactType: "customer" }, { contactType: "both" }];
-      // } else {
-      //   criteria.contactType = typeFilter;
-      // }
-      criteria.contactType = typeFilter;
+      if (Array.isArray(typeFilter)) {
+        criteria.contactType = { $in: typeFilter };
+      } else if (typeof typeFilter === "string" && typeFilter.includes(",")) {
+        criteria.contactType = { $in: typeFilter.split(",") };
+      } else {
+        criteria.contactType = typeFilter;
+      }
     }
 
     applyDateFilter(criteria, startDate as string, endDate as string);
