@@ -1,4 +1,4 @@
-import { POS_CREDIT_NOTE_STATUS } from './../../common/enum';
+import { POS_CREDIT_NOTE_STATUS, SUPPLIER_PAYMENT_STATUS } from './../../common/enum';
 import { PosPaymentModel, PosOrderModel, contactModel, PosCashRegisterModel, taxModel, supplierBillModel, posCreditNoteModel } from "../../database";
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
 import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, applyDateFilter, getAndIncrementPrefix } from "../../helper";
@@ -92,16 +92,17 @@ export const addPosPayment = async (req, res) => {
           return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Supplier Bill"), {}, {}));
         }
 
+        const totalBillAmount = supplierBill.summary?.netAmount || supplierBill.totalAmount || 0;
         supplierBill.paidAmount = (supplierBill.paidAmount || 0) + value.amount;
-        supplierBill.balanceAmount = (supplierBill.totalAmount || 0) - supplierBill.paidAmount;
+        supplierBill.balanceAmount = totalBillAmount - supplierBill.paidAmount;
 
         if (supplierBill.balanceAmount <= 0) {
-          supplierBill.paymentStatus = POS_PAYMENT_STATUS.PAID;
+          supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.PAID;
           supplierBill.balanceAmount = 0;
         } else if (supplierBill.paidAmount > 0) {
-          supplierBill.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+          supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.PARTIAL;
         } else {
-          supplierBill.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+          supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.UNPAID;
         }
         await updateData(supplierBillModel, { _id: value.purchaseBillId }, supplierBill, {});
       }
@@ -220,16 +221,17 @@ export const editPosPayment = async (req, res) => {
           return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Supplier Bill"), {}, {}));
         }
 
+        const totalBillAmount = supplierBill.summary?.netAmount || supplierBill.totalAmount || 0;
         supplierBill.paidAmount = (supplierBill.paidAmount || 0) - (isExist.amount || 0) + (value.amount || 0);
-        supplierBill.balanceAmount = (supplierBill.totalAmount || 0) - supplierBill.paidAmount;
+        supplierBill.balanceAmount = totalBillAmount - supplierBill.paidAmount;
 
         if (supplierBill.balanceAmount <= 0) {
-          supplierBill.paymentStatus = POS_PAYMENT_STATUS.PAID;
+          supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.PAID;
           supplierBill.balanceAmount = 0;
         } else if (supplierBill.paidAmount > 0) {
-          supplierBill.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+          supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.PARTIAL;
         } else {
-          supplierBill.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+          supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.UNPAID;
         }
         await updateData(supplierBillModel, { _id: value.purchaseBillId }, supplierBill, {});
       }
@@ -407,16 +409,17 @@ export const deletePosPayment = async (req, res) => {
     if (isExist.voucherType === POS_VOUCHER_TYPE.PURCHASE && isExist.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL && isExist.purchaseBillId) {
       const supplierBill = await getFirstMatch(supplierBillModel, { _id: isExist.purchaseBillId, isDeleted: false }, {}, {});
       if (supplierBill) {
+        const totalBillAmount = supplierBill.summary?.netAmount || supplierBill.totalAmount || 0;
         supplierBill.paidAmount = (supplierBill.paidAmount || 0) - (isExist.amount || 0);
-        supplierBill.balanceAmount = (supplierBill.totalAmount || 0) - supplierBill.paidAmount;
+        supplierBill.balanceAmount = totalBillAmount - supplierBill.paidAmount;
 
         if (supplierBill.balanceAmount <= 0) {
-          supplierBill.paymentStatus = POS_PAYMENT_STATUS.PAID;
+          supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.PAID;
           supplierBill.balanceAmount = 0;
         } else if (supplierBill.paidAmount > 0) {
-          supplierBill.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+          supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.PARTIAL;
         } else {
-          supplierBill.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+          supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.UNPAID;
         }
         await updateData(supplierBillModel, { _id: isExist.purchaseBillId }, supplierBill, {});
       }

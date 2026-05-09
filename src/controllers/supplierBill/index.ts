@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES, SUPPLIER_PAYMENT_STATUS } from "../../common";
 import { contactModel, supplierBillModel, productModel, termsConditionModel, additionalChargeModel } from "../../database";
 import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 // import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
@@ -87,6 +87,11 @@ export const addSupplierBill = async (req, res) => {
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
+    // Set initial balance amount and status
+    const totalAmount = value.summary?.netAmount || value.totalAmount || 0;
+    value.balanceAmount = totalAmount;
+    value.paymentStatus = SUPPLIER_PAYMENT_STATUS.UNPAID;
+
     const response = await createOne(supplierBillModel, value);
 
     if (!response) {
@@ -160,6 +165,19 @@ export const editSupplierBill = async (req, res) => {
     }
 
     value.updatedBy = user?._id || null;
+
+    // Recalculate balance and payment status if amounts are present
+    const totalAmount = value.summary?.netAmount || value.totalAmount || isExist.summary?.netAmount || isExist.totalAmount || 0;
+    const paidAmount = isExist.paidAmount || 0;
+    value.balanceAmount = Math.max(0, totalAmount - paidAmount);
+
+    if (value.balanceAmount <= 0) {
+      value.paymentStatus = SUPPLIER_PAYMENT_STATUS.PAID;
+    } else if (paidAmount > 0) {
+      value.paymentStatus = SUPPLIER_PAYMENT_STATUS.PARTIAL;
+    } else {
+      value.paymentStatus = SUPPLIER_PAYMENT_STATUS.UNPAID;
+    }
 
     const response = await updateData(supplierBillModel, { _id: value?.supplierBillId }, value, {});
 
@@ -336,6 +354,7 @@ export const getAllSupplierBill = async (req, res) => {
           }
         }
       }
+      sbObj.netAmount = sbObj.summary?.netAmount || sbObj.totalAmount || 0;
       return sbObj;
     });
 
@@ -553,6 +572,7 @@ export const getSupplierBillDropdown = async (req, res) => {
         supplierBillNo: 1,
         supplierBillDate: 1,
         "summary.netAmount": 1,
+        totalAmount: 1,
         balanceAmount: 1,
         paymentStatus: 1,
         branchId: 1,
@@ -562,10 +582,10 @@ export const getSupplierBillDropdown = async (req, res) => {
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
-      name: item.supplierBillNo,
+      name: `${item.supplierBillNo} (${item.balanceAmount})`,
       supplierBillNo: item.supplierBillNo,
       supplierBillDate: item.supplierBillDate,
-      netAmount: item.summary?.netAmount || 0,
+      netAmount: item.summary?.netAmount || item.totalAmount || 0,
       balanceAmount: item.balanceAmount,
       paymentStatus: item.paymentStatus,
     }));
