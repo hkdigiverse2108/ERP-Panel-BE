@@ -137,6 +137,7 @@ export const addReturnPosOrder = async (req, res) => {
     if (response.type === RETURN_POS_ORDER_TYPE.SALES_RETURN) {
       const creditNoteData = {
         companyId: response.companyId,
+        branchId: response.branchId,
         customerId: response.customerId,
         returnPosOrderId: response._id,
         totalAmount: response.total,
