@@ -374,7 +374,21 @@ export const getCouponDropdown = async (req, res) => {
     const companyId = user?.companyId?._id;
     const { expiredFilter, limitReachedFilter, search, companyFilter } = req.query;
 
-    let criteria: any = { isDeleted: false, status: COUPON_STATUS.ACTIVE, isActive: true };
+    const now = new Date();
+    let criteria: any = {
+      isDeleted: false,
+      status: COUPON_STATUS.ACTIVE,
+      isActive: true,
+      // Only show coupons that have started
+      $or: [
+        { startDate: { $lte: now } },
+        { startDate: null }
+      ]
+    };
+
+    // Ensure they haven't expired via endDate
+    criteria.$and = criteria.$and || [];
+    criteria.$and.push({ $or: [{ endDate: { $gte: now } }, { endDate: null }] });
 
     if (companyId) {
       criteria.companyId = companyId;
@@ -384,40 +398,26 @@ export const getCouponDropdown = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
-
     if (search) {
       criteria.name = { $regex: search, $options: "si" };
     }
 
     const coupons = await couponModel.find(criteria).select("name couponPrice redeemValue usageLimit expiryDays usedCount startDate endDate createdAt").sort({ createdAt: -1 }).lean();
 
-    const now = new Date();
-    let response = coupons;
+    // Secondary filter for complex logic (usageLimit and expiryDays)
+    const finalResponse = coupons.filter((coupon) => {
+      // Check Usage Limit
+      if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) return false;
 
-    if (expiredFilter === "true") {
-      response = response.filter((coupon) => {
-        if (coupon.startDate && now < new Date(coupon.startDate)) return false;
+      // Check Expiry Days (from createdAt)
+      if (coupon.expiryDays) {
+        const expiryDate = new Date(coupon.createdAt);
+        expiryDate.setDate(expiryDate.getDate() + coupon.expiryDays);
+        if (now > expiryDate) return false;
+      }
 
-        if (coupon.endDate && now > new Date(coupon.endDate)) return false;
-
-        if (coupon.expiryDays) {
-          const expiryDate = new Date(coupon.createdAt);
-          expiryDate.setDate(expiryDate.getDate() + coupon.expiryDays);
-          if (now > expiryDate) return false;
-        }
-
-        return true;
-      });
-    }
-
-    if (limitReachedFilter === "true") {
-      response = response.filter((coupon) => {
-        if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) return false;
-        return true;
-      });
-    }
-
-    const finalResponse = response.map((coupon) => ({
+      return true;
+    }).map((coupon) => ({
       _id: coupon._id,
       name: coupon.name,
       couponPrice: coupon.couponPrice,
