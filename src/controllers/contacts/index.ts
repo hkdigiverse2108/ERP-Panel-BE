@@ -231,7 +231,7 @@ export const getContactDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { typeFilter, search, companyFilter, startDate, endDate } = req.query; // typeFilter: 'supplier', 'customer', 'both'
+    const { typeFilter, search, companyFilter, startDate, endDate, includeId } = req.query; // typeFilter: 'supplier', 'customer', 'both'
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -240,7 +240,7 @@ export const getContactDropdown = async (req, res) => {
     }
 
     if (companyFilter) {
-      criteria.companyId = new ObjectId(companyFilter);
+      criteria.companyId = new ObjectId(companyFilter as string);
     }
 
 
@@ -264,6 +264,12 @@ export const getContactDropdown = async (req, res) => {
         $or: [{ firstName: { $regex: search, $options: "si" } }, { lastName: { $regex: search, $options: "si" } }, { companyName: { $regex: search, $options: "si" } }, { email: { $regex: search, $options: "si" } }, { "phoneNo.phoneNo": { $regex: search, $options: "si" } }],
       };
       criteria = { ...criteria, ...searchCriteria };
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const response = await getData(

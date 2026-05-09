@@ -394,7 +394,7 @@ export const getPurchaseOrderDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    let { supplierId, supplierFilter, status, statusFilter, search, companyFilter, branchFilter } = req.query;
+    const { supplierId, supplierFilter, status, statusFilter, search, companyFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -429,6 +429,12 @@ export const getPurchaseOrderDropdown = async (req, res) => {
 
     if (search) {
       criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }];
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const options: any = {

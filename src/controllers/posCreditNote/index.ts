@@ -376,7 +376,7 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
     //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     // }
 
-    const { customerFilter, typeFilter, companyFilter, branchFilter } = req.query;
+    const { customerFilter, typeFilter, companyFilter, branchFilter, includeId } = req.query;
 
     let companyId = companyFilter || user?.companyId?._id;
     let branchId = branchFilter || user?.branchId?._id;
@@ -384,9 +384,15 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
 
     if (typeFilter === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
       let criteria: any = { isDeleted: false, creditsRemaining: { $gt: 0 }, status: POS_CREDIT_NOTE_STATUS.AVAILABLE };
-      if (companyId) criteria.companyId = new ObjectId(companyId);
-      if (branchId) criteria.branchId = new ObjectId(branchId);
-      if (customerFilter) criteria.customerId = new ObjectId(customerFilter);
+      if (companyId) criteria.companyId = new ObjectId(companyId as string);
+      if (branchId) criteria.branchId = new ObjectId(branchId as string);
+      if (customerFilter) criteria.customerId = new ObjectId(customerFilter as string);
+
+      if (includeId) {
+        criteria = {
+          $or: [criteria, { _id: new ObjectId(includeId as string) }],
+        };
+      }
 
       const data = await posCreditNoteModel.find(criteria).select("creditNoteNo customerId branchId").populate({ path: "branchId", select: "name" }).sort({ createdAt: -1 });
 
@@ -402,9 +408,15 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
         paymentType: POS_PAYMENT_TYPE.ADVANCE,
         amount: { $gt: 0 },
       };
-      if (companyId) criteria.companyId = new ObjectId(companyId);
-      if (branchId) criteria.branchId = new ObjectId(branchId);
-      if (customerFilter) criteria.partyId = new ObjectId(customerFilter);
+      if (companyId) criteria.companyId = new ObjectId(companyId as string);
+      if (branchId) criteria.branchId = new ObjectId(branchId as string);
+      if (customerFilter) criteria.partyId = new ObjectId(customerFilter as string);
+
+      if (includeId) {
+        criteria = {
+          $or: [criteria, { _id: new ObjectId(includeId as string) }],
+        };
+      }
 
       const data = await PosPaymentModel.find(criteria).select("paymentNo partyId branchId").populate({ path: "branchId", select: "name" }).sort({ createdAt: -1 });
 

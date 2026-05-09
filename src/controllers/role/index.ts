@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
 import { companyModel, roleModel, userModel } from "../../database";
 import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
 import { addRoleSchema, deleteRoleSchema, editRoleSchema, getRoleSchema } from "../../validation";
+const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addRole = async (req, res) => {
   reqInfo(req);
@@ -233,7 +234,7 @@ export const getRoleDropdown = async (req, res) => {
 
     let companyId = user?.companyId?._id;
 
-    const { companyFilter } = req.query;
+    const { companyFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -246,6 +247,12 @@ export const getRoleDropdown = async (req, res) => {
     }
 
     if (!companyFilter && !companyId) criteria.companyId = null;
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
+    }
 
     const response = await getDataWithSorting(roleModel, criteria, { _id: 1, name: 1 }, { sort: { name: 1 } });
 

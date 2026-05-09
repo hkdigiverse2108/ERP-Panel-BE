@@ -33,4 +33,5 @@ export const getCreditNoteDropdownSchema = Joi.object({
     .required()
     .valid(...Object.values(REDEEM_CREDIT_TYPE)),
   companyFilter: objectId().optional().allow(null, ""),
+  includeId: objectId().optional().allow(null, ""),
 });

@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { taxModel } from "../../database";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, checkCompany } from "../../helper";
 import { addTaxSchema, deleteTaxSchema, editTaxSchema, getTaxSchema } from "../../validation";
+const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addTax = async (req, res) => {
   reqInfo(req);
@@ -215,7 +216,7 @@ export const getTaxDropdown = async (req, res) => {
   try {
     const { user } = req.headers;
     const companyId = user?.companyId?._id;
-    const { companyFilter, search } = req.query;
+    const { companyFilter, search, includeId } = req.query;
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (user?.userType !== USER_TYPES.SUPER_ADMIN) {
@@ -223,6 +224,12 @@ export const getTaxDropdown = async (req, res) => {
     }
 
     if (companyFilter) criteria.companyId = companyFilter;
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
+    }
 
     const response = await getDataWithSorting(
       taxModel,

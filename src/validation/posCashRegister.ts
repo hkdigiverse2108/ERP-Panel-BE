@@ -74,4 +74,5 @@ export const posCashRegisterDropDownSchema = Joi.object({
   status: Joi.string()
     .valid(...Object.values(CASH_REGISTER_STATUS))
     .optional(),
+  includeId: objectId().optional().allow(null),
 });

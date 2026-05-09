@@ -672,7 +672,7 @@ export const posOrderDropDown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { customerFilter, branchFilter, companyFilter, duePaymentFilter, search, returnableFilter } = req.query;
+    const { customerFilter, branchFilter, companyFilter, duePaymentFilter, search, returnableFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -681,18 +681,17 @@ export const posOrderDropDown = async (req, res) => {
     }
 
     if (companyFilter) {
-      criteria.companyId = new ObjectId(companyFilter);
+      criteria.companyId = new ObjectId(companyFilter as string);
     }
     if (branchId) {
       criteria.branchId = branchId;
     }
     if (branchFilter) {
-      criteria.branchId = new ObjectId(branchFilter);
+      criteria.branchId = new ObjectId(branchFilter as string);
     }
     if (customerFilter) {
-      criteria.customerId = new ObjectId(customerFilter);
+      criteria.customerId = new ObjectId(customerFilter as string);
     }
-
 
     if (duePaymentFilter === true || duePaymentFilter === "true") {
       criteria.dueAmount = { $gt: 0 };
@@ -704,6 +703,12 @@ export const posOrderDropDown = async (req, res) => {
 
     if (returnableFilter === true || returnableFilter === "true") {
       criteria.status = POS_ORDER_STATUS.COMPLETED;
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const response = await PosOrderModel.find(criteria, {

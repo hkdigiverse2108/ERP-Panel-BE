@@ -347,16 +347,16 @@ export const getUserDropDown = async (req, res) => {
     let { user } = req?.headers;
     let companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    let { typeFilter, companyFilter, roleFilter, branchFilter } = req.query;
+    let { typeFilter, companyFilter, roleFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (companyId) {
-      criteria.companyId = new ObjectId(companyId);
+      criteria.companyId = new ObjectId(companyId as string);
     }
 
     if (companyFilter) {
-      criteria.companyId = new ObjectId(companyFilter);
+      criteria.companyId = new ObjectId(companyFilter as string);
     }
 
     if (branchId) {
@@ -372,7 +372,13 @@ export const getUserDropDown = async (req, res) => {
     }
 
     if (roleFilter) {
-      criteria.role = new ObjectId(roleFilter);
+      criteria.role = new ObjectId(roleFilter as string);
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const response = await getData(userModel, criteria, { _id: 1, fullName: 1, userType: 1, role: 1, branchId: 1 }, { sort: { fullName: 1 }, populate: [{ path: "role", select: "name" }, { path: "branchId", select: "name" }] });

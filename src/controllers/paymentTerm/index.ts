@@ -3,6 +3,7 @@ import { paymentTermsModel } from "../../database";
 import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addPaymentTermSchema, deletePaymentTermSchema, editPaymentTermSchema, getPaymentTermSchema } from "../../validation";
 import { propagateDefaultPaymentTermToAllCompanies } from "./helper";
+const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addPaymentTerm = async (req, res) => {
   reqInfo(req);
@@ -194,7 +195,7 @@ export const getPaymentTermDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { companyFilter } = req.query;
+    const { companyFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -204,6 +205,12 @@ export const getPaymentTermDropdown = async (req, res) => {
 
     if (companyFilter) {
       criteria.companyId = companyFilter;
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
 

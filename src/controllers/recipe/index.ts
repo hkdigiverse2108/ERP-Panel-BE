@@ -257,7 +257,7 @@ export const getRecipeDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { search, companyFilter, branchFilter } = req.query;
+    const { search, companyFilter, branchFilter, includeId } = req.query;
 
     let companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
@@ -272,6 +272,12 @@ export const getRecipeDropdown = async (req, res) => {
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { name: { $regex: search, $options: "si" } }, { number: { $regex: search, $options: "si" } }];
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const response = await getDataWithSorting(

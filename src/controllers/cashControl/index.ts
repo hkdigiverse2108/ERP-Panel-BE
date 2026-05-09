@@ -233,7 +233,7 @@ export const cashControlDropDown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { search, branchFilter, companyFilter, registerFilter, startDate, endDate } = req.query;
+    const { search, branchFilter, companyFilter, registerFilter, startDate, endDate, includeId } = req.query;
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
     if (branchId) criteria.branchId = branchId;
@@ -262,6 +262,13 @@ export const cashControlDropDown = async (req, res) => {
 
     if (search) {
       criteria.remark = { $regex: search, $options: "si" };
+    }
+
+    if (includeId) {
+      const ObjectId = require("mongoose").Types.ObjectId;
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const response = await CashControlModel.find(criteria, {

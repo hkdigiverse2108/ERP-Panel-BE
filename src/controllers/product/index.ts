@@ -612,7 +612,7 @@ export const getProductDropdown = async (req, res) => {
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
 
-    const { productType, search, companyFilter, branchFilter, categoryFilter, brandFilter, isNewProduct, stockFilter } = req.query;
+    const { productType, search, companyFilter, branchFilter, categoryFilter, brandFilter, isNewProduct, stockFilter, includeId } = req.query;
 
     // Determine the effective company ID for filtering
     let effectiveCompanyId = companyId;
@@ -640,10 +640,16 @@ export const getProductDropdown = async (req, res) => {
         stockCriteria.qty = { $gt: 0 };
       }
 
+      if (includeId) {
+        stockCriteria = {
+          $or: [stockCriteria, { productId: new ObjectId(includeId as string) }],
+        };
+      }
+
       const stockResponse = await getDataWithSorting(
         stockModel,
         stockCriteria,
-        { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1, uomId: 1 },
+        { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1, uomId: 1, branchId: 1 },
         {
           sort: { updatedAt: -1 },
           populate: [
@@ -660,7 +666,7 @@ export const getProductDropdown = async (req, res) => {
       if (productIdsWithStock.length === 0) {
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [], {}));
       }
-
+      
       stockResponse.forEach((stock: any) => {
         const key = String(stock.productId);
         if (!stockByProductId.has(key)) stockByProductId.set(key, stock);
@@ -704,6 +710,12 @@ export const getProductDropdown = async (req, res) => {
       } else {
         criteria.$or = searchCondition;
       }
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const response = await getDataWithSorting(

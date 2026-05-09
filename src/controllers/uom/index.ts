@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS } from "../../common";
 import { uomModel } from "../../database";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addUOMSchema, deleteUOMSchema, editUOMSchema, getUOMSchema } from "../../validation";
+const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addUOM = async (req, res) => {
   reqInfo(req);
@@ -165,7 +166,15 @@ export const getUOMDropdown = async (req, res) => {
   reqInfo(req);
   try {
 
+    const { includeId } = req.query;
+
     let criteria: any = { isDeleted: false, isActive: true };
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
+    }
 
     const response = await getDataWithSorting(
       uomModel,

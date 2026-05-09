@@ -45,4 +45,5 @@ export const getAllCashControlSchema = Joi.object({
 export const cashControlDropDownSchema = Joi.object({
     search: Joi.string().optional().allow("", null),
     branchId: objectId().optional(),
+    includeId: objectId().optional().allow(null),
 });

@@ -3,6 +3,7 @@ import { apiResponse, HTTP_STATUS, CASH_REGISTER_STATUS, CASH_CONTROL_TYPE, POS_
 import mongoose from "mongoose";
 import { checkBranch, checkCompany, checkIdExist, createOne, getFirstMatch, updateData, reqInfo, countData, getDataWithSorting, responseMessage, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addPosCashRegisterSchema, editPosCashRegisterSchema, getPosCashRegisterSchema, deletePosCashRegisterSchema, posCashRegisterDropDownSchema } from "../../validation";
+const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addPosCashRegister = async (req, res) => {
   reqInfo(req);
@@ -265,7 +266,7 @@ export const posCashRegisterDropDown = async (req, res) => {
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
 
-    const { statusFilter, companyFilter, branchFilter } = req.query;
+    const { statusFilter, companyFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
     if (companyId) criteria.companyId = companyId;
@@ -273,6 +274,12 @@ export const posCashRegisterDropDown = async (req, res) => {
     if (branchId) criteria.branchId = branchId;
     if (branchFilter) criteria.branchId = branchFilter;
     if (statusFilter) criteria.status = statusFilter;
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
+    }
 
     const response = await PosCashRegisterModel.find(criteria, {
       _id: 1,

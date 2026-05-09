@@ -949,19 +949,25 @@ export const returnPosOrderDropDown = async (req, res) => {
     // const { error, value } = returnPosOrderDropDownSchema.validate(req.query);
     // if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const { search, customerId, type, companyFilter, branchFilter } = req.query;
-    
+    const { search, customerId, type, companyFilter, branchFilter, includeId } = req.query;
+
     let criteria: any = { isDeleted: false, isActive: true };
-   
+
     if (companyId) criteria.companyId = companyId;
     if (companyFilter) criteria.companyId = companyFilter;
     if (branchId) criteria.branchId = branchId;
     if (branchFilter) criteria.branchId = branchFilter;
-    if (customerId) criteria.customerId = new ObjectId(customerId);
+    if (customerId) criteria.customerId = new ObjectId(customerId as string);
     if (type) criteria.type = type;
 
     if (search) {
       criteria.$or = [{ returnOrderNo: { $regex: search, $options: "si" } }];
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const response = await returnPosOrderModel.find(criteria, { returnOrderNo: 1, total: 1, branchId: 1 })

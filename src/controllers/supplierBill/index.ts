@@ -487,7 +487,7 @@ export const getSupplierBillDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { supplierId, status, paymentStatus, search, companyFilter, branchFilter } = req.query; // Optional filters
+    const { supplierId, status, paymentStatus, search, companyFilter, branchFilter, includeId } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -523,6 +523,12 @@ export const getSupplierBillDropdown = async (req, res) => {
 
     if (search) {
       criteria.$or = [{ supplierBillNo: { $regex: search, $options: "si" } }, { referenceBillNo: { $regex: search, $options: "si" } }];
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const options: any = {

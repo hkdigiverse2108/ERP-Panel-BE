@@ -449,7 +449,7 @@ export const getPurchaseDebitNoteDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { supplierFilter, search, companyFilter, branchFilter, statusFilter } = req.query;
+    const { supplierFilter, search, companyFilter, branchFilter, statusFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -478,6 +478,12 @@ export const getPurchaseDebitNoteDropdown = async (req, res) => {
 
     if (search) {
       criteria.$or = [{ debitNoteNo: { $regex: search, $options: "si" } }, { referenceBillNo: { $regex: search, $options: "si" } }];
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const options: any = {

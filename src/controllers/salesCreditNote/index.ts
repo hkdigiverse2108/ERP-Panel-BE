@@ -456,7 +456,7 @@ export const getSalesCreditNoteDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { customerFilter, search, companyFilter, statusFilter, branchFilter } = req.query;
+    const { customerFilter, search, companyFilter, statusFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -485,6 +485,12 @@ export const getSalesCreditNoteDropdown = async (req, res) => {
 
     if (search) {
       criteria.$or = [{ creditNoteNo: { $regex: search, $options: "si" } }];
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const options: any = {

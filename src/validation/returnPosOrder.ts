@@ -73,4 +73,5 @@ export const returnPosOrderDropDownSchema = Joi.object({
   type: Joi.string()
     .valid(...Object.values(RETURN_POS_ORDER_TYPE))
     .optional(),
+  includeId: objectId().optional().allow(null),
 });
