@@ -1,7 +1,7 @@
 import { posCreditNoteModel, PosPaymentModel, stockModel } from "../../database";
 import { apiResponse, HTTP_STATUS, REDEEM_CREDIT_TYPE, POS_PAYMENT_TYPE } from "../../common";
 import { countData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkIdExist } from "../../helper";
-import { getPosCreditNoteSchema, deletePosCreditNoteSchema, checkRedeemCreditSchema, refundPosCreditSchema, getCreditNoteDropdownSchema } from "../../validation";
+import { getPosCreditNoteSchema, deletePosCreditNoteSchema, checkRedeemCreditSchema, refundPosCreditSchema } from "../../validation";
 import { returnPosOrderModel, PosCashRegisterModel, bankModel } from "../../database";
 import { CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS } from "../../common";
 
@@ -371,11 +371,6 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    // const { error, value } = getCreditNoteDropdownSchema.validate(req.query);
-    // if (error) {
-    //   return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
-    // }
-
     const { customerFilter, typeFilter, companyFilter, branchFilter, includeId } = req.query;
 
     let companyId = companyFilter || user?.companyId?._id;
@@ -389,9 +384,7 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
       if (customerFilter) criteria.customerId = new ObjectId(customerFilter as string);
 
       if (includeId) {
-        criteria = {
-          $or: [criteria, { _id: new ObjectId(includeId as string) }],
-        };
+        criteria = { $or: [criteria, { _id: new ObjectId(includeId as string) }] };
       }
 
       const data = await posCreditNoteModel.find(criteria).select("creditNoteNo customerId branchId").populate({ path: "branchId", select: "name" }).sort({ createdAt: -1 });
@@ -413,9 +406,7 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
       if (customerFilter) criteria.partyId = new ObjectId(customerFilter as string);
 
       if (includeId) {
-        criteria = {
-          $or: [criteria, { _id: new ObjectId(includeId as string) }],
-        };
+        criteria = { $or: [criteria, { _id: new ObjectId(includeId as string) }] };
       }
 
       const data = await PosPaymentModel.find(criteria).select("paymentNo partyId branchId").populate({ path: "branchId", select: "name" }).sort({ createdAt: -1 });
@@ -429,6 +420,71 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Credit Note"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const getPosCreditNoteDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { customerFilter, typeFilter, companyFilter, branchFilter, includeId } = req.query;
+
+    let companyId = companyFilter || user?.companyId?._id;
+    let branchId = branchFilter || user?.branchId?._id;
+    let response: any[] = [];
+
+    if (typeFilter === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
+      let criteria: any = { isDeleted: false, creditsRemaining: { $gt: 0 }, status: POS_CREDIT_NOTE_STATUS.AVAILABLE };
+      if (companyId) criteria.companyId = new ObjectId(companyId as string);
+      if (branchId) criteria.branchId = new ObjectId(branchId as string);
+      if (customerFilter) criteria.customerId = new ObjectId(customerFilter as string);
+
+      if (includeId) {
+        criteria = { $or: [criteria, { _id: new ObjectId(includeId as string) }] };
+      }
+
+      const data = await posCreditNoteModel.find(criteria).select("creditNoteNo customerId branchId creditsRemaining totalAmount").populate({ path: "branchId", select: "name" }).sort({ createdAt: -1 });
+
+      response = data.map((item) => ({
+        _id: item._id,
+        name: `${item.creditNoteNo} (${item.creditsRemaining})`,
+        creditNoteNo: item.creditNoteNo,
+        creditsRemaining: item.creditsRemaining,
+        amount: item.totalAmount,
+        customerId: item.customerId,
+        branchId: item.branchId,
+      }));
+    } else if (typeFilter === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT) {
+      let criteria: any = {
+        isDeleted: false,
+        paymentType: POS_PAYMENT_TYPE.ADVANCE,
+        amount: { $gt: 0 },
+      };
+      if (companyId) criteria.companyId = new ObjectId(companyId as string);
+      if (branchId) criteria.branchId = new ObjectId(branchId as string);
+      if (customerFilter) criteria.partyId = new ObjectId(customerFilter as string);
+
+      if (includeId) {
+        criteria = { $or: [criteria, { _id: new ObjectId(includeId as string) }] };
+      }
+
+      const data = await PosPaymentModel.find(criteria).select("paymentNo partyId branchId amount totalAmount").populate({ path: "branchId", select: "name" }).sort({ createdAt: -1 });
+
+      response = data.map((item) => ({
+        _id: item._id,
+        name: `${item.paymentNo} (${item.amount})`,
+        paymentNo: item.paymentNo,
+        creditsRemaining: item.amount,
+        amount: item.totalAmount,
+        customerId: item.partyId,
+        branchId: item.branchId,
+      }));
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Credit Note Dropdown"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));

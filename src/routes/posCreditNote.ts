@@ -7,6 +7,7 @@ router.get("/all", posCreditNoteController.getAllPosCreditNote);
 router.post("/redeem", posCreditNoteController.checkRedeemCredit);
 router.post("/refund", posCreditNoteController.refundPosCredit);
 router.get("/redeem-dropdown", posCreditNoteController.getCreditNoteRedeemDropdown);
+router.get("/dropdown", posCreditNoteController.getPosCreditNoteDropdown);
 router.delete("/:id", posCreditNoteController.deletePosCreditNote);
 router.get("/:id", posCreditNoteController.getOnePosCreditNote);
 

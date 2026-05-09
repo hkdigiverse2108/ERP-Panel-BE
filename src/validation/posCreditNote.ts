@@ -27,11 +27,11 @@ export const refundPosCreditSchema = Joi.object({
   refundDescription: Joi.string().optional().allow("", null),
 });
 
-export const getCreditNoteDropdownSchema = Joi.object({
-  customerFilter: objectId().optional().allow(null, ""),
-  typeFilter: Joi.string()
-    .required()
-    .valid(...Object.values(REDEEM_CREDIT_TYPE)),
-  companyFilter: objectId().optional().allow(null, ""),
-  includeId: objectId().optional().allow(null, ""),
-});
+// export const getCreditNoteDropdownSchema = Joi.object({
+//   customerFilter: objectId().optional().allow(null, ""),
+//   typeFilter: Joi.string()
+//     .required()
+//     .valid(...Object.values(REDEEM_CREDIT_TYPE)),
+//   companyFilter: objectId().optional().allow(null, ""),
+//   includeId: objectId().optional().allow(null, ""),
+// });
