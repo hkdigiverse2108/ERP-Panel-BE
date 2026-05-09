@@ -518,7 +518,13 @@ export const getSupplierBillDropdown = async (req, res) => {
     }
 
     if (paymentStatus) {
-      criteria.paymentStatus = paymentStatus;
+      if (Array.isArray(paymentStatus)) {
+        criteria.paymentStatus = { $in: paymentStatus };
+      } else if (typeof paymentStatus === "string" && paymentStatus.includes(",")) {
+        criteria.paymentStatus = { $in: paymentStatus.split(",") };
+      } else {
+        criteria.paymentStatus = paymentStatus;
+      }
     }
 
     if (search) {
