@@ -113,7 +113,7 @@ export const addPosPayment = async (req, res) => {
           return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Credit Note"), {}, {}));
         }
 
-        posCreditNote.refundedAmount = (posCreditNote.refundedAmount || 0) + value.amount;
+        posCreditNote.refundedAmount = (posCreditNote.refundedAmount || 0) + (value.amount || 0);
         posCreditNote.creditsRemaining = (posCreditNote.totalAmount || 0) - (posCreditNote.creditsUsed || 0) - posCreditNote.refundedAmount;
 
         if (posCreditNote.creditsRemaining <= 0) {
