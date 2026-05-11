@@ -236,6 +236,43 @@ export const editDeliveryChallan = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Delivery Challan"), {}, {}));
     }
 
+    // --- Synchronize Linked Documents ---
+    const oldSoIds = isExist.salesOrderIds?.map((id: any) => id.toString()) || [];
+    const newSoIds = value.salesOrderIds?.map((id: any) => id.toString()) || oldSoIds;
+
+    const soAdded = newSoIds.filter((id: string) => !oldSoIds.includes(id));
+    const soRemoved = oldSoIds.filter((id: string) => !newSoIds.includes(id));
+
+    for (const soId of soAdded) {
+      const so = await getFirstMatch(SalesOrderModel, { _id: new ObjectId(soId), isDeleted: false }, {}, {});
+      if (so) {
+        await updateData(SalesOrderModel, { _id: new ObjectId(soId) }, { status: SALES_ORDER_STATUS.DELIVERY_CHALLAN_CREATED }, {});
+      }
+    }
+
+    for (const soId of soRemoved) {
+      const so = await getFirstMatch(SalesOrderModel, { _id: new ObjectId(soId), isDeleted: false }, {}, {});
+      if (so) {
+        await updateData(SalesOrderModel, { _id: new ObjectId(soId) }, { status: SALES_ORDER_STATUS.PENDING }, {});
+      }
+    }
+
+    const oldInvIds = isExist.invoiceIds?.map((id: any) => id.toString()) || [];
+    const newInvIds = value.invoiceIds?.map((id: any) => id.toString()) || oldInvIds;
+
+    const invAdded = newInvIds.filter((id: string) => !oldInvIds.includes(id));
+    const invRemoved = oldInvIds.filter((id: string) => !newInvIds.includes(id));
+
+    for (const invId of invAdded) {
+      await updateData(InvoiceModel, { _id: new ObjectId(invId) }, { status: INVOICE_STATUS.DELIVERY_CHALLAN_CREATED }, {});
+    }
+
+    for (const invId of invRemoved) {
+      await updateData(InvoiceModel, { _id: new ObjectId(invId) }, { status: INVOICE_STATUS.INVOICED }, {});
+    }
+    // ------------------------------------
+
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Delivery Challan"), response, {}));
   } catch (error) {
     console.error(error);
