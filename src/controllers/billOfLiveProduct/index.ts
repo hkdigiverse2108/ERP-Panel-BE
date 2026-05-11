@@ -63,11 +63,30 @@ export const addBillOfLiveProduct = async (req, res) => {
         // Decrease ingredient stock (raw materials consumed)
         if (product?.ingredients?.length) {
           for (const ingredient of product.ingredients) {
-            await stockModel.findOneAndUpdate({ productId: ingredient.productId, companyId: value.companyId, isDeleted: false }, { $inc: { qty: -(ingredient.useQty || 0) } });
+            await updateData(stockModel, { productId: ingredient.productId, branchId: value.branchId, isDeleted: false }, { $inc: { qty: -(ingredient.useQty || 0) } }, {});
           }
         }
         // Increase created product stock (finished goods produced)
-        await stockModel.findOneAndUpdate({ productId: product.productId, companyId: value.companyId, isDeleted: false }, { $inc: { qty: product.qty || 0 } });
+        const existingStock = await getFirstMatch(stockModel, { productId: product.productId, branchId: value.branchId, isDeleted: false }, {}, {});
+        if (existingStock) {
+          await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: product.qty || 0 }, purchasePrice: product.purchasePrice, mrp: product.mrp, landingCost: product.landingCost, sellingPrice: product.sellingPrice }, {});
+        } else {
+          await createOne(stockModel, {
+            productId: product.productId,
+            branchId: value.branchId,
+            companyId: value.companyId,
+            qty: product.qty || 0,
+            purchasePrice: product.purchasePrice || 0,
+            mrp: product.mrp || 0,
+            landingCost: product.landingCost || 0,
+            sellingPrice: product.sellingPrice || 0,
+            createdBy: user?._id || null,
+          });
+        }
+        // Update latest purchase price (production cost) in product master
+        if (product.purchasePrice) {
+          await updateData(productModel, { _id: product.productId }, { purchasePrice: product.purchasePrice, mrp: product.mrp, landingCost: product.landingCost, sellingPrice: product.sellingPrice }, {});
+        }
       }
     }
 
@@ -139,25 +158,45 @@ export const editBillOfLiveProductById = async (req, res) => {
         // Restore old ingredient stock (add back what was consumed)
         if (oldProduct?.ingredients?.length) {
           for (const oldIngredient of oldProduct.ingredients) {
-            await stockModel.findOneAndUpdate({ productId: oldIngredient.productId, companyId: value.companyId, isDeleted: false }, { $inc: { qty: oldIngredient.useQty || 0 } });
+            await updateData(stockModel, { productId: oldIngredient.productId, branchId: isBillExist.branchId, isDeleted: false }, { $inc: { qty: oldIngredient.useQty || 0 } }, {});
           }
         }
         // Remove old created product stock (subtract what was produced)
-        await stockModel.findOneAndUpdate({ productId: oldProduct.productId, companyId: value.companyId, isDeleted: false }, { $inc: { qty: -(oldProduct.qty || 0) } });
+        await updateData(stockModel, { productId: oldProduct.productId, branchId: isBillExist.branchId, isDeleted: false }, { $inc: { qty: -(oldProduct.qty || 0) } }, {});
       }
     }
 
     // Apply new stock changes
+    const currentBranchId = value.branchId || isBillExist.branchId;
     if (value?.productDetails?.length) {
       for (const newProduct of value.productDetails) {
         // Decrease ingredient stock (raw materials consumed)
         if (newProduct?.ingredients?.length) {
           for (const newIngredient of newProduct.ingredients) {
-            await stockModel.findOneAndUpdate({ productId: newIngredient.productId, companyId: value.companyId, isDeleted: false }, { $inc: { qty: -(newIngredient.useQty || 0) } });
+            await updateData(stockModel, { productId: newIngredient.productId, branchId: currentBranchId, isDeleted: false }, { $inc: { qty: -(newIngredient.useQty || 0) } }, {});
           }
         }
         // Increase created product stock (finished goods produced)
-        await stockModel.findOneAndUpdate({ productId: newProduct.productId, companyId: value.companyId, isDeleted: false }, { $inc: { qty: newProduct.qty || 0 } });
+        const existingStock = await getFirstMatch(stockModel, { productId: newProduct.productId, branchId: currentBranchId, isDeleted: false }, {}, {});
+        if (existingStock) {
+          await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: newProduct.qty || 0 }, purchasePrice: newProduct.purchasePrice, mrp: newProduct.mrp, landingCost: newProduct.landingCost, sellingPrice: newProduct.sellingPrice }, {});
+        } else {
+          await createOne(stockModel, {
+            productId: newProduct.productId,
+            branchId: currentBranchId,
+            companyId: value.companyId,
+            qty: newProduct.qty || 0,
+            purchasePrice: newProduct.purchasePrice || 0,
+            mrp: newProduct.mrp || 0,
+            landingCost: newProduct.landingCost || 0,
+            sellingPrice: newProduct.sellingPrice || 0,
+            createdBy: user?._id || null,
+          });
+        }
+        // Update latest purchase price (production cost) in product master
+        if (newProduct.purchasePrice) {
+          await updateData(productModel, { _id: newProduct.productId }, { purchasePrice: newProduct.purchasePrice, mrp: newProduct.mrp, landingCost: newProduct.landingCost, sellingPrice: newProduct.sellingPrice }, {});
+        }
       }
     }
 
@@ -196,11 +235,11 @@ export const deleteBillOfLiveProductById = async (req, res) => {
         // Restore ingredient stock (add back what was consumed)
         if (product?.ingredients?.length) {
           for (const ingredient of product.ingredients) {
-            await stockModel.findOneAndUpdate({ productId: ingredient.productId, companyId: billOfLiveProduct.companyId, isDeleted: false }, { $inc: { qty: ingredient.useQty || 0 } });
+            await updateData(stockModel, { productId: ingredient.productId, branchId: billOfLiveProduct.branchId, isDeleted: false }, { $inc: { qty: ingredient.useQty || 0 } }, {});
           }
         }
         // Remove created product stock (subtract what was produced)
-        await stockModel.findOneAndUpdate({ productId: product.productId, companyId: billOfLiveProduct.companyId, isDeleted: false }, { $inc: { qty: -(product.qty || 0) } });
+        await updateData(stockModel, { productId: product.productId, branchId: billOfLiveProduct.branchId, isDeleted: false }, { $inc: { qty: -(product.qty || 0) } }, {});
       }
     }
 

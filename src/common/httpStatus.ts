@@ -20,7 +20,7 @@ export const HTTP_STATUS = {
   TOO_MANY_REQUESTS: 429,
 
   //TOKEN Expired 
-  TOKEN_EXPIRED : 440,
+  TOKEN_EXPIRED: 440,
 
   // 5xx Server Errors
   INTERNAL_SERVER_ERROR: 500,
