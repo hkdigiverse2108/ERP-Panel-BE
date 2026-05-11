@@ -1,7 +1,7 @@
 import { PosCashRegisterModel, bankModel, branchModel, CashControlModel, PosOrderModel, returnPosOrderModel, PosPaymentModel } from "../../database";
 import { apiResponse, HTTP_STATUS, CASH_REGISTER_STATUS, CASH_CONTROL_TYPE, POS_VOUCHER_TYPE, PAYMENT_MODE, POS_ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import mongoose from "mongoose";
-import { checkBranch, checkCompany, checkIdExist, createOne, getFirstMatch, updateData, reqInfo, countData, getDataWithSorting, responseMessage, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosCashRegisterSchema, editPosCashRegisterSchema, getPosCashRegisterSchema, deletePosCashRegisterSchema, posCashRegisterDropDownSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -275,11 +275,7 @@ export const posCashRegisterDropDown = async (req, res) => {
     if (branchFilter) criteria.branchId = branchFilter;
     if (statusFilter) criteria.status = statusFilter;
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await PosCashRegisterModel.find(criteria, {
       _id: 1,
@@ -509,3 +505,6 @@ export const getCashRegisterDetails = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { categoryModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCategorySchema, deleteCategorySchema, editCategorySchema, getCategorySchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -199,11 +199,7 @@ export const getCategoryDropdown = async (req, res) => {
       criteria.parentCategoryId = null;
     }
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
     if (parentCategoryFilter) criteria.parentCategoryId = new ObjectId(parentCategoryFilter);
 
@@ -294,3 +290,6 @@ export const getCategoryTree = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

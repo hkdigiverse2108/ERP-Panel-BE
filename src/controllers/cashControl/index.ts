@@ -1,6 +1,6 @@
 import { CashControlModel, PosCashRegisterModel, branchModel } from "../../database";
 import { apiResponse, HTTP_STATUS, CASH_REGISTER_STATUS } from "../../common";
-import { checkCompany, checkIdExist, createOne, getFirstMatch, updateData, reqInfo, countData, getDataWithSorting, responseMessage, applyDateFilter, getData, checkBranch } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCashControlSchema, editCashControlSchema, getCashControlSchema, deleteCashControlSchema } from "../../validation";
 
 export const addCashControl = async (req, res) => {
@@ -284,3 +284,6 @@ export const cashControlDropDown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { billOfLiveProductModel, productModel, recipeModel, stockModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch, getAndIncrementPrefix } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBillOfLiveProductSchema, deleteBillOfLiveProductSchema, editBillOfLiveProductSchema, getBillOfLiveProductSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -279,7 +279,7 @@ export const getAllBillOfLiveProduct = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ number: { $regex: search, $options: "si" } }];
+      criteria.number = { $regex: search, $options: "si" };
     }
 
     if (activeFilter !== undefined) {
@@ -393,11 +393,7 @@ export const getBillOfLiveProductDropdown = async (req, res) => {
     if (branchId) criteria.branchId = branchId;
     if (branchFilter) criteria.branchId = branchFilter;
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await getDataWithSorting(
       billOfLiveProductModel,
@@ -419,3 +415,6 @@ export const getBillOfLiveProductDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

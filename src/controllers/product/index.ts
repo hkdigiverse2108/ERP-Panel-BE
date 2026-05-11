@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel, productModel, productTypeModel, stockModel, uomModel, brandModel, categoryModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, findAllAndPopulateWithSorting, extractDataFromFile } from "../../helper";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, findAllAndPopulateWithSorting, extractDataFromFile, handleIncludeId } from "../../helper";
 import { addBulkProductSchema, addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation";
 import axios from "axios";
 
@@ -640,11 +640,7 @@ export const getProductDropdown = async (req, res) => {
         stockCriteria.qty = { $gt: 0 };
       }
 
-      if (includeId) {
-        stockCriteria = {
-          $or: [stockCriteria, { productId: new ObjectId(includeId as string) }],
-        };
-      }
+      stockCriteria = handleIncludeId(stockCriteria, includeId, "productId");
 
       const stockResponse = await getDataWithSorting(
         stockModel,
@@ -712,11 +708,7 @@ export const getProductDropdown = async (req, res) => {
       }
     }
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await getDataWithSorting(
       productModel,

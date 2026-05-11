@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { contactModel, couponModel, PosOrderModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCouponSchema, verifyCouponSchema, deleteCouponSchema, editCouponSchema, getCouponSchema, removeCouponSchema } from "../../validation";
 import { COUPON_DISCOUNT_TYPE, COUPON_STATUS } from "../../common";
 
@@ -402,11 +402,7 @@ export const getCouponDropdown = async (req, res) => {
       criteria.name = { $regex: search, $options: "si" };
     }
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
     const coupons = await couponModel.find(criteria).select("name couponPrice redeemValue usageLimit expiryDays usedCount startDate endDate createdAt").sort({ createdAt: -1 }).lean();
 
@@ -438,3 +434,6 @@ export const getCouponDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

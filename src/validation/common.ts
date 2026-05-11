@@ -59,3 +59,9 @@ export const commonShippingSchema = Joi.object().keys({
   vehicleNo: Joi.string().allow("").optional(),
   weight: Joi.number().optional(),
 });
+
+export const includeIdSchema = Joi.alternatives().try(
+  objectId(),
+  Joi.array().items(objectId()),
+  Joi.string()
+).optional().allow(null, "");

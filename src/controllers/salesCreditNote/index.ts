@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, salesCreditNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, SalesOrderModel, InvoiceModel, userModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addSalesCreditNoteSchema, deleteSalesCreditNoteSchema, editSalesCreditNoteSchema, getSalesCreditNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -261,7 +261,7 @@ export const getAllSalesCreditNote = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ creditNoteNo: { $regex: search, $options: "si" } }];
+      criteria.creditNoteNo = { $regex: search, $options: "si" };
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter === "true";
@@ -484,14 +484,10 @@ export const getSalesCreditNoteDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ creditNoteNo: { $regex: search, $options: "si" } }];
+      criteria.creditNoteNo = { $regex: search, $options: "si" };
     }
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
     const options: any = {
       sort: { creditNoteDate: -1 },
@@ -527,3 +523,6 @@ export const getSalesCreditNoteDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

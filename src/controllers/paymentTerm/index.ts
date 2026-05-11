@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { paymentTermsModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { applyDateFilter, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPaymentTermSchema, deletePaymentTermSchema, editPaymentTermSchema, getPaymentTermSchema } from "../../validation";
 import { propagateDefaultPaymentTermToAllCompanies } from "./helper";
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -127,7 +127,7 @@ export const getAllPaymentTerm = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
+      criteria.name = { $regex: search, $options: "si" };
     }
 
     applyDateFilter(criteria, startDate as string, endDate as string);
@@ -207,11 +207,7 @@ export const getPaymentTermDropdown = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
 
     const response = await getDataWithSorting(
@@ -235,3 +231,6 @@ export const getPaymentTermDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

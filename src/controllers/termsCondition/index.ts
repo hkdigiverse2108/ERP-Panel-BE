@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { termsConditionModel } from "../../database";
-import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addTermsConditionSchema, deleteTermsConditionSchema, editTermsConditionSchema, getTermsConditionSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -217,19 +217,15 @@ export const getTermsConditionDropdown = async (req, res) => {
       criteria.branchId = branchFilter;
     }
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
-
     if (isDefault !== undefined) {
       criteria.isDefault = isDefault == "true";
     }
 
     if (search) {
-      criteria.$or = [{ termsCondition: { $regex: search, $options: "si" } }];
+      criteria.termsCondition = { $regex: search, $options: "si" };
     }
+
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await getDataWithSorting(
       termsConditionModel,

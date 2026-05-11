@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, clonePrefixesToBranch } from "../../helper";
+import { applyDateFilter, checkIdExist, clonePrefixesToBranch, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBranchSchema, deleteBranchSchema, editBranchSchema, getBranchSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -214,11 +214,7 @@ export const getBranchDropdown = async (req, res) => {
     if (companyFilter && userType === USER_TYPES.SUPER_ADMIN) criteria.companyId = companyFilter;
     else if (companyId) criteria.companyId = companyId;
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await getDataWithSorting(
       branchModel,
@@ -240,3 +236,6 @@ export const getBranchDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

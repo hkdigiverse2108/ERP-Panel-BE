@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS, PREFIX_MODULES } from "../../common";
 import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, additionalChargeModel, taxModel, PosCashRegisterModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, createOne, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkStockQty, getAndIncrementPrefix } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkStockQty, createOne, getAndIncrementPrefix, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addReturnPosOrderSchema, editReturnPosOrderSchema, getReturnPosOrderSchema, deleteReturnPosOrderSchema, returnPosOrderDropDownSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -962,14 +962,10 @@ export const returnPosOrderDropDown = async (req, res) => {
     if (type) criteria.type = type;
 
     if (search) {
-      criteria.$or = [{ returnOrderNo: { $regex: search, $options: "si" } }];
+      criteria.returnOrderNo = { $regex: search, $options: "si" };
     }
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await returnPosOrderModel.find(criteria, { returnOrderNo: 1, total: 1, branchId: 1 })
       .populate([{ path: "branchId", select: "name" }])
@@ -982,3 +978,6 @@ export const returnPosOrderDropDown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

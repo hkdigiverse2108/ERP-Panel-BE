@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { contactModel, locationModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, extractDataFromFile, checkBranch } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, extractDataFromFile, getData, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addContactSchema, deleteContactSchema, editContactSchema, getContactSchema, addBulkContactSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -265,11 +265,7 @@ export const getContactDropdown = async (req, res) => {
       criteria = { ...criteria, ...searchCriteria };
     }
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await getData(
       contactModel,
@@ -517,3 +513,6 @@ export const addBulkContact = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

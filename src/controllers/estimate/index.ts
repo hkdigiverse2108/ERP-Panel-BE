@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, ESTIMATE_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, EstimateModel, productModel, taxModel, termsConditionModel, uomModel, additionalChargeModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addEstimateSchema, deleteEstimateSchema, editEstimateSchema, getEstimateSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -262,7 +262,7 @@ export const getAllEstimate = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ estimateNo: { $regex: search, $options: "si" } }];
+      criteria.estimateNo = { $regex: search, $options: "si" };
     }
 
     applyDateFilter(criteria, startDate as string, endDate as string, "date");
@@ -488,14 +488,10 @@ export const getEstimateDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ estimateNo: { $regex: search, $options: "si" } }];
+      criteria.estimateNo = { $regex: search, $options: "si" };
     }
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
     const options = {
       sort: { createdAt: -1 },
@@ -511,3 +507,6 @@ export const getEstimateDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

@@ -1,7 +1,7 @@
 import { USER_TYPES } from "./../../common/enum";
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { additionalChargeModel, taxModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { applyDateFilter, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addAdditionalChargeSchema, deleteAdditionalChargeSchema, editAdditionalChargeSchema, getAdditionalChargeSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -199,11 +199,7 @@ export const getAdditionalChargeDropdown = async (req, res) => {
       criteria.type = typeFilter;
     }
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await getDataWithSorting(
       additionalChargeModel,
@@ -230,3 +226,6 @@ export const getAdditionalChargeDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

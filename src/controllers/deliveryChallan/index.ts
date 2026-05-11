@@ -1,6 +1,6 @@
 import { apiResponse, DELIVERY_CHALLAN_STATUS, HTTP_STATUS, INVOICE_STATUS, SALES_ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, deliveryChallanModel, InvoiceModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addDeliveryChallanSchema, deleteDeliveryChallanSchema, editDeliveryChallanSchema, getDeliveryChallanSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -323,7 +323,7 @@ export const getAllDeliveryChallan = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ deliveryChallanNo: { $regex: search, $options: "si" } }];
+      criteria.deliveryChallanNo = { $regex: search, $options: "si" };
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -558,14 +558,10 @@ export const getDeliveryChallanDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ deliveryChallanNo: { $regex: search, $options: "si" } }];
+      criteria.deliveryChallanNo = { $regex: search, $options: "si" };
     }
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
     const options: any = {
       sort: { createdAt: -1 },
@@ -594,3 +590,6 @@ export const getDeliveryChallanDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { baseApiSchema, includeIdSchema, objectId } from "./common";
 import { CASH_CONTROL_TYPE } from "../common";
 
 export const addCashControlSchema = Joi.object({
@@ -45,5 +45,6 @@ export const getAllCashControlSchema = Joi.object({
 export const cashControlDropDownSchema = Joi.object({
     search: Joi.string().optional().allow("", null),
     branchId: objectId().optional(),
-    includeId: objectId().optional().allow(null),
+    includeId: includeIdSchema,
 });
+

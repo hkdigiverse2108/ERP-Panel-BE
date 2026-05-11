@@ -1,6 +1,6 @@
 import { posCreditNoteModel, PosPaymentModel, stockModel } from "../../database";
 import { apiResponse, HTTP_STATUS, REDEEM_CREDIT_TYPE, POS_PAYMENT_TYPE } from "../../common";
-import { countData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkIdExist } from "../../helper";
+import { applyDateFilter, checkIdExist, countData, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { getPosCreditNoteSchema, deletePosCreditNoteSchema, checkRedeemCreditSchema, refundPosCreditSchema } from "../../validation";
 import { returnPosOrderModel, PosCashRegisterModel, bankModel } from "../../database";
 import { CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS } from "../../common";
@@ -383,9 +383,7 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
       if (branchId) criteria.branchId = new ObjectId(branchId as string);
       if (customerFilter) criteria.customerId = new ObjectId(customerFilter as string);
 
-      if (includeId) {
-        criteria = { $or: [criteria, { _id: new ObjectId(includeId as string) }] };
-      }
+      criteria = handleIncludeId(criteria, includeId);
 
       const data = await posCreditNoteModel.find(criteria).select("creditNoteNo customerId branchId").populate({ path: "branchId", select: "name" }).sort({ createdAt: -1 });
 
@@ -405,9 +403,7 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
       if (branchId) criteria.branchId = new ObjectId(branchId as string);
       if (customerFilter) criteria.partyId = new ObjectId(customerFilter as string);
 
-      if (includeId) {
-        criteria = { $or: [criteria, { _id: new ObjectId(includeId as string) }] };
-      }
+      criteria = handleIncludeId(criteria, includeId);
 
       const data = await PosPaymentModel.find(criteria).select("paymentNo partyId branchId").populate({ path: "branchId", select: "name" }).sort({ createdAt: -1 });
 
@@ -442,9 +438,7 @@ export const getPosCreditNoteDropdown = async (req, res) => {
       if (branchId) criteria.branchId = new ObjectId(branchId as string);
       if (customerFilter) criteria.customerId = new ObjectId(customerFilter as string);
 
-      if (includeId) {
-        criteria = { $or: [criteria, { _id: new ObjectId(includeId as string) }] };
-      }
+      criteria = handleIncludeId(criteria, includeId);
 
       const data = await posCreditNoteModel.find(criteria).select("creditNoteNo customerId branchId creditsRemaining totalAmount").populate({ path: "branchId", select: "name" }).sort({ createdAt: -1 });
 
@@ -467,9 +461,7 @@ export const getPosCreditNoteDropdown = async (req, res) => {
       if (branchId) criteria.branchId = new ObjectId(branchId as string);
       if (customerFilter) criteria.partyId = new ObjectId(customerFilter as string);
 
-      if (includeId) {
-        criteria = { $or: [criteria, { _id: new ObjectId(includeId as string) }] };
-      }
+      criteria = handleIncludeId(criteria, includeId);
 
       const data = await PosPaymentModel.find(criteria).select("paymentNo partyId branchId amount totalAmount").populate({ path: "branchId", select: "name" }).sort({ createdAt: -1 });
 
@@ -490,3 +482,6 @@ export const getPosCreditNoteDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

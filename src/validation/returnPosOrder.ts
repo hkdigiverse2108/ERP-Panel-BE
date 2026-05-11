@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId, commonAdditionalChargeSchema } from "./common";
+import { baseApiSchema, commonAdditionalChargeSchema, includeIdSchema, objectId } from "./common";
 import { RETURN_POS_ORDER_TYPE } from "../common";
 
 const returnPosOrderItemSchema = Joi.object({
@@ -73,5 +73,6 @@ export const returnPosOrderDropDownSchema = Joi.object({
   type: Joi.string()
     .valid(...Object.values(RETURN_POS_ORDER_TYPE))
     .optional(),
-  includeId: objectId().optional().allow(null),
+  includeId: includeIdSchema,
 });
+

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { ConsumptionTypeModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { createConsumptionTypeSchema, deleteConsumptionTypeSchema, getConsumptionTypeSchema, updateConsumptionTypeSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -226,11 +226,7 @@ export const consumptionTypeDropDown = async (req: any, res: any) => {
       criteria.name = { $regex: search, $options: "si" };
     }
 
-    if (includeId) {
-      criteria = {
-        $or: [criteria, { _id: new ObjectId(includeId as string) }],
-      };
-    }
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await ConsumptionTypeModel.find(criteria, { name: 1, isDefault: 1 }).sort({ name: 1 });
 
@@ -240,3 +236,6 @@ export const consumptionTypeDropDown = async (req: any, res: any) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage.internalServerError, {}, error));
   }
 };
+
+
+
