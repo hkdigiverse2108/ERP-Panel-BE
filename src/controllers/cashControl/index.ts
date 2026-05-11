@@ -1,6 +1,6 @@
 import { CashControlModel, PosCashRegisterModel, branchModel } from "../../database";
 import { apiResponse, HTTP_STATUS, CASH_REGISTER_STATUS } from "../../common";
-import { checkCompany, checkIdExist, createOne, getFirstMatch, updateData, reqInfo, countData, getDataWithSorting, responseMessage, applyDateFilter, getData, checkBranch } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCashControlSchema, editCashControlSchema, getCashControlSchema, deleteCashControlSchema } from "../../validation";
 
 export const addCashControl = async (req, res) => {
@@ -233,7 +233,7 @@ export const cashControlDropDown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { search, branchFilter, companyFilter, registerFilter, startDate, endDate } = req.query;
+    const { search, branchFilter, companyFilter, registerFilter, startDate, endDate, includeId } = req.query;
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
     if (branchId) criteria.branchId = branchId;
@@ -264,6 +264,13 @@ export const cashControlDropDown = async (req, res) => {
       criteria.remark = { $regex: search, $options: "si" };
     }
 
+    if (includeId) {
+      const ObjectId = require("mongoose").Types.ObjectId;
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
+    }
+
     const response = await CashControlModel.find(criteria, {
       remark: 1,
       amount: 1,
@@ -277,3 +284,6 @@ export const cashControlDropDown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

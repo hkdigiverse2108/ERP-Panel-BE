@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES, PREFIX_MODULES } from "../../common";
 import { companyModel, productModel, recipeModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addRecipeSchema, deleteRecipeSchema, editRecipeSchema, getRecipeSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -257,7 +257,7 @@ export const getRecipeDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { search, companyFilter, branchFilter } = req.query;
+    const { search, companyFilter, branchFilter, includeId } = req.query;
 
     let companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
@@ -273,6 +273,8 @@ export const getRecipeDropdown = async (req, res) => {
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { name: { $regex: search, $options: "si" } }, { number: { $regex: search, $options: "si" } }];
     }
+
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await getDataWithSorting(
       recipeModel,
@@ -296,3 +298,6 @@ export const getRecipeDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

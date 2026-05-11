@@ -2,7 +2,7 @@ import { apiResponse, HTTP_STATUS, PREFIX_MODULES, SOCKET_EVENTS, SOCKET_TYPE, S
 import { stockModel, stockTransferModel, productModel, ConsumptionTypeModel, materialConsumptionModel } from "../../database";
 import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix, checkCompany, checkBranch } from "../../helper";
 import { sendNotification } from "../../helper/socket";
-import { addStockTransferSchema, approveStockTransferSchema, confirmReceiptStockTransferSchema, rejectStockTransferSchema, getStockTransferSchema, deleteStockTransferSchema, editStockTransferSchema } from "../../validation";
+import { addStockTransferSchema, approveStockTransferSchema, confirmReceiptStockTransferSchema, rejectStockTransferSchema, getStockTransferSchema, deleteStockTransferSchema, editStockTransferSchema, dispatchStockTransferSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -74,30 +74,16 @@ export const approveStockTransfer = async (req, res) => {
     if (transfer.status !== STOCK_TRANSFER_STATUS.PENDING) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Only pending requests can be approved"), {}, {}));
 
     // Check stock availability in the requestedToBranch
-    for (const item of value.items) {
-      if (item.approvedQty <= 0) continue;
+    const updatedItems: any[] = [];
+    const itemMap = new Map(value.items.map((i) => [i.productId.toString(), i.approvedQty]));
 
-      const availableStock = await getFirstMatch(
-        stockModel,
-        {
-          productId: item.productId,
-          branchId: transfer.requestedToBranchId,
-          isDeleted: false,
-        },
-        {},
-        {},
-      );
-
-      if (!availableStock || availableStock.qty < item.approvedQty) {
-        const product = await getFirstMatch(productModel, { _id: item.productId }, { name: 1 }, {});
-        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage(`Insufficient stock for product: ${product?.name || "Unknown"}. Available: ${availableStock?.qty || 0}`), {}, {}));
+    for (const item of transfer.items) {
+      const approvedQty = Number(itemMap.get(item.productId.toString())) || 0;
+      if (approvedQty > item.requestedQty) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage(`Approved quantity cannot be more than requested quantity (${item.requestedQty})`), {}, {}));
       }
-    }
 
-    // Deduct stock from the requestedToBranch
-    for (const item of value.items) {
-      if (item.approvedQty <= 0) continue;
-
+      // Fetch current stock price from the source branch
       const senderStock = await getFirstMatch(
         stockModel,
         {
@@ -105,26 +91,19 @@ export const approveStockTransfer = async (req, res) => {
           branchId: transfer.requestedToBranchId,
           isDeleted: false,
         },
-        {},
+        { purchasePrice: 1, qty: 1 },
         {},
       );
 
-      if (senderStock) {
-        await updateData(stockModel, { _id: senderStock._id }, { $inc: { qty: -item.approvedQty } }, {});
+      if (approvedQty > 0 && (!senderStock || senderStock.qty < approvedQty)) {
+        const product = await getFirstMatch(productModel, { _id: item.productId }, { name: 1 }, {});
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage(`Insufficient stock for product: ${product?.name || "Unknown"}. Available: ${senderStock?.qty || 0}`), {}, {}));
       }
-    }
 
-    const itemMap = new Map(value.items.map((i) => [i.productId.toString(), i.approvedQty]));
-    const updatedItems: any[] = [];
-
-    for (const item of transfer.items) {
-      const approvedQty = itemMap.has(item.productId.toString()) ? itemMap.get(item.productId.toString()) : 0;
-      if (approvedQty > item.requestedQty) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage(`Approved quantity cannot be more than requested quantity (${item.requestedQty})`), {}, {}));
-      }
       updatedItems.push({
         ...item,
         approvedQty,
+        price: senderStock?.purchasePrice || 0, // Capture the cost price at the time of approval
       });
     }
 
@@ -159,6 +138,72 @@ export const approveStockTransfer = async (req, res) => {
   }
 };
 
+export const dispatchStockTransfer = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req.headers;
+    const { error, value } = dispatchStockTransferSchema.validate(req.body);
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    const transfer = await getFirstMatch(stockTransferModel, { _id: value.stockTransferId, isDeleted: false }, {}, {});
+    if (!transfer) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Transfer"), {}, {}));
+
+    const userBranchId = user?.branchId?._id?.toString() || user?.branchId?.toString();
+    if (user?.userType !== USER_TYPES.SUPER_ADMIN && userBranchId !== transfer.requestedToBranchId.toString()) {
+      return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.customMessage("Only the source branch can dispatch this transfer"), {}, {}));
+    }
+
+    if (![STOCK_TRANSFER_STATUS.APPROVED, STOCK_TRANSFER_STATUS.PARTIALLY_APPROVED].includes(transfer.status)) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Only approved requests can be dispatched"), {}, {}));
+    }
+
+    // Deduct stock from the source branch
+    for (const item of transfer.items) {
+      if (item.approvedQty <= 0) continue;
+
+      const senderStock = await getFirstMatch(
+        stockModel,
+        {
+          productId: item.productId,
+          branchId: transfer.requestedToBranchId,
+          isDeleted: false,
+        },
+        {},
+        {},
+      );
+
+      if (!senderStock || senderStock.qty < item.approvedQty) {
+        const product = await getFirstMatch(productModel, { _id: item.productId }, { name: 1 }, {});
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage(`Insufficient stock for product: ${product?.name || "Unknown"} during dispatch. Available: ${senderStock?.qty || 0}`), {}, {}));
+      }
+
+      await updateData(stockModel, { _id: senderStock._id }, { $inc: { qty: -item.approvedQty } }, {});
+    }
+
+    const updatePayload = {
+      status: STOCK_TRANSFER_STATUS.DISPATCHED,
+      updatedBy: user?._id,
+    };
+
+    const response = await updateData(stockTransferModel, { _id: value.stockTransferId }, updatePayload, {});
+    if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Stock Transfer Dispatch"), {}, {}));
+
+    await sendNotification({
+      companyId: transfer?.companyId?._id,
+      branchId: transfer?.requestedByBranchId?._id,
+      title: "Stock Transfer Dispatched",
+      message: `${transfer.transferNo || "Stock Transfer"} is in transit`,
+      eventType: SOCKET_EVENTS.STOCK_TRANSFER,
+      meta: { type: SOCKET_TYPE.STOCK_TRANSFER, action: "dispatched", actionId: String((transfer as any)?._id), text: transfer?.transferNo },
+    });
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer Dispatched"), response, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
 export const confirmReceiptStockTransfer = async (req, res) => {
   reqInfo(req);
   try {
@@ -174,8 +219,8 @@ export const confirmReceiptStockTransfer = async (req, res) => {
       return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage?.customMessage("Only the requesting branch can confirm receipt for this transfer"), {}, {}));
     }
 
-    if (![STOCK_TRANSFER_STATUS.APPROVED, STOCK_TRANSFER_STATUS.PARTIALLY_APPROVED].includes(transfer.status)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Request must be approved before confirming receipt"), {}, {}));
+    if (transfer.status !== STOCK_TRANSFER_STATUS.DISPATCHED) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage("Request must be dispatched before confirming receipt"), {}, {}));
     }
 
     const itemMap = new Map(value.items.map((i) => [i.productId.toString(), i.receivedQty]));
@@ -197,20 +242,10 @@ export const confirmReceiptStockTransfer = async (req, res) => {
     let totalDiscrepancyQty = 0;
 
     for (const item of updatedItems) {
+      const price = item.price || 0;
+
       if (item.receivedQty < item.approvedQty) {
         const diffQty = item.approvedQty - item.receivedQty;
-        const senderStock = await getFirstMatch(
-          stockModel,
-          {
-            productId: item.productId,
-            branchId: transfer.requestedToBranchId,
-            isDeleted: false,
-          },
-          {},
-          {},
-        );
-        const price = senderStock?.purchasePrice || 0;
-
         discrepancyItems.push({
           productId: item.productId,
           qty: diffQty,
@@ -222,17 +257,6 @@ export const confirmReceiptStockTransfer = async (req, res) => {
       }
 
       if (item.receivedQty <= 0) continue;
-
-      const senderStock = await getFirstMatch(
-        stockModel,
-        {
-          productId: item.productId,
-          branchId: transfer.requestedToBranchId,
-          isDeleted: false,
-        },
-        {},
-        {},
-      );
 
       const receiverStock = await getFirstMatch(
         stockModel,
@@ -255,10 +279,10 @@ export const confirmReceiptStockTransfer = async (req, res) => {
           productId: item.productId,
           qty: item.receivedQty,
           uomId: product?.uomId,
-          purchasePrice: item.price || senderStock?.purchasePrice || 0,
-          landingCost: item.price || senderStock?.landingCost || 0,
-          mrp: senderStock?.mrp || 0,
-          sellingPrice: senderStock?.sellingPrice || 0,
+          purchasePrice: price,
+          landingCost: price,
+          mrp: 0,
+          sellingPrice: 0,
           createdBy: user?._id || null,
           updatedBy: user?._id || null,
         };
@@ -350,8 +374,8 @@ export const rejectStockTransfer = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage(`Request is already ${transfer.status}`), {}, {}));
     }
 
-    // If it was already approved or dispatched, return the stock to source branch
-    if ([STOCK_TRANSFER_STATUS.APPROVED, STOCK_TRANSFER_STATUS.PARTIALLY_APPROVED].includes(transfer.status)) {
+    // Return stock to source branch if it was already DISPATCHED
+    if (transfer.status === STOCK_TRANSFER_STATUS.DISPATCHED) {
       for (const item of transfer.items) {
         if (item.approvedQty <= 0) continue;
 
@@ -538,9 +562,9 @@ export const getAllStockTransfer = async (req, res) => {
         //   type = "outgoing";
         // }
         if (reqBy === branchIdStr) {
-          type = "outgoing"; // ✅ you initiated → outgoing
+          type = "incoming"; // ✅ Correct label: Stock is coming TO you
         } else if (reqTo === branchIdStr) {
-          type = "incoming"; // ✅ you receive → incoming
+          type = "outgoing"; // ✅ Correct label: Stock is leaving FROM you
         }
 
         return { ...itemObj, type };

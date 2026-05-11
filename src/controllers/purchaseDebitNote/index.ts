@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, purchaseDebitNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, purchaseOrderModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPurchaseDebitNoteSchema, deletePurchaseDebitNoteSchema, editPurchaseDebitNoteSchema, getPurchaseDebitNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -449,7 +449,7 @@ export const getPurchaseDebitNoteDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { supplierFilter, search, companyFilter, branchFilter, statusFilter } = req.query;
+    const { supplierFilter, search, companyFilter, branchFilter, statusFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -479,6 +479,8 @@ export const getPurchaseDebitNoteDropdown = async (req, res) => {
     if (search) {
       criteria.$or = [{ debitNoteNo: { $regex: search, $options: "si" } }, { referenceBillNo: { $regex: search, $options: "si" } }];
     }
+
+    criteria = handleIncludeId(criteria, includeId);
 
     const options: any = {
       sort: { debitNoteDate: -1 },
@@ -514,3 +516,6 @@ export const getPurchaseDebitNoteDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

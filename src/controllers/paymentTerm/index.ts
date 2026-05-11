@@ -1,8 +1,9 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { paymentTermsModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { applyDateFilter, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPaymentTermSchema, deletePaymentTermSchema, editPaymentTermSchema, getPaymentTermSchema } from "../../validation";
 import { propagateDefaultPaymentTermToAllCompanies } from "./helper";
+const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addPaymentTerm = async (req, res) => {
   reqInfo(req);
@@ -126,7 +127,7 @@ export const getAllPaymentTerm = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
+      criteria.name = { $regex: search, $options: "si" };
     }
 
     applyDateFilter(criteria, startDate as string, endDate as string);
@@ -194,7 +195,7 @@ export const getPaymentTermDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { companyFilter } = req.query;
+    const { companyFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -205,6 +206,8 @@ export const getPaymentTermDropdown = async (req, res) => {
     if (companyFilter) {
       criteria.companyId = companyFilter;
     }
+
+    criteria = handleIncludeId(criteria, includeId);
 
 
     const response = await getDataWithSorting(
@@ -228,3 +231,6 @@ export const getPaymentTermDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

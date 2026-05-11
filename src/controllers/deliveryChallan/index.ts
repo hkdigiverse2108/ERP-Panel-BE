@@ -1,6 +1,6 @@
 import { apiResponse, DELIVERY_CHALLAN_STATUS, HTTP_STATUS, INVOICE_STATUS, SALES_ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, deliveryChallanModel, InvoiceModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addDeliveryChallanSchema, deleteDeliveryChallanSchema, editDeliveryChallanSchema, getDeliveryChallanSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -236,6 +236,43 @@ export const editDeliveryChallan = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Delivery Challan"), {}, {}));
     }
 
+    // --- Synchronize Linked Documents ---
+    const oldSoIds = isExist.salesOrderIds?.map((id: any) => id.toString()) || [];
+    const newSoIds = value.salesOrderIds?.map((id: any) => id.toString()) || oldSoIds;
+
+    const soAdded = newSoIds.filter((id: string) => !oldSoIds.includes(id));
+    const soRemoved = oldSoIds.filter((id: string) => !newSoIds.includes(id));
+
+    for (const soId of soAdded) {
+      const so = await getFirstMatch(SalesOrderModel, { _id: new ObjectId(soId), isDeleted: false }, {}, {});
+      if (so) {
+        await updateData(SalesOrderModel, { _id: new ObjectId(soId) }, { status: SALES_ORDER_STATUS.DELIVERY_CHALLAN_CREATED }, {});
+      }
+    }
+
+    for (const soId of soRemoved) {
+      const so = await getFirstMatch(SalesOrderModel, { _id: new ObjectId(soId), isDeleted: false }, {}, {});
+      if (so) {
+        await updateData(SalesOrderModel, { _id: new ObjectId(soId) }, { status: SALES_ORDER_STATUS.PENDING }, {});
+      }
+    }
+
+    const oldInvIds = isExist.invoiceIds?.map((id: any) => id.toString()) || [];
+    const newInvIds = value.invoiceIds?.map((id: any) => id.toString()) || oldInvIds;
+
+    const invAdded = newInvIds.filter((id: string) => !oldInvIds.includes(id));
+    const invRemoved = oldInvIds.filter((id: string) => !newInvIds.includes(id));
+
+    for (const invId of invAdded) {
+      await updateData(InvoiceModel, { _id: new ObjectId(invId) }, { status: INVOICE_STATUS.DELIVERY_CHALLAN_CREATED }, {});
+    }
+
+    for (const invId of invRemoved) {
+      await updateData(InvoiceModel, { _id: new ObjectId(invId) }, { status: INVOICE_STATUS.INVOICED }, {});
+    }
+    // ------------------------------------
+
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Delivery Challan"), response, {}));
   } catch (error) {
     console.error(error);
@@ -323,7 +360,7 @@ export const getAllDeliveryChallan = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ deliveryChallanNo: { $regex: search, $options: "si" } }];
+      criteria.deliveryChallanNo = { $regex: search, $options: "si" };
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -529,7 +566,7 @@ export const getDeliveryChallanDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    let { customerFilter, statusFilter, search, companyFilter, branchFilter } = req.query;
+    let { customerFilter, statusFilter, search, companyFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -558,8 +595,10 @@ export const getDeliveryChallanDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ deliveryChallanNo: { $regex: search, $options: "si" } }];
+      criteria.deliveryChallanNo = { $regex: search, $options: "si" };
     }
+
+    criteria = handleIncludeId(criteria, includeId);
 
     const options: any = {
       sort: { createdAt: -1 },
@@ -588,3 +627,6 @@ export const getDeliveryChallanDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

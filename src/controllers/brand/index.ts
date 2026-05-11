@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { brandModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { applyDateFilter, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBrandSchema, deleteBrandSchema, editBrandSchema, getBrandSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -177,13 +177,15 @@ export const getBrandById = async (req, res) => {
 export const getBrandDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    let { parentBrandFilter, onlyBrandFilter } = req.query;
+    let { parentBrandFilter, onlyBrandFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (Boolean(onlyBrandFilter) === true) {
       criteria.parentBrandId = null;
     }
+
+    criteria = handleIncludeId(criteria, includeId);
 
     if (parentBrandFilter) criteria.parentBrandId = new ObjectId(parentBrandFilter);
 
@@ -274,3 +276,6 @@ export const getBrandTree = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

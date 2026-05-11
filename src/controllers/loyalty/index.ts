@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, LOYALTY_REDEMPTION_TYPE, LOYALTY_STATUS, LOYALTY_TYPE } from "../../common";
 import { contactModel, loyaltyModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { applyDateFilter, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addLoyaltySchema, deleteLoyaltySchema, editLoyaltySchema, getLoyaltySchema, redeemLoyaltySchema, removeLoyaltySchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -129,7 +129,7 @@ export const getAllLoyalty = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
+      criteria.name = { $regex: search, $options: "si" };
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -336,7 +336,7 @@ export const loyaltyDropDown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { search, customerId, totalAmount, companyFilter } = req.query;
+    const { search, customerId, totalAmount, companyFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -366,6 +366,8 @@ export const loyaltyDropDown = async (req, res) => {
       });
     }
 
+    criteria = handleIncludeId(criteria, includeId);
+
     const response = await loyaltyModel.find(criteria, { name: 1, type: 1, minimumPurchaseAmount: 1 }).sort({ name: 1 }).limit(100);
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Loyalty Dropdown"), response, {}));
@@ -374,3 +376,6 @@ export const loyaltyDropDown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

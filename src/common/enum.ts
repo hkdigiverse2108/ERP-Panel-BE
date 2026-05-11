@@ -432,6 +432,7 @@ export const STOCK_TRANSFER_STATUS = {
   PENDING: "pending",
   APPROVED: "approved",
   PARTIALLY_APPROVED: "partially_approved",
+  DISPATCHED: "dispatched",
   REJECTED: "rejected",
   COMPLETED: "completed",
   CANCELLED: "cancelled",

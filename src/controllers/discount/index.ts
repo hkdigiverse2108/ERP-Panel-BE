@@ -345,7 +345,27 @@ export const getDropdownDiscount = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
-    if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
+    if (activeFilter !== undefined) {
+      criteria.isActive = activeFilter == "true";
+    } else {
+      criteria.isActive = true; // Default to active only
+    }
+
+    const now = new Date();
+    if (startDateTime && endDateTime) {
+      const start = new Date(startDateTime as string);
+      const end = new Date(endDateTime as string);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        criteria.startDateTime = { $lte: end };
+        criteria.$and = criteria.$and || [];
+        criteria.$and.push({ $or: [{ endDateTime: { $gte: start } }, { endDateTime: null }, { hasEndDate: false }] });
+      }
+    } else {
+      // Default: Only show discounts active RIGHT NOW
+      criteria.startDateTime = { $lte: now };
+      criteria.$and = criteria.$and || [];
+      criteria.$and.push({ $or: [{ endDateTime: { $gte: now } }, { endDateTime: null }, { hasEndDate: false }] });
+    }
 
     if (search) {
       criteria.$or = [{ title: { $regex: search, $options: "si" } }, { discountCode: { $regex: search, $options: "si" } }];
@@ -361,19 +381,6 @@ export const getDropdownDiscount = async (req, res) => {
 
     if (appliesTo) {
       criteria.appliesTo = appliesTo;
-    }
-
-    // if (branchFilter) {
-    //   criteria.branchIds = new ObjectId(branchFilter);
-    // }
-
-    if (startDateTime && endDateTime) {
-      const start = new Date(startDateTime as string);
-      const end = new Date(endDateTime as string);
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        criteria.startDateTime = { $lte: end };
-        criteria.$and = [{ $or: [{ endDateTime: { $gte: start } }, { endDateTime: null }, { hasEndDate: false }] }];
-      }
     }
     // avoid most fields
     const projection = {

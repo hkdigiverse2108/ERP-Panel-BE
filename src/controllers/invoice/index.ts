@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS, INVOICE_STATUS, PREFIX_MODULES } from "../../common";
-import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, termsConditionModel, deliveryChallanModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, termsConditionModel, deliveryChallanModel, stockModel } from "../../database";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, checkStockQty } from "../../helper";
 import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -121,24 +121,45 @@ export const addInvoice = async (req, res) => {
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
+
+    // Check stock qty
+    if (!(await checkStockQty(value.items, value.branchId, res))) return;
+
     const response = await createOne(InvoiceModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    // --- Stock Management Logic ---
+    if (response.status !== INVOICE_STATUS.CANCELLED) {
+      for (const item of response.items) {
+        await stockModel.findOneAndUpdate(
+          {
+            productId: item.productId,
+            branchId: response.branchId,
+            isDeleted: false,
+          },
+          { $inc: { qty: -item.qty } },
+        );
+      }
+    }
+    // -------------------------------
+
+
     // Update the sales order status and cascade to estimate if applicable
     if (value.salesOrderIds && value.salesOrderIds.length > 0) {
       for (const soId of value.salesOrderIds) {
-        const so = await getFirstMatch(SalesOrderModel, { _id: soId, isDeleted: false }, {}, {});
+        const so = await getFirstMatch(SalesOrderModel, { _id: new ObjectId(soId), isDeleted: false }, {}, {});
         if (so) {
-          await updateData(SalesOrderModel, { _id: soId }, { status: SALES_ORDER_STATUS.INVOICE_CREATED }, {});
-
-          // If the sales order was created from an estimate, update the estimate status too
-          if (so.selectedEstimateId) {
-            await updateData(EstimateModel, { _id: so.selectedEstimateId }, { status: ESTIMATE_STATUS.INVOICE_CREATED }, {});
-          }
+          await updateData(SalesOrderModel, { _id: new ObjectId(soId) }, { status: SALES_ORDER_STATUS.INVOICE_CREATED }, {});
         }
+      }
+    }
+
+    if (value.deliveryChallanIds && value.deliveryChallanIds.length > 0) {
+      for (const dcId of value.deliveryChallanIds) {
+        await updateData(deliveryChallanModel, { _id: new ObjectId(dcId) }, { status: DELIVERY_CHALLAN_STATUS.INVOICE_CREATED }, {});
       }
     }
 
@@ -265,10 +286,91 @@ export const editInvoice = async (req, res) => {
 
     value.updatedBy = user?._id || null;
 
+
+    // Check stock qty
+    if (value.items) {
+      if (!(await checkStockQty(value.items, isExist.branchId, res, isExist.items))) return;
+    }
+
     const response = await updateData(InvoiceModel, { _id: value?.invoiceId }, value, {});
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Invoice"), {}, {}));
+    }
+
+    // --- Stock Management Logic ---
+    const oldStatus = isExist.status;
+    const newStatus = response.status;
+    const wasActive = oldStatus !== INVOICE_STATUS.CANCELLED;
+    const isActive = newStatus !== INVOICE_STATUS.CANCELLED;
+
+    // 1. Revert the old quantities back to stock if it was active
+    if (wasActive) {
+      for (const item of isExist.items) {
+        await stockModel.findOneAndUpdate(
+          {
+            productId: item.productId,
+            branchId: isExist.branchId,
+            isDeleted: false,
+          },
+          { $inc: { qty: item.qty } },
+        );
+      }
+    }
+
+    // 2. Deduct the new quantities from stock if it is now active
+    if (isActive) {
+      for (const item of response.items) {
+        await stockModel.findOneAndUpdate(
+          {
+            productId: item.productId,
+            branchId: response.branchId,
+            isDeleted: false,
+          },
+          { $inc: { qty: -item.qty } },
+        );
+      }
+    }
+    // -------------------------------
+
+
+    // Sync Sales Order statuses
+    const oldSoIds = isExist.salesOrderIds?.map((id: any) => id.toString()) || [];
+    const newSoIds = value.salesOrderIds?.map((id: any) => id.toString()) || oldSoIds;
+
+    const soAdded = newSoIds.filter((id: string) => !oldSoIds.includes(id));
+    const soRemoved = oldSoIds.filter((id: string) => !newSoIds.includes(id));
+
+    for (const soId of soAdded) {
+      const so = await getFirstMatch(SalesOrderModel, { _id: new ObjectId(soId), isDeleted: false }, {}, {});
+      if (so) {
+        await updateData(SalesOrderModel, { _id: new ObjectId(soId) }, { status: SALES_ORDER_STATUS.INVOICE_CREATED }, {});
+        if (so.selectedEstimateId) {
+          await updateData(EstimateModel, { _id: so.selectedEstimateId }, { status: ESTIMATE_STATUS.INVOICE_CREATED }, {});
+        }
+      }
+    }
+
+    for (const soId of soRemoved) {
+      const so = await getFirstMatch(SalesOrderModel, { _id: new ObjectId(soId), isDeleted: false }, {}, {});
+      if (so) {
+        await updateData(SalesOrderModel, { _id: new ObjectId(soId) }, { status: SALES_ORDER_STATUS.PENDING }, {});
+      }
+    }
+
+    // Sync Delivery Challan statuses
+    const oldDcIds = isExist.deliveryChallanIds?.map((id: any) => id.toString()) || [];
+    const newDcIds = value.deliveryChallanIds?.map((id: any) => id.toString()) || oldDcIds;
+
+    const dcAdded = newDcIds.filter((id: string) => !oldDcIds.includes(id));
+    const dcRemoved = oldDcIds.filter((id: string) => !newDcIds.includes(id));
+
+    for (const dcId of dcAdded) {
+      await updateData(deliveryChallanModel, { _id: new ObjectId(dcId) }, { status: DELIVERY_CHALLAN_STATUS.INVOICE_CREATED }, {});
+    }
+
+    for (const dcId of dcRemoved) {
+      await updateData(deliveryChallanModel, { _id: new ObjectId(dcId) }, { status: DELIVERY_CHALLAN_STATUS.DELIVERED }, {});
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Invoice"), response, {}));
@@ -312,6 +414,23 @@ export const deleteInvoice = async (req, res) => {
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Invoice"), {}, {}));
     }
+
+    // --- Stock Management Logic ---
+    // Revert stock if the invoice was not cancelled
+    if (invoice.status !== INVOICE_STATUS.CANCELLED) {
+      for (const item of invoice.items) {
+        await stockModel.findOneAndUpdate(
+          {
+            productId: item.productId,
+            branchId: invoice.branchId,
+            isDeleted: false,
+          },
+          { $inc: { qty: item.qty } },
+        );
+      }
+    }
+    // -------------------------------
+
 
     // Revert sales order and estimate statuses
     if (invoice.salesOrderIds && invoice.salesOrderIds.length > 0) {
@@ -609,7 +728,7 @@ export const getInvoiceDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { customerId, status, paymentStatus, search, branchFilter, companyFilter } = req.query; // Optional filters
+    const { customerId, status, paymentStatus, search, branchFilter, companyFilter, includeId } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false, isActive: true };
     if (companyId) {
@@ -635,8 +754,8 @@ export const getInvoiceDropdown = async (req, res) => {
     if (status) {
       criteria.status = status;
     } else {
-      // Default: only show active invoices
-      criteria.status = "active";
+      // Default: show invoiced invoices
+      criteria.status = INVOICE_STATUS.INVOICED;
     }
 
     if (paymentStatus) {
@@ -644,8 +763,10 @@ export const getInvoiceDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ invoiceNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }];
+      criteria.invoiceNo = { $regex: search, $options: "si" };
     }
+
+    criteria = handleIncludeId(criteria, includeId);
 
     const options: any = {
       sort: { invoiceDate: -1 },
@@ -674,3 +795,6 @@ export const getInvoiceDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

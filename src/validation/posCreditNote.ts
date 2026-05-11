@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { baseApiSchema, objectId } from "./common";
+import { baseApiSchema, includeIdSchema, objectId } from "./common";
 import { REDEEM_CREDIT_TYPE } from "../common";
 
 export const deletePosCreditNoteSchema = Joi.object({
@@ -27,10 +27,12 @@ export const refundPosCreditSchema = Joi.object({
   refundDescription: Joi.string().optional().allow("", null),
 });
 
-export const getCreditNoteDropdownSchema = Joi.object({
-  customerFilter: objectId().optional().allow(null, ""),
-  typeFilter: Joi.string()
-    .required()
-    .valid(...Object.values(REDEEM_CREDIT_TYPE)),
-  companyFilter: objectId().optional().allow(null, ""),
-});
+// export const getCreditNoteDropdownSchema = Joi.object({
+//   customerFilter: objectId().optional().allow(null, ""),
+//   typeFilter: Joi.string()
+//     .required()
+//     .valid(...Object.values(REDEEM_CREDIT_TYPE)),
+//   companyFilter: objectId().optional().allow(null, ""),
+//   includeId: includeIdSchema,
+// });
+

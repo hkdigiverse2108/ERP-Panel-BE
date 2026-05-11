@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { contactModel, couponModel, PosOrderModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCouponSchema, verifyCouponSchema, deleteCouponSchema, editCouponSchema, getCouponSchema, removeCouponSchema } from "../../validation";
 import { COUPON_DISCOUNT_TYPE, COUPON_STATUS } from "../../common";
 
@@ -372,9 +372,23 @@ export const getCouponDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { expiredFilter, limitReachedFilter, search, companyFilter } = req.query;
+    const { expiredFilter, limitReachedFilter, search, companyFilter, includeId } = req.query;
 
-    let criteria: any = { isDeleted: false, status: COUPON_STATUS.ACTIVE, isActive: true };
+    const now = new Date();
+    let criteria: any = {
+      isDeleted: false,
+      status: COUPON_STATUS.ACTIVE,
+      isActive: true,
+      // Only show coupons that have started
+      $or: [
+        { startDate: { $lte: now } },
+        { startDate: null }
+      ]
+    };
+
+    // Ensure they haven't expired via endDate
+    criteria.$and = criteria.$and || [];
+    criteria.$and.push({ $or: [{ endDate: { $gte: now } }, { endDate: null }] });
 
     if (companyId) {
       criteria.companyId = companyId;
@@ -384,40 +398,31 @@ export const getCouponDropdown = async (req, res) => {
       criteria.companyId = companyFilter;
     }
 
-
     if (search) {
       criteria.name = { $regex: search, $options: "si" };
     }
 
+    criteria = handleIncludeId(criteria, includeId);
+
     const coupons = await couponModel.find(criteria).select("name couponPrice redeemValue usageLimit expiryDays usedCount startDate endDate createdAt").sort({ createdAt: -1 }).lean();
 
-    const now = new Date();
-    let response = coupons;
+    // Secondary filter for complex logic (usageLimit and expiryDays)
+    const finalResponse = coupons.filter((coupon) => {
+      // If this is the includeId, bypass other filters
+      if (includeId && coupon._id.toString() === includeId.toString()) return true;
 
-    if (expiredFilter === "true") {
-      response = response.filter((coupon) => {
-        if (coupon.startDate && now < new Date(coupon.startDate)) return false;
+      // Check Usage Limit
+      if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) return false;
 
-        if (coupon.endDate && now > new Date(coupon.endDate)) return false;
+      // Check Expiry Days (from createdAt)
+      if (coupon.expiryDays) {
+        const expiryDate = new Date(coupon.createdAt);
+        expiryDate.setDate(expiryDate.getDate() + coupon.expiryDays);
+        if (now > expiryDate) return false;
+      }
 
-        if (coupon.expiryDays) {
-          const expiryDate = new Date(coupon.createdAt);
-          expiryDate.setDate(expiryDate.getDate() + coupon.expiryDays);
-          if (now > expiryDate) return false;
-        }
-
-        return true;
-      });
-    }
-
-    if (limitReachedFilter === "true") {
-      response = response.filter((coupon) => {
-        if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) return false;
-        return true;
-      });
-    }
-
-    const finalResponse = response.map((coupon) => ({
+      return true;
+    }).map((coupon) => ({
       _id: coupon._id,
       name: coupon.name,
       couponPrice: coupon.couponPrice,
@@ -429,3 +434,6 @@ export const getCouponDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

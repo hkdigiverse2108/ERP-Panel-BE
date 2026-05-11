@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, productModel, taxModel, branchModel, PosOrderModel, additionalChargeModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel, posCreditNoteModel, discountModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkStockQty, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkStockQty, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, releasePosOrderSchema, getCustomerPosDetailsSchema } from "../../validation";
 import { applyCoupon, applyLoyalty, applyPosDiscount, applyRedeemCredit, revertCoupon, revertDiscount, revertLoyalty, revertRedeemCredit } from "./helper";
 
@@ -505,7 +505,7 @@ export const editPosOrder = async (req, res) => {
               paymentMode: payment.method,
               voucherType: POS_VOUCHER_TYPE.SALES,
               paymentType: POS_PAYMENT_TYPE.AGAINST_BILL,
-            paymentNo: await getAndIncrementPrefix({
+              paymentNo: await getAndIncrementPrefix({
                 branchId: response.branchId,
                 companyId: response.companyId,
                 prefixType: PREFIX_MODULES.RECEIPT,
@@ -672,7 +672,7 @@ export const posOrderDropDown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { customerFilter, branchFilter, companyFilter, duePaymentFilter, search, returnableFilter } = req.query;
+    const { customerFilter, branchFilter, companyFilter, duePaymentFilter, search, returnableFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -681,30 +681,31 @@ export const posOrderDropDown = async (req, res) => {
     }
 
     if (companyFilter) {
-      criteria.companyId = new ObjectId(companyFilter);
+      criteria.companyId = new ObjectId(companyFilter as string);
     }
     if (branchId) {
       criteria.branchId = branchId;
     }
     if (branchFilter) {
-      criteria.branchId = new ObjectId(branchFilter);
+      criteria.branchId = new ObjectId(branchFilter as string);
     }
     if (customerFilter) {
-      criteria.customerId = new ObjectId(customerFilter);
-    } 
-
+      criteria.customerId = new ObjectId(customerFilter as string);
+    }
 
     if (duePaymentFilter === true || duePaymentFilter === "true") {
       criteria.dueAmount = { $gt: 0 };
     }
 
     if (search) {
-      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }];
+      criteria.orderNo = { $regex: search, $options: "si" };
     }
 
     if (returnableFilter === true || returnableFilter === "true") {
       criteria.status = POS_ORDER_STATUS.COMPLETED;
     }
+
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await PosOrderModel.find(criteria, {
       orderNo: 1,
@@ -1267,3 +1268,6 @@ export const releasePosOrder = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

@@ -1,7 +1,7 @@
-import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
-import { contactModel, supplierBillModel, productModel, termsConditionModel, additionalChargeModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
-// import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES, SUPPLIER_PAYMENT_STATUS } from "../../common";
+import { contactModel, supplierBillModel, productModel, termsConditionModel, additionalChargeModel, stockModel } from "../../database";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+// import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addSupplierBillSchema, deleteSupplierBillSchema, editSupplierBillSchema, getSupplierBillSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -87,10 +87,46 @@ export const addSupplierBill = async (req, res) => {
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
+    // Set initial balance amount and status
+    const totalAmount = value.summary?.netAmount || value.totalAmount || 0;
+    value.balanceAmount = totalAmount;
+    value.paymentStatus = SUPPLIER_PAYMENT_STATUS.UNPAID;
+
     const response = await createOne(supplierBillModel, value);
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+    }
+
+    // Direct Stock Update
+    if (value?.productDetails && value.productDetails.length > 0) {
+      for (const item of value.productDetails) {
+        // Update/Create stock record
+        const existingStock = await getFirstMatch(stockModel, { productId: item.productId, branchId: value.branchId, isDeleted: false }, {}, {});
+        if (existingStock) {
+          await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: item.qty }, purchasePrice: item.unitCost, mrp: item.mrp }, {});
+        } else {
+          await createOne(stockModel, {
+            productId: item.productId,
+            branchId: value.branchId,
+            companyId: value.companyId,
+            qty: item.qty,
+            purchasePrice: item.unitCost,
+            mrp: item.mrp,
+            sellingPrice: item.sellingPrice,
+            createdBy: user?._id || null,
+          });
+        }
+        // Update latest purchase price in product master
+        await updateData(productModel, { _id: item.productId }, { purchasePrice: item.unitCost }, {});
+      }
+    }
+
+    // Handle return items in bill (decrement stock)
+    if (value?.returnProductDetails?.item && value.returnProductDetails.item.length > 0) {
+      for (const item of value.returnProductDetails.item) {
+        await updateData(stockModel, { productId: item.productId, branchId: value.branchId, isDeleted: false }, { $inc: { qty: -item.qty } }, {});
+      }
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Supplier Bill"), response, {}));
@@ -161,10 +197,65 @@ export const editSupplierBill = async (req, res) => {
 
     value.updatedBy = user?._id || null;
 
+    // Recalculate balance and payment status if amounts are present
+    const totalAmount = value.summary?.netAmount || value.totalAmount || isExist.summary?.netAmount || isExist.totalAmount || 0;
+    const paidAmount = isExist.paidAmount || 0;
+    value.balanceAmount = Math.max(0, totalAmount - paidAmount);
+
+    if (value.balanceAmount <= 0) {
+      value.paymentStatus = SUPPLIER_PAYMENT_STATUS.PAID;
+    } else if (paidAmount > 0) {
+      value.paymentStatus = SUPPLIER_PAYMENT_STATUS.PARTIAL;
+    } else {
+      value.paymentStatus = SUPPLIER_PAYMENT_STATUS.UNPAID;
+    }
+
     const response = await updateData(supplierBillModel, { _id: value?.supplierBillId }, value, {});
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Supplier Bill"), {}, {}));
+    }
+
+    // Direct Stock Update for Edit
+    // 1. Revert Old Stock
+    if (isExist.productDetails && isExist.productDetails.length > 0) {
+      for (const item of isExist.productDetails) {
+        await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: -item.qty } }, {});
+      }
+    }
+    if (isExist.returnProductDetails?.item && isExist.returnProductDetails.item.length > 0) {
+      for (const item of isExist.returnProductDetails.item) {
+        await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: item.qty } }, {});
+      }
+    }
+
+    // 2. Apply New Stock
+    const branchId = value.branchId || isExist.branchId;
+    const companyId = value.companyId || isExist.companyId;
+    if (value.productDetails && value.productDetails.length > 0) {
+      for (const item of value.productDetails) {
+        const existingStock = await getFirstMatch(stockModel, { productId: item.productId, branchId: branchId, isDeleted: false }, {}, {});
+        if (existingStock) {
+          await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: item.qty }, purchasePrice: item.unitCost, mrp: item.mrp }, {});
+        } else {
+          await createOne(stockModel, {
+            productId: item.productId,
+            branchId: branchId,
+            companyId: companyId,
+            qty: item.qty,
+            purchasePrice: item.unitCost,
+            mrp: item.mrp,
+            sellingPrice: item.sellingPrice,
+            createdBy: user?._id || null,
+          });
+        }
+        await updateData(productModel, { _id: item.productId }, { purchasePrice: item.unitCost }, {});
+      }
+    }
+    if (value.returnProductDetails?.item && value.returnProductDetails.item.length > 0) {
+      for (const item of value.returnProductDetails.item) {
+        await updateData(stockModel, { productId: item.productId, branchId: branchId, isDeleted: false }, { $inc: { qty: -item.qty } }, {});
+      }
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Supplier Bill"), response, {}));
@@ -184,7 +275,22 @@ export const deleteSupplierBill = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!(await checkIdExist(supplierBillModel, value?.id, "Supplier Bill", res))) return;
+    const isExist = await getFirstMatch(supplierBillModel, { _id: value?.id, isDeleted: false }, {}, {});
+    if (!isExist) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Supplier Bill"), {}, {}));
+    }
+
+    // Revert Stock before deletion
+    if (isExist.productDetails && isExist.productDetails.length > 0) {
+      for (const item of isExist.productDetails) {
+        await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: -item.qty } }, {});
+      }
+    }
+    if (isExist.returnProductDetails?.item && isExist.returnProductDetails.item.length > 0) {
+      for (const item of isExist.returnProductDetails.item) {
+        await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: item.qty } }, {});
+      }
+    }
 
     const payload = {
       isDeleted: true,
@@ -336,6 +442,7 @@ export const getAllSupplierBill = async (req, res) => {
           }
         }
       }
+      sbObj.netAmount = sbObj.summary?.netAmount || sbObj.totalAmount || 0;
       return sbObj;
     });
 
@@ -487,7 +594,7 @@ export const getSupplierBillDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { supplierId, status, paymentStatus, search, companyFilter, branchFilter } = req.query; // Optional filters
+    const { supplierId, status, paymentStatus, search, companyFilter, branchFilter, includeId } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -518,12 +625,20 @@ export const getSupplierBillDropdown = async (req, res) => {
     }
 
     if (paymentStatus) {
-      criteria.paymentStatus = paymentStatus;
+      if (Array.isArray(paymentStatus)) {
+        criteria.paymentStatus = { $in: paymentStatus };
+      } else if (typeof paymentStatus === "string" && paymentStatus.includes(",")) {
+        criteria.paymentStatus = { $in: paymentStatus.split(",") };
+      } else {
+        criteria.paymentStatus = paymentStatus;
+      }
     }
 
     if (search) {
       criteria.$or = [{ supplierBillNo: { $regex: search, $options: "si" } }, { referenceBillNo: { $regex: search, $options: "si" } }];
     }
+
+    criteria = handleIncludeId(criteria, includeId);
 
     const options: any = {
       sort: { supplierBillDate: -1 },
@@ -541,6 +656,7 @@ export const getSupplierBillDropdown = async (req, res) => {
         supplierBillNo: 1,
         supplierBillDate: 1,
         "summary.netAmount": 1,
+        totalAmount: 1,
         balanceAmount: 1,
         paymentStatus: 1,
         branchId: 1,
@@ -550,10 +666,10 @@ export const getSupplierBillDropdown = async (req, res) => {
 
     const dropdownData = response.map((item) => ({
       _id: item._id,
-      name: item.supplierBillNo,
+      name: `${item.supplierBillNo} (${item.balanceAmount})`,
       supplierBillNo: item.supplierBillNo,
       supplierBillDate: item.supplierBillDate,
-      netAmount: item.summary?.netAmount || 0,
+      netAmount: item.summary?.netAmount || item.totalAmount || 0,
       balanceAmount: item.balanceAmount,
       paymentStatus: item.paymentStatus,
     }));
@@ -564,3 +680,6 @@ export const getSupplierBillDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

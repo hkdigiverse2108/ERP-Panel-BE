@@ -1,7 +1,8 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
 import { companyModel, roleModel, userModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addRoleSchema, deleteRoleSchema, editRoleSchema, getRoleSchema } from "../../validation";
+const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addRole = async (req, res) => {
   reqInfo(req);
@@ -158,7 +159,7 @@ export const getAllRole = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
+      criteria.name = { $regex: search, $options: "si" };
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -233,7 +234,7 @@ export const getRoleDropdown = async (req, res) => {
 
     let companyId = user?.companyId?._id;
 
-    const { companyFilter } = req.query;
+    const { companyFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -247,6 +248,8 @@ export const getRoleDropdown = async (req, res) => {
 
     if (!companyFilter && !companyId) criteria.companyId = null;
 
+    criteria = handleIncludeId(criteria, includeId);
+
     const response = await getDataWithSorting(roleModel, criteria, { _id: 1, name: 1 }, { sort: { name: 1 } });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), response, {}));
@@ -255,3 +258,6 @@ export const getRoleDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

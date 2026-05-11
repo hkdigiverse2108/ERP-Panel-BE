@@ -66,6 +66,11 @@ export const confirmReceiptStockTransferSchema = Joi.object().keys({
   ...baseApiSchema,
 });
 
+export const dispatchStockTransferSchema = Joi.object().keys({
+  stockTransferId: objectId().required(),
+  ...baseApiSchema,
+});
+
 export const rejectStockTransferSchema = Joi.object().keys({
   stockTransferId: objectId().required(),
   approvalNote: Joi.string().allow("", null).optional(),

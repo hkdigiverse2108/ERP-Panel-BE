@@ -1,7 +1,8 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { taxModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, checkCompany } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addTaxSchema, deleteTaxSchema, editTaxSchema, getTaxSchema } from "../../validation";
+const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addTax = async (req, res) => {
   reqInfo(req);
@@ -142,7 +143,7 @@ export const getAllTax = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "si" } }];
+      criteria.name = { $regex: search, $options: "si" };
     }
 
     const options: any = {
@@ -215,7 +216,7 @@ export const getTaxDropdown = async (req, res) => {
   try {
     const { user } = req.headers;
     const companyId = user?.companyId?._id;
-    const { companyFilter, search } = req.query;
+    const { companyFilter, search, includeId } = req.query;
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (user?.userType !== USER_TYPES.SUPER_ADMIN) {
@@ -223,6 +224,8 @@ export const getTaxDropdown = async (req, res) => {
     }
 
     if (companyFilter) criteria.companyId = companyFilter;
+
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await getDataWithSorting(
       taxModel,
@@ -246,3 +249,6 @@ export const getTaxDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

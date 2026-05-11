@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { bankModel, branchModel, companyModel, locationModel, PrefixModel } from "../../database";
 import { cloneDefaultPaymentTermsToCompany } from "../paymentTerm/helper";
-import { checkIdExist, checkLocationExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, clonePrefixesToBranch } from "../../helper";
+import { applyDateFilter, checkIdExist, checkLocationExist, clonePrefixesToBranch, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addCompanySchema, deleteCompanySchema, editCompanySchema, getCompanySchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -292,13 +292,15 @@ export const getCompanyById = async (req, res) => {
 export const getCompanyDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    const { search } = req.query;
+    const { search, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { displayName: { $regex: search, $options: "si" } }, { contactName: { $regex: search, $options: "si" } }];
     }
+
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await getDataWithSorting(
       companyModel,
@@ -321,3 +323,6 @@ export const getCompanyDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

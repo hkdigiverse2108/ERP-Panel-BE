@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, purchaseOrderModel, productModel, companyModel, termsConditionModel, uomModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPurchaseOrderSchema, deletePurchaseOrderSchema, editPurchaseOrderSchema, getPurchaseOrderSchema } from "../../validation/purchaseOrder";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -199,7 +199,7 @@ export const getAllPurchaseOrder = async (req, res) => {
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
     if (search) {
-      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }];
+      criteria.orderNo = { $regex: search, $options: "si" };
     }
 
     if (statusFilter) {
@@ -394,7 +394,7 @@ export const getPurchaseOrderDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    let { supplierId, supplierFilter, status, statusFilter, search, companyFilter, branchFilter } = req.query;
+    const { supplierId, supplierFilter, status, statusFilter, search, companyFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false };
     if (companyId) {
@@ -428,8 +428,10 @@ export const getPurchaseOrderDropdown = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ orderNo: { $regex: search, $options: "si" } }];
+      criteria.orderNo = { $regex: search, $options: "si" };
     }
+
+    criteria = handleIncludeId(criteria, includeId);
 
     const options: any = {
       sort: { createdAt: -1 },
@@ -456,3 +458,6 @@ export const getPurchaseOrderDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

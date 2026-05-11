@@ -7,3 +7,5 @@ test.html
 *.bat
 .env
 public
+.omni
+omnitype.txt

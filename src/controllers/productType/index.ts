@@ -1,7 +1,8 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { productTypeModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addProductTypeSchema, deleteProductTypeSchema, editProductTypeSchema, getProductTypeSchema } from "../../validation";
+const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addProductType = async (req, res) => {
   reqInfo(req);
@@ -152,7 +153,10 @@ export const getAllProductType = async (req, res) => {
 export const getProductTypeDropdown = async (req, res) => {
   reqInfo(req);
   try {
+    const { includeId } = req.query;
     let criteria: any = { isDeleted: false, isActive: true };
+
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await getDataWithSorting(
       productTypeModel,
@@ -196,3 +200,6 @@ export const getProductTypeById = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

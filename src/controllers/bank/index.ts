@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { bankModel, branchModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBankSchema, deleteBankSchema, editBankSchema, getBankSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -187,7 +187,7 @@ export const getBankDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { search, startDate, endDate, companyFilter, branchFilter } = req.query;
+    const { search, startDate, endDate, companyFilter, branchFilter, includeId } = req.query;
 
     let companyId = user?.companyId?._id;
     let branchId = user?.branchId?._id;
@@ -205,6 +205,8 @@ export const getBankDropdown = async (req, res) => {
     if (branchFilter) {
       criteria.branchIds = { $in: [branchFilter] };
     }
+
+    criteria = handleIncludeId(criteria, includeId);
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { accountHolderName: { $regex: search, $options: "si" } }, { bankAccountNumber: { $regex: search, $options: "si" } }];
@@ -238,3 +240,6 @@ export const getBankDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+

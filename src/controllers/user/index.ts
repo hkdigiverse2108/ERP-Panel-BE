@@ -1,6 +1,6 @@
 import { apiResponse, generateHash, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
 import { branchModel, companyModel, locationModel, moduleModel, permissionModel, roleModel, userModel } from "../../database";
-import { checkCompany, checkIdExist, checkLocationExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkLocationExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addUserSchema, deleteUserSchema, editUserSchema, getUserSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -232,7 +232,7 @@ export const getAllUser = async (req, res) => {
     }
 
     if (search) {
-      criteria.$or = [{ fullName: { $regex: search, $options: "si" } }];
+      criteria.fullName = { $regex: search, $options: "si" };
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
@@ -347,16 +347,16 @@ export const getUserDropDown = async (req, res) => {
     let { user } = req?.headers;
     let companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    let { typeFilter, companyFilter, roleFilter, branchFilter } = req.query;
+    let { typeFilter, companyFilter, roleFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (companyId) {
-      criteria.companyId = new ObjectId(companyId);
+      criteria.companyId = new ObjectId(companyId as string);
     }
 
     if (companyFilter) {
-      criteria.companyId = new ObjectId(companyFilter);
+      criteria.companyId = new ObjectId(companyFilter as string);
     }
 
     if (branchId) {
@@ -372,8 +372,10 @@ export const getUserDropDown = async (req, res) => {
     }
 
     if (roleFilter) {
-      criteria.role = new ObjectId(roleFilter);
+      criteria.role = new ObjectId(roleFilter as string);
     }
+
+    criteria = handleIncludeId(criteria, includeId);
 
     const response = await getData(userModel, criteria, { _id: 1, fullName: 1, userType: 1, role: 1, branchId: 1 }, { sort: { fullName: 1 }, populate: [{ path: "role", select: "name" }, { path: "branchId", select: "name" }] });
 
@@ -383,3 +385,6 @@ export const getUserDropDown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+
+
