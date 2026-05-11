@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS, INVOICE_STATUS, PREFIX_MODULES } from "../../common";
-import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, termsConditionModel, deliveryChallanModel , stockModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData , checkStockQty } from "../../helper";
+import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, termsConditionModel, deliveryChallanModel, stockModel } from "../../database";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, checkStockQty } from "../../helper";
 import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -121,7 +121,7 @@ export const addInvoice = async (req, res) => {
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
-    
+
     // Check stock qty
     if (!(await checkStockQty(value.items, value.branchId, res))) return;
 
@@ -150,14 +150,9 @@ export const addInvoice = async (req, res) => {
     // Update the sales order status and cascade to estimate if applicable
     if (value.salesOrderIds && value.salesOrderIds.length > 0) {
       for (const soId of value.salesOrderIds) {
-        const so = await getFirstMatch(SalesOrderModel, { _id: soId, isDeleted: false }, {}, {});
+        const so = await getFirstMatch(SalesOrderModel, { _id: new ObjectId(soId), isDeleted: false }, {}, {});
         if (so) {
-          await updateData(SalesOrderModel, { _id: soId }, { status: SALES_ORDER_STATUS.INVOICE_CREATED }, {});
-
-          // If the sales order was created from an estimate, update the estimate status too
-          if (so.selectedEstimateId) {
-            await updateData(EstimateModel, { _id: so.selectedEstimateId }, { status: ESTIMATE_STATUS.INVOICE_CREATED }, {});
-          }
+          await updateData(SalesOrderModel, { _id: new ObjectId(soId) }, { status: SALES_ORDER_STATUS.INVOICE_CREATED }, {});
         }
       }
     }
@@ -291,7 +286,7 @@ export const editInvoice = async (req, res) => {
 
     value.updatedBy = user?._id || null;
 
-    
+
     // Check stock qty
     if (value.items) {
       if (!(await checkStockQty(value.items, isExist.branchId, res, isExist.items))) return;
