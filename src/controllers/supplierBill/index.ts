@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES, SUPPLIER_PAYMENT_STATUS } from "../../common";
-import { contactModel, supplierBillModel, productModel, termsConditionModel, additionalChargeModel } from "../../database";
+import { contactModel, supplierBillModel, productModel, termsConditionModel, additionalChargeModel, stockModel } from "../../database";
 import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 // import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addSupplierBillSchema, deleteSupplierBillSchema, editSupplierBillSchema, getSupplierBillSchema } from "../../validation";
@@ -98,6 +98,37 @@ export const addSupplierBill = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    // Direct Stock Update
+    if (value?.productDetails && value.productDetails.length > 0) {
+      for (const item of value.productDetails) {
+        // Update/Create stock record
+        const existingStock = await getFirstMatch(stockModel, { productId: item.productId, branchId: value.branchId, isDeleted: false }, {}, {});
+        if (existingStock) {
+          await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: item.qty }, purchasePrice: item.unitCost, mrp: item.mrp }, {});
+        } else {
+          await createOne(stockModel, {
+            productId: item.productId,
+            branchId: value.branchId,
+            companyId: value.companyId,
+            qty: item.qty,
+            purchasePrice: item.unitCost,
+            mrp: item.mrp,
+            sellingPrice: item.sellingPrice,
+            createdBy: user?._id || null,
+          });
+        }
+        // Update latest purchase price in product master
+        await updateData(productModel, { _id: item.productId }, { purchasePrice: item.unitCost }, {});
+      }
+    }
+
+    // Handle return items in bill (decrement stock)
+    if (value?.returnProductDetails?.item && value.returnProductDetails.item.length > 0) {
+      for (const item of value.returnProductDetails.item) {
+        await updateData(stockModel, { productId: item.productId, branchId: value.branchId, isDeleted: false }, { $inc: { qty: -item.qty } }, {});
+      }
+    }
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Supplier Bill"), response, {}));
   } catch (error) {
     console.error(error);
@@ -185,6 +216,48 @@ export const editSupplierBill = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Supplier Bill"), {}, {}));
     }
 
+    // Direct Stock Update for Edit
+    // 1. Revert Old Stock
+    if (isExist.productDetails && isExist.productDetails.length > 0) {
+      for (const item of isExist.productDetails) {
+        await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: -item.qty } }, {});
+      }
+    }
+    if (isExist.returnProductDetails?.item && isExist.returnProductDetails.item.length > 0) {
+      for (const item of isExist.returnProductDetails.item) {
+        await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: item.qty } }, {});
+      }
+    }
+
+    // 2. Apply New Stock
+    const branchId = value.branchId || isExist.branchId;
+    const companyId = value.companyId || isExist.companyId;
+    if (value.productDetails && value.productDetails.length > 0) {
+      for (const item of value.productDetails) {
+        const existingStock = await getFirstMatch(stockModel, { productId: item.productId, branchId: branchId, isDeleted: false }, {}, {});
+        if (existingStock) {
+          await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: item.qty }, purchasePrice: item.unitCost, mrp: item.mrp }, {});
+        } else {
+          await createOne(stockModel, {
+            productId: item.productId,
+            branchId: branchId,
+            companyId: companyId,
+            qty: item.qty,
+            purchasePrice: item.unitCost,
+            mrp: item.mrp,
+            sellingPrice: item.sellingPrice,
+            createdBy: user?._id || null,
+          });
+        }
+        await updateData(productModel, { _id: item.productId }, { purchasePrice: item.unitCost }, {});
+      }
+    }
+    if (value.returnProductDetails?.item && value.returnProductDetails.item.length > 0) {
+      for (const item of value.returnProductDetails.item) {
+        await updateData(stockModel, { productId: item.productId, branchId: branchId, isDeleted: false }, { $inc: { qty: -item.qty } }, {});
+      }
+    }
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Supplier Bill"), response, {}));
   } catch (error) {
     console.error(error);
@@ -202,7 +275,22 @@ export const deleteSupplierBill = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!(await checkIdExist(supplierBillModel, value?.id, "Supplier Bill", res))) return;
+    const isExist = await getFirstMatch(supplierBillModel, { _id: value?.id, isDeleted: false }, {}, {});
+    if (!isExist) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Supplier Bill"), {}, {}));
+    }
+
+    // Revert Stock before deletion
+    if (isExist.productDetails && isExist.productDetails.length > 0) {
+      for (const item of isExist.productDetails) {
+        await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: -item.qty } }, {});
+      }
+    }
+    if (isExist.returnProductDetails?.item && isExist.returnProductDetails.item.length > 0) {
+      for (const item of isExist.returnProductDetails.item) {
+        await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: item.qty } }, {});
+      }
+    }
 
     const payload = {
       isDeleted: true,
