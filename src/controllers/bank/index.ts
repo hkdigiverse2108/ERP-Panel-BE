@@ -187,7 +187,7 @@ export const getBankDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { search, startDate, endDate, companyFilter, branchFilter } = req.query;
+    const { search, startDate, endDate, companyFilter, branchFilter, includeId } = req.query;
 
     let companyId = user?.companyId?._id;
     let branchId = user?.branchId?._id;
@@ -204,6 +204,12 @@ export const getBankDropdown = async (req, res) => {
 
     if (branchFilter) {
       criteria.branchIds = { $in: [branchFilter] };
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     if (search) {

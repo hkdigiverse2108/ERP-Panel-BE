@@ -464,7 +464,7 @@ export const getEstimateDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    let { search, customerId, branchFilter, companyFilter } = req.query;
+    let { search, customerId, branchFilter, companyFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, status: "pending" }; // Usually dropdowns only show pending estimates
     if (companyId) {
@@ -489,6 +489,12 @@ export const getEstimateDropdown = async (req, res) => {
 
     if (search) {
       criteria.$or = [{ estimateNo: { $regex: search, $options: "si" } }];
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const options = {

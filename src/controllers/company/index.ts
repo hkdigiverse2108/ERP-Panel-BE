@@ -292,12 +292,18 @@ export const getCompanyById = async (req, res) => {
 export const getCompanyDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    const { search } = req.query;
+    const { search, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (search) {
       criteria.$or = [{ name: { $regex: search, $options: "si" } }, { displayName: { $regex: search, $options: "si" } }, { contactName: { $regex: search, $options: "si" } }];
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const response = await getDataWithSorting(

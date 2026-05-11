@@ -609,7 +609,7 @@ export const getInvoiceDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { customerId, status, paymentStatus, search, branchFilter, companyFilter } = req.query; // Optional filters
+    const { customerId, status, paymentStatus, search, branchFilter, companyFilter, includeId } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false, isActive: true };
     if (companyId) {
@@ -645,6 +645,12 @@ export const getInvoiceDropdown = async (req, res) => {
 
     if (search) {
       criteria.$or = [{ invoiceNo: { $regex: search, $options: "si" } }, { customerName: { $regex: search, $options: "si" } }];
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const options: any = {

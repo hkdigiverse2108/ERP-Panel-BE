@@ -187,7 +187,7 @@ export const getAdditionalChargeById = async (req, res) => {
 export const getAdditionalChargeDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    let { typeFilter, companyFilter, search } = req.query;
+    let { typeFilter, companyFilter, search, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -197,6 +197,12 @@ export const getAdditionalChargeDropdown = async (req, res) => {
 
     if (typeFilter) {
       criteria.type = typeFilter;
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const response = await getDataWithSorting(

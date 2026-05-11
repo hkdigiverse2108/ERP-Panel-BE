@@ -192,11 +192,17 @@ export const getCategoryDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    let { parentCategoryFilter, onlyCategoryFilter, companyFilter } = req.query;
+    let { parentCategoryFilter, onlyCategoryFilter, companyFilter, includeId } = req.query;
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (Boolean(onlyCategoryFilter) === true) {
       criteria.parentCategoryId = null;
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     if (parentCategoryFilter) criteria.parentCategoryId = new ObjectId(parentCategoryFilter);

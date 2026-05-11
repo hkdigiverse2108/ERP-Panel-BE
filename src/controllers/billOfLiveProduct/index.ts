@@ -383,7 +383,7 @@ export const getBillOfLiveProductDropdown = async (req, res) => {
     let { user } = req?.headers,
       companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { companyFilter, branchFilter } = req.query;
+    const { companyFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -392,6 +392,12 @@ export const getBillOfLiveProductDropdown = async (req, res) => {
 
     if (branchId) criteria.branchId = branchId;
     if (branchFilter) criteria.branchId = branchFilter;
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
+    }
 
     const response = await getDataWithSorting(
       billOfLiveProductModel,

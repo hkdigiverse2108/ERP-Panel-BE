@@ -336,7 +336,7 @@ export const loyaltyDropDown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { search, customerId, totalAmount, companyFilter } = req.query;
+    const { search, customerId, totalAmount, companyFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -364,6 +364,12 @@ export const loyaltyDropDown = async (req, res) => {
       criteria.$and.push({
         $or: [{ singleTimeUse: false }, { "customerIds.id": { $ne: new ObjectId(customerId) } }],
       });
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const response = await loyaltyModel.find(criteria, { name: 1, type: 1, minimumPurchaseAmount: 1 }).sort({ name: 1 }).limit(100);

@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS } from "../../common";
 import { termsConditionModel } from "../../database";
 import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addTermsConditionSchema, deleteTermsConditionSchema, editTermsConditionSchema, getTermsConditionSchema } from "../../validation";
+const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addTermsCondition = async (req, res) => {
   reqInfo(req);
@@ -196,7 +197,7 @@ export const getTermsConditionDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { search, isDefault, companyFilter, branchFilter } = req.query;
+    const { search, isDefault, companyFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -214,6 +215,12 @@ export const getTermsConditionDropdown = async (req, res) => {
 
     if (branchFilter) {
       criteria.branchId = branchFilter;
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     if (isDefault !== undefined) {

@@ -372,7 +372,7 @@ export const getCouponDropdown = async (req, res) => {
   try {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
-    const { expiredFilter, limitReachedFilter, search, companyFilter } = req.query;
+    const { expiredFilter, limitReachedFilter, search, companyFilter, includeId } = req.query;
 
     const now = new Date();
     let criteria: any = {
@@ -402,10 +402,19 @@ export const getCouponDropdown = async (req, res) => {
       criteria.name = { $regex: search, $options: "si" };
     }
 
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
+    }
+
     const coupons = await couponModel.find(criteria).select("name couponPrice redeemValue usageLimit expiryDays usedCount startDate endDate createdAt").sort({ createdAt: -1 }).lean();
 
     // Secondary filter for complex logic (usageLimit and expiryDays)
     const finalResponse = coupons.filter((coupon) => {
+      // If this is the includeId, bypass other filters
+      if (includeId && coupon._id.toString() === includeId.toString()) return true;
+
       // Check Usage Limit
       if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) return false;
 

@@ -26,6 +26,12 @@ export const addConsumptionType = async (req: any, res: any) => {
     value.createdBy = user._id;
     value.updatedBy = user._id;
 
+    // Check if consumption type name already exists
+    const isExist = await getFirstMatch(ConsumptionTypeModel, { name: value.name, isDeleted: false, $or: [{ isDefault: true }, { companyId: value.companyId }] }, {}, {});
+    if (isExist) {
+      return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Consumption Type Name"), {}, {}));
+    }
+
     const response = await createOne(ConsumptionTypeModel, value);
 
     if (!response) {
@@ -63,6 +69,14 @@ export const editConsumptionType = async (req: any, res: any) => {
     // If not default, must belong to the same company
     if (!isExist.isDefault && isExist.companyId.toString() !== user.companyId?._id?.toString() && user.userType !== USER_TYPES.SUPER_ADMIN) {
       return res.status(HTTP_STATUS.FORBIDDEN).json(new apiResponse(HTTP_STATUS.FORBIDDEN, responseMessage.accessDenied, {}, {}));
+    }
+
+    // Check if consumption type name already exists (if being changed)
+    if (value.name && value.name !== isExist.name) {
+      const nameExist = await getFirstMatch(ConsumptionTypeModel, { name: value.name, isDeleted: false, $or: [{ isDefault: true }, { companyId: isExist.companyId }], _id: { $ne: value.consumptionTypeId } }, {}, {});
+      if (nameExist) {
+        return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist("Consumption Type Name"), {}, {}));
+      }
     }
 
     value.updatedBy = user._id;
@@ -200,9 +214,9 @@ export const consumptionTypeDropDown = async (req: any, res: any) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
-    const { search, companyFilter } = req.query;
+    const { search, companyFilter, includeId } = req.query;
 
-    const criteria: any = {
+    let criteria: any = {
       isDeleted: false,
       isActive: true,
       $or: [{ isDefault: true }, { companyId: user.companyId?._id || companyFilter }],
@@ -210,6 +224,12 @@ export const consumptionTypeDropDown = async (req: any, res: any) => {
 
     if (search) {
       criteria.name = { $regex: search, $options: "si" };
+    }
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
     }
 
     const response = await ConsumptionTypeModel.find(criteria, { name: 1, isDefault: 1 }).sort({ name: 1 });

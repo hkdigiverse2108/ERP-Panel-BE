@@ -207,12 +207,18 @@ export const getBranchDropdown = async (req, res) => {
     const userType = user?.userType;
     let companyId = user?.companyId?._id;
 
-    const queryCompanyId = req.query?.companyFilter;
+    const { companyFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
-    if (queryCompanyId && userType === USER_TYPES.SUPER_ADMIN) criteria.companyId = queryCompanyId;
+    if (companyFilter && userType === USER_TYPES.SUPER_ADMIN) criteria.companyId = companyFilter;
     else if (companyId) criteria.companyId = companyId;
+
+    if (includeId) {
+      criteria = {
+        $or: [criteria, { _id: new ObjectId(includeId as string) }],
+      };
+    }
 
     const response = await getDataWithSorting(
       branchModel,
