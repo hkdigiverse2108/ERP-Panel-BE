@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY_CHALLAN_STATUS, INVOICE_STATUS, PREFIX_MODULES } from "../../common";
-import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, termsConditionModel, deliveryChallanModel, stockModel } from "../../database";
+import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, termsConditionModel, deliveryChallanModel, stockModel, salesCreditNoteModel } from "../../database";
 import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, checkStockQty } from "../../helper";
 import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSchema } from "../../validation";
 
@@ -728,7 +728,7 @@ export const getInvoiceDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { customerId, status, paymentStatus, search, branchFilter, companyFilter, includeId } = req.query; // Optional filters
+    const { customerId, status, paymentStatus, search, branchFilter, companyFilter, includeId, isCreditNoteCreated } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false, isActive: true };
     if (companyId) {
@@ -766,6 +766,15 @@ export const getInvoiceDropdown = async (req, res) => {
       criteria.invoiceNo = { $regex: search, $options: "si" };
     }
 
+    if (isCreditNoteCreated) {
+      const creditNotes = await salesCreditNoteModel.find({ isDeleted: false, salesId: { $exists: true, $ne: null } }).distinct("salesId");
+      if (isCreditNoteCreated === "true") {
+        criteria._id = { $in: creditNotes };
+      } else {
+        criteria._id = { $nin: creditNotes };
+      }
+    }
+
     criteria = handleIncludeId(criteria, includeId);
 
     const options: any = {
@@ -795,6 +804,3 @@ export const getInvoiceDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-
-
-
