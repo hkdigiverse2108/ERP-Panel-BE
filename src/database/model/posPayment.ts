@@ -16,6 +16,8 @@ const posPaymentSchema = new mongoose.Schema(
 
     purchaseBillId: { type: mongoose.Schema.Types.ObjectId, ref: "supplier-bill" },
     posCreditNoteId: { type: mongoose.Schema.Types.ObjectId, ref: "pos-credit-note" },
+    invoiceId: { type: mongoose.Schema.Types.ObjectId, ref: "invoice" },
+    salesCreditNoteId: { type: mongoose.Schema.Types.ObjectId, ref: "sales-credit-note" },
     bankId: { type: mongoose.Schema.Types.ObjectId, ref: "bank" },
 
     totalAmount: { type: Number, default: 0 },

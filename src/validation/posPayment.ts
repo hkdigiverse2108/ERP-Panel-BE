@@ -19,6 +19,8 @@ export const addPosPaymentSchema = Joi.object({
     .optional(),
   purchaseBillId: objectId().optional(),
   posCreditNoteId: objectId().optional(),
+  invoiceId: objectId().optional(),
+  salesCreditNoteId: objectId().optional(),
   // accountId reference removed
   bankId: objectId().optional(),
   totalAmount: Joi.number().min(0).optional(),
@@ -52,6 +54,8 @@ export const editPosPaymentSchema = Joi.object({
     .optional(),
   purchaseBillId: objectId().optional(),
   posCreditNoteId: objectId().optional(),
+  invoiceId: objectId().optional(),
+  salesCreditNoteId: objectId().optional(),
   // accountId reference removed
   bankId: objectId().optional(),
   totalAmount: Joi.number().min(0).optional(),
@@ -92,5 +96,23 @@ export const getAllPosPaymentSchema = Joi.object({
   startDate: Joi.date().optional(),
   endDate: Joi.date().optional(),
   date: Joi.date().optional(),
+  ...baseApiSchema,
+});
+
+export const pendingPaymentDropDownSchema = Joi.object({
+  customerId: objectId().optional(),
+  search: Joi.string().optional().allow("", null),
+  includeId: objectId().optional(),
+  companyFilter: objectId().optional(),
+  branchFilter: objectId().optional(),
+  ...baseApiSchema,
+});
+
+export const pendingCreditDropDownSchema = Joi.object({
+  customerId: objectId().optional(),
+  search: Joi.string().optional().allow("", null),
+  includeId: objectId().optional(),
+  companyFilter: objectId().optional(),
+  branchFilter: objectId().optional(),
   ...baseApiSchema,
 });

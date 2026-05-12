@@ -1,8 +1,8 @@
-import { POS_CREDIT_NOTE_STATUS, SUPPLIER_PAYMENT_STATUS } from './../../common/enum';
-import { PosPaymentModel, PosOrderModel, contactModel, PosCashRegisterModel, taxModel, supplierBillModel, posCreditNoteModel } from "../../database";
+import { POS_CREDIT_NOTE_STATUS, SUPPLIER_PAYMENT_STATUS, PURCHASE_DEBIT_NOTE_STATUS } from './../../common/enum';
+import { PosPaymentModel, PosOrderModel, contactModel, PosCashRegisterModel, taxModel, supplierBillModel, posCreditNoteModel, InvoiceModel, salesCreditNoteModel } from "../../database";
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, applyDateFilter, getAndIncrementPrefix } from "../../helper";
-import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema } from "../../validation";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, applyDateFilter, getAndIncrementPrefix, handleIncludeId } from "../../helper";
+import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema, pendingPaymentDropDownSchema, pendingCreditDropDownSchema } from "../../validation";
 
 export const addPosPayment = async (req, res) => {
   reqInfo(req);
@@ -447,6 +447,150 @@ export const deletePosPayment = async (req, res) => {
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Payment"), response, {}));
   } catch (error) {
     console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const getPendingPaymentDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = pendingPaymentDropDownSchema.validate(req.query);
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    value.companyId = value.companyFilter;
+    value.branchId = value.branchFilter;
+    const companyId = await checkCompany(user, value);
+    const branchId = await checkBranch(user, value);
+
+    const baseCriteria: any = {
+      isDeleted: false,
+      paymentStatus: { $in: [POS_PAYMENT_STATUS.UNPAID, POS_PAYMENT_STATUS.PARTIAL] }
+    };
+    if (companyId) baseCriteria.companyId = companyId;
+    if (branchId) baseCriteria.branchId = branchId;
+    if (value.customerId) baseCriteria.customerId = value.customerId;
+
+    let searchCriteria: any = { ...baseCriteria };
+    if (value.search) {
+      searchCriteria.orderNo = { $regex: value.search, $options: "i" };
+    }
+    searchCriteria = handleIncludeId(searchCriteria, value.includeId);
+
+    const posOrders = await PosOrderModel.find(searchCriteria).select("orderNo paidAmount dueAmount customerId").lean();
+
+    // Now for Invoices
+    const invoiceCriteria: any = {
+      isDeleted: false,
+      paymentStatus: { $in: [POS_PAYMENT_STATUS.UNPAID, POS_PAYMENT_STATUS.PARTIAL] }
+    };
+    if (companyId) invoiceCriteria.companyId = companyId;
+    if (branchId) invoiceCriteria.branchId = branchId;
+    if (value.customerId) invoiceCriteria.customerId = value.customerId;
+
+    let invSearchCriteria: any = { ...invoiceCriteria };
+    if (value.search) {
+      invSearchCriteria.invoiceNo = { $regex: value.search, $options: "i" };
+    }
+    invSearchCriteria = handleIncludeId(invSearchCriteria, value.includeId);
+
+    const invoices = await InvoiceModel.find(invSearchCriteria).select("invoiceNo paidAmount balanceAmount customerId").lean();
+
+    const response = [
+      ...posOrders.map(o => ({
+        _id: o._id,
+        name: `${o.orderNo} (POS Order)`,
+        docNo: o.orderNo,
+        docType: "POS_ORDER",
+        paidAmount: o.paidAmount || 0,
+        balanceAmount: o.dueAmount || 0,
+        customerId: o.customerId
+      })),
+      ...invoices.map(i => ({
+        _id: i._id,
+        name: `${i.invoiceNo} (Invoice)`,
+        docNo: i.invoiceNo,
+        docType: "INVOICE",
+        paidAmount: i.paidAmount || 0,
+        balanceAmount: i.balanceAmount || 0,
+        customerId: i.customerId
+      }))
+    ];
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Pending Payment"), response, {}));
+  } catch (error) {
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const getPendingCreditDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = pendingCreditDropDownSchema.validate(req.query);
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    value.companyId = value.companyFilter;
+    value.branchId = value.branchFilter;
+    const companyId = await checkCompany(user, value);
+    const branchId = await checkBranch(user, value);
+
+    const posCriteria: any = {
+      isDeleted: false,
+      status: POS_CREDIT_NOTE_STATUS.AVAILABLE,
+      creditsRemaining: { $gt: 0 }
+    };
+    if (companyId) posCriteria.companyId = companyId;
+    if (branchId) posCriteria.branchId = branchId;
+    if (value.customerId) posCriteria.customerId = value.customerId;
+
+    let posSearchCriteria: any = { ...posCriteria };
+    if (value.search) {
+      posSearchCriteria.creditNoteNo = { $regex: value.search, $options: "i" };
+    }
+    posSearchCriteria = handleIncludeId(posSearchCriteria, value.includeId);
+
+    const posCredits = await posCreditNoteModel.find(posSearchCriteria).select("creditNoteNo creditsRemaining customerId totalAmount").lean();
+
+    const salesCriteria: any = {
+      isDeleted: false,
+      status: { $in: [PURCHASE_DEBIT_NOTE_STATUS.OPEN, PURCHASE_DEBIT_NOTE_STATUS.DUE] }
+    };
+    if (companyId) salesCriteria.companyId = companyId;
+    if (branchId) salesCriteria.branchId = branchId;
+    if (value.customerId) salesCriteria.customerId = value.customerId;
+
+    let salesSearchCriteria: any = { ...salesCriteria };
+    if (value.search) {
+      salesSearchCriteria.creditNoteNo = { $regex: value.search, $options: "i" };
+    }
+    salesSearchCriteria = handleIncludeId(salesSearchCriteria, value.includeId);
+
+    const salesCredits = await salesCreditNoteModel.find(salesSearchCriteria).select("creditNoteNo customerId summary status").lean();
+
+    const response = [
+      ...posCredits.map(c => ({
+        _id: c._id,
+        name: `${c.creditNoteNo} (POS Credit Note)`,
+        docNo: c.creditNoteNo,
+        docType: "POS_CREDIT_NOTE",
+        totalAmount: c.totalAmount || 0,
+        balanceAmount: c.creditsRemaining || 0,
+        customerId: c.customerId
+      })),
+      ...salesCredits.map(c => ({
+        _id: c._id,
+        name: `${c.creditNoteNo} (Sales Credit Note)`,
+        docNo: c.creditNoteNo,
+        docType: "SALES_CREDIT_NOTE",
+        totalAmount: c.summary?.netAmount || 0,
+        balanceAmount: c.summary?.netAmount || 0,
+        customerId: c.customerId
+      }))
+    ];
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Pending Credit"), response, {}));
+  } catch (error) {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
