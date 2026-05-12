@@ -1,8 +1,8 @@
-import { POS_CREDIT_NOTE_STATUS, SUPPLIER_PAYMENT_STATUS } from './../../common/enum';
-import { PosPaymentModel, PosOrderModel, contactModel, PosCashRegisterModel, taxModel, supplierBillModel, posCreditNoteModel } from "../../database";
+import { POS_CREDIT_NOTE_STATUS, SUPPLIER_PAYMENT_STATUS, PURCHASE_DEBIT_NOTE_STATUS, INVOICE_PAYMENT_STATUS } from './../../common/enum';
+import { PosPaymentModel, PosOrderModel, contactModel, PosCashRegisterModel, taxModel, supplierBillModel, posCreditNoteModel, InvoiceModel, salesCreditNoteModel } from "../../database";
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, applyDateFilter, getAndIncrementPrefix } from "../../helper";
-import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema } from "../../validation";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, applyDateFilter, getAndIncrementPrefix, handleIncludeId } from "../../helper";
+import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema, pendingPaymentDropDownSchema, pendingCreditDropDownSchema } from "../../validation";
 
 export const addPosPayment = async (req, res) => {
   reqInfo(req);
@@ -21,6 +21,8 @@ export const addPosPayment = async (req, res) => {
     if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
 
     if (value.posOrderId && !(await checkIdExist(PosOrderModel, value.posOrderId, "POS Order", res))) return;
+    if (value.invoiceId && !(await checkIdExist(InvoiceModel, value.invoiceId, "Invoice", res))) return;
+    if (value.salesCreditNoteId && !(await checkIdExist(salesCreditNoteModel, value.salesCreditNoteId, "Sales Credit Note", res))) return;
     if (value.partyId && !(await checkIdExist(contactModel, value.partyId, "Party", res))) return;
 
     // --- Link Open Cash Register ---
@@ -53,36 +55,59 @@ export const addPosPayment = async (req, res) => {
     }
 
     if (value.voucherType === POS_VOUCHER_TYPE.SALES && value.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL) {
-      const posOrder = await getFirstMatch(PosOrderModel, { _id: value.posOrderId, isDeleted: false }, {}, {});
-      if (!posOrder) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+      if (value.posOrderId) {
+        const posOrder = await getFirstMatch(PosOrderModel, { _id: value.posOrderId, isDeleted: false }, {}, {});
+        if (!posOrder) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Order"), {}, {}));
+        }
+
+        posOrder.multiplePayments.push({
+          amount: value.amount,
+          method: value.paymentMode,
+        });
+
+        posOrder.paidAmount = (posOrder.paidAmount || 0) + value.amount;
+        if (posOrder.paidAmount >= posOrder.totalAmount) {
+          posOrder.paymentStatus = POS_PAYMENT_STATUS.PAID;
+          posOrder.status = POS_ORDER_STATUS.COMPLETED;
+          posOrder.payLater.status = PAY_LATER_STATUS.SETTLED;
+          posOrder.payLater.settledDate = new Date();
+          posOrder.payLater.sendReminder = false;
+          posOrder.dueAmount = 0;
+        } else if (posOrder.paidAmount < posOrder.totalAmount) {
+          posOrder.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+          posOrder.status = POS_ORDER_STATUS.PENDING;
+          posOrder.payLater.status = PAY_LATER_STATUS.PARTIAL;
+          posOrder.dueAmount = posOrder.totalAmount - posOrder.paidAmount;
+        } else {
+          posOrder.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+          posOrder.status = POS_ORDER_STATUS.PENDING;
+          posOrder.payLater.status = PAY_LATER_STATUS.OPEN;
+          posOrder.dueAmount = posOrder.totalAmount;
+        }
+        await updateData(PosOrderModel, { _id: value.posOrderId }, posOrder, {});
       }
 
-      posOrder.multiplePayments.push({
-        amount: value.amount,
-        method: value.paymentMode,
-      });
+      if (value.invoiceId) {
+        const invoice = await getFirstMatch(InvoiceModel, { _id: value.invoiceId, isDeleted: false }, {}, {});
+        if (!invoice) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Invoice"), {}, {}));
+        }
 
-      posOrder.paidAmount = (posOrder.paidAmount || 0) + value.amount;
-      if (posOrder.paidAmount >= posOrder.totalAmount) {
-        posOrder.paymentStatus = POS_PAYMENT_STATUS.PAID;
-        posOrder.status = POS_ORDER_STATUS.COMPLETED;
-        posOrder.payLater.status = PAY_LATER_STATUS.SETTLED;
-        posOrder.payLater.settledDate = new Date();
-        posOrder.payLater.sendReminder = false;
-        posOrder.dueAmount = 0;
-      } else if (posOrder.paidAmount < posOrder.totalAmount) {
-        posOrder.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
-        posOrder.status = POS_ORDER_STATUS.PENDING;
-        posOrder.payLater.status = PAY_LATER_STATUS.PARTIAL;
-        posOrder.dueAmount = posOrder.totalAmount - posOrder.paidAmount;
-      } else {
-        posOrder.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
-        posOrder.status = POS_ORDER_STATUS.PENDING;
-        posOrder.payLater.status = PAY_LATER_STATUS.OPEN;
-        posOrder.dueAmount = posOrder.totalAmount;
+        invoice.paidAmount = (invoice.paidAmount || 0) + value.amount;
+        const totalAmount = invoice.transactionSummary?.netAmount || 0;
+        invoice.balanceAmount = Math.max(0, totalAmount - invoice.paidAmount);
+
+        if (invoice.balanceAmount <= 0) {
+          invoice.paymentStatus = INVOICE_PAYMENT_STATUS.PAID;
+          invoice.balanceAmount = 0;
+        } else if (invoice.paidAmount > 0) {
+          invoice.paymentStatus = INVOICE_PAYMENT_STATUS.PARTIAL;
+        } else {
+          invoice.paymentStatus = INVOICE_PAYMENT_STATUS.UNPAID;
+        }
+        await updateData(InvoiceModel, { _id: value.invoiceId }, invoice, {});
       }
-      await updateData(PosOrderModel, { _id: value.posOrderId }, posOrder, {});
     }
 
     if (value.voucherType === POS_VOUCHER_TYPE.PURCHASE && value.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL) {
@@ -123,6 +148,27 @@ export const addPosPayment = async (req, res) => {
           posCreditNote.status = POS_CREDIT_NOTE_STATUS.AVAILABLE;
         }
         await updateData(posCreditNoteModel, { _id: value.posCreditNoteId }, posCreditNote, {});
+      }
+
+      if (value.salesCreditNoteId) {
+        const salesCreditNote = await getFirstMatch(salesCreditNoteModel, { _id: value.salesCreditNoteId, isDeleted: false }, {}, {});
+        if (!salesCreditNote) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Sales Credit Note"), {}, {}));
+        }
+
+        salesCreditNote.paidAmount = (salesCreditNote.paidAmount || 0) + value.amount;
+        const totalAmount = salesCreditNote.summary?.netAmount || 0;
+        salesCreditNote.balanceAmount = Math.max(0, totalAmount - salesCreditNote.paidAmount);
+
+        if (salesCreditNote.balanceAmount <= 0) {
+          salesCreditNote.status = PURCHASE_DEBIT_NOTE_STATUS.PAID;
+          salesCreditNote.balanceAmount = 0;
+        } else if (salesCreditNote.paidAmount > 0) {
+          salesCreditNote.status = PURCHASE_DEBIT_NOTE_STATUS.DUE;
+        } else {
+          salesCreditNote.status = PURCHASE_DEBIT_NOTE_STATUS.OPEN;
+        }
+        await updateData(salesCreditNoteModel, { _id: value.salesCreditNoteId }, salesCreditNote, {});
       }
     }
 
@@ -169,6 +215,14 @@ export const editPosPayment = async (req, res) => {
       if (!(await checkIdExist(PosOrderModel, value.posOrderId, "POS Order", res))) return;
     }
 
+    if (value.invoiceId && value.invoiceId !== isExist.invoiceId?.toString()) {
+      if (!(await checkIdExist(InvoiceModel, value.invoiceId, "Invoice", res))) return;
+    }
+
+    if (value.salesCreditNoteId && value.salesCreditNoteId !== isExist.salesCreditNoteId?.toString()) {
+      if (!(await checkIdExist(salesCreditNoteModel, value.salesCreditNoteId, "Sales Credit Note", res))) return;
+    }
+
     if (value.purchaseBillId && value.purchaseBillId !== isExist.purchaseBillId?.toString()) {
       if (!(await checkIdExist(supplierBillModel, value.purchaseBillId, "Supplier Bill", res))) return;
     }
@@ -187,29 +241,51 @@ export const editPosPayment = async (req, res) => {
 
     if (voucherType === POS_VOUCHER_TYPE.SALES && paymentType === POS_PAYMENT_TYPE.AGAINST_BILL) {
       const posOrderId = value.posOrderId || isExist.posOrderId;
-      const posOrder = await getFirstMatch(PosOrderModel, { _id: posOrderId, isDeleted: false }, {}, {});
-      if (posOrder) {
-        posOrder.paidAmount = (posOrder.paidAmount || 0) - (isExist.amount || 0) + amount;
+      if (posOrderId) {
+        const posOrder = await getFirstMatch(PosOrderModel, { _id: posOrderId, isDeleted: false }, {}, {});
+        if (posOrder) {
+          posOrder.paidAmount = (posOrder.paidAmount || 0) - (isExist.amount || 0) + amount;
 
-        if (posOrder.paidAmount >= posOrder.totalAmount) {
-          posOrder.paymentStatus = POS_PAYMENT_STATUS.PAID;
-          posOrder.status = POS_ORDER_STATUS.COMPLETED;
-          posOrder.payLater.status = PAY_LATER_STATUS.SETTLED;
-          posOrder.payLater.settledDate = new Date();
-          posOrder.payLater.sendReminder = false;
-          posOrder.dueAmount = 0;
-        } else if (posOrder.paidAmount > 0) {
-          posOrder.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
-          posOrder.status = POS_ORDER_STATUS.PENDING;
-          posOrder.payLater.status = PAY_LATER_STATUS.PARTIAL;
-          posOrder.dueAmount = posOrder.totalAmount - posOrder.paidAmount;
-        } else {
-          posOrder.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
-          posOrder.status = POS_ORDER_STATUS.PENDING;
-          posOrder.payLater.status = PAY_LATER_STATUS.OPEN;
-          posOrder.dueAmount = posOrder.totalAmount;
+          if (posOrder.paidAmount >= posOrder.totalAmount) {
+            posOrder.paymentStatus = POS_PAYMENT_STATUS.PAID;
+            posOrder.status = POS_ORDER_STATUS.COMPLETED;
+            posOrder.payLater.status = PAY_LATER_STATUS.SETTLED;
+            posOrder.payLater.settledDate = new Date();
+            posOrder.payLater.sendReminder = false;
+            posOrder.dueAmount = 0;
+          } else if (posOrder.paidAmount > 0) {
+            posOrder.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+            posOrder.status = POS_ORDER_STATUS.PENDING;
+            posOrder.payLater.status = PAY_LATER_STATUS.PARTIAL;
+            posOrder.dueAmount = posOrder.totalAmount - posOrder.paidAmount;
+          } else {
+            posOrder.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+            posOrder.status = POS_ORDER_STATUS.PENDING;
+            posOrder.payLater.status = PAY_LATER_STATUS.OPEN;
+            posOrder.dueAmount = posOrder.totalAmount;
+          }
+          await updateData(PosOrderModel, { _id: posOrderId }, posOrder, {});
         }
-        await updateData(PosOrderModel, { _id: posOrderId }, posOrder, {});
+      }
+
+      const invoiceId = value.invoiceId || isExist.invoiceId;
+      if (invoiceId) {
+        const invoice = await getFirstMatch(InvoiceModel, { _id: invoiceId, isDeleted: false }, {}, {});
+        if (invoice) {
+          invoice.paidAmount = (invoice.paidAmount || 0) - (isExist.amount || 0) + amount;
+          const totalAmount = invoice.transactionSummary?.netAmount || 0;
+          invoice.balanceAmount = Math.max(0, totalAmount - invoice.paidAmount);
+
+          if (invoice.balanceAmount <= 0) {
+            invoice.paymentStatus = INVOICE_PAYMENT_STATUS.PAID;
+            invoice.balanceAmount = 0;
+          } else if (invoice.paidAmount > 0) {
+            invoice.paymentStatus = INVOICE_PAYMENT_STATUS.PARTIAL;
+          } else {
+            invoice.paymentStatus = INVOICE_PAYMENT_STATUS.UNPAID;
+          }
+          await updateData(InvoiceModel, { _id: invoiceId }, invoice, {});
+        }
       }
     }
 
@@ -248,6 +324,26 @@ export const editPosPayment = async (req, res) => {
             posCreditNote.status = POS_CREDIT_NOTE_STATUS.AVAILABLE;
           }
           await updateData(posCreditNoteModel, { _id: posCreditNoteId }, posCreditNote, {});
+        }
+      }
+
+      const salesCreditNoteId = value.salesCreditNoteId || isExist.salesCreditNoteId;
+      if (salesCreditNoteId) {
+        const salesCreditNote = await getFirstMatch(salesCreditNoteModel, { _id: salesCreditNoteId, isDeleted: false }, {}, {});
+        if (salesCreditNote) {
+          salesCreditNote.paidAmount = (salesCreditNote.paidAmount || 0) - (isExist.amount || 0) + amount;
+          const totalAmount = salesCreditNote.summary?.netAmount || 0;
+          salesCreditNote.balanceAmount = Math.max(0, totalAmount - salesCreditNote.paidAmount);
+
+          if (salesCreditNote.balanceAmount <= 0) {
+            salesCreditNote.status = PURCHASE_DEBIT_NOTE_STATUS.PAID;
+            salesCreditNote.balanceAmount = 0;
+          } else if (salesCreditNote.paidAmount > 0) {
+            salesCreditNote.status = PURCHASE_DEBIT_NOTE_STATUS.DUE;
+          } else {
+            salesCreditNote.status = PURCHASE_DEBIT_NOTE_STATUS.OPEN;
+          }
+          await updateData(salesCreditNoteModel, { _id: salesCreditNoteId }, salesCreditNote, {});
         }
       }
     }
@@ -310,6 +406,8 @@ export const getAllPosPayment = async (req, res) => {
         { path: "partyId", select: "firstName lastName companyName" },
         { path: "purchaseBillId", select: "supplierBillNo totalAmount" },
         { path: "posCreditNoteId", select: "creditNoteNo totalAmount" },
+        { path: "invoiceId", select: "invoiceNo transactionSummary" },
+        { path: "salesCreditNoteId", select: "creditNoteNo summary" },
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "taxId", select: "name percentage" },
@@ -347,6 +445,8 @@ export const getOnePosPayment = async (req, res) => {
           { path: "partyId", select: "firstName lastName companyName email phoneNo" },
           { path: "purchaseBillId", select: "supplierBillNo totalAmount" },
           { path: "posCreditNoteId", select: "creditNoteNo totalAmount" },
+          { path: "invoiceId", select: "invoiceNo transactionSummary items" },
+          { path: "salesCreditNoteId", select: "creditNoteNo summary productDetails" },
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "taxId", select: "name percentage" },
@@ -379,62 +479,104 @@ export const deletePosPayment = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Payment"), {}, {}));
     }
 
-    if (isExist.voucherType === POS_VOUCHER_TYPE.SALES && isExist.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL && isExist.posOrderId) {
-      const posOrder = await getFirstMatch(PosOrderModel, { _id: isExist.posOrderId, isDeleted: false }, {}, {});
-      if (posOrder) {
-        posOrder.paidAmount = (posOrder.paidAmount || 0) - (isExist.amount || 0);
-        if (posOrder.paidAmount >= posOrder.totalAmount) {
-          posOrder.paymentStatus = POS_PAYMENT_STATUS.PAID;
-          posOrder.status = POS_ORDER_STATUS.COMPLETED;
-          posOrder.payLater.status = PAY_LATER_STATUS.SETTLED;
-          posOrder.dueAmount = 0;
-        } else if (posOrder.paidAmount < posOrder.totalAmount) {
-          posOrder.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
-          posOrder.status = POS_ORDER_STATUS.PENDING;
-          posOrder.payLater.status = PAY_LATER_STATUS.PARTIAL;
-          posOrder.dueAmount = posOrder.totalAmount - posOrder.paidAmount;
-        } else {
-          posOrder.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
-          posOrder.status = POS_ORDER_STATUS.PENDING;
-          posOrder.payLater.status = PAY_LATER_STATUS.OPEN;
-          posOrder.dueAmount = posOrder.totalAmount;
+    if (isExist.voucherType === POS_VOUCHER_TYPE.SALES && isExist.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL) {
+      if (isExist.posOrderId) {
+        const posOrder = await getFirstMatch(PosOrderModel, { _id: isExist.posOrderId, isDeleted: false }, {}, {});
+        if (posOrder) {
+          posOrder.paidAmount = (posOrder.paidAmount || 0) - (isExist.amount || 0);
+          if (posOrder.paidAmount >= posOrder.totalAmount) {
+            posOrder.paymentStatus = POS_PAYMENT_STATUS.PAID;
+            posOrder.status = POS_ORDER_STATUS.COMPLETED;
+            posOrder.payLater.status = PAY_LATER_STATUS.SETTLED;
+            posOrder.dueAmount = 0;
+          } else if (posOrder.paidAmount < posOrder.totalAmount) {
+            posOrder.paymentStatus = POS_PAYMENT_STATUS.PARTIAL;
+            posOrder.status = POS_ORDER_STATUS.PENDING;
+            posOrder.payLater.status = PAY_LATER_STATUS.PARTIAL;
+            posOrder.dueAmount = posOrder.totalAmount - posOrder.paidAmount;
+          } else {
+            posOrder.paymentStatus = POS_PAYMENT_STATUS.UNPAID;
+            posOrder.status = POS_ORDER_STATUS.PENDING;
+            posOrder.payLater.status = PAY_LATER_STATUS.OPEN;
+            posOrder.dueAmount = posOrder.totalAmount;
+          }
+          await updateData(PosOrderModel, { _id: isExist.posOrderId }, posOrder, {});
         }
-        await updateData(PosOrderModel, { _id: isExist.posOrderId }, posOrder, {});
+      }
+
+      if (isExist.invoiceId) {
+        const invoice = await getFirstMatch(InvoiceModel, { _id: isExist.invoiceId, isDeleted: false }, {}, {});
+        if (invoice) {
+          invoice.paidAmount = (invoice.paidAmount || 0) - (isExist.amount || 0);
+          const totalAmount = invoice.transactionSummary?.netAmount || 0;
+          invoice.balanceAmount = Math.max(0, totalAmount - invoice.paidAmount);
+
+          if (invoice.balanceAmount <= 0) {
+            invoice.paymentStatus = INVOICE_PAYMENT_STATUS.PAID;
+            invoice.balanceAmount = 0;
+          } else if (invoice.paidAmount > 0) {
+            invoice.paymentStatus = INVOICE_PAYMENT_STATUS.PARTIAL;
+          } else {
+            invoice.paymentStatus = INVOICE_PAYMENT_STATUS.UNPAID;
+          }
+          await updateData(InvoiceModel, { _id: isExist.invoiceId }, invoice, {});
+        }
       }
     }
 
-    if (isExist.voucherType === POS_VOUCHER_TYPE.PURCHASE && isExist.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL && isExist.purchaseBillId) {
-      const supplierBill = await getFirstMatch(supplierBillModel, { _id: isExist.purchaseBillId, isDeleted: false }, {}, {});
-      if (supplierBill) {
-        const totalBillAmount = supplierBill.summary?.netAmount || supplierBill.totalAmount || 0;
-        supplierBill.paidAmount = (supplierBill.paidAmount || 0) - (isExist.amount || 0);
-        supplierBill.balanceAmount = totalBillAmount - supplierBill.paidAmount;
+    if (isExist.voucherType === POS_VOUCHER_TYPE.PURCHASE && isExist.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL) {
+      if (isExist.purchaseBillId) {
+        const supplierBill = await getFirstMatch(supplierBillModel, { _id: isExist.purchaseBillId, isDeleted: false }, {}, {});
+        if (supplierBill) {
+          const totalBillAmount = supplierBill.summary?.netAmount || supplierBill.totalAmount || 0;
+          supplierBill.paidAmount = (supplierBill.paidAmount || 0) - (isExist.amount || 0);
+          supplierBill.balanceAmount = totalBillAmount - supplierBill.paidAmount;
 
-        if (supplierBill.balanceAmount <= 0) {
-          supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.PAID;
-          supplierBill.balanceAmount = 0;
-        } else if (supplierBill.paidAmount > 0) {
-          supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.PARTIAL;
-        } else {
-          supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.UNPAID;
+          if (supplierBill.balanceAmount <= 0) {
+            supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.PAID;
+            supplierBill.balanceAmount = 0;
+          } else if (supplierBill.paidAmount > 0) {
+            supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.PARTIAL;
+          } else {
+            supplierBill.paymentStatus = SUPPLIER_PAYMENT_STATUS.UNPAID;
+          }
+          await updateData(supplierBillModel, { _id: isExist.purchaseBillId }, supplierBill, {});
         }
-        await updateData(supplierBillModel, { _id: isExist.purchaseBillId }, supplierBill, {});
       }
-    }
 
-    if (isExist.voucherType === POS_VOUCHER_TYPE.PURCHASE && isExist.paymentType === POS_PAYMENT_TYPE.AGAINST_BILL && isExist.posCreditNoteId) {
-      const posCreditNote = await getFirstMatch(posCreditNoteModel, { _id: isExist.posCreditNoteId, isDeleted: false }, {}, {});
-      if (posCreditNote) {
-        posCreditNote.refundedAmount = (posCreditNote.refundedAmount || 0) - (isExist.amount || 0);
-        posCreditNote.creditsRemaining = (posCreditNote.totalAmount || 0) - (posCreditNote.creditsUsed || 0) - posCreditNote.refundedAmount;
+      if (isExist.posCreditNoteId) {
+        const posCreditNote = await getFirstMatch(posCreditNoteModel, { _id: isExist.posCreditNoteId, isDeleted: false }, {}, {});
+        if (posCreditNote) {
+          posCreditNote.refundedAmount = (posCreditNote.refundedAmount || 0) - (isExist.amount || 0);
+          posCreditNote.creditsRemaining = (posCreditNote.totalAmount || 0) - (posCreditNote.creditsUsed || 0) - posCreditNote.refundedAmount;
 
-        if (posCreditNote.creditsRemaining <= 0) {
-          posCreditNote.status = POS_CREDIT_NOTE_STATUS.USED;
-          posCreditNote.creditsRemaining = 0;
-        } else {
-          posCreditNote.status = POS_CREDIT_NOTE_STATUS.AVAILABLE;
+          if (posCreditNote.creditsRemaining <= 0) {
+            posCreditNote.status = POS_CREDIT_NOTE_STATUS.USED;
+            posCreditNote.creditsRemaining = 0;
+          } else {
+            posCreditNote.status = POS_CREDIT_NOTE_STATUS.AVAILABLE;
+          }
+          await updateData(posCreditNoteModel, { _id: isExist.posCreditNoteId }, posCreditNote, {});
         }
-        await updateData(posCreditNoteModel, { _id: isExist.posCreditNoteId }, posCreditNote, {});
+      }
+
+      if (isExist.salesCreditNoteId) {
+        const salesCreditNote = await getFirstMatch(salesCreditNoteModel, { _id: isExist.salesCreditNoteId, isDeleted: false }, {}, {});
+        if (salesCreditNote) {
+          salesCreditNote.paidAmount = (salesCreditNote.paidAmount || 0) - (isExist.amount || 0);
+          const totalAmount = salesCreditNote.summary?.netAmount || 0;
+          salesCreditNote.balanceAmount = Math.max(0, totalAmount - salesCreditNote.paidAmount);
+
+          if (salesCreditNote.balanceAmount <= 0) {
+            salesCreditNote.status = PURCHASE_DEBIT_NOTE_STATUS.PAID;
+            salesCreditNote.balanceAmount = 0;
+          } else if (salesCreditNote.paidAmount > 0) {
+            salesCreditNote.status = PURCHASE_DEBIT_NOTE_STATUS.DUE;
+          } else {
+            salesCreditNote.status = PURCHASE_DEBIT_NOTE_STATUS.OPEN;
+          }
+          await updateData(salesCreditNoteModel, { _id: isExist.salesCreditNoteId }, salesCreditNote, {});
+        }
       }
     }
 
@@ -447,6 +589,150 @@ export const deletePosPayment = async (req, res) => {
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Payment"), response, {}));
   } catch (error) {
     console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const getPendingPaymentDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = pendingPaymentDropDownSchema.validate(req.query);
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    value.companyId = value.companyFilter;
+    value.branchId = value.branchFilter;
+    const companyId = await checkCompany(user, value);
+    const branchId = await checkBranch(user, value);
+
+    const baseCriteria: any = {
+      isDeleted: false,
+      paymentStatus: { $in: [POS_PAYMENT_STATUS.UNPAID, POS_PAYMENT_STATUS.PARTIAL] }
+    };
+    if (companyId) baseCriteria.companyId = companyId;
+    if (branchId) baseCriteria.branchId = branchId;
+    if (value.customerId) baseCriteria.customerId = value.customerId;
+
+    let searchCriteria: any = { ...baseCriteria };
+    if (value.search) {
+      searchCriteria.orderNo = { $regex: value.search, $options: "i" };
+    }
+    searchCriteria = handleIncludeId(searchCriteria, value.includeId);
+
+    const posOrders = await PosOrderModel.find(searchCriteria).select("orderNo paidAmount dueAmount customerId").lean();
+
+    // Now for Invoices
+    const invoiceCriteria: any = {
+      isDeleted: false,
+      paymentStatus: { $in: [POS_PAYMENT_STATUS.UNPAID, POS_PAYMENT_STATUS.PARTIAL] }
+    };
+    if (companyId) invoiceCriteria.companyId = companyId;
+    if (branchId) invoiceCriteria.branchId = branchId;
+    if (value.customerId) invoiceCriteria.customerId = value.customerId;
+
+    let invSearchCriteria: any = { ...invoiceCriteria };
+    if (value.search) {
+      invSearchCriteria.invoiceNo = { $regex: value.search, $options: "i" };
+    }
+    invSearchCriteria = handleIncludeId(invSearchCriteria, value.includeId);
+
+    const invoices = await InvoiceModel.find(invSearchCriteria).select("invoiceNo paidAmount balanceAmount customerId").lean();
+
+    const response = [
+      ...posOrders.map(o => ({
+        _id: o._id,
+        name: `${o.orderNo} (POS Order)`,
+        docNo: o.orderNo,
+        docType: "POS_ORDER",
+        paidAmount: o.paidAmount || 0,
+        balanceAmount: o.dueAmount || 0,
+        customerId: o.customerId
+      })),
+      ...invoices.map(i => ({
+        _id: i._id,
+        name: `${i.invoiceNo} (Invoice)`,
+        docNo: i.invoiceNo,
+        docType: "INVOICE",
+        paidAmount: i.paidAmount || 0,
+        balanceAmount: i.balanceAmount || 0,
+        customerId: i.customerId
+      }))
+    ];
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Pending Payment"), response, {}));
+  } catch (error) {
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const getPendingCreditDropdown = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = pendingCreditDropDownSchema.validate(req.query);
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    value.companyId = value.companyFilter;
+    value.branchId = value.branchFilter;
+    const companyId = await checkCompany(user, value);
+    const branchId = await checkBranch(user, value);
+
+    const posCriteria: any = {
+      isDeleted: false,
+      status: POS_CREDIT_NOTE_STATUS.AVAILABLE,
+      creditsRemaining: { $gt: 0 }
+    };
+    if (companyId) posCriteria.companyId = companyId;
+    if (branchId) posCriteria.branchId = branchId;
+    if (value.customerId) posCriteria.customerId = value.customerId;
+
+    let posSearchCriteria: any = { ...posCriteria };
+    if (value.search) {
+      posSearchCriteria.creditNoteNo = { $regex: value.search, $options: "i" };
+    }
+    posSearchCriteria = handleIncludeId(posSearchCriteria, value.includeId);
+
+    const posCredits = await posCreditNoteModel.find(posSearchCriteria).select("creditNoteNo creditsRemaining customerId totalAmount").lean();
+
+    const salesCriteria: any = {
+      isDeleted: false,
+      status: { $in: [PURCHASE_DEBIT_NOTE_STATUS.OPEN, PURCHASE_DEBIT_NOTE_STATUS.DUE] }
+    };
+    if (companyId) salesCriteria.companyId = companyId;
+    if (branchId) salesCriteria.branchId = branchId;
+    if (value.customerId) salesCriteria.customerId = value.customerId;
+
+    let salesSearchCriteria: any = { ...salesCriteria };
+    if (value.search) {
+      salesSearchCriteria.creditNoteNo = { $regex: value.search, $options: "i" };
+    }
+    salesSearchCriteria = handleIncludeId(salesSearchCriteria, value.includeId);
+
+    const salesCredits = await salesCreditNoteModel.find(salesSearchCriteria).select("creditNoteNo customerId summary status balanceAmount").lean();
+
+    const response = [
+      ...posCredits.map(c => ({
+        _id: c._id,
+        name: `${c.creditNoteNo} (POS Credit Note)`,
+        docNo: c.creditNoteNo,
+        docType: "POS_CREDIT_NOTE",
+        totalAmount: c.totalAmount || 0,
+        balanceAmount: c.creditsRemaining || 0,
+        customerId: c.customerId
+      })),
+      ...salesCredits.map(c => ({
+        _id: c._id,
+        name: `${c.creditNoteNo} (Sales Credit Note)`,
+        docNo: c.creditNoteNo,
+        docType: "SALES_CREDIT_NOTE",
+        totalAmount: c.summary?.netAmount || 0,
+        balanceAmount: c.balanceAmount !== undefined ? c.balanceAmount : (c.summary?.netAmount || 0),
+        customerId: c.customerId
+      }))
+    ];
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Pending Credit"), response, {}));
+  } catch (error) {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
