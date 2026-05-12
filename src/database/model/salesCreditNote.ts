@@ -50,6 +50,8 @@ export interface ISalesCreditNote extends IBase {
   };
 
   summary: any;
+  paidAmount: number;
+  balanceAmount: number;
   status: string;
 }
 
@@ -121,6 +123,8 @@ const salesCreditNoteSchema = new Schema<ISalesCreditNote>(
     shippingDetails: commonShippingSchema,
 
     summary: transactionSummarySchema,
+    paidAmount: { type: Number, default: 0 },
+    balanceAmount: { type: Number, default: 0 },
 
     status: {
       type: String,

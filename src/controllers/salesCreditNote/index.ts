@@ -1,4 +1,4 @@
-import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
+import { apiResponse, HTTP_STATUS, PREFIX_MODULES, PURCHASE_DEBIT_NOTE_STATUS } from "../../common";
 import { contactModel, salesCreditNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, SalesOrderModel, InvoiceModel, userModel } from "../../database";
 import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addSalesCreditNoteSchema, deleteSalesCreditNoteSchema, editSalesCreditNoteSchema, getSalesCreditNoteSchema } from "../../validation";
@@ -90,6 +90,8 @@ export const addSalesCreditNote = async (req, res) => {
       });
     }
 
+    value.paidAmount = 0;
+    value.balanceAmount = value.summary?.netAmount || 0;
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
@@ -187,6 +189,17 @@ export const editSalesCreditNote = async (req, res) => {
       }
     }
 
+    if (value.summary?.netAmount !== undefined) {
+      value.balanceAmount = (value.summary?.netAmount || 0) - (isExist.paidAmount || 0);
+      if (value.balanceAmount <= 0) {
+        value.status = PURCHASE_DEBIT_NOTE_STATUS.PAID;
+        value.balanceAmount = 0;
+      } else if (isExist.paidAmount > 0) {
+        value.status = PURCHASE_DEBIT_NOTE_STATUS.DUE;
+      } else {
+        value.status = PURCHASE_DEBIT_NOTE_STATUS.OPEN;
+      }
+    }
     value.updatedBy = user?._id || null;
 
     const response = await updateData(salesCreditNoteModel, { _id: new ObjectId(value?.salesCreditNoteId) }, value, {});
