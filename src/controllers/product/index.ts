@@ -417,7 +417,7 @@ export const getAllProduct = async (req, res) => {
         { path: "subBrandId", select: "name" },
         { path: "productTypeId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
-        
+
         // { path: "purchaseTaxId", select: "name percentage" },
         // { path: "salesTaxId", select: "name percentage" },
       ],
@@ -621,7 +621,7 @@ export const getProductDropdown = async (req, res) => {
     }
 
     let effectiveBranchId = user?.branchId?._id;
-    if (branchFilter && userType === USER_TYPES.SUPER_ADMIN) {
+    if (branchFilter) {
       effectiveBranchId = new ObjectId(branchFilter as string);
     }
 
@@ -634,7 +634,6 @@ export const getProductDropdown = async (req, res) => {
 
       if (effectiveCompanyId) stockCriteria.companyId = effectiveCompanyId;
       if (effectiveBranchId) stockCriteria.branchId = effectiveBranchId;
-
 
       if (stockFilter === "true") {
         stockCriteria.qty = { $gt: 0 };
@@ -662,7 +661,7 @@ export const getProductDropdown = async (req, res) => {
       if (productIdsWithStock.length === 0) {
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [], {}));
       }
-      
+
       stockResponse.forEach((stock: any) => {
         const key = String(stock.productId);
         if (!stockByProductId.has(key)) stockByProductId.set(key, stock);
