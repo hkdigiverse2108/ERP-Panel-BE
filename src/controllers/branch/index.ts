@@ -245,7 +245,33 @@ export const updateBranchReportConfig = async (req: any, res: any) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
 
-    const response = await updateData(branchModel, { _id: value.branchId, isDeleted: false }, { reportConfig: value.reportConfig, updatedBy: user?._id || null }, {});
+    let branchId = value.branchId;
+
+    // Security: Only Super Admin can specify which branch to update.
+    // Others are locked to their own branch.
+    if (user?.userType !== USER_TYPES.SUPER_ADMIN || !branchId) {
+      branchId = user?.branchId?._id || user?.branchId;
+    }
+
+    if (!branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Branch ID is required", {}, {}));
+
+    const { type, formatName } = value.reportConfig;
+
+    // 1. Remove any existing config for this specific type to avoid duplicates
+    await branchModel.updateOne(
+      { _id: branchId },
+      { $pull: { reportConfig: { type } } }
+    );
+
+    // 2. Add the new configuration for this type
+    const response = await branchModel.findOneAndUpdate(
+      { _id: branchId, isDeleted: false },
+      {
+        $push: { reportConfig: { type, formatName } },
+        $set: { updatedBy: user?._id || null }
+      },
+      { new: true }
+    );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Branch"), {}, {}));
 

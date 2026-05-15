@@ -108,9 +108,9 @@ export const getBranchSchema = Joi.object().keys({
 });
 
 export const updateBranchReportConfigSchema = Joi.object().keys({
-  branchId: objectId().required(),
-  reportConfig: Joi.array().items(Joi.object({
+  branchId: objectId().optional(),
+  reportConfig: Joi.object({
     type: Joi.string().required(),
     formatName: Joi.string().required()
-  })).required()
+  }).required()
 });
