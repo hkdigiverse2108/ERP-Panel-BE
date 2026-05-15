@@ -11,10 +11,12 @@ const formatItemSchema = Joi.object({
 export const addReportFormatValidation = Joi.object().keys({
   type: Joi.string().required(),
   formats: Joi.array().items(formatItemSchema).required(),
+  isActive: Joi.boolean().optional().default(true),
 });
 
 export const updateReportFormatValidation = Joi.object().keys({
   reportFormatId: objectId().required(),
   type: Joi.string().required(),
   formats: Joi.array().items(formatItemSchema).required(),
+  isActive: Joi.boolean().optional(),
 });
