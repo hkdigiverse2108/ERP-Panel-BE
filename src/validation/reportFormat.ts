@@ -1,16 +1,19 @@
 import Joi from "joi";
 import { objectId } from "./common";
 
+const formatItemSchema = Joi.object({
+  _id: objectId().optional(),
+  name: Joi.string().required(),
+  isSystemDefault: Joi.boolean().optional().default(false),
+  isActive: Joi.boolean().optional().default(true),
+});
+
 export const addReportFormatValidation = Joi.object().keys({
   type: Joi.string().required(),
-  name: Joi.string().required(),
-  isActive: Joi.boolean().optional(),
-  isSystemDefault: Joi.boolean().optional(),
+  formats: Joi.array().items(formatItemSchema).required(),
 });
 
 export const updateReportFormatValidation = Joi.object().keys({
-  reportFormatId: objectId().required(),
-  type: Joi.string().optional(),
-  name: Joi.string().optional(),
-  isActive: Joi.boolean().optional(),
+  type: Joi.string().required(),
+  formats: Joi.array().items(formatItemSchema).required(),
 });
