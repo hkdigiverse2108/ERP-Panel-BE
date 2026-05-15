@@ -12,5 +12,6 @@ router.use(superAdminJwt);
 router.post("/add", branchController.addBranch);
 router.put("/edit", branchController.editBranchById);
 router.delete("/:id", branchController.deleteBranchById);
+router.put("/report-config", branchController.updateBranchReportConfig);
 
 export const branchRouter = router;

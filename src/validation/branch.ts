@@ -106,3 +106,11 @@ export const deleteBranchSchema = Joi.object().keys({
 export const getBranchSchema = Joi.object().keys({
   id: objectId().required(),
 });
+
+export const updateBranchReportConfigSchema = Joi.object().keys({
+  branchId: objectId().required(),
+  reportConfig: Joi.array().items(Joi.object({
+    type: Joi.string().required(),
+    formatName: Joi.string().required()
+  })).required()
+});

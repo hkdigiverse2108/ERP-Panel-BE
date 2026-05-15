@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel } from "../../database";
 import { applyDateFilter, checkIdExist, clonePrefixesToBranch, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
-import { addBranchSchema, deleteBranchSchema, editBranchSchema, getBranchSchema } from "../../validation";
+import { addBranchSchema, deleteBranchSchema, editBranchSchema, getBranchSchema, updateBranchReportConfigSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -231,6 +231,25 @@ export const getBranchDropdown = async (req, res) => {
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Branch"), dropdownData, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const updateBranchReportConfig = async (req: any, res: any) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = updateBranchReportConfigSchema.validate(req.body);
+
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
+
+    const response = await updateData(branchModel, { _id: value.branchId, isDeleted: false }, { reportConfig: value.reportConfig, updatedBy: user?._id || null }, {});
+
+    if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Branch"), {}, {}));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Branch report configuration"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
