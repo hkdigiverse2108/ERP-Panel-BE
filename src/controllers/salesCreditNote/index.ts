@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES, PURCHASE_DEBIT_NOTE_STATUS } from "../../common";
-import { contactModel, salesCreditNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, SalesOrderModel, InvoiceModel, userModel } from "../../database";
+import { contactModel, salesCreditNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, SalesOrderModel, InvoiceModel, userModel, stockModel } from "../../database";
 import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addSalesCreditNoteSchema, deleteSalesCreditNoteSchema, editSalesCreditNoteSchema, getSalesCreditNoteSchema } from "../../validation";
 
@@ -99,6 +99,29 @@ export const addSalesCreditNote = async (req, res) => {
 
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+    }
+
+    // Direct Stock Update for Sales Credit Note (Sales Return)
+    if (value?.productDetails && value.productDetails.length > 0) {
+      for (const item of value.productDetails) {
+        const returnQty = (item.qty || 0) + (item.freeQty || 0);
+        if (returnQty > 0) {
+          const existingStock = await getFirstMatch(stockModel, { productId: item.productId, branchId: value.branchId, isDeleted: false }, {}, {});
+          if (existingStock) {
+            await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: returnQty } }, {});
+          } else {
+            await createOne(stockModel, {
+              productId: item.productId,
+              branchId: value.branchId,
+              companyId: value.companyId,
+              qty: returnQty,
+              mrp: item.price || 0,
+              sellingPrice: item.price || 0,
+              createdBy: user?._id || null,
+            });
+          }
+        }
+      }
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Sales Credit Note"), response, {}));
@@ -208,6 +231,44 @@ export const editSalesCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Sales Credit Note"), {}, {}));
     }
 
+    // Direct Stock Update for Edit (Sales Return)
+    if (value.productDetails !== undefined) {
+      // 1. Revert Old Stock Additions
+      if (isExist.productDetails && isExist.productDetails.length > 0) {
+        for (const item of isExist.productDetails) {
+          const oldReturnQty = (item.qty || 0) + (item.freeQty || 0);
+          if (oldReturnQty > 0) {
+            await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: -oldReturnQty } }, {});
+          }
+        }
+      }
+
+      // 2. Apply New Stock Additions
+      const branchId = value.branchId || isExist.branchId;
+      const companyId = value.companyId || isExist.companyId;
+      if (value.productDetails && value.productDetails.length > 0) {
+        for (const item of value.productDetails) {
+          const returnQty = (item.qty || 0) + (item.freeQty || 0);
+          if (returnQty > 0) {
+            const existingStock = await getFirstMatch(stockModel, { productId: item.productId, branchId: branchId, isDeleted: false }, {}, {});
+            if (existingStock) {
+              await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: returnQty } }, {});
+            } else {
+              await createOne(stockModel, {
+                productId: item.productId,
+                branchId: branchId,
+                companyId: companyId,
+                qty: returnQty,
+                mrp: item.price || 0,
+                sellingPrice: item.price || 0,
+                createdBy: user?._id || null,
+              });
+            }
+          }
+        }
+      }
+    }
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Sales Credit Note"), response, {}));
   } catch (error) {
     console.error(error);
@@ -225,7 +286,20 @@ export const deleteSalesCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
-    if (!(await checkIdExist(salesCreditNoteModel, value?.id, "Sales Credit Note", res))) return;
+    const isExist = await getFirstMatch(salesCreditNoteModel, { _id: value?.id, isDeleted: false }, {}, {});
+    if (!isExist) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Sales Credit Note"), {}, {}));
+    }
+
+    // Revert Stock before deletion (reduce inventory stock)
+    if (isExist.productDetails && isExist.productDetails.length > 0) {
+      for (const item of isExist.productDetails) {
+        const returnQty = (item.qty || 0) + (item.freeQty || 0);
+        if (returnQty > 0) {
+          await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: -returnQty } }, {});
+        }
+      }
+    }
 
     const payload = {
       isDeleted: true,
@@ -536,6 +610,3 @@ export const getSalesCreditNoteDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-
-
-
