@@ -26,19 +26,6 @@ const settingsSchema = new mongoose.Schema<ISettings>(
       timezone: { type: String, default: "IST" },
     },
     links: { type: [settingsLinkSchema], default: [] },
-    reportFormats: [
-      {
-        type: { type: String }, //pos offline
-        formats: [
-          {
-            name: { type: String },
-            isSelected: { type: Boolean },
-            isActive: { type: Boolean, default: true },
-          },
-        ],
-        isActive: { type: Boolean, default: true },
-      },
-    ],
     ...baseCommonFields,
   },
   baseSchemaOptions,

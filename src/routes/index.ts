@@ -66,7 +66,7 @@ import { aiRouter } from "./ai";
 import migrationRouter from "./migration";
 import { notificationRouter } from "./notification";
 import { stockTransferRouter } from "./stockTransfer";
-
+import { reportFormatRouter } from "./reportFormat";
 
 const router = Router();
 
@@ -131,6 +131,7 @@ router.use("/material", materialRouter);
 router.use("/material-consumption", materialConsumptionRouter);
 router.use("/bill-of-live-product", billOfLiveProductRouter);
 router.use("/settings", settingsRouter);
+router.use("/report-format", reportFormatRouter);
 
 // === For Super Admin
 router.use("/company", companyRouter);

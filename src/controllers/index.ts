@@ -63,3 +63,4 @@ export * as credentialController from "./credential";
 export * as aiController from "./ai";
 export * as stockTransferController from "./stockTransfer";
 export * as notificationController from "./notification";
+export * as reportFormatController from "./reportFormat";

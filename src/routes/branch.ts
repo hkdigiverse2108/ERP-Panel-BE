@@ -7,6 +7,7 @@ const router = express.Router();
 router.get("/all", branchController.getAllBranch);
 router.get("/dropdown", branchController.getBranchDropdown);
 router.get("/:id", branchController.getBranchById);
+router.put("/report-config", branchController.updateBranchReportConfig);
 
 router.use(superAdminJwt);           
 router.post("/add", branchController.addBranch);

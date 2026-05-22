@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel } from "../../database";
 import { applyDateFilter, checkIdExist, clonePrefixesToBranch, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
-import { addBranchSchema, deleteBranchSchema, editBranchSchema, getBranchSchema } from "../../validation";
+import { addBranchSchema, deleteBranchSchema, editBranchSchema, getBranchSchema, updateBranchReportConfigSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -231,6 +231,51 @@ export const getBranchDropdown = async (req, res) => {
     }));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Branch"), dropdownData, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const updateBranchReportConfig = async (req: any, res: any) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const { error, value } = updateBranchReportConfigSchema.validate(req.body);
+
+    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
+
+    let branchId = value.branchId;
+
+    // Security: Only Super Admin can specify which branch to update.
+    // Others are locked to their own branch.
+    if (user?.userType !== USER_TYPES.SUPER_ADMIN || !branchId) {
+      branchId = user?.branchId?._id || user?.branchId;
+    }
+
+    if (!branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Branch ID is required", {}, {}));
+
+    const { type, formatName } = value.reportConfig;
+
+    // 1. Remove any existing config for this specific type to avoid duplicates
+    await branchModel.updateOne(
+      { _id: branchId },
+      { $pull: { reportConfig: { type } } }
+    );
+
+    // 2. Add the new configuration for this type
+    const response = await branchModel.findOneAndUpdate(
+      { _id: branchId, isDeleted: false },
+      {
+        $push: { reportConfig: { type, formatName } },
+        $set: { updatedBy: user?._id || null }
+      },
+      { new: true }
+    );
+
+    if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Branch"), {}, {}));
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Branch report configuration"), response, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

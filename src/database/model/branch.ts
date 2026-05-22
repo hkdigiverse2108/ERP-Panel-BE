@@ -44,6 +44,13 @@ const branchSchema: any = new mongoose.Schema(
 
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: "company", index: true },
     userIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "user", default: [] }],
+    reportConfig: [
+      {
+        type: { type: String }, // e.g., "POS(B2C)"
+        formatName: { type: String }, // e.g., "Thermal_80mm-1"
+        isDefault: { type: Boolean, default: false },
+      },
+    ],
 
     ...baseCommonFields,
   },

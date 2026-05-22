@@ -31,3 +31,4 @@ export * from "./supplierBill";
 export * from "./expense";
 export * from "./paymentTerm";
 export * from "./consumptionType";
+export * from "./reportFormat";
