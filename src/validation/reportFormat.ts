@@ -16,7 +16,7 @@ export const addReportFormatValidation = Joi.object().keys({
 
 export const updateReportFormatValidation = Joi.object().keys({
   reportFormatId: objectId().required(),
-  type: Joi.string().required(),
-  formats: Joi.array().items(formatItemSchema).required(),
+  type: Joi.string().optional(),
+  formats: Joi.array().items(formatItemSchema).optional(),
   isActive: Joi.boolean().optional(),
 });

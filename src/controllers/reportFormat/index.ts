@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { reportFormatModel, branchModel } from "../../database";
-import { getFirstMatch, reqInfo, responseMessage } from "../../helper";
+import { getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { addReportFormatValidation, updateReportFormatValidation } from "../../validation";
 
 export const getAllReportFormats = async (req: Request | any, res: Response | any) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { search, type, branchFilter } = req.query;
+    const { search, type, branchFilter ,activeFilter} = req.query;
 
     const branchId = branchFilter || req.query.branchId || user?.branchId;
 
@@ -23,11 +23,12 @@ export const getAllReportFormats = async (req: Request | any, res: Response | an
       query.type = type;
     }
 
+    if (activeFilter) {
+      query.isActive = activeFilter === "true" ? true : false;
+    }
+
     if (search) {
-      query.$or = [
-        { type: { $regex: new RegExp(search as string, "i") } },
-        { "formats.name": { $regex: new RegExp(search as string, "i") } }
-      ];
+      query.$or = [{ type: { $regex: new RegExp(search as string, "i") } }, { "formats.name": { $regex: new RegExp(search as string, "i") } }];
     }
 
     const reportFormats = await reportFormatModel.find(query).sort({ type: 1 }).lean();
@@ -41,16 +42,14 @@ export const getAllReportFormats = async (req: Request | any, res: Response | an
     }
 
     const result = reportFormats.map((reportType: any) => {
-      const branchSelection = branchConfig.find(config => config.type === reportType.type);
+      const branchSelection = branchConfig.find((config) => config.type === reportType.type);
 
       reportType.formats = reportType.formats.map((format: any) => {
         // A format is "selected" if:
         // 1. It matches the branch's specific choice.
         // 2. OR if the branch has no choice and this is the system default.
         // 3. (Fallback for Super Admin view with no branch) Just use the system default flag.
-        const isSelected = branchSelection
-          ? branchSelection.formatName === format.name
-          : format.isSystemDefault;
+        const isSelected = branchSelection ? branchSelection.formatName === format.name : format.isSystemDefault;
 
         return { ...format, isSelected };
       });
@@ -84,11 +83,11 @@ export const addReportFormat = async (req: Request | any, res: Response | any) =
       {
         $set: {
           formats,
-          updatedBy: user?._id || null
+          updatedBy: user?._id || null,
         },
-        $setOnInsert: { createdBy: user?._id || null }
+        $setOnInsert: { createdBy: user?._id || null },
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true },
     );
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Report formats updated successfully for this type", reportType, {}));
@@ -105,26 +104,32 @@ export const updateReportFormat = async (req: Request | any, res: Response | any
     const { error, value } = updateReportFormatValidation.validate(req.body);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    const { reportFormatId, type, formats } = value;
-    console.log(value, "value")
+    const { reportFormatId, formats } = value;
+    console.log(value, "value");
     // Validate that only one system default is present in the provided list
-    const defaultCount = formats.filter((f: any) => f.isSystemDefault).length;
-    if (defaultCount > 1) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Only one format can be marked as system default per type", {}, {}));
+    if (formats) {
+      const defaultCount = formats.filter((f: any) => f.isSystemDefault).length;
+      if (defaultCount > 1) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Only one format can be marked as system default per type", {}, {}));
+      }
     }
 
-    const reportType = await reportFormatModel.findOneAndUpdate(
-      { _id: reportFormatId },
-      {
-        $set: {
-          formats,
-          type,
-          updatedBy: user?._id || null
-        },
-        $setOnInsert: { createdBy: user?._id || null }
-      },
-      { upsert: true, new: true }
-    );
+    // const reportType = await reportFormatModel.findOneAndUpdate(
+    //   { _id: reportFormatId },
+    //   {
+    //     $set: {
+    //       formats,
+    //       type,
+    //       isActive,
+    //       updatedBy: user?._id || null
+    //     },
+    //     $setOnInsert: { createdBy: user?._id || null }
+    //   },
+    //   { upsert: true, new: true }
+    // );
+    value.updatedBy = user?._id || null;
+
+    const reportType = await updateData(reportFormatModel, { _id: reportFormatId }, value, {});
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Report formats updated successfully for this type", reportType, {}));
   } catch (error) {
@@ -175,7 +180,7 @@ export const getBranchReportConfig = async (req: Request | any, res: Response | 
 
     // First, set system defaults from each type
     reportTypes.forEach((doc) => {
-      const defaultFormat = doc.formats.find(f => f.isSystemDefault && f.isActive && !f.isDeleted);
+      const defaultFormat = doc.formats.find((f) => f.isSystemDefault && f.isActive && !f.isDeleted);
       if (defaultFormat) {
         configMap[doc.type] = defaultFormat.name;
       }
