@@ -14,7 +14,7 @@ export const addContact = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
-    if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+    if (!user.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
 
     const phoneNo = value?.phoneNo?.phoneNo;
     const whatsappNo = value?.whatsappNo?.phoneNo;
@@ -41,7 +41,7 @@ export const addContact = async (req, res) => {
         return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(errorText), {}, {}));
       }
     }
-
+    value.companyId = user?.companyId?._id;
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
