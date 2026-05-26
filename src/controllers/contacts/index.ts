@@ -41,7 +41,7 @@ export const addContact = async (req, res) => {
         return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage.dataAlreadyExist(errorText), {}, {}));
       }
     }
-
+    value.companyId = user?.companyId?._id;
     value.createdBy = user?._id || null;
     value.updatedBy = user?._id || null;
 
