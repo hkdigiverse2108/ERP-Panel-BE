@@ -272,7 +272,6 @@ export const editDeliveryChallan = async (req, res) => {
     }
     // ------------------------------------
 
-
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Delivery Challan"), response, {}));
   } catch (error) {
     console.error(error);
@@ -383,6 +382,7 @@ export const getAllDeliveryChallan = async (req, res) => {
             { path: "address.city", select: "name" },
           ],
         },
+        { path: "termsAndConditionIds", select: "termsCondition" },
         { path: "paymentTermsId", select: "name day" },
         { path: "createdBy", select: "fullName userType" },
         { path: "salesOrderIds", select: "salesOrderNo" },
@@ -627,6 +627,3 @@ export const getDeliveryChallanDropdown = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
-
-
-
