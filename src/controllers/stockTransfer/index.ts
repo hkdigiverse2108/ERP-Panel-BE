@@ -593,8 +593,22 @@ export const getStockTransferById = async (req, res) => {
       {},
       {
         populate: [
-          { path: "requestedByBranchId", select: "name" },
-          { path: "requestedToBranchId", select: "name" },
+          {
+            path: "requestedByBranchId",
+            select: "name address phoneNo email",
+            populate: {
+              path: "address.city address.state address.country",
+              select: "name",
+            },
+          },
+          {
+            path: "requestedToBranchId",
+            select: "name address phoneNo email",
+            populate: {
+              path: "address.city address.state address.country",
+              select: "name",
+            },
+          },
           { path: "items.productId", select: "name itemCode mrp sellingPrice uomId" },
           { path: "approvedBy", select: "fullName" },
           { path: "receivedBy", select: "fullName" },
