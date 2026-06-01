@@ -719,26 +719,26 @@ export const getProductDropdown = async (req, res) => {
     );
 
     const mergedResponse = response.map((product) => {
-      const stock = stockByProductId.get(String(product._id));
-      return {
-        _id: product._id,
-        name: product.name,
-        productType: product.productType,
-        qty: stock?.qty ?? 0,
-        purchasePrice: stock?.purchasePrice ?? product.purchasePrice,
-        landingCost: stock?.landingCost ?? product.landingCost,
-        mrp: stock?.mrp ?? product.mrp,
-        sellingPrice: stock?.sellingPrice ?? product.sellingPrice,
-        sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
-        sellingMargin: stock?.sellingMargin ?? product.sellingMargin,
-        purchaseTaxId: stock?.purchaseTaxId,
-        salesTaxId: stock?.salesTaxId,
-        isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
-        isSalesTaxIncluding: stock?.isSalesTaxIncluding,
-        uomId: stock?.uomId,
-        branchId: stock?.branchId,
-        images: product.images ?? [],
-      };
+        const stock = stockByProductId.get(String(product._id));
+        return {
+          _id: product._id,
+          name: product.name,
+          productType: product.productType,
+          qty: stock?.qty ?? 0,
+          purchasePrice: stock?.purchasePrice ?? product.purchasePrice,
+          landingCost: stock?.landingCost ?? product.landingCost,
+          mrp: stock?.mrp ?? product.mrp,
+          sellingPrice: stock?.sellingPrice ?? product.sellingPrice,
+          sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
+          sellingMargin: stock?.sellingMargin ?? product.sellingMargin,
+          purchaseTaxId: stock?.purchaseTaxId,
+          salesTaxId: stock?.salesTaxId,
+          isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
+          isSalesTaxIncluding: stock?.isSalesTaxIncluding,
+          uomId: stock?.uomId,
+          branchId: stock?.branchId,
+          images: product.images ?? [],
+        };
     });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), mergedResponse, {}));
@@ -1020,8 +1020,8 @@ export const detectProduct = async (req, res) => {
             const stockInfo = await stockModel.findOne(stockCriteria).populate([
               { path: "companyId", select: "name" },
               { path: "branchId", select: "name" },
-              { path: "purchaseTaxId", select: "name percentage" },
-              { path: "salesTaxId", select: "name percentage" },
+              { path: "purchaseTaxId"},
+              { path: "salesTaxId" },
               { path: "uomId", select: "name code" },
             ]);
 
@@ -1034,6 +1034,8 @@ export const detectProduct = async (req, res) => {
               uomId: stockInfo?.uomId || null,
               purchaseTaxId: stockInfo?.purchaseTaxId || null,
               salesTaxId: stockInfo?.salesTaxId || null,
+              isPurchaseTaxIncluding: stockInfo?.isPurchaseTaxIncluding,
+              isSalesTaxIncluding: stockInfo?.isSalesTaxIncluding,
               branchId: stockInfo?.branchId || null,
               ai_confidence: idMatches[productIdStr] || 0,
               detect_qty: idCounts[productIdStr] || 1,
