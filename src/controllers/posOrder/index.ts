@@ -161,12 +161,16 @@ export const addPosOrder = async (req, res) => {
     // --- Stock Management Logic ---
     if (response.status !== POS_ORDER_STATUS.CANCELLED) {
       for (const item of response.items) {
+        const stockMatchCriteria: any = {
+          productId: item.productId,
+          branchId: response.branchId,
+          isDeleted: false,
+        };
+        if (item.variantId) stockMatchCriteria.variantId = item.variantId;
+        else stockMatchCriteria.variantId = { $exists: false };
+
         await stockModel.findOneAndUpdate(
-          {
-            productId: item.productId,
-            branchId: response.branchId,
-            isDeleted: false,
-          },
+          stockMatchCriteria,
           { $inc: { qty: -item.qty } },
         );
       }
@@ -439,12 +443,16 @@ export const editPosOrder = async (req, res) => {
     // 1. Revert the old quantities back to stock if it was active
     if (wasActive) {
       for (const item of isExist.items) {
+        const stockMatchCriteria: any = {
+          productId: item.productId,
+          branchId: isExist.branchId,
+          isDeleted: false,
+        };
+        if (item.variantId) stockMatchCriteria.variantId = item.variantId;
+        else stockMatchCriteria.variantId = { $exists: false };
+
         await stockModel.findOneAndUpdate(
-          {
-            productId: item.productId,
-            branchId: isExist.branchId,
-            isDeleted: false,
-          },
+          stockMatchCriteria,
           { $inc: { qty: item.qty } },
         );
       }
@@ -453,12 +461,16 @@ export const editPosOrder = async (req, res) => {
     // 2. Deduct the new quantities from stock if it is now active
     if (isActive) {
       for (const item of response.items) {
+        const stockMatchCriteria: any = {
+          productId: item.productId,
+          branchId: response.branchId,
+          isDeleted: false,
+        };
+        if (item.variantId) stockMatchCriteria.variantId = item.variantId;
+        else stockMatchCriteria.variantId = { $exists: false };
+
         await stockModel.findOneAndUpdate(
-          {
-            productId: item.productId,
-            branchId: response.branchId,
-            isDeleted: false,
-          },
+          stockMatchCriteria,
           { $inc: { qty: -item.qty } },
         );
       }
@@ -595,6 +607,25 @@ export const deletePosOrder = async (req, res) => {
     }
 
     // -----------------------------------------------------------
+    // --- Stock Management Logic ---
+    // Revert stock if the order was not cancelled
+    if (isExist.status !== POS_ORDER_STATUS.CANCELLED) {
+      for (const item of isExist.items) {
+        const stockMatchCriteria: any = {
+          productId: item.productId,
+          branchId: isExist.branchId,
+          isDeleted: false,
+        };
+        if (item.variantId) stockMatchCriteria.variantId = item.variantId;
+        else stockMatchCriteria.variantId = { $exists: false };
+
+        await stockModel.findOneAndUpdate(
+          stockMatchCriteria,
+          { $inc: { qty: item.qty } },
+        );
+      }
+    }
+
     let response;
     if (isExist.status === POS_ORDER_STATUS.HOLD) {
       // if order status is hold then permanent delete it
@@ -603,32 +634,6 @@ export const deletePosOrder = async (req, res) => {
       });
       // Also permanent delete any associated payments
       await PosPaymentModel.deleteMany({ posOrderId: new ObjectId(value?.id) });
-
-      // --- Stock Management Logic ---
-      // Revert stock if the order was not cancelled
-      for (const item of isExist.items) {
-        await stockModel.findOneAndUpdate(
-          {
-            productId: item.productId,
-            branchId: isExist.branchId,
-            isDeleted: false,
-          },
-          { $inc: { qty: item.qty } },
-        );
-      }
-      // --- Revert Coupon, Loyalty Campaign, and Redeem Credit ---
-      if (isExist.couponId && isExist.customerId) {
-        await revertCoupon(isExist.couponId, isExist.customerId);
-      }
-      if (isExist.discountId && isExist.customerId) {
-        await revertDiscount(isExist.discountId, isExist.customerId);
-      }
-      if (isExist.loyaltyId && isExist.customerId) {
-        await revertLoyalty(isExist.loyaltyId, isExist.customerId);
-      }
-      if (isExist.redeemCreditId && isExist.redeemCreditAmount > 0) {
-        await revertRedeemCredit(isExist.redeemCreditId, isExist.redeemCreditType, isExist.redeemCreditAmount, isExist._id);
-      }
     } else {
       // otherwise just softdelete it
       const payload = {
@@ -804,7 +809,7 @@ export const getAllPosOrder = async (req, res) => {
           select: "firstName lastName companyName email phoneNo address.state",
           populate: [{ path: "address.state", select: "name" }],
         },
-        { path: "items.productId", select: "name " },
+        { path: "items.productId", select: "name variants" },
         { path: "invoiceId", select: "documentNo" },
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "additionalCharges.chargeId", select: "name" },

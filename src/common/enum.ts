@@ -437,3 +437,14 @@ export const STOCK_TRANSFER_STATUS = {
   COMPLETED: "completed",
   CANCELLED: "cancelled",
 } as const;
+
+export const BARCODE_TYPE = {
+  EAN_13: "EAN_13",
+  EAN_8: "EAN_8",
+  UPC_A: "UPC_A",
+  UPC_E: "UPC_E",
+  QR_CODE: "QR_CODE",
+  CODE_128: "CODE_128",
+  CUSTOM: "CUSTOM",
+} as const;
+

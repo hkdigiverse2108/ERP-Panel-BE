@@ -220,7 +220,7 @@ export const getAllPurchaseOrder = async (req, res) => {
             { path: "address.city", select: "name" },
           ],
         },
-        { path: "items.productId", select: "name itemCode" },
+        { path: "items.productId", select: "name itemCode variants" },
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "termsAndConditionIds", select: "name" },
@@ -339,7 +339,7 @@ export const getOnePurchaseOrder = async (req, res) => {
           },
           {
             path: "items.productId",
-            select: "name itemCode purchasePrice landingCost",
+            select: "name itemCode purchasePrice landingCost variants",
           },
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },

@@ -5,6 +5,7 @@ import { CONSUMPTION_TYPE } from "../../common";
 const materialConsumptionItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product" },
+    variantId: { type: Schema.Types.ObjectId, ref: "product", default: null },
     qty: { type: Number },
     price: { type: Number, default: 0 },
     totalPrice: { type: Number, default: 0 },

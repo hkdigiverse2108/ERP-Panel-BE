@@ -4,6 +4,7 @@ import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS } from "../common";
 
 export interface ISupplierBillItem {
   productId: Schema.Types.ObjectId;
+  variantId?: Schema.Types.ObjectId;
   qty: number;
   freeQty?: number;
   uomId?: Schema.Types.ObjectId;
@@ -23,6 +24,7 @@ export interface ISupplierBillItem {
 
 export interface ISupplierBillReturnItem {
   productId: Schema.Types.ObjectId;
+  variantId?: Schema.Types.ObjectId;
   qty: number;
   uomId?: Schema.Types.ObjectId;
   unit?: string;

@@ -5,6 +5,7 @@ import { INVOICE_STATUS, TAX_TYPE, INVOICE_CREATED_FROM, PAY_TYPE } from "../com
 const invoiceItemSchema = Joi.object().keys({
   refId: objectId().optional().allow("", null),
   productId: objectId().required(),
+  variantId: objectId().optional().allow(null),
   qty: Joi.number().min(0).required(),
   freeQty: Joi.number().min(0).default(0).optional(),
   uomId: objectId().optional().allow(null),

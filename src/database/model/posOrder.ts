@@ -29,6 +29,7 @@ export const posAdditionalChargeSchema = new Schema(
 export const posItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
+    variantId: { type: Schema.Types.ObjectId, ref: "product", default: null },
     qty: { type: Number },
     mrp: { type: Number },
     discountAmount: { type: Number, default: 0 },

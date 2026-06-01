@@ -32,6 +32,11 @@ export const addMaterialConsumption = async (req, res) => {
         branchId: value?.branchId,
         isDeleted: false,
       };
+      if (item?.variantId) {
+        stockCriteria.variantId = item.variantId;
+      } else {
+        stockCriteria.variantId = { $exists: false };
+      }
 
       const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
       if (!stock) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
@@ -97,24 +102,31 @@ export const editMaterialConsumption = async (req, res) => {
       const oldItemMap = new Map();
       if (isExist.items && isExist.items.length > 0) {
         isExist.items.forEach((item) => {
-          oldItemMap.set(item.productId.toString(), item.qty);
+          const key = item.variantId ? `${item.productId}_${item.variantId}` : `${item.productId}_null`;
+          oldItemMap.set(key, { productId: item.productId, variantId: item.variantId, qty: item.qty });
         });
       }
 
       // 2. Map New Items
       const newItemMap = new Map();
       value.items.forEach((item) => {
-        newItemMap.set(item.productId.toString(), item.qty);
+        const key = item.variantId ? `${item.productId}_${item.variantId}` : `${item.productId}_null`;
+        newItemMap.set(key, { productId: item.productId, variantId: item.variantId, qty: item.qty });
       });
 
-      // 3. Identify all affected products
-      const allProductIds = new Set([...oldItemMap.keys(), ...newItemMap.keys()]);
+      // 3. Identify all affected keys
+      const allKeys = new Set([...oldItemMap.keys(), ...newItemMap.keys()]);
 
-      for (const productId of allProductIds) {
+      for (const key of allKeys) {
+        const oldItem = oldItemMap.get(key);
+        const newItem = newItemMap.get(key);
+        const productId = newItem?.productId || oldItem?.productId;
+        const variantId = newItem?.variantId || oldItem?.variantId;
+
         if (!(await checkIdExist(productModel, productId, "Product", res))) return;
 
-        const oldQty = oldItemMap.get(productId) || 0;
-        const newQty = newItemMap.get(productId) || 0;
+        const oldQty = oldItem ? oldItem.qty : 0;
+        const newQty = newItem ? newItem.qty : 0;
         const difference = newQty - oldQty;
 
         if (difference === 0) continue;
@@ -124,8 +136,12 @@ export const editMaterialConsumption = async (req, res) => {
           isDeleted: false,
           branchId: isExist.branchId, // Use existing branch ID
         };
-        // branchId logic if needed (assuming stock is company-wide or branch-specific based on existing patterns)
-        // if (isExist.branchId) stockCriteria.branchId = isExist.branchId;
+        if (variantId) {
+          stockCriteria.variantId = variantId;
+        } else {
+          stockCriteria.variantId = { $exists: false };
+        }
+        
         const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
         if (!stock) {
           // If trying to increase consumption but no stock record exists
@@ -229,7 +245,7 @@ export const getAllMaterialConsumption = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "consumptionTypeId", select: "name" },
-        { path: "items.productId", select: "name" },
+        { path: "items.productId", select: "name variants" },
         { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
@@ -268,7 +284,7 @@ export const getMaterialConsumptionById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "consumptionTypeId", select: "name" },
-          { path: "items.productId", select: "name" },
+          { path: "items.productId", select: "name variants" },
           { path: "createdBy", select: "fullName userType" },
         ],
       },

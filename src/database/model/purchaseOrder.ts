@@ -7,6 +7,7 @@ import { ORDER_STATUS, TAX_TYPE } from "../../common";
 export const purchaseItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
+    variantId: { type: Schema.Types.ObjectId, ref: "product", default: null },
     qty: { type: Number, required: true },
     uomId: { type: Schema.Types.ObjectId, ref: "product" },
     unit: { type: String },

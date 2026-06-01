@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { PRODUCT_EXPIRY_TYPE, PRODUCT_TYPE } from "../common";
+import { BARCODE_TYPE, PRODUCT_EXPIRY_TYPE, PRODUCT_TYPE } from "../common";
 import { baseCompanyApiSchema, objectId } from "./common";
 
 export const addProductSchema = Joi.object().keys({
@@ -83,6 +83,24 @@ export const addProductSchema = Joi.object().keys({
   images: Joi.array().items(Joi.string()).optional().allow("", null),
 
   additionalInfo: Joi.string().optional().allow("", null),
+  barcode: Joi.string().optional().allow("", null),
+  barcodeType: Joi.string().valid(...Object.values(BARCODE_TYPE)).optional(),
+  variants: Joi.array().items(
+    Joi.object({
+      name: Joi.string().required(),
+      sku: Joi.string().optional(),
+      itemCode: Joi.string().optional(),
+      barcode: Joi.string().optional().allow("", null),
+      barcodeType: Joi.string().valid(...Object.values(BARCODE_TYPE)).optional(),
+      attributes: Joi.array().items(
+        Joi.object({ key: Joi.string().required(), value: Joi.string().required() })
+      ).optional(),
+      mrp: Joi.number().min(0).default(0).optional(),
+      sellingPrice: Joi.number().min(0).default(0).optional(),
+      purchasePrice: Joi.number().min(0).default(0).optional(),
+      isActive: Joi.boolean().default(true).optional(),
+    })
+  ).optional(),
   ...baseCompanyApiSchema,
 });
 
@@ -161,6 +179,26 @@ export const editProductSchema = Joi.object().keys({
   images: Joi.array().items(Joi.string()).optional().allow("", null),
 
   additionalInfo: Joi.string().optional().allow("", null),
+  barcode: Joi.string().optional().allow("", null),
+  barcodeType: Joi.string().valid(...Object.values(BARCODE_TYPE)).optional(),
+  variants: Joi.array().items(
+    Joi.object({
+      _id: Joi.string().optional(),
+      name: Joi.string().optional(),
+      sku: Joi.string().optional(),
+      itemCode: Joi.string().optional(),
+      barcode: Joi.string().optional().allow("", null),
+      barcodeType: Joi.string().valid(...Object.values(BARCODE_TYPE)).optional(),
+      attributes: Joi.array().items(
+        Joi.object({ key: Joi.string().required(), value: Joi.string().required() })
+      ).optional(),
+      mrp: Joi.number().min(0).optional(),
+      sellingPrice: Joi.number().min(0).optional(),
+      purchasePrice: Joi.number().min(0).optional(),
+      isActive: Joi.boolean().optional(),
+    })
+  ).optional(),
+  removeVariantIds: Joi.array().items(Joi.string()).optional(),
   ...baseCompanyApiSchema,
 });
 
@@ -218,8 +256,9 @@ export const addBulkProductSchema = Joi.object().keys({
   shortDescription: Joi.string().optional(),
   netWeight: Joi.number().min(0).optional().allow("", null),
 
-  nutrition: Joi.string().optional(),
-  
+  barcode: Joi.string().optional().allow("", null),
+  barcodeType: Joi.string().valid(...Object.values(BARCODE_TYPE)).optional(),
+
   ...baseCompanyApiSchema,
 
   isActive: Joi.boolean().optional(),

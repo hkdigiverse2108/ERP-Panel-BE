@@ -26,8 +26,9 @@ export const addStock = async (req, res) => {
     };
 
     if (value?.companyId) existingStockCriteria.companyId = value.companyId;
-
     if (value?.branchId) existingStockCriteria.branchId = value.branchId;
+    if (value?.variantId) existingStockCriteria.variantId = value.variantId;
+    if (!value?.variantId) existingStockCriteria.variantId = { $exists: false };
 
     const existingStock = await getFirstMatch(stockModel, existingStockCriteria, {}, {});
     if (existingStock) {
@@ -63,21 +64,12 @@ export const editStock = async (req, res) => {
     const updatedItems = [];
 
     for (const item of value) {
-      const product = await getFirstMatch(productModel, { _id: item?.productId, isDeleted: false }, {}, {});
-      if (!product) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
-
-      const stockCriteria: any = {
-        productId: item?.productId,
-        isDeleted: false,
-      };
-
-      stockCriteria.companyId = await checkCompany(user, item);
-      stockCriteria.branchId = await checkBranch(user, item);
-      if (!stockCriteria.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
-      if (!stockCriteria.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
-
-      const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
+      const stock = await getFirstMatch(stockModel, { _id: item.stockId, isDeleted: false }, {}, {});
       if (!stock) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
+
+      const productId = item.productId || stock.productId;
+      const product = await getFirstMatch(productModel, { _id: productId, isDeleted: false }, {}, {});
+      if (!product) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
 
       const currentQty = stock?.qty || 0;
       const nextQty = currentQty - item.qty;
@@ -132,6 +124,9 @@ export const bulkStockAdjustment = async (req, res) => {
         companyId,
         branchId,
       };
+
+      if (item?.variantId) stockCriteria.variantId = item.variantId;
+      else stockCriteria.variantId = { $exists: false };
 
       const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
       if (!stock) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock"), {}, {}));
@@ -228,7 +223,7 @@ export const getAllStock = async (req, res) => {
     const { user } = req.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
-    const { page, limit, search, activeFilter, companyFilter, branchFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
+    const { page, limit, search, activeFilter, companyFilter, branchFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, minStockQty, maxStockQty, expiryFilter, stockFilter } = req.query;
 
     const stockMatchCriteria: any = { isDeleted: false };
 
@@ -246,6 +241,10 @@ export const getAllStock = async (req, res) => {
     if (purchaseTaxFilter) stockMatchCriteria.purchaseTaxId = new ObjectId(purchaseTaxFilter as string);
     if (salesTaxIdFilter) stockMatchCriteria.salesTaxId = new ObjectId(salesTaxIdFilter as string);
 
+    if (stockFilter === "true") {
+      stockMatchCriteria.qty = { $gt: 0 };
+    }
+
     if (!companyFilter && user?.companyId?._id) {
       stockMatchCriteria.companyId = user?.companyId?._id;
     }
@@ -254,7 +253,7 @@ export const getAllStock = async (req, res) => {
       { $match: stockMatchCriteria },
       {
         $group: {
-          _id: "$productId",
+          _id: { productId: "$productId", variantId: "$variantId" },
           totalQty: { $sum: "$qty" },
           branchId: { $first: "$branchId" },
         },
@@ -295,13 +294,15 @@ export const getAllStock = async (req, res) => {
     }
 
     const stockByProduct = await stockModel.aggregate(stockAggregationPipeline);
-    const productIdsWithStock = stockByProduct.map((s: any) => s._id);
+    const productIdsWithStock = stockByProduct.map((s: any) => s._id.productId);
     const qtyByProductId: Record<string, number> = {};
     const branchByProductId: Record<string, any> = {};
     stockByProduct.forEach((s: any) => {
-      qtyByProductId[s._id.toString()] = s.totalQty;
-      branchByProductId[s._id.toString()] = s.branchData;
+      const key = `${s._id.productId}_${s._id.variantId || ""}`;
+      qtyByProductId[key] = s.totalQty;
+      branchByProductId[key] = s.branchData;
     });
+
     if (productIdsWithStock.length === 0) {
       const stateObj = {
         page: parseInt(page as string),
@@ -328,28 +329,25 @@ export const getAllStock = async (req, res) => {
     };
 
     if (search) {
-      criteria.$or = [{ name: { $regex: search, $options: "si" } }, { itemCode: { $regex: search, $options: "si" } }];
+      const searchCondition = [
+        { name: { $regex: search, $options: "si" } },
+        { barcode: { $regex: search, $options: "si" } },
+        { "variants.barcode": { $regex: search, $options: "si" } },
+        { "variants.sku": { $regex: search, $options: "si" } },
+      ];
+      criteria.$or = searchCondition;
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
-
     if (categoryFilter) criteria.categoryId = categoryFilter;
-
     if (subCategoryFilter) criteria.subCategoryId = subCategoryFilter;
-
     if (brandFilter) criteria.brandId = brandFilter;
-
     if (subBrandFilter) criteria.subBrandId = subBrandFilter;
-
     if (hsnCodeFilter) criteria.hsnCode = hsnCodeFilter;
-
     if (productTypeFilter) criteria.productType = productTypeFilter;
-
     if (expiryFilter !== undefined) criteria.hasExpiry = expiryFilter === "true";
 
     const options: any = {
-      skip: (parseInt(page as string) - 1) * parseInt(limit as string),
-      limit: parseInt(limit as string),
       populate: [
         { path: "companyId", select: "name" },
         { path: "categoryId", select: "name" },
@@ -359,20 +357,93 @@ export const getAllStock = async (req, res) => {
         { path: "createdBy", select: "fullName userType" },
       ],
     };
+
+    // Fetch all matched products to flatten and paginate in-memory
     const products = await getDataWithSorting(productModel, criteria, {}, options);
-    const totalData = await countData(productModel, criteria);
 
-    const stockData = products.map((product: any) => ({
-      ...product,
-      availableQty: qtyByProductId[product._id.toString()] ?? 0,
-      branchId: branchByProductId[product._id.toString()] ?? null,
-    }));
+    const stockData = [];
+    products.forEach((product: any) => {
+      const productObj = product.toObject ? product.toObject() : product;
+      if (productObj.variants && productObj.variants.length > 0) {
+        productObj.variants.forEach((variant: any) => {
+          const key = `${productObj._id}_${variant._id || ""}`;
+          const totalQty = qtyByProductId[key];
 
-    const totalPages = Math.ceil(totalData / parseInt(limit as string)) || 1;
+          // Skip if there is no stock record for this variant
+          if (totalQty === undefined) return;
+
+          // Variant-level search filter if search query is entered
+          if (search) {
+            const query = (search as string).toLowerCase();
+            const parentMatch = productObj.name.toLowerCase().includes(query);
+            const variantMatch = variant.name.toLowerCase().includes(query);
+            const barcodeMatch = variant.barcode && variant.barcode.toLowerCase().includes(query);
+            const skuMatch = variant.sku && variant.sku.toLowerCase().includes(query);
+            if (!parentMatch && !variantMatch && !barcodeMatch && !skuMatch) return;
+          }
+
+          stockData.push({
+            ...productObj,
+            variants: undefined, // remove nested variants array
+            variantId: variant._id,
+            name: `${productObj.name} - ${variant.name}`,
+            sku: variant.sku || productObj.sku,
+            barcode: variant.barcode || productObj.barcode,
+            mrp: variant.mrp || productObj.mrp,
+            sellingPrice: variant.sellingPrice || productObj.sellingPrice,
+            purchasePrice: variant.purchasePrice || productObj.purchasePrice,
+            availableQty: totalQty,
+            branchId: branchByProductId[key] ?? null,
+          });
+        });
+
+        // Also check if the parent product itself has a stock entry (no variant)
+        const parentKey = `${productObj._id}_`;
+        const parentQty = qtyByProductId[parentKey];
+        if (parentQty !== undefined) {
+          if (search) {
+            const query = (search as string).toLowerCase();
+            const parentMatch = productObj.name.toLowerCase().includes(query) ||
+              (productObj.barcode && productObj.barcode.toLowerCase().includes(query)) ||
+              (productObj.sku && productObj.sku.toLowerCase().includes(query));
+            if (!parentMatch) return;
+          }
+          stockData.push({
+            ...productObj,
+            variants: undefined,
+            variantId: null,
+            availableQty: parentQty,
+            branchId: branchByProductId[parentKey] ?? null,
+          });
+        }
+      } else {
+        const key = `${productObj._id}_`;
+        const totalQty = qtyByProductId[key];
+
+        // Skip if there is no stock record for this product
+        if (totalQty === undefined) return;
+
+        stockData.push({
+          ...productObj,
+          variantId: null,
+          availableQty: totalQty,
+          branchId: branchByProductId[key] ?? null,
+        });
+      }
+    });
+
+    const totalData = stockData.length;
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || totalData || 1;
+    const totalPages = limit ? Math.ceil(totalData / limitNum) || 1 : 1;
+
+    const paginatedStockData = page && limit
+      ? stockData.slice((pageNum - 1) * limitNum, pageNum * limitNum)
+      : stockData;
 
     const stateObj = {
-      page: parseInt(page as string),
-      limit: parseInt(limit as string),
+      page: pageNum,
+      limit: limitNum,
       totalPages,
     };
 
@@ -381,7 +452,7 @@ export const getAllStock = async (req, res) => {
         HTTP_STATUS.OK,
         responseMessage?.getDataSuccess("Stock"),
         {
-          stock_data: stockData,
+          stock_data: paginatedStockData,
           totalData,
           state: stateObj,
         },
@@ -447,10 +518,21 @@ export const getOneStock = async (req, res) => {
 
     const totalQty = stockRecords.reduce((sum: number, stock: any) => sum + (stock.qty || 0), 0);
 
+    // Group stockRecords by variantId
+    const variantsStock = stockRecords.reduce((acc: any, s: any) => {
+      if (s.variantId) {
+        const key = s.variantId.toString();
+        if (!acc[key]) acc[key] = { variantId: s.variantId, qty: 0 };
+        acc[key].qty += s.qty || 0;
+      }
+      return acc;
+    }, {});
+
     const response = {
       product: product,
       stockRecords,
       availableQty: totalQty,
+      variantsStock: Object.values(variantsStock),
     };
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock"), response, {}));

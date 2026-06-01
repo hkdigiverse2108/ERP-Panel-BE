@@ -58,6 +58,7 @@ export const bulkStockAdjustmentSchema = Joi.object().keys({
     .items(
       Joi.object().keys({
         productId: objectId().required(),
+        variantId: objectId().optional(),
         qty: Joi.number().required(),
       }),
     )

@@ -6,6 +6,7 @@ import { APPROVAL_STATUS } from "../../common";
 const stockVerificationItemSchema = new Schema<IStockVerificationItem>(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
+    variantId: { type: Schema.Types.ObjectId, ref: "product", default: null },
     landingCost: { type: Number, default: 0 },
     price: { type: Number, default: 0 },
     mrp: { type: Number, default: 0 },

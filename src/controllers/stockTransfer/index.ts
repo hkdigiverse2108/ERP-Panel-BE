@@ -83,14 +83,21 @@ export const approveStockTransfer = async (req, res) => {
         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.customMessage(`Approved quantity cannot be more than requested quantity (${item.requestedQty})`), {}, {}));
       }
 
+      const senderStockCriteria: any = {
+        productId: item.productId,
+        branchId: transfer.requestedToBranchId,
+        isDeleted: false,
+      };
+      if (item.variantId) {
+        senderStockCriteria.variantId = item.variantId;
+      } else {
+        senderStockCriteria.variantId = { $exists: false };
+      }
+
       // Fetch current stock price from the source branch
       const senderStock = await getFirstMatch(
         stockModel,
-        {
-          productId: item.productId,
-          branchId: transfer.requestedToBranchId,
-          isDeleted: false,
-        },
+        senderStockCriteria,
         { purchasePrice: 1, qty: 1 },
         {},
       );
@@ -161,13 +168,20 @@ export const dispatchStockTransfer = async (req, res) => {
     for (const item of transfer.items) {
       if (item.approvedQty <= 0) continue;
 
+      const senderStockCriteria: any = {
+        productId: item.productId,
+        branchId: transfer.requestedToBranchId,
+        isDeleted: false,
+      };
+      if (item.variantId) {
+        senderStockCriteria.variantId = item.variantId;
+      } else {
+        senderStockCriteria.variantId = { $exists: false };
+      }
+
       const senderStock = await getFirstMatch(
         stockModel,
-        {
-          productId: item.productId,
-          branchId: transfer.requestedToBranchId,
-          isDeleted: false,
-        },
+        senderStockCriteria,
         {},
         {},
       );
@@ -258,13 +272,20 @@ export const confirmReceiptStockTransfer = async (req, res) => {
 
       if (item.receivedQty <= 0) continue;
 
+      const receiverStockCriteria: any = {
+        productId: item.productId,
+        branchId: transfer.requestedByBranchId,
+        isDeleted: false,
+      };
+      if (item.variantId) {
+        receiverStockCriteria.variantId = item.variantId;
+      } else {
+        receiverStockCriteria.variantId = { $exists: false };
+      }
+
       const receiverStock = await getFirstMatch(
         stockModel,
-        {
-          productId: item.productId,
-          branchId: transfer.requestedByBranchId,
-          isDeleted: false,
-        },
+        receiverStockCriteria,
         {},
         {},
       );
@@ -277,6 +298,7 @@ export const confirmReceiptStockTransfer = async (req, res) => {
           companyId: transfer.companyId,
           branchId: transfer.requestedByBranchId,
           productId: item.productId,
+          variantId: item.variantId || undefined,
           qty: item.receivedQty,
           uomId: product?.uomId,
           purchasePrice: price,
@@ -379,13 +401,20 @@ export const rejectStockTransfer = async (req, res) => {
       for (const item of transfer.items) {
         if (item.approvedQty <= 0) continue;
 
+        const senderStockCriteria: any = {
+          productId: item.productId,
+          branchId: transfer.requestedToBranchId,
+          isDeleted: false,
+        };
+        if (item.variantId) {
+          senderStockCriteria.variantId = item.variantId;
+        } else {
+          senderStockCriteria.variantId = { $exists: false };
+        }
+
         const senderStock = await getFirstMatch(
           stockModel,
-          {
-            productId: item.productId,
-            branchId: transfer.requestedToBranchId,
-            isDeleted: false,
-          },
+          senderStockCriteria,
           {},
           {},
         );
@@ -531,7 +560,7 @@ export const getAllStockTransfer = async (req, res) => {
       populate: [
         { path: "requestedByBranchId", select: "name" },
         { path: "requestedToBranchId", select: "name" },
-        { path: "items.productId", select: "name" },
+        { path: "items.productId", select: "name variants" },
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName" },
@@ -595,7 +624,7 @@ export const getStockTransferById = async (req, res) => {
         populate: [
           { path: "requestedByBranchId", select: "name" },
           { path: "requestedToBranchId", select: "name" },
-          { path: "items.productId", select: "name itemCode mrp sellingPrice uomId" },
+          { path: "items.productId", select: "name itemCode mrp sellingPrice uomId variants" },
           { path: "approvedBy", select: "fullName" },
           { path: "receivedBy", select: "fullName" },
           { path: "companyId", select: "name" },

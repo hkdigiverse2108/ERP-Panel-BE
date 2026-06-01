@@ -206,7 +206,7 @@ export const getAllPosCreditNote = async (req, res) => {
           path: "returnPosOrderId",
           select: "returnOrderNo posOrderId items total",
           populate: [
-            { path: "items.productId", select: "hsnCode name" },
+            { path: "items.productId", select: "hsnCode name variants" },
             { path: "posOrderId", select: "orderNo" },
           ],
         },
@@ -261,7 +261,7 @@ export const getOnePosCreditNote = async (req, res) => {
             path: "returnPosOrderId",
             select: "returnOrderNo items total posOrderId",
             populate: [
-              { path: "items.productId", select: "hsnCode name" },
+              { path: "items.productId", select: "hsnCode name variants" },
               { path: "posOrderId", select: "orderNo" },
             ],
           },

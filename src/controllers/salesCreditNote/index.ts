@@ -106,12 +106,19 @@ export const addSalesCreditNote = async (req, res) => {
       for (const item of value.productDetails) {
         const returnQty = (item.qty || 0) + (item.freeQty || 0);
         if (returnQty > 0) {
-          const existingStock = await getFirstMatch(stockModel, { productId: item.productId, branchId: value.branchId, isDeleted: false }, {}, {});
+          const stockCriteria: any = { productId: item.productId, branchId: value.branchId, isDeleted: false };
+          if (item.variantId) {
+            stockCriteria.variantId = item.variantId;
+          } else {
+            stockCriteria.variantId = { $exists: false };
+          }
+          const existingStock = await getFirstMatch(stockModel, stockCriteria, {}, {});
           if (existingStock) {
             await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: returnQty } }, {});
           } else {
             await createOne(stockModel, {
               productId: item.productId,
+              variantId: item.variantId || undefined,
               branchId: value.branchId,
               companyId: value.companyId,
               qty: returnQty,
@@ -238,7 +245,13 @@ export const editSalesCreditNote = async (req, res) => {
         for (const item of isExist.productDetails) {
           const oldReturnQty = (item.qty || 0) + (item.freeQty || 0);
           if (oldReturnQty > 0) {
-            await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: -oldReturnQty } }, {});
+            const stockCriteria: any = { productId: item.productId, branchId: isExist.branchId, isDeleted: false };
+            if (item.variantId) {
+              stockCriteria.variantId = item.variantId;
+            } else {
+              stockCriteria.variantId = { $exists: false };
+            }
+            await updateData(stockModel, stockCriteria, { $inc: { qty: -oldReturnQty } }, {});
           }
         }
       }
@@ -250,12 +263,19 @@ export const editSalesCreditNote = async (req, res) => {
         for (const item of value.productDetails) {
           const returnQty = (item.qty || 0) + (item.freeQty || 0);
           if (returnQty > 0) {
-            const existingStock = await getFirstMatch(stockModel, { productId: item.productId, branchId: branchId, isDeleted: false }, {}, {});
+            const stockCriteria: any = { productId: item.productId, branchId: branchId, isDeleted: false };
+            if (item.variantId) {
+              stockCriteria.variantId = item.variantId;
+            } else {
+              stockCriteria.variantId = { $exists: false };
+            }
+            const existingStock = await getFirstMatch(stockModel, stockCriteria, {}, {});
             if (existingStock) {
               await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: returnQty } }, {});
             } else {
               await createOne(stockModel, {
                 productId: item.productId,
+                variantId: item.variantId || undefined,
                 branchId: branchId,
                 companyId: companyId,
                 qty: returnQty,
@@ -296,7 +316,13 @@ export const deleteSalesCreditNote = async (req, res) => {
       for (const item of isExist.productDetails) {
         const returnQty = (item.qty || 0) + (item.freeQty || 0);
         if (returnQty > 0) {
-          await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: -returnQty } }, {});
+          const stockCriteria: any = { productId: item.productId, branchId: isExist.branchId, isDeleted: false };
+          if (item.variantId) {
+            stockCriteria.variantId = item.variantId;
+          } else {
+            stockCriteria.variantId = { $exists: false };
+          }
+          await updateData(stockModel, stockCriteria, { $inc: { qty: -returnQty } }, {});
         }
       }
     }
@@ -378,7 +404,7 @@ export const getAllSalesCreditNote = async (req, res) => {
         { path: "salesId", select: "invoiceNo" },
         {
           path: "productDetails.productId",
-          select: "name itemCode sellingPrice",
+          select: "name itemCode sellingPrice variants",
         },
         { path: "productDetails.uomId", select: "name" },
         { path: "productDetails.taxId", select: "name percentage" },
@@ -477,7 +503,7 @@ export const getOneSalesCreditNote = async (req, res) => {
           { path: "salesId", select: "invoiceNo" },
           {
             path: "productDetails.productId",
-            select: "name itemCode sellingPrice hsn gst",
+            select: "name itemCode sellingPrice hsn gst variants",
           },
           { path: "productDetails.uomId", select: "name" },
           { path: "productDetails.taxId", select: "name percentage" },

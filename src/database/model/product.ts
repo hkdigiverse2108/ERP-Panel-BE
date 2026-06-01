@@ -1,7 +1,22 @@
 import mongoose, { Schema } from "mongoose";
-import { PRODUCT_EXPIRY_TYPE, PRODUCT_TYPE } from "../../common";
+import { BARCODE_TYPE, PRODUCT_EXPIRY_TYPE, PRODUCT_TYPE } from "../../common";
 import { IProduct } from "../../types";
 import { baseCommonFields, baseSchemaOptions } from "./base";
+
+export const variantSchema = new Schema(
+  {
+    name: { type: String, required: true },
+    sku: { type: String, sparse: true },
+    itemCode: { type: String },
+    barcode: { type: String, sparse: true },
+    barcodeType: { type: String, enum: Object.values(BARCODE_TYPE) },
+    attributes: [{ key: { type: String }, value: { type: String } }],
+    mrp: { type: Number, default: 0 },
+    sellingPrice: { type: Number, default: 0 },
+    purchasePrice: { type: Number, default: 0 },
+    isActive: { type: Boolean, default: true },
+  }
+);
 
 const productSchema = new Schema<IProduct>(
   {
@@ -63,6 +78,10 @@ const productSchema = new Schema<IProduct>(
 
     onlinePrice: { type: Number, default: 0 },
     additionalInfo: { type: String },
+
+    barcode: { type: String, index: true, sparse: true },
+    barcodeType: { type: String, enum: Object.values(BARCODE_TYPE) },
+    variants: { type: [variantSchema], default: [] },
   },
   baseSchemaOptions,
 );

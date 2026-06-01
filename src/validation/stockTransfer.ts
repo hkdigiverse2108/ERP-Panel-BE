@@ -8,6 +8,7 @@ export const addStockTransferSchema = Joi.object().keys({
     .items(
       Joi.object().keys({
         productId: objectId().required(),
+        variantId: objectId().optional().allow(null),
         price: Joi.number().min(0).optional(),
         requestedQty: Joi.number().min(0.001).required(),
       }),
@@ -24,6 +25,7 @@ export const approveStockTransferSchema = Joi.object().keys({
     .items(
       Joi.object().keys({
         productId: objectId().required(),
+        variantId: objectId().optional().allow(null),
         price: Joi.number().min(0).optional(),
         approvedQty: Joi.number().min(0).required(),
       }),
@@ -41,6 +43,7 @@ export const editStockTransferSchema = Joi.object().keys({
     .items(
       Joi.object().keys({
         productId: objectId().required(),
+        variantId: objectId().optional().allow(null),
         price: Joi.number().min(0).optional(),
         requestedQty: Joi.number().min(0.001).required(),
       }),
@@ -58,6 +61,7 @@ export const confirmReceiptStockTransferSchema = Joi.object().keys({
     .items(
       Joi.object().keys({
         productId: objectId().required(),
+        variantId: objectId().optional().allow(null),
         receivedQty: Joi.number().min(0).required(),
       }),
     )

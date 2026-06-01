@@ -13,6 +13,7 @@ import {
 
 const salesCreditNoteItemSchema = Joi.object({
   productId: objectId().required(),
+  variantId: objectId().optional().allow(null),
   uomId: objectId().optional(),
   unit: Joi.string().optional(),
   qty: Joi.number().min(0).required(),
