@@ -83,6 +83,42 @@ export const addProductSchema = Joi.object().keys({
   images: Joi.array().items(Joi.string()).optional().allow("", null),
 
   additionalInfo: Joi.string().optional().allow("", null),
+  
+  hasVariants: Joi.boolean().default(false).optional(),
+  variantOptions: Joi.array().items(
+    Joi.object({
+      optionName: Joi.string().required(),
+      optionValues: Joi.array().items(Joi.string()).required(),
+    })
+  ).optional(),
+  variants: Joi.array().items(
+    Joi.object({
+      variantName: Joi.string().required(),
+      itemCode: Joi.string().optional().allow("", null),
+      attributes: Joi.array().items(
+        Joi.object({
+          attributeName: Joi.string().required(),
+          attributeValue: Joi.string().required(),
+        })
+      ).required(),
+      purchasePrice: Joi.number().min(0).optional().default(0),
+      landingCost: Joi.number().min(0).optional().default(0),
+      mrp: Joi.number().min(0).optional().default(0),
+      sellingPrice: Joi.number().min(0).optional().default(0),
+      sellingDiscount: Joi.number().min(0).optional().default(0),
+      sellingMargin: Joi.number().min(0).optional().default(0),
+      retailerDiscount: Joi.number().min(0).optional().default(0),
+      retailerPrice: Joi.number().min(0).optional().default(0),
+      retailerMargin: Joi.number().min(0).optional().default(0),
+      wholesalerDiscount: Joi.number().min(0).optional().default(0),
+      wholesalerPrice: Joi.number().min(0).optional().default(0),
+      wholesalerMargin: Joi.number().min(0).optional().default(0),
+      minimumQty: Joi.number().min(0).optional().default(0),
+      openingQty: Joi.number().min(0).optional().default(0),
+      netWeight: Joi.number().min(0).optional().default(0),
+      images: Joi.array().items(Joi.string()).optional(),
+    })
+  ).optional(),
   ...baseCompanyApiSchema,
 });
 
@@ -161,6 +197,43 @@ export const editProductSchema = Joi.object().keys({
   images: Joi.array().items(Joi.string()).optional().allow("", null),
 
   additionalInfo: Joi.string().optional().allow("", null),
+  
+  hasVariants: Joi.boolean().optional(),
+  variantOptions: Joi.array().items(
+    Joi.object({
+      optionName: Joi.string().required(),
+      optionValues: Joi.array().items(Joi.string()).required(),
+    })
+  ).optional(),
+  variants: Joi.array().items(
+    Joi.object({
+      _id: objectId().optional(),
+      variantName: Joi.string().required(),
+      itemCode: Joi.string().optional().allow("", null),
+      attributes: Joi.array().items(
+        Joi.object({
+          attributeName: Joi.string().required(),
+          attributeValue: Joi.string().required(),
+        })
+      ).required(),
+      purchasePrice: Joi.number().min(0).optional(),
+      landingCost: Joi.number().min(0).optional(),
+      mrp: Joi.number().min(0).optional(),
+      sellingPrice: Joi.number().min(0).optional(),
+      sellingDiscount: Joi.number().min(0).optional(),
+      sellingMargin: Joi.number().min(0).optional(),
+      retailerDiscount: Joi.number().min(0).optional(),
+      retailerPrice: Joi.number().min(0).optional(),
+      retailerMargin: Joi.number().min(0).optional(),
+      wholesalerDiscount: Joi.number().min(0).optional(),
+      wholesalerPrice: Joi.number().min(0).optional(),
+      wholesalerMargin: Joi.number().min(0).optional(),
+      minimumQty: Joi.number().min(0).optional(),
+      openingQty: Joi.number().min(0).optional(),
+      netWeight: Joi.number().min(0).optional(),
+      images: Joi.array().items(Joi.string()).optional(),
+    })
+  ).optional(),
   ...baseCompanyApiSchema,
 });
 

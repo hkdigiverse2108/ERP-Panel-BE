@@ -71,6 +71,29 @@ export interface IProduct extends IBase {
 
   // Misc
   additionalInfo?: string;
+  hasVariants?: boolean;
+  variantOptions?: any[];
+  variants?: {
+    variantName: string;
+    itemCode?: string;
+    attributes: { attributeName: string; attributeValue: string }[];
+    purchasePrice?: number;
+    landingCost?: number;
+    mrp?: number;
+    sellingPrice?: number;
+    sellingDiscount?: number;
+    sellingMargin?: number;
+    retailerDiscount?: number;
+    retailerPrice?: number;
+    retailerMargin?: number;
+    wholesalerDiscount?: number;
+    wholesalerPrice?: number;
+    wholesalerMargin?: number;
+    minimumQty?: number;
+    openingQty?: number;
+    netWeight?: number;
+    images?: string[];
+  }[];
 
   // departmentId?: Schema.Types.ObjectId; //  Commented in schema
   // image?: string; //  single image not used

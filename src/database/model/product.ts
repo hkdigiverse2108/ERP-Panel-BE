@@ -63,6 +63,43 @@ const productSchema = new Schema<IProduct>(
 
     onlinePrice: { type: Number, default: 0 },
     additionalInfo: { type: String },
+    
+    // Variant Tracking Fields
+    hasVariants: { type: Boolean, default: false },
+    variantOptions: [
+      {
+        optionName: { type: String },
+        optionValues: [{ type: String }],
+      },
+    ],
+    variants: [
+      {
+        variantName: { type: String, required: true },
+        itemCode: { type: String },
+        attributes: [
+          {
+            attributeName: { type: String },
+            attributeValue: { type: String },
+          },
+        ],
+        purchasePrice: { type: Number, default: 0 },
+        landingCost: { type: Number, default: 0 },
+        mrp: { type: Number, default: 0 },
+        sellingPrice: { type: Number, default: 0 },
+        sellingDiscount: { type: Number, default: 0 },
+        sellingMargin: { type: Number, default: 0 },
+        retailerDiscount: { type: Number, default: 0 },
+        retailerPrice: { type: Number, default: 0 },
+        retailerMargin: { type: Number, default: 0 },
+        wholesalerDiscount: { type: Number, default: 0 },
+        wholesalerPrice: { type: Number, default: 0 },
+        wholesalerMargin: { type: Number, default: 0 },
+        minimumQty: { type: Number, default: 0 },
+        openingQty: { type: Number, default: 0 },
+        netWeight: { type: Number, default: 0 },
+        images: [{ type: String }],
+      },
+    ],
   },
   baseSchemaOptions,
 );
