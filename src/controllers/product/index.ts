@@ -1034,6 +1034,8 @@ export const detectProduct = async (req, res) => {
               uomId: stockInfo?.uomId || null,
               purchaseTaxId: stockInfo?.purchaseTaxId || null,
               salesTaxId: stockInfo?.salesTaxId || null,
+              isPurchaseTaxIncluding: stockInfo?.isPurchaseTaxIncluding,
+              isSalesTaxIncluding: stockInfo?.isSalesTaxIncluding,
               branchId: stockInfo?.branchId || null,
               ai_confidence: idMatches[productIdStr] || 0,
               detect_qty: idCounts[productIdStr] || 1,
