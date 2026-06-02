@@ -4,6 +4,7 @@ import { PURCHASE_DEBIT_NOTE_STATUS } from "../common";
 
 const purchaseDebitNoteItemSchema = Joi.object({
   productId: objectId().required(),
+  variantId: objectId().optional().allow(null),
   unit: Joi.string().optional(),
   uomId: objectId().optional(),
   unitCost: Joi.number().min(0).optional(),

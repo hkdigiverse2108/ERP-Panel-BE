@@ -1,12 +1,16 @@
 import "dotenv/config";
 import mongoose from "mongoose";
 import { connectDb } from "./database/connection";
-import { companyModel, branchModel, productModel, stockModel, PosOrderModel, uomModel, taxModel, userModel, PosCashRegisterModel, contactModel, supplierBillModel, InvoiceModel } from "./database";
+import { companyModel, branchModel, productModel, stockModel, PosOrderModel, uomModel, taxModel, userModel, PosCashRegisterModel, contactModel, supplierBillModel, InvoiceModel, recipeModel, purchaseDebitNoteModel, materialModel, billOfLiveProductModel } from "./database";
 import { addProduct, editProduct, getOneProduct, getProductDropdown, getByBarcode, getAllProduct } from "./controllers/product";
 import { addStock, getOneStock, getAllStock, bulkStockAdjustment } from "./controllers/stock";
 import { addPosOrder, editPosOrder, deletePosOrder } from "./controllers/posOrder";
 import { addSupplierBill, editSupplierBill, deleteSupplierBill } from "./controllers/supplierBill";
 import { addInvoice, editInvoice, deleteInvoice } from "./controllers/invoice";
+import { addRecipe, getRecipeForBOM } from "./controllers/recipe";
+import { addPurchaseDebitNote } from "./controllers/purchaseDebitNote";
+import { addMaterial, getMaterialById } from "./controllers/material";
+import { addBillOfLiveProduct, deleteBillOfLiveProductById } from "./controllers/billOfLiveProduct";
 import { HTTP_STATUS } from "./common";
 
 const ObjectId = mongoose.Types.ObjectId;
@@ -769,6 +773,213 @@ async function runTests() {
     if (!filteredYellowRow) throw new Error("Yellow variant with 15 qty was incorrectly filtered out by stockFilter=true");
 
     console.log("Success: getAllStock returns flat expanded variant stock rows with correct filtering!");
+
+    // ----------------------------------------------------
+    // TEST 13: Purchase Debit Note variant propagation
+    // ----------------------------------------------------
+    console.log("\n[Test 13] Testing Purchase Debit Note with variantId...");
+    const debitNoteReq = mockRequest({
+      supplierId: contact._id.toString(),
+      debitNoteDate: new Date(),
+      productDetails: [
+        {
+          productId: product1._id.toString(),
+          variantId: redVariant._id.toString(),
+          qty: 2,
+          unitCost: 300,
+          total: 600
+        }
+      ]
+    }, mockHeaders);
+    const debitNoteRes = mockResponse();
+    await addPurchaseDebitNote(debitNoteReq, debitNoteRes);
+    if (debitNoteRes.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`Failed to create Purchase Debit Note: ${debitNoteRes.jsonData?.message}`);
+    }
+    const debitNoteId = debitNoteRes.jsonData.data._id;
+    console.log(`Success: Created Purchase Debit Note (${debitNoteId}) with variantId!`);
+    await purchaseDebitNoteModel.deleteOne({ _id: debitNoteId });
+
+    // ----------------------------------------------------
+    // TEST 14: Recipe variantId validation and getRecipeForBOM fix
+    // ----------------------------------------------------
+    console.log("\n[Test 14] Testing Recipe with variantId and BOM calculations...");
+    const recipeReq = mockRequest({
+      name: "T-Shirt Assembly Recipe " + Date.now(),
+      date: new Date(),
+      type: "assemble",
+      rawProducts: [
+        {
+          productId: product1._id.toString(),
+          variantId: yellowVariant._id.toString(),
+          useQty: 2,
+          mrp: 400
+        }
+      ],
+      finalProducts: {
+        productId: product1._id.toString(),
+        variantId: redVariant._id.toString(),
+        qtyGenerate: 1,
+        mrp: 600
+      }
+    }, mockHeaders);
+    const recipeRes = mockResponse();
+    await addRecipe(recipeReq, recipeRes);
+    if (recipeRes.statusCode !== HTTP_STATUS.CREATED) {
+      throw new Error(`Failed to create Recipe: ${recipeRes.jsonData?.message}`);
+    }
+    const recipeId = recipeRes.jsonData.data._id;
+    console.log(`Recipe created successfully: ${recipeId}`);
+
+    // Call getRecipeForBOM to test object map fix and variant stock resolution
+    const bomReq = mockRequest({}, mockHeaders, { id: recipeId.toString() });
+    const bomRes = mockResponse();
+    await getRecipeForBOM(bomReq, bomRes);
+    if (bomRes.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`getRecipeForBOM failed: ${bomRes.jsonData?.message}`);
+    }
+    const bomData = bomRes.jsonData.data;
+    console.log("Recipe BOM resolved successfully:");
+    console.log("Final Product:", bomData.finalProducts);
+    console.log("Raw Product:", bomData.rawProducts);
+
+    if (!Array.isArray(bomData.finalProducts) || bomData.finalProducts.length !== 1) {
+      throw new Error("Expected finalProducts to be returned as a single-element array for frontend compatibility");
+    }
+    const resolvedFP = bomData.finalProducts[0];
+    if (resolvedFP.variantId?.toString() !== redVariant._id.toString() || !resolvedFP.productName.includes("Red / L")) {
+      throw new Error("Final Product variant details were not correctly resolved in BOM");
+    }
+    const resolvedRP = bomData.rawProducts[0];
+    if (resolvedRP.variantId?.toString() !== yellowVariant._id.toString() || !resolvedRP.productName.includes("Yellow / S")) {
+      throw new Error("Raw Product variant details were not correctly resolved in BOM");
+    }
+    if (resolvedRP.availableQty !== 15) {
+      throw new Error(`Expected raw product availableQty=15, but got ${resolvedRP.availableQty}`);
+    }
+    console.log("Success: Recipe BOM resolved correct variant details and stock levels!");
+    await recipeModel.deleteOne({ _id: recipeId });
+
+    // ----------------------------------------------------
+    // TEST 15: Materials variantId validation and populates
+    // ----------------------------------------------------
+    console.log("\n[Test 15] Testing Materials with variantId...");
+    const materialReq = mockRequest({
+      materialDate: new Date(),
+      description: "Testing materials",
+      materialTaken: [
+        {
+          productId: product1._id.toString(),
+          variantId: yellowVariant._id.toString(),
+          qty: 10,
+          totalAmount: 100,
+          unitCost: 10
+        }
+      ],
+      goodsReceived: [
+        {
+          productId: product1._id.toString(),
+          variantId: redVariant._id.toString(),
+          qty: 5,
+          totalAmount: 200,
+          unitCost: 40
+        }
+      ]
+    }, mockHeaders);
+    const materialRes = mockResponse();
+    await addMaterial(materialReq, materialRes);
+    if (materialRes.statusCode !== HTTP_STATUS.CREATED) {
+      throw new Error(`Failed to create Material: ${materialRes.jsonData?.message}`);
+    }
+    const materialId = materialRes.jsonData.data._id;
+    console.log(`Material entry created: ${materialId}`);
+
+    // Retrieve via getMaterialById to check populations
+    const getMaterialReq = mockRequest({}, mockHeaders, { id: materialId.toString() });
+    const getMaterialRes = mockResponse();
+    await getMaterialById(getMaterialReq, getMaterialRes);
+    if (getMaterialRes.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`Failed to retrieve material details: ${getMaterialRes.jsonData?.message}`);
+    }
+    const materialData = getMaterialRes.jsonData.data;
+    const populatedTaken = materialData.materialTaken[0];
+    const populatedReceived = materialData.goodsReceived[0];
+    if (!populatedTaken.productId?.name || !populatedReceived.productId?.name) {
+      throw new Error("Material productDetails were not correctly populated");
+    }
+    if (populatedTaken.variantId?.toString() !== yellowVariant._id.toString() || populatedReceived.variantId?.toString() !== redVariant._id.toString()) {
+      throw new Error("Material variantIds were not correctly preserved");
+    }
+    console.log("Success: Material created and populated with correct variant metadata!");
+    await materialModel.deleteOne({ _id: materialId });
+
+    // ----------------------------------------------------
+    // TEST 16: Bill of Live Product variant-aware stock updates
+    // ----------------------------------------------------
+    console.log("\n[Test 16] Testing Bill of Live Product with variantId stock updates...");
+    await stockModel.updateOne({ productId: product1._id, variantId: redVariant._id }, { qty: 20 });
+    await stockModel.updateOne({ productId: product1._id, variantId: yellowVariant._id }, { qty: 15 });
+
+    const liveProdReq = mockRequest({
+      date: new Date().toISOString(),
+      allowReverseCalculation: false,
+      productDetails: [
+        {
+          productId: product1._id.toString(),
+          variantId: redVariant._id.toString(),
+          qty: 5,
+          purchasePrice: 320,
+          mrp: 600,
+          sellingPrice: 550,
+          ingredients: [
+            {
+              productId: product1._id.toString(),
+              variantId: yellowVariant._id.toString(),
+              useQty: 3
+            }
+          ]
+        }
+      ]
+    }, mockHeaders);
+    const liveProdRes = mockResponse();
+    await addBillOfLiveProduct(liveProdReq, liveProdRes);
+    if (liveProdRes.statusCode !== HTTP_STATUS.CREATED) {
+      throw new Error(`Failed to create Bill of Live Product: ${liveProdRes.jsonData?.message}`);
+    }
+    const liveProdId = liveProdRes.jsonData.data._id;
+    console.log(`Bill of Live Product created: ${liveProdId}`);
+
+    const liveStockRed = await stockModel.findOne({ productId: product1._id, variantId: redVariant._id });
+    const liveStockYellow = await stockModel.findOne({ productId: product1._id, variantId: yellowVariant._id });
+    console.log(`Red stock qty after production: ${liveStockRed?.qty} (Expected: 25)`);
+    console.log(`Yellow stock qty after consumption: ${liveStockYellow?.qty} (Expected: 12)`);
+    if (liveStockRed?.qty !== 25 || liveStockYellow?.qty !== 12) {
+      throw new Error("Bill of Live Product stock update calculations are incorrect");
+    }
+
+    const updatedProdInMaster = await productModel.findById(product1._id);
+    const redVariantInMaster = updatedProdInMaster?.variants?.find((v: any) => v._id.toString() === redVariant._id.toString());
+    console.log(`Red variant purchasePrice in master: ${redVariantInMaster?.purchasePrice} (Expected: 320)`);
+    if (redVariantInMaster?.purchasePrice !== 320) {
+      throw new Error(`Expected red variant purchase price to be updated to 320, got ${redVariantInMaster?.purchasePrice}`);
+    }
+
+    console.log("Deleting Bill of Live Product to verify stock reversal...");
+    const deleteLiveReq = mockRequest({}, mockHeaders, { id: liveProdId.toString() });
+    const deleteLiveRes = mockResponse();
+    await deleteBillOfLiveProductById(deleteLiveReq, deleteLiveRes);
+    if (deleteLiveRes.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`deleteBillOfLiveProductById failed: ${deleteLiveRes.jsonData?.message}`);
+    }
+    const reversedStockRed = await stockModel.findOne({ productId: product1._id, variantId: redVariant._id });
+    const reversedStockYellow = await stockModel.findOne({ productId: product1._id, variantId: yellowVariant._id });
+    console.log(`Red stock qty after reversal: ${reversedStockRed?.qty} (Expected: 20)`);
+    console.log(`Yellow stock qty after reversal: ${reversedStockYellow?.qty} (Expected: 15)`);
+    if (reversedStockRed?.qty !== 20 || reversedStockYellow?.qty !== 15) {
+      throw new Error("Bill of Live Product deletion stock reversal calculations are incorrect");
+    }
+    console.log("Success: Bill of Live Product stock updates and master price updates verified!");
+    await billOfLiveProductModel.deleteOne({ _id: liveProdId });
 
     console.log("\n=== ALL TESTS PASSED SUCCESSFULLY ===");
 

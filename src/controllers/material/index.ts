@@ -152,6 +152,8 @@ export const getAllMaterial = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
+        { path: "materialTaken.productId", select: "name sku itemCode barcode variants" },
+        { path: "goodsReceived.productId", select: "name sku itemCode barcode variants" },
       ],
       skip: (page - 1) * limit,
       limit,
@@ -191,6 +193,8 @@ export const getMaterialById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "createdBy", select: "fullName userType" },
+          { path: "materialTaken.productId", select: "name sku itemCode barcode variants" },
+          { path: "goodsReceived.productId", select: "name sku itemCode barcode variants" },
         ],
       },
     );

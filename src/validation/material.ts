@@ -12,6 +12,7 @@ export const addMaterialSchema = Joi.object({
     .items(
       Joi.object({
         productId: objectId().required(),
+        variantId: objectId().optional().allow(null),
         qty: Joi.number().positive().required(),
         mrp: Joi.number().min(0).optional(),
         unitCost: Joi.number().min(0).required(),
@@ -29,6 +30,7 @@ export const addMaterialSchema = Joi.object({
     .items(
       Joi.object({
         productId: objectId().required(),
+        variantId: objectId().optional().allow(null),
         qty: Joi.number().positive().required(),
         mrp: Joi.number().min(0).optional(),
         batch: Joi.string().optional(),
@@ -57,7 +59,8 @@ export const editMaterialSchema = Joi.object({
   materialTaken: Joi.array()
     .items(
       Joi.object({
-        productId: Joi.string().optional(),
+        productId: objectId().optional(),
+        variantId: objectId().optional().allow(null),
         qty: Joi.number().positive().optional(),
         mrp: Joi.number().min(0).optional(),
         unitCost: Joi.number().min(0).optional(),
@@ -74,7 +77,8 @@ export const editMaterialSchema = Joi.object({
   goodsReceived: Joi.array()
     .items(
       Joi.object({
-        productId: Joi.string().optional(),
+        productId: objectId().optional(),
+        variantId: objectId().optional().allow(null),
         qty: Joi.number().positive().optional(),
         mrp: Joi.number().min(0).optional(),
         batch: Joi.string().optional(),

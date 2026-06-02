@@ -49,6 +49,7 @@ export interface IpurchaseDebitNote {
 export const purchaseDebitNoteItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product" },
+    variantId: { type: Schema.Types.ObjectId, ref: "product", default: null },
     unit: { type: String },
     uomId: { type: Schema.Types.ObjectId, ref: "uom" },
     unitCost: { type: Number, min: 0 },
