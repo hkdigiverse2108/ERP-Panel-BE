@@ -151,6 +151,52 @@ async function runTests() {
     console.log(`Number of variants: ${product1.variants?.length}`);
 
     // ----------------------------------------------------
+    // TEST 1B: Create a product and variants WITHOUT barcodes (Auto-Generation Check)
+    // ----------------------------------------------------
+    console.log("\n[Test 1B] Creating product and variants WITHOUT barcodes to check auto-generation...");
+    const req1B = mockRequest({
+      name: "Auto Barcode Shirt " + Date.now(),
+      // barcode left empty
+      variants: [
+        {
+          name: "White / L",
+          sku: "SHIRT-WHITE-L",
+          mrp: 400,
+          sellingPrice: 350,
+          purchasePrice: 200,
+          attributes: [{ key: "color", value: "White" }, { key: "size", value: "L" }]
+        },
+        {
+          name: "Black / M",
+          sku: "SHIRT-BLACK-M",
+          mrp: 400,
+          sellingPrice: 350,
+          purchasePrice: 200,
+          attributes: [{ key: "color", value: "Black" }, { key: "size", value: "M" }]
+        }
+      ]
+    }, mockHeaders);
+    const res1B = mockResponse();
+    await addProduct(req1B, res1B);
+    if (res1B.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`Failed to create product with auto-generated barcodes: ${res1B.jsonData?.message}`);
+    }
+    const product1B: any = res1B.jsonData.data;
+    productsToClean.push(product1B._id.toString());
+    console.log(`Product created: ${product1B.name} (_id: ${product1B._id})`);
+    console.log(`Product Auto Barcode: ${product1B.barcode} (Type: ${product1B.barcodeType})`);
+    if (!product1B.barcode || !product1B.barcode.startsWith("200") || product1B.barcode.length !== 13) {
+      throw new Error(`Invalid auto-generated product barcode: ${product1B.barcode}`);
+    }
+    product1B.variants.forEach((v: any, index: number) => {
+      console.log(`Variant ${index} Auto Barcode: ${v.barcode} (Type: ${v.barcodeType})`);
+      if (!v.barcode || !v.barcode.startsWith("200") || v.barcode.length !== 13) {
+        throw new Error(`Invalid auto-generated variant barcode: ${v.barcode}`);
+      }
+    });
+    console.log("Success: Product and variants auto-generated valid EAN-13 barcodes successfully!");
+
+    // ----------------------------------------------------
     // TEST 2: Validate product-level barcode duplicate check
     // ----------------------------------------------------
     console.log("\n[Test 2] Testing duplicate product-level barcode...");
@@ -356,6 +402,36 @@ async function runTests() {
     if (scanData.stock?.qty !== 20 || scanData.matchedVariant?.name !== "Red / L (Modified)") {
       throw new Error("Incorrect product variant/stock resolved by barcode");
     }
+
+    // ----------------------------------------------------
+    // TEST 7B: getOneProduct with variantId query param
+    // ----------------------------------------------------
+    console.log("\n[Test 7B] Testing getOneProduct with variantId query param...");
+    // 1. Fetch with non-existent variant ID
+    const badVariantReq = mockRequest({}, mockHeaders, { id: product1._id.toString() }, { variantId: new ObjectId().toString() });
+    const badVariantRes = mockResponse();
+    await getOneProduct(badVariantReq, badVariantRes);
+    if (badVariantRes.statusCode !== HTTP_STATUS.NOT_FOUND) {
+      throw new Error(`Expected 404 for bad variant ID, got ${badVariantRes.statusCode}`);
+    }
+    console.log("Success: Non-existent variant ID returned 404 as expected.");
+
+    // 2. Fetch with valid variant ID
+    const goodVariantReq = mockRequest({}, mockHeaders, { id: product1._id.toString() }, { variantId: redVariant._id.toString() });
+    const goodVariantRes = mockResponse();
+    await getOneProduct(goodVariantReq, goodVariantRes);
+    if (goodVariantRes.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`Failed to fetch variant via getOneProduct: ${goodVariantRes.jsonData?.message}`);
+    }
+    const variantProd = goodVariantRes.jsonData.data;
+    console.log(`Resolved Product: ${variantProd.name}, Qty: ${variantProd.qty}, MRP: ${variantProd.mrp}`);
+    if (variantProd.qty !== 20 || variantProd.mrp !== 600 || variantProd.sellingPrice !== 550) {
+      throw new Error(`Scoped stock/price for variant is incorrect: qty=${variantProd.qty}, mrp=${variantProd.mrp}`);
+    }
+    if (variantProd.variants.length !== 1 || variantProd.variantsWithStock.length !== 1) {
+      throw new Error(`Expected exactly 1 variant in the variants list, got variants=${variantProd.variants.length}, variantsWithStock=${variantProd.variantsWithStock.length}`);
+    }
+    console.log("Success: Scoped variant lookup and pricing verified successfully!");
 
     // ----------------------------------------------------
     // TEST 8: POS Order creation, stock deduction, and reversion

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel, productModel, productTypeModel, stockModel, uomModel, brandModel, categoryModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, findAllAndPopulateWithSorting, extractDataFromFile, handleIncludeId } from "../../helper";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, findAllAndPopulateWithSorting, extractDataFromFile, handleIncludeId, generateUniqueEan13Barcode } from "../../helper";
 import { addBulkProductSchema, addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation";
 import axios from "axios";
 
@@ -33,7 +33,28 @@ export const addProduct = async (req, res) => {
       return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist(errorText), {}, {}));
     }
 
+    const generatedBarcodes = new Set<string>();
+
+    // Auto-generate product-level barcode if empty
+    if (!value.barcode || value.barcode.trim() === "") {
+      value.barcode = await generateUniqueEan13Barcode(value.companyId, generatedBarcodes);
+      value.barcodeType = "EAN_13";
+      generatedBarcodes.add(value.barcode);
+    }
+
+    // Auto-generate variant-level barcodes if empty
+    if (value.variants && value.variants.length > 0) {
+      for (const variant of value.variants) {
+        if (!variant.barcode || variant.barcode.trim() === "") {
+          variant.barcode = await generateUniqueEan13Barcode(value.companyId, generatedBarcodes);
+          variant.barcodeType = "EAN_13";
+          generatedBarcodes.add(variant.barcode);
+        }
+      }
+    }
+
     // CHECK 1 — product-level barcode:
+
     if (value.barcode) {
       const barcodeCriteria: any = { barcode: value.barcode, isDeleted: false };
       if (value.companyId) barcodeCriteria.companyId = value.companyId;
@@ -93,6 +114,8 @@ export const bulkAddProduct = async (req, res) => {
 
     const productsToAdd = [];
     const namesInFile = new Set();
+    const generatedBarcodesInBulk = new Set<string>();
+
 
     for (let i = 0; i < data.length; i++) {
       let item = data[i];
@@ -231,8 +254,16 @@ export const bulkAddProduct = async (req, res) => {
         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: ${responseMessage?.dataAlreadyExist("Product with this name")}`, {}, {}));
       }
 
+      // Auto-generate product-level barcode if empty
+      if (!value.barcode || value.barcode.trim() === "") {
+        value.barcode = await generateUniqueEan13Barcode(value.companyId, generatedBarcodesInBulk);
+        value.barcodeType = "EAN_13";
+        generatedBarcodesInBulk.add(value.barcode);
+      }
+
       value.createdBy = user?._id || null;
       value.updatedBy = user?._id || null;
+
 
       // Clean up the string fields used for mapping before saving to DB
       delete value.category;
@@ -272,13 +303,13 @@ export const editProduct = async (req, res) => {
 
     if (value?.productTypeId && !(await checkIdExist(productTypeModel, value?.productTypeId, "Product Type", res))) return;
 
-    let isExist = await getFirstMatch(productModel, { _id: value?.productId, isDeleted: false }, {}, {});
+    const currentProduct = await getFirstMatch(productModel, { _id: value?.productId, isDeleted: false }, {}, {});
 
-    if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
+    if (!currentProduct) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
 
     // Ownership check: non-super-admin can only edit their own company's products
     if (userType !== USER_TYPES.SUPER_ADMIN && userCompanyId) {
-      const productCompanyId = isExist?.companyId?.toString();
+      const productCompanyId = currentProduct?.companyId?.toString();
       if (productCompanyId && productCompanyId !== userCompanyId.toString()) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Product"), {}, {}));
       }
@@ -287,12 +318,42 @@ export const editProduct = async (req, res) => {
     // Duplicate name check scoped to company
     let duplicateCriteria: any = { isDeleted: false, name: value?.name, _id: { $ne: value?.productId } };
     if (companyId) duplicateCriteria.companyId = companyId;
-    isExist = await getFirstMatch(productModel, duplicateCriteria, {}, {});
+    let isExist = await getFirstMatch(productModel, duplicateCriteria, {}, {});
 
     if (isExist) {
       let errorText = "";
       if (isExist?.name === value?.name) errorText = "Product Name";
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.dataAlreadyExist(errorText), {}, {}));
+    }
+
+    const generatedBarcodesInEdit = new Set<string>();
+
+    // If main barcode is empty (or sent as empty), generate it
+    if (value.barcode === "" || (value.barcode === undefined && !currentProduct.barcode)) {
+      value.barcode = await generateUniqueEan13Barcode(companyId, generatedBarcodesInEdit);
+      value.barcodeType = "EAN_13";
+      generatedBarcodesInEdit.add(value.barcode);
+    }
+
+    // Auto-generate barcode for variants
+    if (value.variants && value.variants.length > 0) {
+      for (const variant of value.variants) {
+        if (!variant._id) {
+          // New variant - if barcode is empty, generate it
+          if (!variant.barcode || variant.barcode.trim() === "") {
+            variant.barcode = await generateUniqueEan13Barcode(companyId, generatedBarcodesInEdit);
+            variant.barcodeType = "EAN_13";
+            generatedBarcodesInEdit.add(variant.barcode);
+          }
+        } else {
+          // Existing variant - if they explicitly updated barcode to empty, generate one
+          if (variant.barcode === "") {
+            variant.barcode = await generateUniqueEan13Barcode(companyId, generatedBarcodesInEdit);
+            variant.barcodeType = "EAN_13";
+            generatedBarcodesInEdit.add(variant.barcode);
+          }
+        }
+      }
     }
 
     // BARCODE CHECK (exclude current product):
@@ -957,10 +1018,25 @@ export const getOneProduct = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
 
+    const { variantId } = req.query;
+
+    if (variantId) {
+      const variantExists = (response.variants || []).some(
+        (v: any) => v._id.toString() === variantId.toString()
+      );
+      if (!variantExists) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "Variant not found on this product", {}, {}));
+      }
+    }
+
     const stockCriteria: any = {
       productId: response._id,
       isDeleted: false,
     };
+
+    if (variantId) {
+      stockCriteria.variantId = new ObjectId(variantId as string);
+    }
 
     if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
       stockCriteria.companyId = companyId;
@@ -1093,13 +1169,17 @@ export const getOneProduct = async (req, res) => {
 
     const stock = stockAggregation.length > 0 ? stockAggregation[0] : {};
 
+    const matchedVariant = variantId
+      ? (response.variants || []).find((v: any) => v._id.toString() === variantId.toString())
+      : null;
+
     const productsWithStock: any = {
       ...(response.toObject ? response.toObject() : response),
-      mrp: stock.totalMrp ?? 0,
-      sellingPrice: stock.totalSellingPrice ?? 0,
+      mrp: stock.totalMrp ?? (matchedVariant ? (matchedVariant.mrp ?? 0) : 0),
+      sellingPrice: stock.totalSellingPrice ?? (matchedVariant ? (matchedVariant.sellingPrice ?? 0) : 0),
       sellingDiscount: stock.totalSellingDiscount ?? 0,
       landingCost: stock.totalLandingCost ?? 0,
-      purchasePrice: stock.totalPurchasePrice ?? 0,
+      purchasePrice: stock.totalPurchasePrice ?? (matchedVariant ? (matchedVariant.purchasePrice ?? 0) : 0),
       sellingMargin: stock.totalSellingMargin ?? 0,
       qty: stock.totalQty ?? 0,
       purchaseTaxId: stock.purchaseTaxId,
@@ -1108,13 +1188,14 @@ export const getOneProduct = async (req, res) => {
       isSalesTaxIncluding: stock.isSalesTaxIncluding,
       uomId: stock.uomData,
       branchId: stock.branchData,
-      variantId: stock.variantId ?? null,
+      variantId: stock.variantId ?? (matchedVariant ? matchedVariant._id : null),
     };
 
     // Fetch all stock records for this product (all variants) in one query
     const allVariantStock = await stockModel.find({
       productId: response._id,
       isDeleted: false,
+      ...(variantId ? { variantId: new ObjectId(variantId as string) } : {}),
       ...(userType !== USER_TYPES.SUPER_ADMIN && companyId ? { companyId } : {}),
     }).populate([
       { path: "uomId", select: "name code" },
@@ -1129,7 +1210,11 @@ export const getOneProduct = async (req, res) => {
     }, {});
 
     // Attach stock to each variant in the product
-    const variantsWithStock = (productsWithStock.variants || []).map((v: any) => {
+    const targetVariants = variantId
+      ? (productsWithStock.variants || []).filter((v: any) => v._id.toString() === variantId.toString())
+      : (productsWithStock.variants || []);
+
+    const variantsWithStock = targetVariants.map((v: any) => {
       const vs = variantStockMap[v._id?.toString()];
       return {
         ...v,
@@ -1143,6 +1228,7 @@ export const getOneProduct = async (req, res) => {
       };
     });
 
+    productsWithStock.variants = targetVariants;
     productsWithStock.variantsWithStock = variantsWithStock;
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), productsWithStock, {}));

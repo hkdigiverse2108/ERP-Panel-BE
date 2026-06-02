@@ -8,7 +8,7 @@ export const variantSchema = new Schema(
     name: { type: String, required: true },
     sku: { type: String, sparse: true },
     itemCode: { type: String },
-    barcode: { type: String, sparse: true },
+    barcode: { type: String, unique: true, sparse: true },
     barcodeType: { type: String, enum: Object.values(BARCODE_TYPE) },
     attributes: [{ key: { type: String }, value: { type: String } }],
     mrp: { type: Number, default: 0 },
