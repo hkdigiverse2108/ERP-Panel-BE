@@ -527,10 +527,11 @@ async function runTests() {
       throw new Error(`Expected 20, but got ${checkStockRed?.qty}`);
     }
     // ----------------------------------------------------
+    // ----------------------------------------------------
     // TEST 9: getAllProduct — variants expanded as flat rows
     // ----------------------------------------------------
     console.log("\n[Test 9] Testing getAllProduct with expanded variant rows...");
-    const getAllReq = mockRequest({}, mockHeaders, {}, { page: "1", limit: "50" });
+    const getAllReq = mockRequest({}, mockHeaders, {}, { page: "1", limit: "50", giveVariant: "true" });
     const getAllRes = mockResponse();
     await getAllProduct(getAllReq, getAllRes);
     if (getAllRes.statusCode !== HTTP_STATUS.OK) {
@@ -565,6 +566,35 @@ async function runTests() {
       console.log("Success: nested variants array not present in flat row.");
     }
     console.log("Success: getAllProduct returns flat expanded variant rows with correct stock!");
+
+    // ----------------------------------------------------
+    // TEST 9B: getAllProduct — nested products (default behavior)
+    // ----------------------------------------------------
+    console.log("\n[Test 9B] Testing getAllProduct with nested variants (default behavior)...");
+    const getAllNestedReq = mockRequest({}, mockHeaders, {}, { page: "1", limit: "50" });
+    const getAllNestedRes = mockResponse();
+    await getAllProduct(getAllNestedReq, getAllNestedRes);
+    if (getAllNestedRes.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`getAllProduct (nested) failed: ${getAllNestedRes.jsonData?.message}`);
+    }
+    const nestedProductsList: any[] = getAllNestedRes.jsonData.data.product_data;
+    const parentProd = nestedProductsList.find((p: any) => p._id.toString() === product1._id.toString());
+    if (!parentProd) {
+      throw new Error("Created product not found in standard product list");
+    }
+    console.log("Found parent product in nested list:", parentProd.name, "total qty:", parentProd.qty);
+    if (parentProd.qty !== 35) {
+      throw new Error(`Expected total nested product qty to be 35, got ${parentProd.qty}`);
+    }
+    if (!parentProd.variants || parentProd.variants.length === 0) {
+      throw new Error("Expected product to contain nested variants");
+    }
+    const nestedRed = parentProd.variants.find((v: any) => v._id.toString() === redVariant._id.toString());
+    const nestedYellow = parentProd.variants.find((v: any) => v._id.toString() === yellowVariant._id.toString());
+    if (!nestedRed || nestedYellow?.qty !== 15 || nestedRed?.qty !== 20) {
+      throw new Error(`Variant quantities incorrect in nested list: Red=${nestedRed?.qty}, Yellow=${nestedYellow?.qty}`);
+    }
+    console.log("Success: getAllProduct returns nested product with correct variant stock quantities!");
 
     // ----------------------------------------------------
     // TEST 10: supplierBill variant-aware stock updates

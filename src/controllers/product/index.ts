@@ -463,7 +463,7 @@ export const getAllProduct = async (req, res) => {
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
 
-    const { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, productTypeIdFilter } = req.query;
+    const { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, productTypeIdFilter, giveVariant, givethevariant } = req.query;
 
     const effectiveCompanyId: any = companyFilter ? new ObjectId(companyFilter as string) : (userType !== USER_TYPES.SUPER_ADMIN ? companyId : null);
     const effectiveBranchId: any = branchFilter ? new ObjectId(branchFilter as string) : (userType !== USER_TYPES.SUPER_ADMIN ? user?.branchId?._id : null);
@@ -552,46 +552,106 @@ export const getAllProduct = async (req, res) => {
       ],
     });
 
-    // ── Step 4: Expand variants into flat rows ─────────────────────────────
-    const expandedList: any[] = [];
+    // ── Step 4: Conditional variant expansion ──────────────────────────────
+    const finalList: any[] = [];
+    const isGiveVariant = giveVariant === "true" || givethevariant === "true";
 
     products.forEach((product: any) => {
       const productObj = product.toObject ? product.toObject() : product;
 
-      if (productObj.variants && productObj.variants.length > 0) {
-        // Product WITH variants → one flat row per variant that has stock
-        productObj.variants.forEach((variant: any) => {
-          const stockKey = `${product._id}_${variant._id}`;
+      if (isGiveVariant) {
+        if (productObj.variants && productObj.variants.length > 0) {
+          // Product WITH variants → one flat row per variant that has stock
+          productObj.variants.forEach((variant: any) => {
+            const stockKey = `${product._id}_${variant._id}`;
+            const stock = stockByKey.get(stockKey);
+
+            // Skip variants with no stock (when filtering by stock is active)
+            if (!stock && shouldFilterByStock) return;
+
+            // Variant-level search filter
+            if (search) {
+              const query = (search as string).toLowerCase();
+              const parentMatch = productObj.name.toLowerCase().includes(query);
+              const variantMatch = variant.name.toLowerCase().includes(query);
+              const barcodeMatch = variant.barcode && variant.barcode.toLowerCase().includes(query);
+              const skuMatch = variant.sku && variant.sku.toLowerCase().includes(query);
+              if (!parentMatch && !variantMatch && !barcodeMatch && !skuMatch) return;
+            }
+
+            finalList.push({
+              ...productObj,
+              variants: undefined,           // remove the nested array — each variant is its own row
+              variantId: variant._id,
+              name: `${productObj.name} - ${variant.name}`,
+              barcode: variant.barcode ?? productObj.barcode ?? null,
+              barcodeType: variant.barcodeType ?? productObj.barcodeType ?? null,
+              sku: variant.sku ?? productObj.sku ?? null,
+              qty: stock?.qty ?? 0,
+              mrp: stock?.mrp ?? variant.mrp ?? productObj.mrp ?? 0,
+              sellingPrice: stock?.sellingPrice ?? variant.sellingPrice ?? productObj.sellingPrice ?? 0,
+              sellingDiscount: stock?.sellingDiscount ?? productObj.sellingDiscount ?? 0,
+              sellingMargin: stock?.sellingMargin ?? productObj.sellingMargin ?? 0,
+              landingCost: stock?.landingCost ?? productObj.landingCost ?? 0,
+              purchasePrice: stock?.purchasePrice ?? variant.purchasePrice ?? productObj.purchasePrice ?? 0,
+              purchaseTaxId: stock?.purchaseTaxId ?? null,
+              salesTaxId: stock?.salesTaxId ?? null,
+              isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding ?? false,
+              isSalesTaxIncluding: stock?.isSalesTaxIncluding ?? false,
+              uomId: stock?.uomId ?? null,
+              branchId: stock?.branchId ?? null,
+            });
+          });
+
+          // Also emit the parent product itself if it has a direct stock entry (no variantId)
+          // e.g. stock was added at the product level, not tied to any specific variant
+          const parentStock = stockByKey.get(String(product._id));
+          if (parentStock) {
+            let parentMatchesSearch = true;
+            if (search) {
+              const query = (search as string).toLowerCase();
+              parentMatchesSearch =
+                productObj.name.toLowerCase().includes(query) ||
+                (productObj.barcode && productObj.barcode.toLowerCase().includes(query)) ||
+                (productObj.sku && productObj.sku.toLowerCase().includes(query));
+            }
+            if (parentMatchesSearch) {
+              finalList.push({
+                ...productObj,
+                variants: undefined,
+                variantId: null,
+                qty: parentStock.qty ?? 0,
+                mrp: parentStock.mrp ?? productObj.mrp ?? 0,
+                sellingPrice: parentStock.sellingPrice ?? productObj.sellingPrice ?? 0,
+                sellingDiscount: parentStock.sellingDiscount ?? productObj.sellingDiscount ?? 0,
+                sellingMargin: parentStock.sellingMargin ?? productObj.sellingMargin ?? 0,
+                landingCost: parentStock.landingCost ?? productObj.landingCost ?? 0,
+                purchasePrice: parentStock.purchasePrice ?? productObj.purchasePrice ?? 0,
+                purchaseTaxId: parentStock.purchaseTaxId ?? null,
+                salesTaxId: parentStock.salesTaxId ?? null,
+                isPurchaseTaxIncluding: parentStock.isPurchaseTaxIncluding ?? false,
+                isSalesTaxIncluding: parentStock.isSalesTaxIncluding ?? false,
+                uomId: parentStock.uomId ?? null,
+                branchId: parentStock.branchId ?? null,
+              });
+            }
+          }
+        } else {
+          // Product WITHOUT variants → one row as-is
+          const stockKey = String(product._id);
           const stock = stockByKey.get(stockKey);
 
-          // Skip variants with no stock (when filtering by stock is active)
           if (!stock && shouldFilterByStock) return;
 
-          // Variant-level search filter
-          if (search) {
-            const query = (search as string).toLowerCase();
-            const parentMatch = productObj.name.toLowerCase().includes(query);
-            const variantMatch = variant.name.toLowerCase().includes(query);
-            const barcodeMatch = variant.barcode && variant.barcode.toLowerCase().includes(query);
-            const skuMatch = variant.sku && variant.sku.toLowerCase().includes(query);
-            if (!parentMatch && !variantMatch && !barcodeMatch && !skuMatch) return;
-          }
-
-          expandedList.push({
+          finalList.push({
             ...productObj,
-            variants: undefined,           // remove the nested array — each variant is its own row
-            variantId: variant._id,
-            name: `${productObj.name} - ${variant.name}`,
-            barcode: variant.barcode ?? productObj.barcode ?? null,
-            barcodeType: variant.barcodeType ?? productObj.barcodeType ?? null,
-            sku: variant.sku ?? productObj.sku ?? null,
             qty: stock?.qty ?? 0,
-            mrp: stock?.mrp ?? variant.mrp ?? productObj.mrp ?? 0,
-            sellingPrice: stock?.sellingPrice ?? variant.sellingPrice ?? productObj.sellingPrice ?? 0,
+            mrp: stock?.mrp ?? productObj.mrp ?? 0,
+            sellingPrice: stock?.sellingPrice ?? productObj.sellingPrice ?? 0,
             sellingDiscount: stock?.sellingDiscount ?? productObj.sellingDiscount ?? 0,
             sellingMargin: stock?.sellingMargin ?? productObj.sellingMargin ?? 0,
             landingCost: stock?.landingCost ?? productObj.landingCost ?? 0,
-            purchasePrice: stock?.purchasePrice ?? variant.purchasePrice ?? productObj.purchasePrice ?? 0,
+            purchasePrice: stock?.purchasePrice ?? productObj.purchasePrice ?? 0,
             purchaseTaxId: stock?.purchaseTaxId ?? null,
             salesTaxId: stock?.salesTaxId ?? null,
             isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding ?? false,
@@ -599,76 +659,143 @@ export const getAllProduct = async (req, res) => {
             uomId: stock?.uomId ?? null,
             branchId: stock?.branchId ?? null,
           });
-        });
-
-        // Also emit the parent product itself if it has a direct stock entry (no variantId)
-        // e.g. stock was added at the product level, not tied to any specific variant
-        const parentStock = stockByKey.get(String(product._id));
-        if (parentStock) {
-          let parentMatchesSearch = true;
-          if (search) {
-            const query = (search as string).toLowerCase();
-            parentMatchesSearch =
-              productObj.name.toLowerCase().includes(query) ||
-              (productObj.barcode && productObj.barcode.toLowerCase().includes(query)) ||
-              (productObj.sku && productObj.sku.toLowerCase().includes(query));
-          }
-          if (parentMatchesSearch) {
-            expandedList.push({
-              ...productObj,
-              variants: undefined,
-              variantId: null,
-              qty: parentStock.qty ?? 0,
-              mrp: parentStock.mrp ?? productObj.mrp ?? 0,
-              sellingPrice: parentStock.sellingPrice ?? productObj.sellingPrice ?? 0,
-              sellingDiscount: parentStock.sellingDiscount ?? productObj.sellingDiscount ?? 0,
-              sellingMargin: parentStock.sellingMargin ?? productObj.sellingMargin ?? 0,
-              landingCost: parentStock.landingCost ?? productObj.landingCost ?? 0,
-              purchasePrice: parentStock.purchasePrice ?? productObj.purchasePrice ?? 0,
-              purchaseTaxId: parentStock.purchaseTaxId ?? null,
-              salesTaxId: parentStock.salesTaxId ?? null,
-              isPurchaseTaxIncluding: parentStock.isPurchaseTaxIncluding ?? false,
-              isSalesTaxIncluding: parentStock.isSalesTaxIncluding ?? false,
-              uomId: parentStock.uomId ?? null,
-              branchId: parentStock.branchId ?? null,
-            });
-          }
         }
       } else {
-        // Product WITHOUT variants → one row as-is
-        const stockKey = String(product._id);
-        const stock = stockByKey.get(stockKey);
+        // Return standard product with nested variants containing stock details
+        let totalQty = 0;
+        let mrp = productObj.mrp ?? 0;
+        let sellingPrice = productObj.sellingPrice ?? 0;
+        let sellingDiscount = productObj.sellingDiscount ?? 0;
+        let sellingMargin = productObj.sellingMargin ?? 0;
+        let landingCost = productObj.landingCost ?? 0;
+        let purchasePrice = productObj.purchasePrice ?? 0;
+        let purchaseTaxId = null;
+        let salesTaxId = null;
+        let isPurchaseTaxIncluding = false;
+        let isSalesTaxIncluding = false;
+        let uomId = null;
+        let branchId = null;
 
-        if (!stock && shouldFilterByStock) return;
+        let firstStock: any = null;
 
-        expandedList.push({
-          ...productObj,
-          qty: stock?.qty ?? 0,
-          mrp: stock?.mrp ?? productObj.mrp ?? 0,
-          sellingPrice: stock?.sellingPrice ?? productObj.sellingPrice ?? 0,
-          sellingDiscount: stock?.sellingDiscount ?? productObj.sellingDiscount ?? 0,
-          sellingMargin: stock?.sellingMargin ?? productObj.sellingMargin ?? 0,
-          landingCost: stock?.landingCost ?? productObj.landingCost ?? 0,
-          purchasePrice: stock?.purchasePrice ?? productObj.purchasePrice ?? 0,
-          purchaseTaxId: stock?.purchaseTaxId ?? null,
-          salesTaxId: stock?.salesTaxId ?? null,
-          isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding ?? false,
-          isSalesTaxIncluding: stock?.isSalesTaxIncluding ?? false,
-          uomId: stock?.uomId ?? null,
-          branchId: stock?.branchId ?? null,
-        });
+        if (productObj.variants && productObj.variants.length > 0) {
+          const variantsWithStock = productObj.variants.map((v: any) => {
+            const stockKey = `${product._id}_${v._id}`;
+            const stock = stockByKey.get(stockKey);
+
+            totalQty += stock?.qty ?? 0;
+            if (!firstStock && stock) {
+              firstStock = stock;
+            }
+
+            return {
+              ...v,
+              qty: stock?.qty ?? 0,
+              mrp: stock?.mrp ?? v.mrp ?? productObj.mrp ?? 0,
+              sellingPrice: stock?.sellingPrice ?? v.sellingPrice ?? productObj.sellingPrice ?? 0,
+              sellingDiscount: stock?.sellingDiscount ?? productObj.sellingDiscount ?? 0,
+              sellingMargin: stock?.sellingMargin ?? productObj.sellingMargin ?? 0,
+              landingCost: stock?.landingCost ?? productObj.landingCost ?? 0,
+              purchasePrice: stock?.purchasePrice ?? v.purchasePrice ?? productObj.purchasePrice ?? 0,
+              purchaseTaxId: stock?.purchaseTaxId ?? null,
+              salesTaxId: stock?.salesTaxId ?? null,
+              isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding ?? false,
+              isSalesTaxIncluding: stock?.isSalesTaxIncluding ?? false,
+              uomId: stock?.uomId ?? null,
+              branchId: stock?.branchId ?? null,
+            };
+          });
+
+          // Also check if parent product itself has stock
+          const parentStock = stockByKey.get(String(product._id));
+          if (parentStock) {
+            totalQty += parentStock.qty ?? 0;
+            if (!firstStock) {
+              firstStock = parentStock;
+            }
+          }
+
+          if (firstStock) {
+            mrp = firstStock.mrp ?? mrp;
+            sellingPrice = firstStock.sellingPrice ?? sellingPrice;
+            sellingDiscount = firstStock.sellingDiscount ?? sellingDiscount;
+            sellingMargin = firstStock.sellingMargin ?? sellingMargin;
+            landingCost = firstStock.landingCost ?? landingCost;
+            purchasePrice = firstStock.purchasePrice ?? purchasePrice;
+            purchaseTaxId = firstStock.purchaseTaxId ?? null;
+            salesTaxId = firstStock.salesTaxId ?? null;
+            isPurchaseTaxIncluding = firstStock.isPurchaseTaxIncluding ?? false;
+            isSalesTaxIncluding = firstStock.isSalesTaxIncluding ?? false;
+            uomId = firstStock.uomId ?? null;
+            branchId = firstStock.branchId ?? null;
+          }
+
+          productObj.variants = variantsWithStock;
+          productObj.variantsWithStock = variantsWithStock;
+          productObj.qty = totalQty;
+          productObj.mrp = mrp;
+          productObj.sellingPrice = sellingPrice;
+          productObj.sellingDiscount = sellingDiscount;
+          productObj.sellingMargin = sellingMargin;
+          productObj.landingCost = landingCost;
+          productObj.purchasePrice = purchasePrice;
+          productObj.purchaseTaxId = purchaseTaxId;
+          productObj.salesTaxId = salesTaxId;
+          productObj.isPurchaseTaxIncluding = isPurchaseTaxIncluding;
+          productObj.isSalesTaxIncluding = isSalesTaxIncluding;
+          productObj.uomId = uomId;
+          productObj.branchId = branchId;
+        } else {
+          // Product WITHOUT variants
+          const stockKey = String(product._id);
+          const stock = stockByKey.get(stockKey);
+
+          if (!stock && shouldFilterByStock) return;
+
+          if (stock) {
+            totalQty = stock.qty ?? 0;
+            mrp = stock.mrp ?? mrp;
+            sellingPrice = stock.sellingPrice ?? sellingPrice;
+            sellingDiscount = stock.sellingDiscount ?? sellingDiscount;
+            sellingMargin = stock.sellingMargin ?? sellingMargin;
+            landingCost = stock.landingCost ?? landingCost;
+            purchasePrice = stock.purchasePrice ?? purchasePrice;
+            purchaseTaxId = stock.purchaseTaxId ?? null;
+            salesTaxId = stock.salesTaxId ?? null;
+            isPurchaseTaxIncluding = stock.isPurchaseTaxIncluding ?? false;
+            isSalesTaxIncluding = stock.isSalesTaxIncluding ?? false;
+            uomId = stock.uomId ?? null;
+            branchId = stock.branchId ?? null;
+          }
+
+          productObj.qty = totalQty;
+          productObj.mrp = mrp;
+          productObj.sellingPrice = sellingPrice;
+          productObj.sellingDiscount = sellingDiscount;
+          productObj.sellingMargin = sellingMargin;
+          productObj.landingCost = landingCost;
+          productObj.purchasePrice = purchasePrice;
+          productObj.purchaseTaxId = purchaseTaxId;
+          productObj.salesTaxId = salesTaxId;
+          productObj.isPurchaseTaxIncluding = isPurchaseTaxIncluding;
+          productObj.isSalesTaxIncluding = isSalesTaxIncluding;
+          productObj.uomId = uomId;
+          productObj.branchId = branchId;
+        }
+
+        finalList.push(productObj);
       }
     });
 
-    // ── Step 5: In-memory pagination over the expanded flat list ──────────
-    const totalData = expandedList.length;
+    // ── Step 5: In-memory pagination over the final list ──────────
+    const totalData = finalList.length;
     const pageNum = parseInt(page as string) || 1;
     const limitNum = parseInt(limit as string) || totalData || 1;
     const totalPages = limit ? Math.ceil(totalData / limitNum) || 1 : 1;
 
     const product_data = page && limit
-      ? expandedList.slice((pageNum - 1) * limitNum, pageNum * limitNum)
-      : expandedList;
+      ? finalList.slice((pageNum - 1) * limitNum, pageNum * limitNum)
+      : finalList;
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), { product_data, totalData, state: { page: pageNum, limit: limitNum, totalPages } }, {}));
   } catch (error) {
