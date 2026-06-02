@@ -14,12 +14,20 @@ const rangeWiseRuleSchema = new Schema(
   { _id: false },
 );
 
+const productVariantSelectionSchema = new Schema(
+  {
+    productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
+    variantId: { type: Schema.Types.ObjectId, default: null },
+  },
+  { _id: false },
+);
+
 // Sub-schema: Buy X Get Y
 const buyXGetYSchema = new Schema(
   {
     buyQty: { type: Number, required: true },
     getQty: { type: Number, required: true },
-    getProductIds: [{ type: Schema.Types.ObjectId, ref: "product" }],
+    getProductIds: [productVariantSelectionSchema],
     getDiscountType: { type: String, enum: Object.values(VALUE_TYPE), required: true },
     getDiscountValue: { type: Number, required: true },
   },
@@ -30,7 +38,7 @@ const buyXGetYSchema = new Schema(
 const productAtFixAmountSchema = new Schema(
   {
     minimumAmount: { type: Number, required: true },
-    freeProductIds: [{ type: Schema.Types.ObjectId, ref: "product" }],
+    freeProductIds: [productVariantSelectionSchema],
     freeQty: { type: Number, required: true, default: 1 },
   },
   { _id: false },
@@ -77,8 +85,8 @@ const discountSchema = new Schema<IDiscount>(
     categoryIds: [{ type: Schema.Types.ObjectId, ref: "category" }],
     subcategoryIds: [{ type: Schema.Types.ObjectId, ref: "category" }],
     brandIds: [{ type: Schema.Types.ObjectId, ref: "brand" }],
-    productIds: [{ type: Schema.Types.ObjectId, ref: "product" }],
-    excludedProductIds: [{ type: Schema.Types.ObjectId, ref: "product" }],
+    productIds: [productVariantSelectionSchema],
+    excludedProductIds: [productVariantSelectionSchema],
 
     // Minimum Requirements
     minimumRequirement: {

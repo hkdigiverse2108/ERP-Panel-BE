@@ -13,10 +13,20 @@ const rangeWiseRuleJoi = Joi.object({
   discountValue: Joi.number().min(0).required(),
 });
 
+const productVariantSelectionJoi = Joi.alternatives().try(
+  objectId().custom((val) => {
+    return { productId: val, variantId: null };
+  }),
+  Joi.object({
+    productId: objectId().required(),
+    variantId: objectId().optional().allow(null).default(null),
+  })
+);
+
 const buyXGetYJoi = Joi.object({
   buyQty: Joi.number().integer().min(1).required(),
   getQty: Joi.number().integer().min(1).required(),
-  getProductIds: Joi.array().items(objectId()).optional(),
+  getProductIds: Joi.array().items(productVariantSelectionJoi).optional(),
   getDiscountType: Joi.string()
     .valid(...Object.values(VALUE_TYPE))
     .optional()
@@ -26,7 +36,7 @@ const buyXGetYJoi = Joi.object({
 
 const productAtFixAmountJoi = Joi.object({
   minimumAmount: Joi.number().min(0).required(),
-  freeProductIds: Joi.array().items(objectId()).min(1).required(),
+  freeProductIds: Joi.array().items(productVariantSelectionJoi).min(1).required(),
   freeQty: Joi.number().integer().min(1).default(1),
 });
 
@@ -98,10 +108,10 @@ export const addDiscountSchema = Joi.object().keys({
   }),
   productIds: Joi.when("appliesTo", {
     is: DISCOUNT_APPLIES_TO.SPECIFIC_PRODUCTS,
-    then: Joi.array().items(objectId()).min(1).required(),
-    otherwise: Joi.array().items(objectId()).optional(),
+    then: Joi.array().items(productVariantSelectionJoi).min(1).required(),
+    otherwise: Joi.array().items(productVariantSelectionJoi).optional(),
   }),
-  excludedProductIds: Joi.array().items(objectId()).optional(),
+  excludedProductIds: Joi.array().items(productVariantSelectionJoi).optional(),
 
   // Minimum Requirements
   minimumRequirement: Joi.string()
@@ -174,8 +184,8 @@ export const editDiscountSchema = Joi.object().keys({
   categoryIds: Joi.array().items(objectId()).optional(),
   subcategoryIds: Joi.array().items(objectId()).optional(),
   brandIds: Joi.array().items(objectId()).optional(),
-  productIds: Joi.array().items(objectId()).optional(),
-  excludedProductIds: Joi.array().items(objectId()).optional(),
+  productIds: Joi.array().items(productVariantSelectionJoi).optional(),
+  excludedProductIds: Joi.array().items(productVariantSelectionJoi).optional(),
 
   minimumRequirement: Joi.string()
     .valid(...Object.values(MINIMUM_REQUIREMENT))
@@ -208,6 +218,7 @@ export const getDiscountSchema = Joi.object().keys({
 
 const orderItemJoi = Joi.object({
   productId: objectId().required(),
+  variantId: objectId().optional().allow(null),
   qty: Joi.number().min(1).required(),
   mrp: Joi.number().min(0).required(),
   unitCost: Joi.number().min(0).optional(),

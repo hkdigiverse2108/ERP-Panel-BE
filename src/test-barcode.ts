@@ -1,8 +1,9 @@
 import "dotenv/config";
 import mongoose from "mongoose";
 import { connectDb } from "./database/connection";
-import { companyModel, branchModel, productModel, stockModel, PosOrderModel, uomModel, taxModel, userModel, PosCashRegisterModel, contactModel, supplierBillModel, InvoiceModel, recipeModel, purchaseDebitNoteModel, materialModel, billOfLiveProductModel } from "./database";
+import { companyModel, branchModel, productModel, stockModel, PosOrderModel, uomModel, taxModel, userModel, PosCashRegisterModel, contactModel, supplierBillModel, InvoiceModel, recipeModel, purchaseDebitNoteModel, materialModel, billOfLiveProductModel, discountModel } from "./database";
 import { addProduct, editProduct, getOneProduct, getProductDropdown, getByBarcode, getAllProduct } from "./controllers/product";
+import { verifyDiscount } from "./controllers/discount";
 import { addStock, getOneStock, getAllStock, bulkStockAdjustment } from "./controllers/stock";
 import { addPosOrder, editPosOrder, deletePosOrder } from "./controllers/posOrder";
 import { addSupplierBill, editSupplierBill, deleteSupplierBill } from "./controllers/supplierBill";
@@ -1010,6 +1011,135 @@ async function runTests() {
     }
     console.log("Success: Bill of Live Product stock updates and master price updates verified!");
     await billOfLiveProductModel.deleteOne({ _id: liveProdId });
+
+    // ----------------------------------------------------
+    // TEST 17: Discount targeting product variant
+    // ----------------------------------------------------
+    console.log("\n[Test 17] Testing Discount with variant-specific targeting...");
+
+    // Clean up any stale discounts from previous runs
+    await discountModel.deleteMany({ discountCode: { $in: ["REDPROMO", "PRODPROMO"] } });
+
+    // 1. Create a variant-specific discount targeting only the Red variant of product1
+    const variantDiscount = await discountModel.create({
+      title: "Red Variant Promo " + Date.now(),
+      discountCode: "REDPROMO",
+      autoApply: false,
+      discountApplicable: "product_wise",
+      discountMode: "normal",
+      discountType: "percentage",
+      discountValue: 10, // 10% off
+      appliesTo: "specific_products",
+      productIds: [
+        { productId: product1._id, variantId: redVariant._id }
+      ],
+      minimumRequirement: "none",
+      startDateTime: new Date(),
+      status: "active",
+      companyId: company._id
+    });
+    console.log("Created variant discount:", variantDiscount._id);
+
+    // Call verifyDiscount with Red variant item in cart
+    const discountReq1 = mockRequest({
+      discountCode: "REDPROMO",
+      totalAmount: 1100,
+      items: [
+        {
+          productId: product1._id.toString(),
+          variantId: redVariant._id.toString(),
+          qty: 2,
+          mrp: 600,
+          unitCost: 550,
+          discountAmount: 0
+        }
+      ]
+    }, mockHeaders);
+    const discountRes1 = mockResponse();
+    await verifyDiscount(discountReq1, discountRes1);
+
+    if (discountRes1.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`Discount verification failed for Red variant: ${discountRes1.jsonData?.message}`);
+    }
+    console.log(`Success: Red variant qualified. Discount Amount: ${discountRes1.jsonData.data.discountAmount} (Expected: 120)`);
+    if (discountRes1.jsonData.data.discountAmount !== 120) {
+      throw new Error(`Expected discount of 120 but got ${discountRes1.jsonData.data.discountAmount}`);
+    }
+
+    // Call verifyDiscount with Yellow variant item (should NOT qualify)
+    const discountReq2 = mockRequest({
+      discountCode: "REDPROMO",
+      totalAmount: 350,
+      items: [
+        {
+          productId: product1._id.toString(),
+          variantId: yellowVariant._id.toString(),
+          qty: 1,
+          mrp: 400,
+          unitCost: 350,
+          discountAmount: 0
+        }
+      ]
+    }, mockHeaders);
+    const discountRes2 = mockResponse();
+    await verifyDiscount(discountReq2, discountRes2);
+
+    if (discountRes2.statusCode === HTTP_STATUS.BAD_REQUEST) {
+      console.log("Success: Yellow variant was correctly excluded from the discount.");
+    } else {
+      throw new Error(`Expected verification to fail (excluded variant) but got status: ${discountRes2.statusCode}`);
+    }
+
+    // 2. Create a product-wide discount targeting the product (no variant specified)
+    const productDiscount = await discountModel.create({
+      title: "Product Wide Promo " + Date.now(),
+      discountCode: "PRODPROMO",
+      autoApply: false,
+      discountApplicable: "product_wise",
+      discountMode: "normal",
+      discountType: "percentage",
+      discountValue: 10,
+      appliesTo: "specific_products",
+      productIds: [
+        { productId: product1._id, variantId: null }
+      ],
+      minimumRequirement: "none",
+      startDateTime: new Date(),
+      status: "active",
+      companyId: company._id
+    });
+    console.log("Created product discount:", productDiscount._id);
+
+    // Call verifyDiscount with Yellow variant item (should qualify now because discount is product-wide)
+    const discountReq3 = mockRequest({
+      discountCode: "PRODPROMO",
+      totalAmount: 350,
+      items: [
+        {
+          productId: product1._id.toString(),
+          variantId: yellowVariant._id.toString(),
+          qty: 1,
+          mrp: 400,
+          unitCost: 350,
+          discountAmount: 0
+        }
+      ]
+    }, mockHeaders);
+    const discountRes3 = mockResponse();
+    await verifyDiscount(discountReq3, discountRes3);
+
+    if (discountRes3.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`Discount verification failed for product-wide discount: ${discountRes3.jsonData?.message}`);
+    }
+    console.log(`Success: Yellow variant qualified for product-wide discount. Discount Amount: ${discountRes3.jsonData.data.discountAmount} (Expected: 40)`);
+    if (discountRes3.jsonData.data.discountAmount !== 40) {
+      throw new Error(`Expected discount of 40 but got ${discountRes3.jsonData.data.discountAmount}`);
+    }
+
+    // Clean up created discounts
+    await discountModel.deleteOne({ _id: variantDiscount._id });
+    await discountModel.deleteOne({ _id: productDiscount._id });
+    console.log("Cleaned up test discounts.");
 
     console.log("\n=== ALL TESTS PASSED SUCCESSFULLY ===");
 
