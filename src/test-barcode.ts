@@ -764,13 +764,13 @@ async function runTests() {
 
     // Both variants should appear as separate flat rows
     const stockRedRow = stockList.find((r: any) =>
-      r._id.toString() === product1._id.toString() && r.variantId?.toString() === redVariant._id.toString()
+      r.productId?.toString() === product1._id.toString() && r.variantId?.toString() === redVariant._id.toString()
     );
     const stockYellowRow = stockList.find((r: any) =>
-      r._id.toString() === product1._id.toString() && r.variantId?.toString() === yellowVariant._id.toString()
+      r.productId?.toString() === product1._id.toString() && r.variantId?.toString() === yellowVariant._id.toString()
     );
     const stockParentRow = stockList.find((r: any) =>
-      r._id.toString() === product1._id.toString() && !r.variantId
+      r.productId?.toString() === product1._id.toString() && !r.variantId
     );
 
     console.log("Stock Red row found:", !!stockRedRow, "qty:", stockRedRow?.availableQty);
@@ -793,10 +793,10 @@ async function runTests() {
     }
     const filteredStockList: any[] = filteredStockRes.jsonData.data.stock_data;
     const filteredRedRow = filteredStockList.find((r: any) =>
-      r._id.toString() === product1._id.toString() && r.variantId?.toString() === redVariant._id.toString()
+      r.productId?.toString() === product1._id.toString() && r.variantId?.toString() === redVariant._id.toString()
     );
     const filteredYellowRow = filteredStockList.find((r: any) =>
-      r._id.toString() === product1._id.toString() && r.variantId?.toString() === yellowVariant._id.toString()
+      r.productId?.toString() === product1._id.toString() && r.variantId?.toString() === yellowVariant._id.toString()
     );
     console.log("Filtered Red row found (expected: false):", !!filteredRedRow);
     console.log("Filtered Yellow row found (expected: true):", !!filteredYellowRow);

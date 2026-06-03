@@ -1163,6 +1163,8 @@ export const getOneProduct = async (req, res) => {
 
     if (variantId) {
       stockCriteria.variantId = new ObjectId(variantId as string);
+    } else {
+      stockCriteria.variantId = null;
     }
 
     if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
@@ -1302,12 +1304,12 @@ export const getOneProduct = async (req, res) => {
 
     const productsWithStock: any = {
       ...(response.toObject ? response.toObject() : response),
-      mrp: stock.totalMrp ?? (matchedVariant ? (matchedVariant.mrp ?? 0) : 0),
-      sellingPrice: stock.totalSellingPrice ?? (matchedVariant ? (matchedVariant.sellingPrice ?? 0) : 0),
-      sellingDiscount: stock.totalSellingDiscount ?? 0,
-      landingCost: stock.totalLandingCost ?? 0,
-      purchasePrice: stock.totalPurchasePrice ?? (matchedVariant ? (matchedVariant.purchasePrice ?? 0) : 0),
-      sellingMargin: stock.totalSellingMargin ?? 0,
+      mrp: stock.totalMrp ?? (matchedVariant ? (matchedVariant.mrp ?? 0) : (response.mrp ?? 0)),
+      sellingPrice: stock.totalSellingPrice ?? (matchedVariant ? (matchedVariant.sellingPrice ?? 0) : (response.sellingPrice ?? 0)),
+      sellingDiscount: stock.totalSellingDiscount ?? (response.sellingDiscount ?? 0),
+      landingCost: stock.totalLandingCost ?? (response.landingCost ?? 0),
+      purchasePrice: stock.totalPurchasePrice ?? (matchedVariant ? (matchedVariant.purchasePrice ?? 0) : (response.purchasePrice ?? 0)),
+      sellingMargin: stock.totalSellingMargin ?? (response.sellingMargin ?? 0),
       qty: stock.totalQty ?? 0,
       purchaseTaxId: stock.purchaseTaxId,
       salesTaxId: stock.salesTaxId,
@@ -1317,6 +1319,16 @@ export const getOneProduct = async (req, res) => {
       branchId: stock.branchData,
       variantId: stock.variantId ?? (matchedVariant ? matchedVariant._id : null),
     };
+
+    if (matchedVariant) {
+      productsWithStock.name = `${response.name} - ${matchedVariant.name}`;
+      if (matchedVariant.sku) productsWithStock.sku = matchedVariant.sku;
+      if (matchedVariant.itemCode) productsWithStock.itemCode = matchedVariant.itemCode;
+      if (matchedVariant.barcode) productsWithStock.barcode = matchedVariant.barcode;
+      if (matchedVariant.barcodeType) productsWithStock.barcodeType = matchedVariant.barcodeType;
+      productsWithStock.isActive = matchedVariant.isActive ?? productsWithStock.isActive;
+      if (matchedVariant.attributes) productsWithStock.attributes = matchedVariant.attributes;
+    }
 
     // Fetch all stock records for this product (all variants) in one query
     const allVariantStock = await stockModel.find({
