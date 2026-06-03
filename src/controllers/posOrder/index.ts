@@ -809,7 +809,7 @@ export const getAllPosOrder = async (req, res) => {
           select: "firstName lastName companyName email phoneNo address.state",
           populate: [{ path: "address.state", select: "name" }],
         },
-        { path: "items.productId", select: "name variants" },
+        { path: "items.productId", select: "name sku itemCode barcode barcodeType variants" },
         { path: "invoiceId", select: "documentNo" },
         { path: "additionalCharges.taxId", select: "name percentage" },
         { path: "additionalCharges.chargeId", select: "name" },
@@ -832,24 +832,50 @@ export const getAllPosOrder = async (req, res) => {
           ...(criteria.branchId && { branchId: criteria.branchId }),
           isDeleted: false,
         },
-        { productId: 1, salesTaxId: 1, purchaseTaxId: 1, isSalesTaxIncluding: 1, isPurchaseTaxIncluding: 1 },
+        { productId: 1, variantId: 1, salesTaxId: 1, purchaseTaxId: 1, isSalesTaxIncluding: 1, isPurchaseTaxIncluding: 1 },
       )
       .populate("salesTaxId", "name percentage")
       .populate("purchaseTaxId", "name percentage");
 
     const taxMap = {};
     for (const s of stockData) {
-      taxMap[s.productId.toString()] = { salesTaxId: s.salesTaxId, purchaseTaxId: s.purchaseTaxId, isSalesTaxIncluding: s.isSalesTaxIncluding, isPurchaseTaxIncluding: s.isPurchaseTaxIncluding };
+      const variantIdStr = s.variantId ? s.variantId.toString() : "null";
+      const key = `${s.productId.toString()}_${variantIdStr}`;
+      taxMap[key] = { salesTaxId: s.salesTaxId, purchaseTaxId: s.purchaseTaxId, isSalesTaxIncluding: s.isSalesTaxIncluding, isPurchaseTaxIncluding: s.isPurchaseTaxIncluding };
     }
 
     response.forEach((order) => {
       order.items.forEach((item) => {
-        if (!item.productId) return;
-        const tax = taxMap[item.productId?._id?.toString()];
-        item.productId.salesTaxId = tax?.salesTaxId || null;
-        item.productId.purchaseTaxId = tax?.purchaseTaxId || null;
-        item.productId.isSalesTaxIncluding = tax?.isSalesTaxIncluding ?? null;
-        item.productId.isPurchaseTaxIncluding = tax?.isPurchaseTaxIncluding ?? null;
+        const product = item.productId;
+        if (!product) return;
+        const variantIdStr = item.variantId ? item.variantId.toString() : "null";
+        const key = `${product._id.toString()}_${variantIdStr}`;
+        const tax = taxMap[key];
+
+        const updatedProduct = {
+          ...product,
+          salesTaxId: tax?.salesTaxId || null,
+          purchaseTaxId: tax?.purchaseTaxId || null,
+          isSalesTaxIncluding: tax?.isSalesTaxIncluding ?? null,
+          isPurchaseTaxIncluding: tax?.isPurchaseTaxIncluding ?? null,
+          variantId: item.variantId || null,
+        };
+
+        const matchedVariant = item.variantId
+          ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+          : null;
+
+        if (matchedVariant) {
+          updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+          if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+          if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+          if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+          if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+          updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+          if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+        }
+
+        item.productId = updatedProduct;
       });
     });
 
@@ -927,6 +953,7 @@ export const getOnePosOrder = async (req, res) => {
       },
       {
         productId: 1,
+        variantId: 1,
         qty: 1,
         mrp: 1,
         sellingDiscount: 1,
@@ -950,7 +977,9 @@ export const getOnePosOrder = async (req, res) => {
     );
 
     const stockMap = stockResponse.reduce((acc, stock) => {
-      acc[stock.productId.toString()] = stock;
+      const variantIdStr = stock.variantId ? stock.variantId.toString() : "null";
+      const key = `${stock.productId.toString()}_${variantIdStr}`;
+      acc[key] = stock;
       return acc;
     }, {});
 
@@ -959,14 +988,21 @@ export const getOnePosOrder = async (req, res) => {
       items: response.items.map((item) => {
         const product = item.productId;
         if (product && product._id) {
-          const stock = stockMap[product._id.toString()];
-          item.productId = {
+          const variantIdStr = item.variantId ? item.variantId.toString() : "null";
+          const stockKey = `${product._id.toString()}_${variantIdStr}`;
+          const stock = stockMap[stockKey];
+
+          const matchedVariant = item.variantId
+            ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+            : null;
+
+          const updatedProduct = {
             ...product,
             qty: stock?.qty ?? 0,
-            purchasePrice: stock?.purchasePrice ?? product.purchasePrice,
+            purchasePrice: stock?.purchasePrice ?? (matchedVariant ? (matchedVariant.purchasePrice ?? 0) : product.purchasePrice),
             landingCost: stock?.landingCost ?? product.landingCost,
-            mrp: stock?.mrp ?? product.mrp,
-            sellingPrice: stock?.sellingPrice ?? product.sellingPrice,
+            mrp: stock?.mrp ?? (matchedVariant ? (matchedVariant.mrp ?? 0) : product.mrp),
+            sellingPrice: stock?.sellingPrice ?? (matchedVariant ? (matchedVariant.sellingPrice ?? 0) : product.sellingPrice),
             sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
             sellingMargin: stock?.sellingMargin ?? product.sellingMargin,
             purchaseTaxId: stock?.purchaseTaxId,
@@ -974,7 +1010,20 @@ export const getOnePosOrder = async (req, res) => {
             isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
             isSalesTaxIncluding: stock?.isSalesTaxIncluding,
             uomId: stock?.uomId,
+            variantId: item.variantId || null,
           };
+
+          if (matchedVariant) {
+            updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+            if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+            if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+            if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+            if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+            updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+            if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+          }
+
+          item.productId = updatedProduct;
         }
         return item;
       }),
@@ -1039,6 +1088,7 @@ export const getAllHoldOrders = async (req, res) => {
       },
       {
         productId: 1,
+        variantId: 1,
         qty: 1,
         mrp: 1,
         sellingDiscount: 1,
@@ -1062,7 +1112,9 @@ export const getAllHoldOrders = async (req, res) => {
     );
 
     const stockMap = stockResponse.reduce((acc, stock) => {
-      acc[stock.productId.toString()] = stock;
+      const variantIdStr = stock.variantId ? stock.variantId.toString() : "null";
+      const key = `${stock.productId.toString()}_${variantIdStr}`;
+      acc[key] = stock;
       return acc;
     }, {});
 
@@ -1071,14 +1123,21 @@ export const getAllHoldOrders = async (req, res) => {
         order.items = order.items.map((item) => {
           const product = item.productId;
           if (product && product._id) {
-            const stock = stockMap[product._id.toString()];
-            item.productId = {
+            const variantIdStr = item.variantId ? item.variantId.toString() : "null";
+            const stockKey = `${product._id.toString()}_${variantIdStr}`;
+            const stock = stockMap[stockKey];
+
+            const matchedVariant = item.variantId
+              ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+              : null;
+
+            const updatedProduct = {
               ...product,
               qty: stock?.qty ?? 0,
-              purchasePrice: stock?.purchasePrice ?? product.purchasePrice,
+              purchasePrice: stock?.purchasePrice ?? (matchedVariant ? (matchedVariant.purchasePrice ?? 0) : product.purchasePrice),
               landingCost: stock?.landingCost ?? product.landingCost,
-              mrp: stock?.mrp ?? product.mrp,
-              sellingPrice: stock?.sellingPrice ?? product.sellingPrice,
+              mrp: stock?.mrp ?? (matchedVariant ? (matchedVariant.mrp ?? 0) : product.mrp),
+              sellingPrice: stock?.sellingPrice ?? (matchedVariant ? (matchedVariant.sellingPrice ?? 0) : product.sellingPrice),
               sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
               sellingMargin: stock?.sellingMargin ?? product.sellingMargin,
               purchaseTaxId: stock?.purchaseTaxId,
@@ -1086,7 +1145,20 @@ export const getAllHoldOrders = async (req, res) => {
               isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
               isSalesTaxIncluding: stock?.isSalesTaxIncluding,
               uomId: stock?.uomId,
+              variantId: item.variantId || null,
             };
+
+            if (matchedVariant) {
+              updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+              if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+              if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+              if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+              if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+              updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+              if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+            }
+
+            item.productId = updatedProduct;
           }
           return item;
         });
