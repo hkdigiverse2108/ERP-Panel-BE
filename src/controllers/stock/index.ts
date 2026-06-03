@@ -385,7 +385,8 @@ export const getAllStock = async (req, res) => {
           stockData.push({
             ...productObj,
             variants: undefined, // remove nested variants array
-            variantId: variant._id,
+            id: variant._id,
+            productId: productObj._id,
             name: `${productObj.name} - ${variant.name}`,
             sku: variant.sku || productObj.sku,
             barcode: variant.barcode || productObj.barcode,
