@@ -93,6 +93,70 @@ export const deleteRecipeById = async (req, res) => {
   }
 };
 
+const formatRecipe = (recipe: any) => {
+  const recObj = recipe.toObject ? recipe.toObject() : recipe;
+  if (recObj.rawProducts) {
+    recObj.rawProducts = recObj.rawProducts.map((item: any) => {
+      const product = item.productId;
+      if (product && product._id) {
+        const matchedVariant = item.variantId
+          ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+          : null;
+
+        const updatedProduct = {
+          ...product,
+          variantId: item.variantId || null,
+        };
+
+        if (matchedVariant) {
+          item.variant = matchedVariant;
+          updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+          if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+          if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+          if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+          if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+          updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+          if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+          updatedProduct.variants = [matchedVariant];
+        } else {
+          updatedProduct.variants = [];
+        }
+        item.productId = updatedProduct;
+      }
+      return item;
+    });
+  }
+  if (recObj.finalProducts) {
+    const product = recObj.finalProducts.productId;
+    if (product && product._id) {
+      const matchedVariant = recObj.finalProducts.variantId
+        ? (product.variants || []).find((v: any) => v._id.toString() === recObj.finalProducts.variantId.toString())
+        : null;
+
+      const updatedProduct = {
+        ...product,
+        variantId: recObj.finalProducts.variantId || null,
+      };
+
+      if (matchedVariant) {
+        recObj.finalProducts.variant = matchedVariant;
+        updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+        if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+        if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+        if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+        if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+        updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+        if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+        updatedProduct.variants = [matchedVariant];
+      } else {
+        updatedProduct.variants = [];
+      }
+      recObj.finalProducts.productId = updatedProduct;
+    }
+  }
+  return recObj;
+};
+
 export const getAllRecipe = async (req, res) => {
   reqInfo(req);
   try {
@@ -134,8 +198,8 @@ export const getAllRecipe = async (req, res) => {
       populate: [
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
-        { path: "rawProducts.productId", select: "name" },
-        { path: "finalProducts.productId", select: "name" },
+        { path: "rawProducts.productId", select: "name sku itemCode barcode variants" },
+        { path: "finalProducts.productId", select: "name sku itemCode barcode variants" },
         { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
@@ -153,7 +217,9 @@ export const getAllRecipe = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe"), { recipe_data: response, totalData, state: stateObj }, {}));
+    const formattedResponse = response.map(formatRecipe);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe"), { recipe_data: formattedResponse, totalData, state: stateObj }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -175,8 +241,8 @@ export const getRecipeById = async (req, res) => {
         populate: [
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
-          { path: "rawProducts.productId", select: "name" },
-          { path: "finalProducts.productId", select: "name" },
+          { path: "rawProducts.productId", select: "name sku itemCode barcode variants" },
+          { path: "finalProducts.productId", select: "name sku itemCode barcode variants" },
           { path: "createdBy", select: "fullName userType" },
         ],
       },
@@ -184,7 +250,9 @@ export const getRecipeById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Recipe"), {}, {}));
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe"), response, {}));
+    const formattedResponse = formatRecipe(response);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe"), formattedResponse, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

@@ -254,17 +254,33 @@ const formatStockVerification = (sv: any) => {
   const svObj = sv.toObject ? sv.toObject() : sv;
   if (svObj.items) {
     svObj.items = svObj.items.map((item: any) => {
-      if (item.variantId && item.productId && item.productId.variants) {
-        const matchedVariant = item.productId.variants.find(
-          (v: any) => v._id.toString() === item.variantId.toString()
-        );
+      const product = item.productId;
+      if (product && product._id) {
+        const matchedVariant = item.variantId
+          ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+          : null;
+
+        const updatedProduct = {
+          ...product,
+          variantId: item.variantId || null,
+        };
+
         if (matchedVariant) {
           item.variant = matchedVariant;
-          item.productId.name = `${item.productId.name} - ${matchedVariant.name}`;
-          if (matchedVariant.itemCode) {
-            item.productId.itemCode = matchedVariant.itemCode;
-          }
+          updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+          if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+          if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+          if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+          if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+          updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+          if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+
+          updatedProduct.variants = [matchedVariant];
+        } else {
+          updatedProduct.variants = [];
         }
+
+        item.productId = updatedProduct;
       }
       return item;
     });

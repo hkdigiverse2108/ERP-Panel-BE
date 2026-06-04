@@ -141,7 +141,7 @@ export const editMaterialConsumption = async (req, res) => {
         } else {
           stockCriteria.variantId = { $exists: false };
         }
-        
+
         const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
         if (!stock) {
           // If trying to increase consumption but no stock record exists
@@ -191,6 +191,65 @@ export const deleteMaterialConsumption = async (req, res) => {
     const isExist = await getFirstMatch(materialConsumptionModel, { _id: value.id, isDeleted: false }, {}, {});
     if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Material Consumption"), {}, {}));
 
+    // Revert Stock before deletion (increase inventory stock by consumed quantities)
+    if (isExist.items && isExist.items.length > 0) {
+      for (const item of isExist.items) {
+        if (item.qty > 0) {
+          const stockCriteria: any = {
+            productId: item.productId,
+            branchId: isExist.branchId,
+            isDeleted: false,
+          };
+          if (item.variantId) {
+            stockCriteria.variantId = item.variantId;
+          } else {
+            stockCriteria.variantId = { $exists: false };
+          }
+
+          const existingStock = await getFirstMatch(stockModel, stockCriteria, {}, {});
+          if (existingStock) {
+            await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: item.qty }, updatedBy: user?._id || null }, {});
+          } else {
+            const product = await getFirstMatch(productModel, { _id: item.productId }, {}, {});
+            if (product) {
+              let purchasePrice = product.purchasePrice || 0;
+              let landingCost = product.landingCost || 0;
+              let mrp = product.mrp || 0;
+              let sellingPrice = product.sellingPrice || 0;
+
+              if (item.variantId) {
+                const matchedVariant = (product.variants || []).find(
+                  (v: any) => v._id.toString() === item.variantId.toString()
+                );
+                if (matchedVariant) {
+                  purchasePrice = matchedVariant.purchasePrice || purchasePrice;
+                  mrp = matchedVariant.mrp || mrp;
+                  sellingPrice = matchedVariant.sellingPrice || sellingPrice;
+                }
+              }
+
+              const newStockPayload = {
+                companyId: isExist.companyId,
+                branchId: isExist.branchId,
+                productId: item.productId,
+                variantId: item.variantId || undefined,
+                qty: item.qty,
+                uomId: product.uomId,
+                purchasePrice,
+                landingCost,
+                mrp,
+                sellingPrice,
+                createdBy: user?._id || null,
+                updatedBy: user?._id || null,
+              };
+              const newStock = await createOne(stockModel, newStockPayload);
+              await updateData(productModel, { _id: item.productId }, { $push: { stockIds: newStock?._id } }, {});
+            }
+          }
+        }
+      }
+    }
+
     const response = await updateData(materialConsumptionModel, { _id: value.id }, { isDeleted: true, updatedBy: user?._id || null }, {});
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.deleteDataError("Material Consumption"), {}, {}));
 
@@ -199,6 +258,44 @@ export const deleteMaterialConsumption = async (req, res) => {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
+};
+
+const formatMaterialConsumption = (mc: any) => {
+  const mcObj = mc.toObject ? mc.toObject() : mc;
+  if (mcObj.items) {
+    mcObj.items = mcObj.items.map((item: any) => {
+      const product = item.productId;
+      if (product && product._id) {
+        const matchedVariant = item.variantId
+          ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+          : null;
+
+        const updatedProduct = {
+          ...product,
+          variantId: item.variantId || null,
+        };
+
+        if (matchedVariant) {
+          item.variant = matchedVariant;
+          updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+          if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+          if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+          if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+          if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+          updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+          if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+
+          updatedProduct.variants = [matchedVariant];
+        } else {
+          updatedProduct.variants = [];
+        }
+
+        item.productId = updatedProduct;
+      }
+      return item;
+    });
+  }
+  return mcObj;
 };
 
 export const getAllMaterialConsumption = async (req, res) => {
@@ -245,7 +342,7 @@ export const getAllMaterialConsumption = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "consumptionTypeId", select: "name" },
-        { path: "items.productId", select: "name variants" },
+        { path: "items.productId", select: "name itemCode variants" },
         { path: "createdBy", select: "fullName userType" },
       ],
       skip: (page - 1) * limit,
@@ -262,7 +359,9 @@ export const getAllMaterialConsumption = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Material Consumption"), { material_consumption_data: response, totalData, state: stateObj }, {}));
+    const formattedResponse = response.map(formatMaterialConsumption);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Material Consumption"), { material_consumption_data: formattedResponse, totalData, state: stateObj }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -284,7 +383,7 @@ export const getMaterialConsumptionById = async (req, res) => {
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "consumptionTypeId", select: "name" },
-          { path: "items.productId", select: "name variants" },
+          { path: "items.productId", select: "name itemCode variants" },
           { path: "createdBy", select: "fullName userType" },
         ],
       },
@@ -292,7 +391,9 @@ export const getMaterialConsumptionById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Material Consumption"), {}, {}));
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Material Consumption"), response, {}));
+    const formattedResponse = formatMaterialConsumption(response);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Material Consumption"), formattedResponse, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

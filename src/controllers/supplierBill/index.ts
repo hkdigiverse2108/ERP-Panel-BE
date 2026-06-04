@@ -360,6 +360,73 @@ export const deleteSupplierBill = async (req, res) => {
   }
 };
 
+const formatSupplierBill = (sb: any) => {
+  const sbObj = sb.toObject ? sb.toObject() : sb;
+  if (sbObj.productDetails) {
+    sbObj.productDetails = sbObj.productDetails.map((item: any) => {
+      const product = item.productId;
+      if (product && product._id) {
+        const matchedVariant = item.variantId
+          ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+          : null;
+
+        const updatedProduct = {
+          ...product,
+          variantId: item.variantId || null,
+        };
+
+        if (matchedVariant) {
+          item.variant = matchedVariant;
+          updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+          if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+          if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+          if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+          if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+          updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+          if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+          updatedProduct.variants = [matchedVariant];
+        } else {
+          updatedProduct.variants = [];
+        }
+        item.productId = updatedProduct;
+      }
+      return item;
+    });
+  }
+  if (sbObj.returnProductDetails?.item) {
+    sbObj.returnProductDetails.item = sbObj.returnProductDetails.item.map((item: any) => {
+      const product = item.productId;
+      if (product && product._id) {
+        const matchedVariant = item.variantId
+          ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+          : null;
+
+        const updatedProduct = {
+          ...product,
+          variantId: item.variantId || null,
+        };
+
+        if (matchedVariant) {
+          item.variant = matchedVariant;
+          updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+          if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+          if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+          if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+          if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+          updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+          if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+          updatedProduct.variants = [matchedVariant];
+        } else {
+          updatedProduct.variants = [];
+        }
+        item.productId = updatedProduct;
+      }
+      return item;
+    });
+  }
+  return sbObj;
+};
+
 export const getAllSupplierBill = async (req, res) => {
   reqInfo(req);
   try {
@@ -468,7 +535,7 @@ export const getAllSupplierBill = async (req, res) => {
 
     // Manually extract billing address from the populated supplier object
     response = response.map((sb: any) => {
-      let sbObj = sb.toObject ? sb.toObject() : sb;
+      let sbObj = formatSupplierBill(sb);
 
       if (sbObj.supplierId && sbObj.supplierId.address) {
         const extractAddressFields = (addr: any) => ({
@@ -606,7 +673,7 @@ export const getOneSupplierBill = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Supplier Bill"), {}, {}));
     }
 
-    let sbObj = response.toObject ? response.toObject() : response;
+    let sbObj = formatSupplierBill(response);
 
     if (sbObj.supplierId && sbObj.supplierId.address) {
       const extractAddressFields = (addr: any) => ({

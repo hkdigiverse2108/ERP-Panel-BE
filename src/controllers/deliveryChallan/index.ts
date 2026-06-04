@@ -326,6 +326,42 @@ export const deleteDeliveryChallan = async (req, res) => {
   }
 };
 
+const formatDeliveryChallan = (dc: any) => {
+  const dcObj = dc.toObject ? dc.toObject() : dc;
+  if (dcObj.items) {
+    dcObj.items = dcObj.items.map((item: any) => {
+      const product = item.productId;
+      if (product && product._id) {
+        const matchedVariant = item.variantId
+          ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+          : null;
+
+        const updatedProduct = {
+          ...product,
+          variantId: item.variantId || null,
+        };
+
+        if (matchedVariant) {
+          item.variant = matchedVariant;
+          updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+          if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+          if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+          if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+          if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+          updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+          if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+          updatedProduct.variants = [matchedVariant];
+        } else {
+          updatedProduct.variants = [];
+        }
+        item.productId = updatedProduct;
+      }
+      return item;
+    });
+  }
+  return dcObj;
+};
+
 export const getAllDeliveryChallan = async (req, res) => {
   reqInfo(req);
   try {
@@ -400,7 +436,7 @@ export const getAllDeliveryChallan = async (req, res) => {
 
     // Manually extract billing and shipping addresses from the populated customer object
     const finalResponse = response.map((dc: any) => {
-      let dcObj = dc.toObject ? dc.toObject() : dc;
+      let dcObj = formatDeliveryChallan(dc);
 
       if (dcObj.customerId && dcObj.customerId.address) {
         const extractAddressFields = (addr: any) => ({
@@ -520,7 +556,7 @@ export const getOneDeliveryChallan = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Delivery Challan"), {}, {}));
     }
 
-    let dcObj = response.toObject ? response.toObject() : response;
+    let dcObj = formatDeliveryChallan(response);
 
     if (dcObj.customerId && dcObj.customerId.address) {
       const extractAddressFields = (addr: any) => ({

@@ -576,56 +576,80 @@ export const getAllStockTransfer = async (req, res) => {
 
     let response = await getDataWithSorting(stockTransferModel, criteria, {}, options);
 
-    response = response.map((item: any) => {
-      let itemObj = item.toObject ? item.toObject() : item;
+    response = await Promise.all(
+      response.map(async (item: any) => {
+        let itemObj = item.toObject ? item.toObject() : item;
 
-      if (itemObj.items && itemObj.items.length > 0) {
-        itemObj.items = itemObj.items.map((subItem: any) => {
-          const product = subItem.productId;
-          if (product && product._id) {
-            const matchedVariant = subItem.variantId
-              ? (product.variants || []).find((v: any) => v._id.toString() === subItem.variantId.toString())
-              : null;
+        if (itemObj.items && itemObj.items.length > 0) {
+          itemObj.items = await Promise.all(
+            itemObj.items.map(async (subItem: any) => {
+              const product = subItem.productId;
+              if (product && product._id) {
+                const matchedVariant = subItem.variantId
+                  ? (product.variants || []).find((v: any) => v._id.toString() === subItem.variantId.toString())
+                  : null;
 
-            const updatedProduct = {
-              ...product,
-              variantId: subItem.variantId || null,
-            };
+                const updatedProduct = {
+                  ...product,
+                  variantId: subItem.variantId || null,
+                  qty: 0,
+                };
 
-            if (matchedVariant) {
-              updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
-              if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
-              if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
-              if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
-              if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
-              updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
-              if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
-            }
+                if (matchedVariant) {
+                  updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+                  if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+                  if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+                  if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+                  if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+                  updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+                  if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
 
-            subItem.productId = updatedProduct;
-          }
-          return subItem;
-        });
-      }
+                  updatedProduct.variants = [matchedVariant];
+                } else {
+                  updatedProduct.variants = [];
+                }
 
-      if (effectiveBranchId) {
-        const branchIdStr = effectiveBranchId.toString();
-        let type = "";
+                // Query the stock collection to get the quantity available at the requestedToBranchId
+                const stockCriteria: any = {
+                  productId: product._id,
+                  branchId: itemObj.requestedToBranchId?._id || itemObj.requestedToBranchId,
+                  isDeleted: false,
+                };
+                if (subItem.variantId) {
+                  stockCriteria.variantId = subItem.variantId;
+                } else {
+                  stockCriteria.variantId = { $exists: false };
+                }
 
-        const reqBy = itemObj.requestedByBranchId?._id?.toString() || itemObj.requestedByBranchId?.toString();
-        const reqTo = itemObj.requestedToBranchId?._id?.toString() || itemObj.requestedToBranchId?.toString();
+                const stockEntry = await getFirstMatch(stockModel, stockCriteria, { qty: 1 }, {});
+                updatedProduct.qty = stockEntry?.qty || 0;
 
-        if (reqBy === branchIdStr) {
-          type = "incoming"; // ✅ Correct label: Stock is coming TO you
-        } else if (reqTo === branchIdStr) {
-          type = "outgoing"; // ✅ Correct label: Stock is leaving FROM you
+                subItem.productId = updatedProduct;
+              }
+              return subItem;
+            })
+          );
         }
 
-        itemObj = { ...itemObj, type };
-      }
+        if (effectiveBranchId) {
+          const branchIdStr = effectiveBranchId.toString();
+          let type = "";
 
-      return itemObj;
-    });
+          const reqBy = itemObj.requestedByBranchId?._id?.toString() || itemObj.requestedByBranchId?.toString();
+          const reqTo = itemObj.requestedToBranchId?._id?.toString() || itemObj.requestedToBranchId?.toString();
+
+          if (reqBy === branchIdStr) {
+            type = "incoming"; // ✅ Correct label: Stock is coming TO you
+          } else if (reqTo === branchIdStr) {
+            type = "outgoing"; // ✅ Correct label: Stock is leaving FROM you
+          }
+
+          itemObj = { ...itemObj, type };
+        }
+
+        return itemObj;
+      })
+    );
 
     const totalData = await countData(stockTransferModel, criteria);
     const totalPages = Math.ceil(totalData / (limit ? parseInt(limit as string) : totalData)) || 1;
@@ -664,32 +688,54 @@ export const getStockTransferById = async (req, res) => {
 
     let transferObj = response.toObject ? response.toObject() : response;
     if (transferObj.items && transferObj.items.length > 0) {
-      transferObj.items = transferObj.items.map((item: any) => {
-        const product = item.productId;
-        if (product && product._id) {
-          const matchedVariant = item.variantId
-            ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
-            : null;
+      transferObj.items = await Promise.all(
+        transferObj.items.map(async (item: any) => {
+          const product = item.productId;
+          if (product && product._id) {
+            const matchedVariant = item.variantId
+              ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+              : null;
 
-          const updatedProduct = {
-            ...product,
-            variantId: item.variantId || null,
-          };
+            const updatedProduct = {
+              ...product,
+              variantId: item.variantId || null,
+              qty: 0,
+            };
 
-          if (matchedVariant) {
-            updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
-            if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
-            if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
-            if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
-            if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
-            updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
-            if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+            if (matchedVariant) {
+              updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+              if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+              if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+              if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+              if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+              updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+              if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+
+              updatedProduct.variants = [matchedVariant];
+            } else {
+              updatedProduct.variants = [];
+            }
+
+            // Query the stock collection to get the quantity available at the requestedToBranchId
+            const stockCriteria: any = {
+              productId: product._id,
+              branchId: transferObj.requestedToBranchId?._id || transferObj.requestedToBranchId,
+              isDeleted: false,
+            };
+            if (item.variantId) {
+              stockCriteria.variantId = item.variantId;
+            } else {
+              stockCriteria.variantId = { $exists: false };
+            }
+
+            const stockEntry = await getFirstMatch(stockModel, stockCriteria, { qty: 1 }, {});
+            updatedProduct.qty = stockEntry?.qty || 0;
+
+            item.productId = updatedProduct;
           }
-
-          item.productId = updatedProduct;
-        }
-        return item;
-      });
+          return item;
+        })
+      );
     }
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Transfer"), transferObj, {}));

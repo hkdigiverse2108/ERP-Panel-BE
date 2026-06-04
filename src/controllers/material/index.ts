@@ -109,6 +109,73 @@ export const deleteMaterial = async (req, res) => {
   }
 };
 
+const formatMaterial = (mat: any) => {
+  const matObj = mat.toObject ? mat.toObject() : mat;
+  if (matObj.materialTaken) {
+    matObj.materialTaken = matObj.materialTaken.map((item: any) => {
+      const product = item.productId;
+      if (product && product._id) {
+        const matchedVariant = item.variantId
+          ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+          : null;
+
+        const updatedProduct = {
+          ...product,
+          variantId: item.variantId || null,
+        };
+
+        if (matchedVariant) {
+          item.variant = matchedVariant;
+          updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+          if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+          if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+          if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+          if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+          updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+          if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+          updatedProduct.variants = [matchedVariant];
+        } else {
+          updatedProduct.variants = [];
+        }
+        item.productId = updatedProduct;
+      }
+      return item;
+    });
+  }
+  if (matObj.goodsReceived) {
+    matObj.goodsReceived = matObj.goodsReceived.map((item: any) => {
+      const product = item.productId;
+      if (product && product._id) {
+        const matchedVariant = item.variantId
+          ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+          : null;
+
+        const updatedProduct = {
+          ...product,
+          variantId: item.variantId || null,
+        };
+
+        if (matchedVariant) {
+          item.variant = matchedVariant;
+          updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+          if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+          if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+          if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+          if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+          updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+          if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+          updatedProduct.variants = [matchedVariant];
+        } else {
+          updatedProduct.variants = [];
+        }
+        item.productId = updatedProduct;
+      }
+      return item;
+    });
+  }
+  return matObj;
+};
+
 export const getAllMaterial = async (req, res) => {
   reqInfo(req);
   try {
@@ -170,7 +237,9 @@ export const getAllMaterial = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Material"), { material_data: response, totalData, state: stateObj }, {}));
+    const formattedResponse = response.map(formatMaterial);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Material"), { material_data: formattedResponse, totalData, state: stateObj }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -201,7 +270,9 @@ export const getMaterialById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Material"), {}, {}));
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Material"), response, {}));
+    const formattedResponse = formatMaterial(response);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Material"), formattedResponse, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

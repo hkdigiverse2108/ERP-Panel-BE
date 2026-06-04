@@ -342,6 +342,76 @@ export const deleteBillOfLiveProductById = async (req, res) => {
   }
 };
 
+const formatBillOfLiveProduct = (bol: any) => {
+  const bolObj = bol.toObject ? bol.toObject() : bol;
+  if (bolObj.productDetails) {
+    bolObj.productDetails = bolObj.productDetails.map((pd: any) => {
+      // 1. Format main product
+      const product = pd.productId;
+      if (product && product._id) {
+        const matchedVariant = pd.variantId
+          ? (product.variants || []).find((v: any) => v._id.toString() === pd.variantId.toString())
+          : null;
+
+        const updatedProduct = {
+          ...product,
+          variantId: pd.variantId || null,
+        };
+
+        if (matchedVariant) {
+          pd.variant = matchedVariant;
+          updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+          if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+          if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+          if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+          if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+          updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+          if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+          updatedProduct.variants = [matchedVariant];
+        } else {
+          updatedProduct.variants = [];
+        }
+        pd.productId = updatedProduct;
+      }
+
+      // 2. Format ingredients
+      if (pd.ingredients) {
+        pd.ingredients = pd.ingredients.map((ing: any) => {
+          const ingProduct = ing.productId;
+          if (ingProduct && ingProduct._id) {
+            const matchedVariant = ing.variantId
+              ? (ingProduct.variants || []).find((v: any) => v._id.toString() === ing.variantId.toString())
+              : null;
+
+            const updatedIngProduct = {
+              ...ingProduct,
+              variantId: ing.variantId || null,
+            };
+
+            if (matchedVariant) {
+              ing.variant = matchedVariant;
+              updatedIngProduct.name = `${ingProduct.name} - ${matchedVariant.name}`;
+              if (matchedVariant.sku) updatedIngProduct.sku = matchedVariant.sku;
+              if (matchedVariant.itemCode) updatedIngProduct.itemCode = matchedVariant.itemCode;
+              if (matchedVariant.barcode) updatedIngProduct.barcode = matchedVariant.barcode;
+              if (matchedVariant.barcodeType) updatedIngProduct.barcodeType = matchedVariant.barcodeType;
+              updatedIngProduct.isActive = matchedVariant.isActive ?? updatedIngProduct.isActive;
+              if (matchedVariant.attributes) updatedIngProduct.attributes = matchedVariant.attributes;
+              updatedIngProduct.variants = [matchedVariant];
+            } else {
+              updatedIngProduct.variants = [];
+            }
+            ing.productId = updatedIngProduct;
+          }
+          return ing;
+        });
+      }
+      return pd;
+    });
+  }
+  return bolObj;
+};
+
 export const getAllBillOfLiveProduct = async (req, res) => {
   reqInfo(req);
   try {
@@ -412,7 +482,7 @@ export const getAllBillOfLiveProduct = async (req, res) => {
         HTTP_STATUS.OK,
         responseMessage?.getDataSuccess("Bill Of Live Product"),
         {
-          billOfLiveProduct_data: response,
+          billOfLiveProduct_data: response.map(formatBillOfLiveProduct),
           totalData,
           state,
         },
@@ -460,7 +530,9 @@ export const getBillOfLiveProductById = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Bill Of Live Product"), {}, {}));
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bill Of Live Product"), response, {}));
+    const formattedResponse = formatBillOfLiveProduct(response);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bill Of Live Product"), formattedResponse, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

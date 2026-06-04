@@ -12,13 +12,64 @@ const discountPopulate = [
   { path: "categoryIds", select: "name" },
   { path: "subcategoryIds", select: "name" },
   { path: "brandIds", select: "name" },
-  { path: "productIds.productId", select: "name" },
-  { path: "excludedProductIds.productId", select: "name" },
-  { path: "buyXGetY.getProductIds.productId", select: "name" },
-  { path: "productAtFixAmount.freeProductIds.productId", select: "name" },
+  { path: "productIds.productId", select: "name sku itemCode barcode variants" },
+  { path: "excludedProductIds.productId", select: "name sku itemCode barcode variants" },
+  { path: "buyXGetY.getProductIds.productId", select: "name sku itemCode barcode variants" },
+  { path: "productAtFixAmount.freeProductIds.productId", select: "name sku itemCode barcode variants" },
   { path: "createdBy", select: "fullName userType" },
   { path: "updatedBy", select: "fullName userType" },
 ];
+
+const formatDiscount = (disc: any) => {
+  const discObj = disc.toObject ? disc.toObject() : disc;
+  const formatProductArray = (arr: any[]) => {
+    if (!arr) return arr;
+    return arr.map((item: any) => {
+      const product = item.productId;
+      if (product && product._id) {
+        const matchedVariant = item.variantId
+          ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+          : null;
+
+        const updatedProduct = {
+          ...product,
+          variantId: item.variantId || null,
+        };
+
+        if (matchedVariant) {
+          item.variant = matchedVariant;
+          updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+          if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+          if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+          if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+          if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+          updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+          if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+          updatedProduct.variants = [matchedVariant];
+        } else {
+          updatedProduct.variants = [];
+        }
+        item.productId = updatedProduct;
+      }
+      return item;
+    });
+  };
+
+  if (discObj.productIds) {
+    discObj.productIds = formatProductArray(discObj.productIds);
+  }
+  if (discObj.excludedProductIds) {
+    discObj.excludedProductIds = formatProductArray(discObj.excludedProductIds);
+  }
+  if (discObj.buyXGetY?.getProductIds) {
+    discObj.buyXGetY.getProductIds = formatProductArray(discObj.buyXGetY.getProductIds);
+  }
+  if (discObj.productAtFixAmount?.freeProductIds) {
+    discObj.productAtFixAmount.freeProductIds = formatProductArray(discObj.productAtFixAmount.freeProductIds);
+  }
+  return discObj;
+};
+
 
 export const addDiscount = async (req, res) => {
   reqInfo(req);
@@ -231,8 +282,9 @@ export const getAllDiscount = async (req, res) => {
 
     const enrichedResponse = response.map((d: any) => {
       const s = statsMap[d._id.toString()] || { orders: 0, revenue: 0 };
+      const formattedD = formatDiscount(d);
       return {
-        ...d,
+        ...formattedD,
         orders: s.orders,
         revenue: s.revenue,
       };
@@ -304,6 +356,7 @@ export const getOneDiscount = async (req, res) => {
     }
 
     const discount = response[0];
+    const formattedDiscount = formatDiscount(discount);
     const stats = await PosOrderModel.aggregate([
       { $match: { discountId: discount._id, isDeleted: false } },
       {
@@ -317,7 +370,7 @@ export const getOneDiscount = async (req, res) => {
 
     const s = stats[0] || { orders: 0, revenue: 0 };
     const enrichedDiscount = {
-      ...discount,
+      ...formattedDiscount,
       orders: s.orders,
       revenue: s.revenue,
     };

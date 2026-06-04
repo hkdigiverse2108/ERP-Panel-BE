@@ -224,6 +224,42 @@ export const deletePurchaseDebitNote = async (req, res) => {
   }
 };
 
+const formatPurchaseDebitNote = (pdn: any) => {
+  const pdnObj = pdn.toObject ? pdn.toObject() : pdn;
+  if (pdnObj.productDetails) {
+    pdnObj.productDetails = pdnObj.productDetails.map((item: any) => {
+      const product = item.productId;
+      if (product && product._id) {
+        const matchedVariant = item.variantId
+          ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+          : null;
+
+        const updatedProduct = {
+          ...product,
+          variantId: item.variantId || null,
+        };
+
+        if (matchedVariant) {
+          item.variant = matchedVariant;
+          updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+          if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+          if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+          if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+          if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+          updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+          if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+          updatedProduct.variants = [matchedVariant];
+        } else {
+          updatedProduct.variants = [];
+        }
+        item.productId = updatedProduct;
+      }
+      return item;
+    });
+  }
+  return pdnObj;
+};
+
 export const getAllPurchaseDebitNote = async (req, res) => {
   reqInfo(req);
   try {
@@ -298,7 +334,7 @@ export const getAllPurchaseDebitNote = async (req, res) => {
 
     // Manually extract billing and shipping addresses from the populated supplier object
     response = response.map((pdn: any) => {
-      let pdnObj = pdn.toObject ? pdn.toObject() : pdn;
+      let pdnObj = formatPurchaseDebitNote(pdn);
 
       if (pdnObj.supplierId && pdnObj.supplierId.address) {
         const extractAddressFields = (addr: any) => ({
@@ -404,7 +440,7 @@ export const getOnePurchaseDebitNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Purchase Debit Note"), {}, {}));
     }
 
-    let pdnObj = response.toObject ? response.toObject() : response;
+    let pdnObj = formatPurchaseDebitNote(response);
 
     if (pdnObj.supplierId && pdnObj.supplierId.address) {
       const extractAddressFields = (addr: any) => ({
