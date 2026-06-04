@@ -428,6 +428,35 @@ export const getAllSalesCreditNote = async (req, res) => {
     response = response.map((scn: any) => {
       let scnObj = scn.toObject ? scn.toObject() : scn;
 
+      if (scnObj.productDetails && scnObj.productDetails.length > 0) {
+        scnObj.productDetails = scnObj.productDetails.map((item: any) => {
+          const product = item.productId;
+          if (product && product._id) {
+            const matchedVariant = item.variantId
+              ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+              : null;
+
+            const updatedProduct = {
+              ...product,
+              variantId: item.variantId || null,
+            };
+
+            if (matchedVariant) {
+              updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+              if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+              if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+              if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+              if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+              updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+              if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+            }
+
+            item.productId = updatedProduct;
+          }
+          return item;
+        });
+      }
+
       if (scnObj.customerId && scnObj.customerId.address) {
         const extractAddressFields = (addr: any) => ({
           addressLine1: addr.addressLine1,
@@ -525,6 +554,35 @@ export const getOneSalesCreditNote = async (req, res) => {
     }
 
     let scnObj = response.toObject ? response.toObject() : response;
+
+    if (scnObj.productDetails && scnObj.productDetails.length > 0) {
+      scnObj.productDetails = scnObj.productDetails.map((item: any) => {
+        const product = item.productId;
+        if (product && product._id) {
+          const matchedVariant = item.variantId
+            ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+            : null;
+
+          const updatedProduct = {
+            ...product,
+            variantId: item.variantId || null,
+          };
+
+          if (matchedVariant) {
+            updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+            if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+            if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+            if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+            if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+            updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+            if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+          }
+
+          item.productId = updatedProduct;
+        }
+        return item;
+      });
+    }
 
     if (scnObj.customerId && scnObj.customerId.address) {
       const extractAddressFields = (addr: any) => ({

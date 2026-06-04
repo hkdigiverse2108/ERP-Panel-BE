@@ -19,6 +19,7 @@ export interface IStock extends IBase {
 
   isPurchaseTaxIncluding: boolean;
   isSalesTaxIncluding: boolean;
+  quickPick?: boolean;
 }
 
 const stockSchema = new Schema<IStock>(
@@ -40,6 +41,7 @@ const stockSchema = new Schema<IStock>(
 
     isPurchaseTaxIncluding: { type: Boolean, default: false },
     isSalesTaxIncluding: { type: Boolean, default: false },
+    quickPick: { type: Boolean, default: false },
   },
   baseSchemaOptions,
 );

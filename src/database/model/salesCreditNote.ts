@@ -58,6 +58,7 @@ export interface ISalesCreditNote extends IBase {
 export const salesCreditNoteItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product" },
+    variantId: { type: Schema.Types.ObjectId, ref: "product", default: null },
     uomId: { type: Schema.Types.ObjectId, ref: "uom" },
     unit: { type: String },
     qty: { type: Number, min: 0 },

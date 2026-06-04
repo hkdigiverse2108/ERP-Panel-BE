@@ -19,6 +19,7 @@ export const addStockSchema = Joi.object().keys({
   salesTaxId: objectId().optional(),
   isPurchaseTaxIncluding: Joi.boolean().default(false).optional(),
   isSalesTaxIncluding: Joi.boolean().default(false).optional(),
+  quickPick: Joi.boolean().default(false).optional(),
 
   ...baseApiSchema,
 });
@@ -43,6 +44,7 @@ export const editStockSchema = Joi.array()
       salesTaxId: objectId().optional().allow("", null),
       isPurchaseTaxIncluding: Joi.boolean().default(false).optional(),
       isSalesTaxIncluding: Joi.boolean().default(false).optional(),
+      quickPick: Joi.boolean().optional(),
 
       ...baseApiSchema,
     }),

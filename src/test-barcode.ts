@@ -1,7 +1,7 @@
 import "dotenv/config";
 import mongoose from "mongoose";
 import { connectDb } from "./database/connection";
-import { companyModel, branchModel, productModel, stockModel, PosOrderModel, uomModel, taxModel, userModel, PosCashRegisterModel, contactModel, supplierBillModel, InvoiceModel, recipeModel, purchaseDebitNoteModel, materialModel, billOfLiveProductModel, discountModel } from "./database";
+import { companyModel, branchModel, productModel, stockModel, PosOrderModel, uomModel, taxModel, userModel, PosCashRegisterModel, contactModel, supplierBillModel, InvoiceModel, recipeModel, purchaseDebitNoteModel, materialModel, billOfLiveProductModel, discountModel, salesCreditNoteModel } from "./database";
 import { addProduct, editProduct, getOneProduct, getProductDropdown, getByBarcode, getAllProduct, assignBarcodes } from "./controllers/product";
 import { verifyDiscount } from "./controllers/discount";
 import { addStock, getOneStock, getAllStock, bulkStockAdjustment } from "./controllers/stock";
@@ -12,6 +12,7 @@ import { addRecipe, getRecipeForBOM } from "./controllers/recipe";
 import { addPurchaseDebitNote } from "./controllers/purchaseDebitNote";
 import { addMaterial, getMaterialById } from "./controllers/material";
 import { addBillOfLiveProduct, deleteBillOfLiveProductById } from "./controllers/billOfLiveProduct";
+import { addSalesCreditNote, getOneSalesCreditNote, getAllSalesCreditNote } from "./controllers/salesCreditNote";
 import { HTTP_STATUS } from "./common";
 
 const ObjectId = mongoose.Types.ObjectId;
@@ -111,6 +112,7 @@ async function runTests() {
   const contactsToClean: string[] = [];
   const billsToClean: string[] = [];
   const invoicesToClean: string[] = [];
+  const salesCreditNotesToClean: string[] = [];
 
   try {
     // ----------------------------------------------------
@@ -1237,6 +1239,150 @@ async function runTests() {
     console.log(`Bulk Product 1 Variant barcode: ${bulkP1.variants[0].barcode}`);
     console.log(`Bulk Product 2 barcode: ${bulkP2.barcode}`);
 
+    // ----------------------------------------------------
+    // TEST 19: quickPick dropdown filtering
+    // ----------------------------------------------------
+    console.log("\n[Test 19] Testing quickPick dropdown filtering...");
+
+    // Set yellowVariant stock to quickPick: true
+    await stockModel.updateOne(
+      { productId: product1._id, variantId: yellowVariant._id },
+      { quickPick: true }
+    );
+
+    // Fetch dropdown with quickPick=true
+    const quickPickDropdownReq = mockRequest({}, mockHeaders, {}, {
+      quickPick: "true",
+      companyFilter: company._id.toString(),
+      branchFilter: branch._id.toString()
+    });
+    const quickPickDropdownRes = mockResponse();
+    await getProductDropdown(quickPickDropdownReq, quickPickDropdownRes);
+
+    if (quickPickDropdownRes.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`quickPick dropdown filtering failed: ${quickPickDropdownRes.jsonData?.message}`);
+    }
+
+    const quickPickDropdownList = quickPickDropdownRes.jsonData.data;
+    console.log(`Dropdown items returned with quickPick=true: ${quickPickDropdownList.length}`);
+
+    // Check that Red variant (which is NOT quickPick) is filtered out
+    const hasRedQP = quickPickDropdownList.some((item: any) => item.name.includes("Red / L"));
+    const hasYellowQP = quickPickDropdownList.some((item: any) => item.name.includes("Yellow / S"));
+
+    console.log("Has Red variant in quickPick dropdown (expected: false):", hasRedQP);
+    console.log("Has Yellow variant in quickPick dropdown (expected: true):", hasYellowQP);
+
+    if (hasRedQP) {
+      throw new Error("Red variant (not quick-picked) was incorrectly returned in quickPick dropdown!");
+    }
+    if (!hasYellowQP) {
+      throw new Error("Yellow variant (quick-picked) was not returned in quickPick dropdown!");
+    }
+
+    // Verify that quickPick property is returned as true for yellow variant
+    const yellowItem = quickPickDropdownList.find((item: any) => item.name.includes("Yellow / S"));
+    console.log("Yellow variant quickPick value:", yellowItem.quickPick);
+    if (yellowItem.quickPick !== true) {
+      throw new Error(`Expected quickPick property to be true, got ${yellowItem.quickPick}`);
+    }
+
+    // Reset yellowVariant stock back to quickPick: false
+    await stockModel.updateOne(
+      { productId: product1._id, variantId: yellowVariant._id },
+      { quickPick: false }
+    );
+
+    console.log("Success: quickPick dropdown filtering verified successfully!");
+
+    // ----------------------------------------------------
+    // TEST 20: Sales Credit Note variant resolution
+    // ----------------------------------------------------
+    console.log("\n[Test 20] Testing Sales Credit Note variant resolution...");
+
+    // Create a Sales Credit Note with the Red / L variant of product1
+    const creditNoteReq = mockRequest({
+      customerId: contact._id.toString(),
+      creditNoteDate: new Date(),
+      placeOfSupply: "State",
+      productDetails: [
+        {
+          productId: product1._id.toString(),
+          variantId: redVariant._id.toString(),
+          qty: 2,
+          price: 550,
+          uomId: uom._id.toString(),
+          unit: "PCS",
+          tax: 0,
+          total: 1100
+        }
+      ],
+      companyId: company._id.toString(),
+      branchId: branch._id.toString()
+    }, mockHeaders);
+
+    const creditNoteRes = mockResponse();
+    await addSalesCreditNote(creditNoteReq, creditNoteRes);
+
+    if (creditNoteRes.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`Sales Credit Note creation failed: ${creditNoteRes.jsonData?.message}`);
+    }
+
+    const creditNoteId = creditNoteRes.jsonData.data._id.toString();
+    salesCreditNotesToClean.push(creditNoteId);
+    console.log(`Created Sales Credit Note: ${creditNoteId}`);
+
+    // Fetch it using getOneSalesCreditNote and check if variant name is correctly mapped
+    const getOneSCNReq = mockRequest({}, mockHeaders, { id: creditNoteId });
+    const getOneSCNRes = mockResponse();
+    await getOneSalesCreditNote(getOneSCNReq, getOneSCNRes);
+
+    if (getOneSCNRes.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`getOneSalesCreditNote failed: ${getOneSCNRes.jsonData?.message}`);
+    }
+
+    const populatedSCN = getOneSCNRes.jsonData.data;
+    const populatedProduct = populatedSCN.productDetails[0].productId;
+    console.log("Returned Product Name in getOneSalesCreditNote:", populatedProduct.name);
+    console.log("Returned Variant ID in getOneSalesCreditNote:", populatedProduct.variantId);
+
+    if (!populatedProduct.name.includes("Red / L")) {
+      throw new Error(`Expected populated product name to include variant suffix "Red / L", got "${populatedProduct.name}"`);
+    }
+
+    if (!populatedProduct.variantId || populatedProduct.variantId.toString() !== redVariant._id.toString()) {
+      throw new Error(`Expected variantId to be populated, got "${populatedProduct.variantId}"`);
+    }
+
+    // Fetch it using getAllSalesCreditNote
+    const getAllSCNReq = mockRequest({}, mockHeaders, {}, { page: "1", limit: "10" });
+    const getAllSCNRes = mockResponse();
+    await getAllSalesCreditNote(getAllSCNReq, getAllSCNRes);
+
+    if (getAllSCNRes.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`getAllSalesCreditNote failed: ${getAllSCNRes.jsonData?.message}`);
+    }
+
+    const listSCN = getAllSCNRes.jsonData.data.salesCreditNote_data;
+    const matchedSCN = listSCN.find((scn: any) => scn._id.toString() === creditNoteId);
+    if (!matchedSCN) {
+      throw new Error("Created Credit Note not found in getAllSalesCreditNote list");
+    }
+
+    const listProduct = matchedSCN.productDetails[0].productId;
+    console.log("Returned Product Name in getAllSalesCreditNote:", listProduct.name);
+    console.log("Returned Variant ID in getAllSalesCreditNote:", listProduct.variantId);
+
+    if (!listProduct.name.includes("Red / L")) {
+      throw new Error(`Expected listed product name to include variant suffix "Red / L", got "${listProduct.name}"`);
+    }
+
+    if (!listProduct.variantId || listProduct.variantId.toString() !== redVariant._id.toString()) {
+      throw new Error(`Expected variantId to be populated in list, got "${listProduct.variantId}"`);
+    }
+
+    console.log("Success: Sales Credit Note variant resolution verified successfully!");
+
     console.log("Success: assignBarcodes API verified successfully!");
 
     console.log("\n=== ALL TESTS PASSED SUCCESSFULLY ===");
@@ -1272,6 +1418,10 @@ async function runTests() {
     if (contactsToClean.length > 0) {
       await contactModel.deleteMany({ _id: { $in: contactsToClean } });
       console.log(`Removed ${contactsToClean.length} contacts`);
+    }
+    if (salesCreditNotesToClean.length > 0) {
+      await salesCreditNoteModel.deleteMany({ _id: { $in: salesCreditNotesToClean } });
+      console.log(`Removed ${salesCreditNotesToClean.length} sales credit notes`);
     }
     // Clean Register
     if (register) {

@@ -821,7 +821,8 @@ export const getProductDropdown = async (req, res) => {
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
 
-    const { productType, search, barcodeSearch, companyFilter, branchFilter, categoryFilter, brandFilter, isNewProduct, stockFilter, includeId } = req.query;
+    const { productType, search, barcodeSearch, companyFilter, branchFilter, categoryFilter, brandFilter, isNewProduct, stockFilter, includeId, quickPick } = req.query;
+    const isQuickPickFilter = quickPick === "true" || quickPick === true;
 
     // Determine the effective company ID for filtering
     let effectiveCompanyId = companyId;
@@ -863,12 +864,17 @@ export const getProductDropdown = async (req, res) => {
       if (effectiveCompanyId) stockCriteria.companyId = effectiveCompanyId;
       if (effectiveBranchId) stockCriteria.branchId = effectiveBranchId;
       if (matchedVariant) stockCriteria.variantId = matchedVariant._id;
+      if (isQuickPickFilter) stockCriteria.quickPick = true;
 
       const stock = await stockModel.findOne(stockCriteria).populate([
         { path: "purchaseTaxId", select: "name percentage" },
         { path: "salesTaxId", select: "name percentage" },
         { path: "uomId", select: "name code" },
       ]);
+
+      if (isQuickPickFilter && !stock) {
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [], {}));
+      }
 
       const result = {
         _id: product._id,
@@ -891,17 +897,18 @@ export const getProductDropdown = async (req, res) => {
         isSalesTaxIncluding: stock?.isSalesTaxIncluding ?? false,
         uomId: stock?.uomId ?? null,
         branchId: stock?.branchId ?? null,
+        quickPick: stock?.quickPick ?? false,
         images: productObj.images ?? [],
       };
 
       return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [result], {}));
     }
 
-    // --- Stock filtering (only when NOT a new product) ---
+    // --- Stock filtering (when NOT a new product OR when quickPick filter is active) ---
     let productIdsWithStock: string[] = [];
     const stockByProductId = new Map<string, any>();
 
-    if (isNewProduct !== "true") {
+    if (isNewProduct !== "true" || isQuickPickFilter) {
       let stockCriteria: any = { isDeleted: false, isActive: true };
 
       if (effectiveCompanyId) stockCriteria.companyId = effectiveCompanyId;
@@ -911,12 +918,16 @@ export const getProductDropdown = async (req, res) => {
         stockCriteria.qty = { $gt: 0 };
       }
 
+      if (isQuickPickFilter) {
+        stockCriteria.quickPick = true;
+      }
+
       stockCriteria = handleIncludeId(stockCriteria, includeId, "productId");
 
       const stockResponse = await getDataWithSorting(
         stockModel,
         stockCriteria,
-        { productId: 1, variantId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1, uomId: 1, branchId: 1 },
+        { productId: 1, variantId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1, uomId: 1, branchId: 1, quickPick: 1 },
         {
           sort: { updatedAt: -1 },
           populate: [
@@ -952,7 +963,7 @@ export const getProductDropdown = async (req, res) => {
       criteria.$or = [{ companyId: companyFilter }, { companyId: null }, { companyId: { $exists: false } }];
     }
 
-    if (isNewProduct !== "true" && productIdsWithStock.length > 0) {
+    if ((isNewProduct !== "true" || isQuickPickFilter) && productIdsWithStock.length > 0) {
       criteria._id = { $in: productIdsWithStock };
     }
 
@@ -1004,7 +1015,7 @@ export const getProductDropdown = async (req, res) => {
           const stockKey = `${product._id}_${variant._id}`;
           const stock = stockByProductId.get(stockKey);
 
-          if (isNewProduct !== "true" && (!stock || (stockFilter === "true" && stock.qty <= 0))) {
+          if ((isNewProduct !== "true" || isQuickPickFilter) && (!stock || (stockFilter === "true" && stock.qty <= 0))) {
             return;
           }
 
@@ -1041,13 +1052,15 @@ export const getProductDropdown = async (req, res) => {
             isSalesTaxIncluding: stock?.isSalesTaxIncluding ?? false,
             uomId: stock?.uomId ?? null,
             branchId: stock?.branchId ?? null,
+            quickPick: stock?.quickPick ?? false,
             images: product.images ?? [],
           });
         });
 
         // 2. Also check if the parent product itself has stock
         const parentStock = stockByProductId.get(String(product._id));
-        if (parentStock && parentStock.qty > 0) {
+        const shouldShowParent = parentStock && (parentStock.qty > 0 || (isQuickPickFilter && isNewProduct === "true"));
+        if (shouldShowParent) {
           if (search) {
             const query = (search as string).toLowerCase();
             const parentNameMatch = product.name.toLowerCase().includes(query);
@@ -1078,13 +1091,17 @@ export const getProductDropdown = async (req, res) => {
             isSalesTaxIncluding: parentStock.isSalesTaxIncluding ?? false,
             uomId: parentStock.uomId ?? null,
             branchId: parentStock.branchId ?? null,
+            quickPick: parentStock.quickPick ?? false,
             images: product.images ?? [],
           });
         }
       } else {
         const stock = stockByProductId.get(String(product._id));
 
-        if (isNewProduct !== "true" && stockFilter === "true" && (!stock || stock.qty <= 0)) {
+        if ((isNewProduct !== "true" || isQuickPickFilter) && (
+          (stockFilter === "true" && (!stock || stock.qty <= 0)) ||
+          (isQuickPickFilter && !stock)
+        )) {
           return;
         }
 
@@ -1107,6 +1124,7 @@ export const getProductDropdown = async (req, res) => {
           isSalesTaxIncluding: stock?.isSalesTaxIncluding ?? false,
           uomId: stock?.uomId ?? null,
           branchId: stock?.branchId ?? null,
+          quickPick: stock?.quickPick ?? false,
           images: product.images ?? [],
         });
       }
