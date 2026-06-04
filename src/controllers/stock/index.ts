@@ -391,6 +391,9 @@ export const getAllStock = async (req, res) => {
             name: `${productObj.name} - ${variant.name}`,
             sku: variant.sku || productObj.sku,
             barcode: variant.barcode || productObj.barcode,
+            barcodeType: variant.barcodeType || productObj.barcodeType,
+            isActive: variant.isActive ?? productObj.isActive,
+            attributes: variant.attributes || productObj.attributes,
             mrp: variant.mrp || productObj.mrp,
             sellingPrice: variant.sellingPrice || productObj.sellingPrice,
             purchasePrice: variant.purchasePrice || productObj.purchasePrice,
@@ -508,7 +511,7 @@ export const getOneStock = async (req, res) => {
       {},
       {
         populate: [
-          { path: "productId", select: "name itemCode" },
+          { path: "productId", select: "name itemCode sku barcode barcodeType variants" },
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
           { path: "purchaseTaxId", select: "name" },
@@ -530,9 +533,31 @@ export const getOneStock = async (req, res) => {
       return acc;
     }, {});
 
+    const formattedStockRecords = stockRecords.map((stock: any) => {
+      const stockObj = stock.toObject ? stock.toObject() : stock;
+      if (stockObj.productId && stockObj.variantId) {
+        const prod = stockObj.productId;
+        const matchedVariant = (prod.variants || []).find(
+          (v: any) => v._id.toString() === stockObj.variantId.toString()
+        );
+        if (matchedVariant) {
+          const updatedProduct = {
+            ...prod,
+            name: `${prod.name} - ${matchedVariant.name}`,
+          };
+          if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+          if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+          if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+          if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+          stockObj.productId = updatedProduct;
+        }
+      }
+      return stockObj;
+    });
+
     const response = {
       product: product,
-      stockRecords,
+      stockRecords: formattedStockRecords,
       availableQty: totalQty,
       variantsStock: Object.values(variantsStock),
     };

@@ -398,6 +398,41 @@ export const editReturnPosOrder = async (req, res) => {
   }
 };
 
+const formatReturnPosOrder = (order: any) => {
+  if (!order || !order.items) return order;
+  order.items = order.items.map((item: any) => {
+    const product = item.productId;
+    if (product && product._id) {
+      const matchedVariant = item.variantId
+        ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+        : null;
+
+      const updatedProduct = {
+        ...product,
+        variantId: item.variantId || null,
+      };
+
+      if (matchedVariant) {
+        updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+        if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+        if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+        if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+        if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+        updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+        if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+
+        updatedProduct.variants = [matchedVariant];
+      } else {
+        updatedProduct.variants = [];
+      }
+
+      item.productId = updatedProduct;
+    }
+    return item;
+  });
+  return order;
+};
+
 export const getAllReturnPosOrder = async (req, res) => {
   reqInfo(req);
   try {
@@ -591,6 +626,11 @@ export const getAllReturnPosOrder = async (req, res) => {
                     productId: {
                       _id: "$items.productId._id",
                       name: "$items.productId.name",
+                      sku: "$items.productId.sku",
+                      itemCode: "$items.productId.itemCode",
+                      barcode: "$items.productId.barcode",
+                      barcodeType: "$items.productId.barcodeType",
+                      variants: "$items.productId.variants",
                       qty: "$items.stock.qty",
                       purchasePrice: "$items.stock.purchasePrice",
                       landingCost: "$items.stock.landingCost",
@@ -693,8 +733,9 @@ export const getAllReturnPosOrder = async (req, res) => {
     const totalData = result[0].metadata[0]?.total || 0;
 
     response = await returnPosOrderModel.populate(response, { path: "createdBy", select: "name userType" });
+    const formattedResponse = response.map(formatReturnPosOrder);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), { returnPosOrder_data: response, totalData, state: { page, limit, totalPages: Math.ceil(totalData / limit) } }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), { returnPosOrder_data: formattedResponse, totalData, state: { page, limit, totalPages: Math.ceil(totalData / limit) } }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
@@ -858,6 +899,11 @@ export const getOneReturnPosOrder = async (req, res) => {
               productId: {
                 _id: "$items.productId._id",
                 name: "$items.productId.name",
+                sku: "$items.productId.sku",
+                itemCode: "$items.productId.itemCode",
+                barcode: "$items.productId.barcode",
+                barcodeType: "$items.productId.barcodeType",
+                variants: "$items.productId.variants",
                 qty: "$items.stock.qty",
                 purchasePrice: "$items.stock.purchasePrice",
                 landingCost: "$items.stock.landingCost",
@@ -954,8 +1000,9 @@ export const getOneReturnPosOrder = async (req, res) => {
     if (!response || response.length === 0) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Return POS Order"), {}, {}));
 
     const populatedResponse = await returnPosOrderModel.populate(response[0], { path: "createdBy", select: "name userType" });
+    const formattedResponse = formatReturnPosOrder(populatedResponse);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), populatedResponse, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), formattedResponse, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
