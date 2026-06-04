@@ -590,8 +590,19 @@ export const bestSellingProducts = async (req, res) => {
       {
         $lookup: {
           from: "products",
-          localField: "items.productId",
-          foreignField: "_id",
+          let: { prodId: "$items.productId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ["$_id", "$$prodId"] },
+                    { $in: ["$$prodId", { $ifNull: ["$variants._id", []] }] },
+                  ],
+                },
+              },
+            },
+          ],
           as: "product",
         },
       },
@@ -696,8 +707,19 @@ export const leastSellingProducts = async (req, res) => {
       {
         $lookup: {
           from: "products",
-          localField: "items.productId",
-          foreignField: "_id",
+          let: { prodId: "$items.productId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ["$_id", "$$prodId"] },
+                    { $in: ["$$prodId", { $ifNull: ["$variants._id", []] }] },
+                  ],
+                },
+              },
+            },
+          ],
           as: "product",
         },
       },
@@ -1476,8 +1498,19 @@ export const getCategorySales = async (req, res) => {
       {
         $lookup: {
           from: "products",
-          localField: "items.productId",
-          foreignField: "_id",
+          let: { prodId: "$items.productId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ["$_id", "$$prodId"] },
+                    { $in: ["$$prodId", { $ifNull: ["$variants._id", []] }] },
+                  ],
+                },
+              },
+            },
+          ],
           as: "product",
         },
       },
@@ -1506,7 +1539,7 @@ export const getCategorySales = async (req, res) => {
       { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
       {
         $project: {
-          _id: 1,
+          _id: { $ifNull: ["$_id", "uncategorized"] },
           categoryName: { $ifNull: ["$category.name", "Uncategorized"] },
           noOfBills: { $size: "$uniqueOrders" },
           totalSalesQty: 1,

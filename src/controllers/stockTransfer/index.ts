@@ -560,7 +560,7 @@ export const getAllStockTransfer = async (req, res) => {
       populate: [
         { path: "requestedByBranchId", select: "name" },
         { path: "requestedToBranchId", select: "name" },
-        { path: "items.productId", select: "name variants" },
+        { path: "items.productId", select: "name itemCode mrp sellingPrice uomId variants" },
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName" },
@@ -576,29 +576,56 @@ export const getAllStockTransfer = async (req, res) => {
 
     let response = await getDataWithSorting(stockTransferModel, criteria, {}, options);
 
-    if (effectiveBranchId) {
-      const branchIdStr = effectiveBranchId.toString();
-      response = response.map((item: any) => {
-        const itemObj = item.toObject ? item.toObject() : item;
+    response = response.map((item: any) => {
+      let itemObj = item.toObject ? item.toObject() : item;
+
+      if (itemObj.items && itemObj.items.length > 0) {
+        itemObj.items = itemObj.items.map((subItem: any) => {
+          const product = subItem.productId;
+          if (product && product._id) {
+            const matchedVariant = subItem.variantId
+              ? (product.variants || []).find((v: any) => v._id.toString() === subItem.variantId.toString())
+              : null;
+
+            const updatedProduct = {
+              ...product,
+              variantId: subItem.variantId || null,
+            };
+
+            if (matchedVariant) {
+              updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+              if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+              if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+              if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+              if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+              updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+              if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+            }
+
+            subItem.productId = updatedProduct;
+          }
+          return subItem;
+        });
+      }
+
+      if (effectiveBranchId) {
+        const branchIdStr = effectiveBranchId.toString();
         let type = "";
 
         const reqBy = itemObj.requestedByBranchId?._id?.toString() || itemObj.requestedByBranchId?.toString();
         const reqTo = itemObj.requestedToBranchId?._id?.toString() || itemObj.requestedToBranchId?.toString();
 
-        // if (reqBy === branchIdStr) {
-        //   type = "incoming";
-        // } else if (reqTo === branchIdStr) {
-        //   type = "outgoing";
-        // }
         if (reqBy === branchIdStr) {
           type = "incoming"; // ✅ Correct label: Stock is coming TO you
         } else if (reqTo === branchIdStr) {
           type = "outgoing"; // ✅ Correct label: Stock is leaving FROM you
         }
 
-        return { ...itemObj, type };
-      });
-    }
+        itemObj = { ...itemObj, type };
+      }
+
+      return itemObj;
+    });
 
     const totalData = await countData(stockTransferModel, criteria);
     const totalPages = Math.ceil(totalData / (limit ? parseInt(limit as string) : totalData)) || 1;
@@ -635,7 +662,37 @@ export const getStockTransferById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Transfer"), {}, {}));
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Transfer"), response, {}));
+    let transferObj = response.toObject ? response.toObject() : response;
+    if (transferObj.items && transferObj.items.length > 0) {
+      transferObj.items = transferObj.items.map((item: any) => {
+        const product = item.productId;
+        if (product && product._id) {
+          const matchedVariant = item.variantId
+            ? (product.variants || []).find((v: any) => v._id.toString() === item.variantId.toString())
+            : null;
+
+          const updatedProduct = {
+            ...product,
+            variantId: item.variantId || null,
+          };
+
+          if (matchedVariant) {
+            updatedProduct.name = `${product.name} - ${matchedVariant.name}`;
+            if (matchedVariant.sku) updatedProduct.sku = matchedVariant.sku;
+            if (matchedVariant.itemCode) updatedProduct.itemCode = matchedVariant.itemCode;
+            if (matchedVariant.barcode) updatedProduct.barcode = matchedVariant.barcode;
+            if (matchedVariant.barcodeType) updatedProduct.barcodeType = matchedVariant.barcodeType;
+            updatedProduct.isActive = matchedVariant.isActive ?? updatedProduct.isActive;
+            if (matchedVariant.attributes) updatedProduct.attributes = matchedVariant.attributes;
+          }
+
+          item.productId = updatedProduct;
+        }
+        return item;
+      });
+    }
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Transfer"), transferObj, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

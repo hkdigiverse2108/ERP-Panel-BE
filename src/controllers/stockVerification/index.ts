@@ -22,7 +22,18 @@ export const addStockVerification = async (req, res) => {
 
     if (value.items) {
       for (const item of value.items) {
-        if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+        const product = await getFirstMatch(productModel, { _id: item?.productId, isDeleted: false }, {}, {});
+        if (!product) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
+        }
+        if (item.variantId) {
+          const variantExists = (product.variants || []).some(
+            (v: any) => v._id.toString() === item.variantId.toString()
+          );
+          if (!variantExists) {
+            return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "Variant not found on this product", {}, {}));
+          }
+        }
       }
     }
 
@@ -56,10 +67,46 @@ export const addStockVerification = async (req, res) => {
         } else {
           stockFilter.variantId = { $exists: false };
         }
-        await stockModel.findOneAndUpdate(
-          stockFilter,
-          { $set: { qty: item.physicalQty } },
-        );
+        const existingStock = await getFirstMatch(stockModel, stockFilter, {}, {});
+        if (existingStock) {
+          await updateData(stockModel, { _id: existingStock._id }, { qty: item.physicalQty }, {});
+        } else {
+          const product = await getFirstMatch(productModel, { _id: item.productId }, {}, {});
+          if (product) {
+            let purchasePrice = product.purchasePrice || 0;
+            let landingCost = product.landingCost || 0;
+            let mrp = product.mrp || 0;
+            let sellingPrice = product.sellingPrice || 0;
+
+            if (item.variantId) {
+              const matchedVariant = (product.variants || []).find(
+                (v: any) => v._id.toString() === item.variantId.toString()
+              );
+              if (matchedVariant) {
+                purchasePrice = matchedVariant.purchasePrice || purchasePrice;
+                mrp = matchedVariant.mrp || mrp;
+                sellingPrice = matchedVariant.sellingPrice || sellingPrice;
+              }
+            }
+
+            const newStockPayload = {
+              companyId: response.companyId,
+              branchId: response.branchId,
+              productId: item.productId,
+              variantId: item.variantId || undefined,
+              qty: item.physicalQty,
+              uomId: product.uomId,
+              purchasePrice,
+              landingCost,
+              mrp,
+              sellingPrice,
+              createdBy: user?._id || null,
+              updatedBy: user?._id || null,
+            };
+            const newStock = await createOne(stockModel, newStockPayload);
+            await updateData(productModel, { _id: item.productId }, { $push: { stockIds: newStock?._id } }, {});
+          }
+        }
       }
     }
 
@@ -89,7 +136,18 @@ export const editStockVerification = async (req, res) => {
 
     if (value.items) {
       for (const item of value.items) {
-        if (!(await checkIdExist(productModel, item?.productId, "Product", res))) return;
+        const product = await getFirstMatch(productModel, { _id: item?.productId, isDeleted: false }, {}, {});
+        if (!product) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
+        }
+        if (item.variantId) {
+          const variantExists = (product.variants || []).some(
+            (v: any) => v._id.toString() === item.variantId.toString()
+          );
+          if (!variantExists) {
+            return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "Variant not found on this product", {}, {}));
+          }
+        }
       }
     }
 
@@ -114,10 +172,46 @@ export const editStockVerification = async (req, res) => {
         } else {
           stockFilter.variantId = { $exists: false };
         }
-        await stockModel.findOneAndUpdate(
-          stockFilter,
-          { $set: { qty: item.physicalQty } },
-        );
+        const existingStock = await getFirstMatch(stockModel, stockFilter, {}, {});
+        if (existingStock) {
+          await updateData(stockModel, { _id: existingStock._id }, { qty: item.physicalQty }, {});
+        } else {
+          const product = await getFirstMatch(productModel, { _id: item.productId }, {}, {});
+          if (product) {
+            let purchasePrice = product.purchasePrice || 0;
+            let landingCost = product.landingCost || 0;
+            let mrp = product.mrp || 0;
+            let sellingPrice = product.sellingPrice || 0;
+
+            if (item.variantId) {
+              const matchedVariant = (product.variants || []).find(
+                (v: any) => v._id.toString() === item.variantId.toString()
+              );
+              if (matchedVariant) {
+                purchasePrice = matchedVariant.purchasePrice || purchasePrice;
+                mrp = matchedVariant.mrp || mrp;
+                sellingPrice = matchedVariant.sellingPrice || sellingPrice;
+              }
+            }
+
+            const newStockPayload = {
+              companyId: response.companyId,
+              branchId: response.branchId,
+              productId: item.productId,
+              variantId: item.variantId || undefined,
+              qty: item.physicalQty,
+              uomId: product.uomId,
+              purchasePrice,
+              landingCost,
+              mrp,
+              sellingPrice,
+              createdBy: user?._id || null,
+              updatedBy: user?._id || null,
+            };
+            const newStock = await createOne(stockModel, newStockPayload);
+            await updateData(productModel, { _id: item.productId }, { $push: { stockIds: newStock?._id } }, {});
+          }
+        }
       }
     }
 
@@ -154,6 +248,28 @@ export const deleteStockVerification = async (req, res) => {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
+};
+
+const formatStockVerification = (sv: any) => {
+  const svObj = sv.toObject ? sv.toObject() : sv;
+  if (svObj.items) {
+    svObj.items = svObj.items.map((item: any) => {
+      if (item.variantId && item.productId && item.productId.variants) {
+        const matchedVariant = item.productId.variants.find(
+          (v: any) => v._id.toString() === item.variantId.toString()
+        );
+        if (matchedVariant) {
+          item.variant = matchedVariant;
+          item.productId.name = `${item.productId.name} - ${matchedVariant.name}`;
+          if (matchedVariant.itemCode) {
+            item.productId.itemCode = matchedVariant.itemCode;
+          }
+        }
+      }
+      return item;
+    });
+  }
+  return svObj;
 };
 
 export const getAllStockVerification = async (req, res) => {
@@ -233,7 +349,9 @@ export const getAllStockVerification = async (req, res) => {
       // hasPrevPage: parseInt(page as string) > 1,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Verification"), { stockVerification_data: response, totalData, state: stateObj }, {}));
+    const formattedResponse = response.map(formatStockVerification);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Verification"), { stockVerification_data: formattedResponse, totalData, state: stateObj }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -276,7 +394,9 @@ export const getOneStockVerification = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Verification"), {}, {}));
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Verification"), response, {}));
+    const formattedResponse = formatStockVerification(response);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Verification"), formattedResponse, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
