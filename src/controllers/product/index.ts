@@ -821,8 +821,8 @@ export const getProductDropdown = async (req, res) => {
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
 
-    const { productType, search, barcodeSearch, companyFilter, branchFilter, categoryFilter, brandFilter, isNewProduct, stockFilter, includeId, quickPick } = req.query;
-    const isQuickPickFilter = quickPick === "true" || quickPick === true;
+    const { productType, search, barcodeSearch, companyFilter, branchFilter, categoryFilter, brandFilter, isNewProduct, stockFilter, includeId, quickPickFilter } = req.query;
+    const isQuickPickFilter = quickPickFilter === "true" || quickPickFilter === true;
 
     // Determine the effective company ID for filtering
     let effectiveCompanyId = companyId;
