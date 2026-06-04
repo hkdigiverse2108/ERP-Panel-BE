@@ -1022,8 +1022,8 @@ export const getProductDropdown = async (req, res) => {
           }
 
           mergedResponse.push({
-            _id: product._id,
-            variantId: variant._id,
+            _id: variant._id,
+            productId: product._id,
             name: `${product.name} - ${variant.name}`,
             productType: product.productType,
             barcode: variant.barcode ?? null,
