@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { findOneAndPopulate, updateData } from "./databaseServices";
+import { findOneAndPopulate, updateData, redisGet, redisSet } from "./databaseServices";
 import { companyModel, userModel } from "../database";
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../common";
 import { responseMessage } from "./responseMessage";
@@ -30,7 +30,15 @@ export const superAdminJwt = async (req, res, next) => {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
     }
 
-    const user: any = await findOneAndPopulate(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {}, commonPopulate);
+    const cacheKey = `user:auth:${decoded?._id}`;
+    let user: any = await redisGet(cacheKey);
+    
+    if (!user) {
+      user = await findOneAndPopulate(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {}, commonPopulate);
+      if (user) {
+        await redisSet(cacheKey, user, 3600);
+      }
+    }
 
     if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
 
@@ -62,7 +70,15 @@ export const adminJwt = async (req, res, next) => {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
     }
 
-    const user: any = await findOneAndPopulate(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {}, commonPopulate);
+    const cacheKey = `user:auth:${decoded?._id}`;
+    let user: any = await redisGet(cacheKey);
+
+    if (!user) {
+      user = await findOneAndPopulate(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {}, commonPopulate);
+      if (user) {
+        await redisSet(cacheKey, user, 3600);
+      }
+    }
 
     if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
 
@@ -103,7 +119,15 @@ export const userJwt = async (req, res, next) => {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
     }
 
-    const user: any = await findOneAndPopulate(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {}, commonPopulate);
+    const cacheKey = `user:auth:${decoded?._id}`;
+    let user: any = await redisGet(cacheKey);
+
+    if (!user) {
+      user = await findOneAndPopulate(userModel, { _id: new ObjectId(decoded?._id), isDeleted: false }, {}, {}, commonPopulate);
+      if (user) {
+        await redisSet(cacheKey, user, 3600);
+      }
+    }
 
     if (!user) return res.status(HTTP_STATUS.UNAUTHORIZED).json(new apiResponse(HTTP_STATUS.UNAUTHORIZED, responseMessage?.invalidToken, {}, {}));
 
