@@ -4,6 +4,7 @@ import { ORDER_STATUS, TAX_TYPE } from "../common";
 
 export interface IPurchaseItem {
   productId: Schema.Types.ObjectId;
+  variantId?: Schema.Types.ObjectId;
   qty: number;
   uomId?: string;
   unitCost?: number;

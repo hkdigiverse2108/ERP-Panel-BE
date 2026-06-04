@@ -102,12 +102,19 @@ export const addSupplierBill = async (req, res) => {
     if (value?.productDetails && value.productDetails.length > 0) {
       for (const item of value.productDetails) {
         // Update/Create stock record
-        const existingStock = await getFirstMatch(stockModel, { productId: item.productId, branchId: value.branchId, isDeleted: false }, {}, {});
+        const stockCriteria: any = { productId: item.productId, branchId: value.branchId, isDeleted: false };
+        if (item.variantId) {
+          stockCriteria.variantId = item.variantId;
+        } else {
+          stockCriteria.variantId = { $exists: false };
+        }
+        const existingStock = await getFirstMatch(stockModel, stockCriteria, {}, {});
         if (existingStock) {
           await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: item.qty }, purchasePrice: item.unitCost, mrp: item.mrp }, {});
         } else {
           await createOne(stockModel, {
             productId: item.productId,
+            variantId: item.variantId || undefined,
             branchId: value.branchId,
             companyId: value.companyId,
             qty: item.qty,
@@ -125,7 +132,13 @@ export const addSupplierBill = async (req, res) => {
     // Handle return items in bill (decrement stock)
     if (value?.returnProductDetails?.item && value.returnProductDetails.item.length > 0) {
       for (const item of value.returnProductDetails.item) {
-        await updateData(stockModel, { productId: item.productId, branchId: value.branchId, isDeleted: false }, { $inc: { qty: -item.qty } }, {});
+        const stockCriteria: any = { productId: item.productId, branchId: value.branchId, isDeleted: false };
+        if (item.variantId) {
+          stockCriteria.variantId = item.variantId;
+        } else {
+          stockCriteria.variantId = { $exists: false };
+        }
+        await updateData(stockModel, stockCriteria, { $inc: { qty: -item.qty } }, {});
       }
     }
 
@@ -220,12 +233,24 @@ export const editSupplierBill = async (req, res) => {
     // 1. Revert Old Stock
     if (isExist.productDetails && isExist.productDetails.length > 0) {
       for (const item of isExist.productDetails) {
-        await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: -item.qty } }, {});
+        const stockCriteria: any = { productId: item.productId, branchId: isExist.branchId, isDeleted: false };
+        if (item.variantId) {
+          stockCriteria.variantId = item.variantId;
+        } else {
+          stockCriteria.variantId = { $exists: false };
+        }
+        await updateData(stockModel, stockCriteria, { $inc: { qty: -item.qty } }, {});
       }
     }
     if (isExist.returnProductDetails?.item && isExist.returnProductDetails.item.length > 0) {
       for (const item of isExist.returnProductDetails.item) {
-        await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: item.qty } }, {});
+        const stockCriteria: any = { productId: item.productId, branchId: isExist.branchId, isDeleted: false };
+        if (item.variantId) {
+          stockCriteria.variantId = item.variantId;
+        } else {
+          stockCriteria.variantId = { $exists: false };
+        }
+        await updateData(stockModel, stockCriteria, { $inc: { qty: item.qty } }, {});
       }
     }
 
@@ -234,12 +259,19 @@ export const editSupplierBill = async (req, res) => {
     const companyId = value.companyId || isExist.companyId;
     if (value.productDetails && value.productDetails.length > 0) {
       for (const item of value.productDetails) {
-        const existingStock = await getFirstMatch(stockModel, { productId: item.productId, branchId: branchId, isDeleted: false }, {}, {});
+        const stockCriteria: any = { productId: item.productId, branchId: branchId, isDeleted: false };
+        if (item.variantId) {
+          stockCriteria.variantId = item.variantId;
+        } else {
+          stockCriteria.variantId = { $exists: false };
+        }
+        const existingStock = await getFirstMatch(stockModel, stockCriteria, {}, {});
         if (existingStock) {
           await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: item.qty }, purchasePrice: item.unitCost, mrp: item.mrp }, {});
         } else {
           await createOne(stockModel, {
             productId: item.productId,
+            variantId: item.variantId || undefined,
             branchId: branchId,
             companyId: companyId,
             qty: item.qty,
@@ -254,7 +286,13 @@ export const editSupplierBill = async (req, res) => {
     }
     if (value.returnProductDetails?.item && value.returnProductDetails.item.length > 0) {
       for (const item of value.returnProductDetails.item) {
-        await updateData(stockModel, { productId: item.productId, branchId: branchId, isDeleted: false }, { $inc: { qty: -item.qty } }, {});
+        const stockCriteria: any = { productId: item.productId, branchId: branchId, isDeleted: false };
+        if (item.variantId) {
+          stockCriteria.variantId = item.variantId;
+        } else {
+          stockCriteria.variantId = { $exists: false };
+        }
+        await updateData(stockModel, stockCriteria, { $inc: { qty: -item.qty } }, {});
       }
     }
 
@@ -283,12 +321,24 @@ export const deleteSupplierBill = async (req, res) => {
     // Revert Stock before deletion
     if (isExist.productDetails && isExist.productDetails.length > 0) {
       for (const item of isExist.productDetails) {
-        await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: -item.qty } }, {});
+        const stockCriteria: any = { productId: item.productId, branchId: isExist.branchId, isDeleted: false };
+        if (item.variantId) {
+          stockCriteria.variantId = item.variantId;
+        } else {
+          stockCriteria.variantId = { $exists: false };
+        }
+        await updateData(stockModel, stockCriteria, { $inc: { qty: -item.qty } }, {});
       }
     }
     if (isExist.returnProductDetails?.item && isExist.returnProductDetails.item.length > 0) {
       for (const item of isExist.returnProductDetails.item) {
-        await updateData(stockModel, { productId: item.productId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: item.qty } }, {});
+        const stockCriteria: any = { productId: item.productId, branchId: isExist.branchId, isDeleted: false };
+        if (item.variantId) {
+          stockCriteria.variantId = item.variantId;
+        } else {
+          stockCriteria.variantId = { $exists: false };
+        }
+        await updateData(stockModel, stockCriteria, { $inc: { qty: item.qty } }, {});
       }
     }
 
@@ -373,11 +423,11 @@ export const getAllSupplierBill = async (req, res) => {
         // { path: "purchaseOrderId", select: "orderNo" },
         {
           path: "productDetails.productId",
-          select: "name itemCode purchasePrice",
+          select: "name itemCode purchasePrice variants",
         },
         {
           path: "returnProductDetails.item.productId",
-          select: "name itemCode",
+          select: "name itemCode variants",
         },
         {
           path: "productDetails.uomId",
@@ -526,11 +576,11 @@ export const getOneSupplierBill = async (req, res) => {
           },
           {
             path: "productDetails.productId",
-            select: "name itemCode purchasePrice hsn gst",
+            select: "name itemCode purchasePrice hsn gst variants",
           },
           {
             path: "returnProductDetails.item.productId",
-            select: "name itemCode purchasePrice",
+            select: "name itemCode purchasePrice variants",
           },
           {
             path: "returnProductDetails.item.uomId",

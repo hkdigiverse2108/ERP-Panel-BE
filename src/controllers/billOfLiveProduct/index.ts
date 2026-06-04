@@ -63,16 +63,29 @@ export const addBillOfLiveProduct = async (req, res) => {
         // Decrease ingredient stock (raw materials consumed)
         if (product?.ingredients?.length) {
           for (const ingredient of product.ingredients) {
-            await updateData(stockModel, { productId: ingredient.productId, branchId: value.branchId, isDeleted: false }, { $inc: { qty: -(ingredient.useQty || 0) } }, {});
+            const stockCriteria: any = { productId: ingredient.productId, branchId: value.branchId, isDeleted: false };
+            if (ingredient.variantId) {
+              stockCriteria.variantId = ingredient.variantId;
+            } else {
+              stockCriteria.variantId = { $exists: false };
+            }
+            await updateData(stockModel, stockCriteria, { $inc: { qty: -(ingredient.useQty || 0) } }, {});
           }
         }
         // Increase created product stock (finished goods produced)
-        const existingStock = await getFirstMatch(stockModel, { productId: product.productId, branchId: value.branchId, isDeleted: false }, {}, {});
+        const stockCriteria: any = { productId: product.productId, branchId: value.branchId, isDeleted: false };
+        if (product.variantId) {
+          stockCriteria.variantId = product.variantId;
+        } else {
+          stockCriteria.variantId = { $exists: false };
+        }
+        const existingStock = await getFirstMatch(stockModel, stockCriteria, {}, {});
         if (existingStock) {
           await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: product.qty || 0 }, purchasePrice: product.purchasePrice, mrp: product.mrp, landingCost: product.landingCost, sellingPrice: product.sellingPrice }, {});
         } else {
           await createOne(stockModel, {
             productId: product.productId,
+            variantId: product.variantId || undefined,
             branchId: value.branchId,
             companyId: value.companyId,
             qty: product.qty || 0,
@@ -85,7 +98,27 @@ export const addBillOfLiveProduct = async (req, res) => {
         }
         // Update latest purchase price (production cost) in product master
         if (product.purchasePrice) {
-          await updateData(productModel, { _id: product.productId }, { purchasePrice: product.purchasePrice, mrp: product.mrp, landingCost: product.landingCost, sellingPrice: product.sellingPrice }, {});
+          if (product.variantId) {
+            await updateData(
+              productModel,
+              { _id: product.productId, "variants._id": product.variantId },
+              {
+                $set: {
+                  "variants.$.purchasePrice": product.purchasePrice,
+                  "variants.$.mrp": product.mrp,
+                  "variants.$.sellingPrice": product.sellingPrice,
+                },
+              },
+              {},
+            );
+          } else {
+            await updateData(
+              productModel,
+              { _id: product.productId },
+              { purchasePrice: product.purchasePrice, mrp: product.mrp, landingCost: product.landingCost, sellingPrice: product.sellingPrice },
+              {},
+            );
+          }
         }
       }
     }
@@ -158,11 +191,23 @@ export const editBillOfLiveProductById = async (req, res) => {
         // Restore old ingredient stock (add back what was consumed)
         if (oldProduct?.ingredients?.length) {
           for (const oldIngredient of oldProduct.ingredients) {
-            await updateData(stockModel, { productId: oldIngredient.productId, branchId: isBillExist.branchId, isDeleted: false }, { $inc: { qty: oldIngredient.useQty || 0 } }, {});
+            const stockCriteria: any = { productId: oldIngredient.productId, branchId: isBillExist.branchId, isDeleted: false };
+            if (oldIngredient.variantId) {
+              stockCriteria.variantId = oldIngredient.variantId;
+            } else {
+              stockCriteria.variantId = { $exists: false };
+            }
+            await updateData(stockModel, stockCriteria, { $inc: { qty: oldIngredient.useQty || 0 } }, {});
           }
         }
         // Remove old created product stock (subtract what was produced)
-        await updateData(stockModel, { productId: oldProduct.productId, branchId: isBillExist.branchId, isDeleted: false }, { $inc: { qty: -(oldProduct.qty || 0) } }, {});
+        const stockCriteria: any = { productId: oldProduct.productId, branchId: isBillExist.branchId, isDeleted: false };
+        if (oldProduct.variantId) {
+          stockCriteria.variantId = oldProduct.variantId;
+        } else {
+          stockCriteria.variantId = { $exists: false };
+        }
+        await updateData(stockModel, stockCriteria, { $inc: { qty: -(oldProduct.qty || 0) } }, {});
       }
     }
 
@@ -173,16 +218,29 @@ export const editBillOfLiveProductById = async (req, res) => {
         // Decrease ingredient stock (raw materials consumed)
         if (newProduct?.ingredients?.length) {
           for (const newIngredient of newProduct.ingredients) {
-            await updateData(stockModel, { productId: newIngredient.productId, branchId: currentBranchId, isDeleted: false }, { $inc: { qty: -(newIngredient.useQty || 0) } }, {});
+            const stockCriteria: any = { productId: newIngredient.productId, branchId: currentBranchId, isDeleted: false };
+            if (newIngredient.variantId) {
+              stockCriteria.variantId = newIngredient.variantId;
+            } else {
+              stockCriteria.variantId = { $exists: false };
+            }
+            await updateData(stockModel, stockCriteria, { $inc: { qty: -(newIngredient.useQty || 0) } }, {});
           }
         }
         // Increase created product stock (finished goods produced)
-        const existingStock = await getFirstMatch(stockModel, { productId: newProduct.productId, branchId: currentBranchId, isDeleted: false }, {}, {});
+        const stockCriteria: any = { productId: newProduct.productId, branchId: currentBranchId, isDeleted: false };
+        if (newProduct.variantId) {
+          stockCriteria.variantId = newProduct.variantId;
+        } else {
+          stockCriteria.variantId = { $exists: false };
+        }
+        const existingStock = await getFirstMatch(stockModel, stockCriteria, {}, {});
         if (existingStock) {
           await updateData(stockModel, { _id: existingStock._id }, { $inc: { qty: newProduct.qty || 0 }, purchasePrice: newProduct.purchasePrice, mrp: newProduct.mrp, landingCost: newProduct.landingCost, sellingPrice: newProduct.sellingPrice }, {});
         } else {
           await createOne(stockModel, {
             productId: newProduct.productId,
+            variantId: newProduct.variantId || undefined,
             branchId: currentBranchId,
             companyId: value.companyId,
             qty: newProduct.qty || 0,
@@ -195,7 +253,27 @@ export const editBillOfLiveProductById = async (req, res) => {
         }
         // Update latest purchase price (production cost) in product master
         if (newProduct.purchasePrice) {
-          await updateData(productModel, { _id: newProduct.productId }, { purchasePrice: newProduct.purchasePrice, mrp: newProduct.mrp, landingCost: newProduct.landingCost, sellingPrice: newProduct.sellingPrice }, {});
+          if (newProduct.variantId) {
+            await updateData(
+              productModel,
+              { _id: newProduct.productId, "variants._id": newProduct.variantId },
+              {
+                $set: {
+                  "variants.$.purchasePrice": newProduct.purchasePrice,
+                  "variants.$.mrp": newProduct.mrp,
+                  "variants.$.sellingPrice": newProduct.sellingPrice,
+                },
+              },
+              {},
+            );
+          } else {
+            await updateData(
+              productModel,
+              { _id: newProduct.productId },
+              { purchasePrice: newProduct.purchasePrice, mrp: newProduct.mrp, landingCost: newProduct.landingCost, sellingPrice: newProduct.sellingPrice },
+              {},
+            );
+          }
         }
       }
     }
@@ -235,11 +313,23 @@ export const deleteBillOfLiveProductById = async (req, res) => {
         // Restore ingredient stock (add back what was consumed)
         if (product?.ingredients?.length) {
           for (const ingredient of product.ingredients) {
-            await updateData(stockModel, { productId: ingredient.productId, branchId: billOfLiveProduct.branchId, isDeleted: false }, { $inc: { qty: ingredient.useQty || 0 } }, {});
+            const stockCriteria: any = { productId: ingredient.productId, branchId: billOfLiveProduct.branchId, isDeleted: false };
+            if (ingredient.variantId) {
+              stockCriteria.variantId = ingredient.variantId;
+            } else {
+              stockCriteria.variantId = { $exists: false };
+            }
+            await updateData(stockModel, stockCriteria, { $inc: { qty: ingredient.useQty || 0 } }, {});
           }
         }
         // Remove created product stock (subtract what was produced)
-        await updateData(stockModel, { productId: product.productId, branchId: billOfLiveProduct.branchId, isDeleted: false }, { $inc: { qty: -(product.qty || 0) } }, {});
+        const stockCriteria: any = { productId: product.productId, branchId: billOfLiveProduct.branchId, isDeleted: false };
+        if (product.variantId) {
+          stockCriteria.variantId = product.variantId;
+        } else {
+          stockCriteria.variantId = { $exists: false };
+        }
+        await updateData(stockModel, stockCriteria, { $inc: { qty: -(product.qty || 0) } }, {});
       }
     }
 
@@ -295,8 +385,8 @@ export const getAllBillOfLiveProduct = async (req, res) => {
         { path: "branchId", select: "name" },
         { path: "recipeId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
-        { path: "productDetails.productId", select: "name" },
-        { path: "productDetails.ingredients.productId", select: "name" },
+        { path: "productDetails.productId", select: "name sku itemCode barcode variants" },
+        { path: "productDetails.ingredients.productId", select: "name sku itemCode barcode variants" },
       ],
     };
 
@@ -356,11 +446,11 @@ export const getBillOfLiveProductById = async (req, res) => {
           { path: "createdBy", select: "fullName userType" },
           {
             path: "productDetails.productId",
-            select: "name",
+            select: "name sku itemCode barcode variants",
           },
           {
             path: "productDetails.ingredients.productId",
-            select: "name",
+            select: "name sku itemCode barcode variants",
           },
         ],
       },

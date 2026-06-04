@@ -62,6 +62,7 @@ export const transactionSummarySchema = {
 export const salesItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
+    variantId: { type: Schema.Types.ObjectId, ref: "product", default: null },
     qty: { type: Number, default: 0 },
     freeQty: { type: Number, default: 0 },
     uomId: { type: Schema.Types.ObjectId, ref: "uom" },

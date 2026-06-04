@@ -4,6 +4,7 @@ import { APPROVAL_STATUS } from "../common";
 
 const stockVerificationItemSchema = Joi.object({
   productId: objectId().required(),
+  variantId: objectId().optional().allow(null),
   landingCost: Joi.number().min(0).default(0),
   price: Joi.number().min(0).default(0),
   mrp: Joi.number().min(0).default(0),

@@ -9,6 +9,7 @@ export interface IMaterialConsumption {
   remark?: string;
   items: {
     productId: Schema.Types.ObjectId;
+    variantId?: Schema.Types.ObjectId;
     qty: number;
     price: number;
     totalPrice: number;

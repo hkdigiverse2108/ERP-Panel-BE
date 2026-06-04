@@ -8,17 +8,22 @@ export interface IRangeWiseRule {
   discountValue: number;
 }
 
+export interface IProductVariantSelection {
+  productId: Schema.Types.ObjectId;
+  variantId?: Schema.Types.ObjectId | null;
+}
+
 export interface IBuyXGetY {
   buyQty: number;
   getQty: number;
-  getProductIds?: Schema.Types.ObjectId[];
+  getProductIds?: IProductVariantSelection[];
   getDiscountType: "percentage" | "flat";
   getDiscountValue: number;
 }
 
 export interface IProductAtFixAmount {
   minimumAmount: number;
-  freeProductIds: Schema.Types.ObjectId[];
+  freeProductIds: IProductVariantSelection[];
   freeQty: number;
 }
 
@@ -46,8 +51,8 @@ export interface IDiscount extends IBase {
   categoryIds?: Schema.Types.ObjectId[];
   subcategoryIds?: Schema.Types.ObjectId[];
   brandIds?: Schema.Types.ObjectId[];
-  productIds?: Schema.Types.ObjectId[];
-  excludedProductIds?: Schema.Types.ObjectId[];
+  productIds?: IProductVariantSelection[];
+  excludedProductIds?: IProductVariantSelection[];
 
   // Minimum Requirements
   minimumRequirement: "none" | "min_purchase_amount" | "min_quantity";

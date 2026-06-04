@@ -72,6 +72,10 @@ export interface IProduct extends IBase {
   // Misc
   additionalInfo?: string;
 
+  barcode?: string;
+  barcodeType?: string;
+  variants?: IProductVariant[];
+
   // departmentId?: Schema.Types.ObjectId; //  Commented in schema
   // image?: string; //  single image not used
   // netWeightUnit?: string; //  Commented in schema
@@ -82,6 +86,20 @@ export interface IProduct extends IBase {
   // autoGenerateItemCode?: boolean; //  Not in schema
   // Status
   // status?: "active" | "inactive"; //  Commented in schema
+}
+
+export interface IProductVariant {
+  _id?: Schema.Types.ObjectId;
+  name: string;
+  sku?: string;
+  itemCode?: string;
+  barcode?: string;
+  barcodeType?: string;
+  attributes?: { key: string; value: string }[];
+  mrp?: number;
+  sellingPrice?: number;
+  purchasePrice?: number;
+  isActive?: boolean;
 }
 
 export interface IProductType extends IBase {

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel, productModel, productTypeModel, stockModel, uomModel, brandModel, categoryModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, findAllAndPopulateWithSorting, extractDataFromFile, handleIncludeId } from "../../helper";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, findAllAndPopulateWithSorting, extractDataFromFile, handleIncludeId, generateUniqueEan13Barcode } from "../../helper";
 import { addBulkProductSchema, addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation";
 import axios from "axios";
 
@@ -31,6 +31,51 @@ export const addProduct = async (req, res) => {
       let errorText = "";
       if (isExist?.name === value?.name) errorText = "Product Name";
       return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist(errorText), {}, {}));
+    }
+
+    const generatedBarcodes = new Set<string>();
+
+    // Auto-generate product-level barcode if empty
+    if (!value.barcode || value.barcode.trim() === "") {
+      value.barcode = await generateUniqueEan13Barcode(value.companyId, generatedBarcodes);
+      value.barcodeType = "EAN_13";
+      generatedBarcodes.add(value.barcode);
+    }
+
+    // Auto-generate variant-level barcodes if empty
+    if (value.variants && value.variants.length > 0) {
+      for (const variant of value.variants) {
+        if (!variant.barcode || variant.barcode.trim() === "") {
+          variant.barcode = await generateUniqueEan13Barcode(value.companyId, generatedBarcodes);
+          variant.barcodeType = "EAN_13";
+          generatedBarcodes.add(variant.barcode);
+        }
+      }
+    }
+
+    // CHECK 1 — product-level barcode:
+
+    if (value.barcode) {
+      const barcodeCriteria: any = { barcode: value.barcode, isDeleted: false };
+      if (value.companyId) barcodeCriteria.companyId = value.companyId;
+      const barcodeExists = await getFirstMatch(productModel, barcodeCriteria, {}, {});
+      if (barcodeExists) return res.status(HTTP_STATUS.CONFLICT).json(
+        new apiResponse(HTTP_STATUS.CONFLICT, "A product with this barcode already exists", {}, {})
+      );
+    }
+
+    // CHECK 2 — variant-level barcodes:
+    if (value.variants && value.variants.length > 0) {
+      for (const variant of value.variants) {
+        if (variant.barcode) {
+          const variantBarcodeCriteria: any = { "variants.barcode": variant.barcode, isDeleted: false };
+          if (value.companyId) variantBarcodeCriteria.companyId = value.companyId;
+          const variantBarcodeExists = await getFirstMatch(productModel, variantBarcodeCriteria, {}, {});
+          if (variantBarcodeExists) return res.status(HTTP_STATUS.CONFLICT).json(
+            new apiResponse(HTTP_STATUS.CONFLICT, `Variant barcode '${variant.barcode}' already exists on another product`, {}, {})
+          );
+        }
+      }
     }
 
     value.createdBy = user?._id || null;
@@ -69,6 +114,8 @@ export const bulkAddProduct = async (req, res) => {
 
     const productsToAdd = [];
     const namesInFile = new Set();
+    const generatedBarcodesInBulk = new Set<string>();
+
 
     for (let i = 0; i < data.length; i++) {
       let item = data[i];
@@ -207,8 +254,16 @@ export const bulkAddProduct = async (req, res) => {
         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Row ${i + 1}: ${responseMessage?.dataAlreadyExist("Product with this name")}`, {}, {}));
       }
 
+      // Auto-generate product-level barcode if empty
+      if (!value.barcode || value.barcode.trim() === "") {
+        value.barcode = await generateUniqueEan13Barcode(value.companyId, generatedBarcodesInBulk);
+        value.barcodeType = "EAN_13";
+        generatedBarcodesInBulk.add(value.barcode);
+      }
+
       value.createdBy = user?._id || null;
       value.updatedBy = user?._id || null;
+
 
       // Clean up the string fields used for mapping before saving to DB
       delete value.category;
@@ -248,13 +303,13 @@ export const editProduct = async (req, res) => {
 
     if (value?.productTypeId && !(await checkIdExist(productTypeModel, value?.productTypeId, "Product Type", res))) return;
 
-    let isExist = await getFirstMatch(productModel, { _id: value?.productId, isDeleted: false }, {}, {});
+    const currentProduct = await getFirstMatch(productModel, { _id: value?.productId, isDeleted: false }, {}, {});
 
-    if (!isExist) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
+    if (!currentProduct) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
 
     // Ownership check: non-super-admin can only edit their own company's products
     if (userType !== USER_TYPES.SUPER_ADMIN && userCompanyId) {
-      const productCompanyId = isExist?.companyId?.toString();
+      const productCompanyId = currentProduct?.companyId?.toString();
       if (productCompanyId && productCompanyId !== userCompanyId.toString()) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("Product"), {}, {}));
       }
@@ -263,7 +318,7 @@ export const editProduct = async (req, res) => {
     // Duplicate name check scoped to company
     let duplicateCriteria: any = { isDeleted: false, name: value?.name, _id: { $ne: value?.productId } };
     if (companyId) duplicateCriteria.companyId = companyId;
-    isExist = await getFirstMatch(productModel, duplicateCriteria, {}, {});
+    let isExist = await getFirstMatch(productModel, duplicateCriteria, {}, {});
 
     if (isExist) {
       let errorText = "";
@@ -271,9 +326,87 @@ export const editProduct = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.dataAlreadyExist(errorText), {}, {}));
     }
 
-    value.updatedBy = user?._id || null;
+    const generatedBarcodesInEdit = new Set<string>();
 
-    const response = await updateData(productModel, { _id: value?.productId }, value, {});
+    // If main barcode is empty (or sent as empty), generate it
+    if (value.barcode === "" || (value.barcode === undefined && !currentProduct.barcode)) {
+      value.barcode = await generateUniqueEan13Barcode(companyId, generatedBarcodesInEdit);
+      value.barcodeType = "EAN_13";
+      generatedBarcodesInEdit.add(value.barcode);
+    }
+
+    // Auto-generate barcode for variants
+    if (value.variants && value.variants.length > 0) {
+      for (const variant of value.variants) {
+        if (!variant._id) {
+          // New variant - if barcode is empty, generate it
+          if (!variant.barcode || variant.barcode.trim() === "") {
+            variant.barcode = await generateUniqueEan13Barcode(companyId, generatedBarcodesInEdit);
+            variant.barcodeType = "EAN_13";
+            generatedBarcodesInEdit.add(variant.barcode);
+          }
+        } else {
+          // Existing variant - if they explicitly updated barcode to empty, generate one
+          if (variant.barcode === "") {
+            variant.barcode = await generateUniqueEan13Barcode(companyId, generatedBarcodesInEdit);
+            variant.barcodeType = "EAN_13";
+            generatedBarcodesInEdit.add(variant.barcode);
+          }
+        }
+      }
+    }
+
+    // BARCODE CHECK (exclude current product):
+    if (value.barcode) {
+      const barcodeCriteria: any = { barcode: value.barcode, isDeleted: false, _id: { $ne: value.productId } };
+      if (companyId) barcodeCriteria.companyId = companyId;
+      const barcodeExists = await getFirstMatch(productModel, barcodeCriteria, {}, {});
+      if (barcodeExists) return res.status(HTTP_STATUS.CONFLICT).json(
+        new apiResponse(HTTP_STATUS.CONFLICT, "A product with this barcode already exists", {}, {})
+      );
+    }
+
+    // VARIANT MANAGEMENT:
+    const updatePayload: any = { ...value };
+    delete updatePayload.variants;
+    delete updatePayload.removeVariantIds;
+
+    // 1. Remove variants by _id if requested
+    if (value.removeVariantIds && value.removeVariantIds.length > 0) {
+      await updateData(productModel, { _id: value.productId },
+        { $pull: { variants: { _id: { $in: value.removeVariantIds.map(id => new ObjectId(id)) } } } }, {}
+      );
+    }
+
+    // 2. For each variant in the payload:
+    //    - If it has an _id → update that sub-document using arrayFilters
+    //    - If no _id → push as new variant
+    if (value.variants && value.variants.length > 0) {
+      for (const variant of value.variants) {
+        if (variant._id) {
+          // Update existing variant
+          const variantUpdateFields: any = {};
+          Object.keys(variant).forEach(k => {
+            if (k !== '_id') variantUpdateFields[`variants.$[elem].${k}`] = variant[k];
+          });
+          await productModel.updateOne(
+            { _id: value.productId },
+            { $set: variantUpdateFields },
+            { arrayFilters: [{ "elem._id": new ObjectId(variant._id) }] }
+          );
+        } else {
+          // Add new variant
+          await productModel.updateOne(
+            { _id: value.productId },
+            { $push: { variants: variant } }
+          );
+        }
+      }
+    }
+
+    // 3. Apply the rest of the update (non-variant fields)
+    updatePayload.updatedBy = user?._id || null;
+    const response = await updateData(productModel, { _id: value.productId }, updatePayload, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Product"), {}, {}));
 
@@ -328,86 +461,85 @@ export const getAllProduct = async (req, res) => {
   try {
     const { user } = req?.headers;
     const userType = user?.userType;
-
     const companyId = user?.companyId?._id;
-    const { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, productTypeIdFilter } = req.query;
-    const effectiveCompanyId = companyFilter || (userType !== USER_TYPES.SUPER_ADMIN ? companyId : null);
-    const effectiveBranchId = branchFilter || (userType !== USER_TYPES.SUPER_ADMIN ? user?.branchId?._id : null);
 
+    const { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, productTypeIdFilter, giveVariant, givethevariant } = req.query;
+
+    const effectiveCompanyId: any = companyFilter ? new ObjectId(companyFilter as string) : (userType !== USER_TYPES.SUPER_ADMIN ? companyId : null);
+    const effectiveBranchId: any = branchFilter ? new ObjectId(branchFilter as string) : (userType !== USER_TYPES.SUPER_ADMIN ? user?.branchId?._id : null);
+
+    // ── Step 1: Load stock entries for the visible scope ───────────────────
+    // shouldFilterByStock: true → only show products/variants that have stock
+    // shouldFetchStock: true  → fetch stock data to attach qty/price fields
+    const shouldFilterByStock = userType !== USER_TYPES.SUPER_ADMIN || !!companyFilter;
+    const shouldFetchStock = shouldFilterByStock || !!(effectiveCompanyId || effectiveBranchId);
+
+    const stockByKey = new Map<string, any>();
+    const productIdsWithStock = new Set<string>();
+
+    if (shouldFetchStock) {
+      const stockBaseCriteria: any = { isDeleted: false };
+      if (effectiveCompanyId) stockBaseCriteria.companyId = effectiveCompanyId;
+      if (effectiveBranchId) stockBaseCriteria.branchId = effectiveBranchId;
+      applyDateFilter(stockBaseCriteria, startDate as string, endDate as string);
+
+      const stockEntries = await stockModel.find(stockBaseCriteria, {
+        productId: 1, variantId: 1, qty: 1, mrp: 1, sellingPrice: 1, sellingDiscount: 1,
+        sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1,
+        isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1, uomId: 1, branchId: 1,
+      }).populate([
+        { path: "purchaseTaxId", select: "name percentage" },
+        { path: "salesTaxId", select: "name percentage" },
+        { path: "uomId", select: "name code" },
+        { path: "branchId", select: "name" },
+      ]);
+
+      stockEntries.forEach((s: any) => {
+        const key = s.variantId ? `${s.productId}_${s.variantId}` : String(s.productId);
+        if (!stockByKey.has(key)) stockByKey.set(key, s);
+        productIdsWithStock.add(String(s.productId));
+      });
+
+      if (shouldFilterByStock && productIdsWithStock.size === 0) {
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), { product_data: [], totalData: 0, state: { page, limit, totalPages: 1 } }, {}));
+      }
+    }
+
+    // ── Step 2: Build product query criteria ───────────────────────────────
     let criteria: any = { isDeleted: false };
 
-    // Company scoping: company users see their own products + super admin products (companyId is null)
-    // if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
-    //   criteria.$or = [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }];
-    // } else if (userType === USER_TYPES.SUPER_ADMIN && companyFilter) {
-    //   criteria.$or = [{ companyId: companyFilter }, { companyId: null }, { companyId: { $exists: false } }];
-    // }
+    if (shouldFilterByStock) {
+      criteria._id = { $in: Array.from(productIdsWithStock) };
+    }
 
     if (search) {
-      const searchCriteria = [{ name: { $regex: search, $options: "si" } }];
+      const searchCondition = [
+        { name: { $regex: search, $options: "si" } },
+        { barcode: { $regex: search, $options: "si" } },
+        { "variants.barcode": { $regex: search, $options: "si" } },
+        { "variants.sku": { $regex: search, $options: "si" } },
+      ];
       if (criteria.$or) {
-        criteria.$and = [{ $or: criteria.$or }, { $or: searchCriteria }];
+        criteria.$and = [{ $or: criteria.$or }, { $or: searchCondition }];
         delete criteria.$or;
       } else {
-        criteria.$or = searchCriteria;
+        criteria.$or = searchCondition;
       }
     }
 
     if (categoryFilter) criteria.categoryId = categoryFilter;
-
     if (subCategoryFilter) criteria.subCategoryId = subCategoryFilter;
-
     if (brandFilter) criteria.brandId = brandFilter;
-
     if (subBrandFilter) criteria.subBrandId = subBrandFilter;
-
     if (hsnCodeFilter) criteria.hsnCode = hsnCodeFilter;
-
     if (purchaseTaxFilter) criteria.purchaseTaxId = purchaseTaxFilter;
-
     if (salesTaxIdFilter) criteria.salesTaxId = salesTaxIdFilter;
-
     if (productTypeFilter) criteria.productType = productTypeFilter;
-
     if (productTypeIdFilter) criteria.productTypeId = new ObjectId(productTypeIdFilter);
-
-    if (user.userType !== USER_TYPES.SUPER_ADMIN) {
-      const stockCriteria: any = {
-        isDeleted: false,
-        companyId: user?.companyId?._id,
-        branchId: user?.branchId?._id,
-      };
-
-      applyDateFilter(stockCriteria, startDate as string, endDate as string);
-
-      const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
-
-      const productIds = (stockEntries || []).filter((s: any) => s.productId).map((s: any) => new ObjectId(s.productId.toString()));
-
-      criteria._id = { $in: productIds };
-    }
-
-    if (companyFilter) {
-      const stockCriteria: any = {
-        isDeleted: false,
-        companyId: new ObjectId(companyFilter as string),
-        ...(branchFilter && { branchId: new ObjectId(branchFilter as string) }),
-      };
-
-      applyDateFilter(stockCriteria, startDate as string, endDate as string);
-
-      const stockEntries = await getDataWithSorting(stockModel, stockCriteria, { productId: 1 }, {});
-
-      const productIds = (stockEntries || []).filter((s: any) => s.productId).map((s: any) => new ObjectId(s.productId.toString()));
-
-      criteria._id = { $in: productIds };
-    }
-
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
 
-    // applyDateFilter(criteria, startDate as string, endDate as string);
-
-    const options: any = {
+    // ── Step 3: Fetch ALL matching products (no DB-level pagination yet) ───
+    const products = await getDataWithSorting(productModel, criteria, { password: 0 }, {
       sort: { createdAt: -1 },
       populate: [
         { path: "companyId", select: "name" },
@@ -417,188 +549,255 @@ export const getAllProduct = async (req, res) => {
         { path: "subBrandId", select: "name" },
         { path: "productTypeId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
-
-        // { path: "purchaseTaxId", select: "name percentage" },
-        // { path: "salesTaxId", select: "name percentage" },
       ],
-    };
+    });
 
-    if (page && limit) {
-      options.skip = (parseInt(page) - 1) * parseInt(limit);
-      options.limit = parseInt(limit);
-    }
-    const response = await getDataWithSorting(productModel, criteria, { password: 0 }, options);
-    const totalData = await countData(productModel, criteria);
+    // ── Step 4: Conditional variant expansion ──────────────────────────────
+    const finalList: any[] = [];
+    const isGiveVariant = giveVariant === "true" || givethevariant === "true";
 
-    const productsWithStock = await Promise.all(
-      response.map(async (product: any) => {
-        const productObj = product.toObject ? product.toObject() : product;
-        const linkedStockIds = (productObj.stockIds || []).filter((id: any) => id);
+    products.forEach((product: any) => {
+      const productObj = product.toObject ? product.toObject() : product;
 
-        let stockCriteria: any = { isDeleted: false };
-        applyDateFilter(stockCriteria, startDate as string, endDate as string);
+      if (isGiveVariant) {
+        if (productObj.variants && productObj.variants.length > 0) {
+          // Product WITH variants → one flat row per variant that has stock
+          productObj.variants.forEach((variant: any) => {
+            const stockKey = `${product._id}_${variant._id}`;
+            const stock = stockByKey.get(stockKey);
 
-        if (linkedStockIds.length > 0) {
-          stockCriteria._id = { $in: linkedStockIds.map((id: any) => new ObjectId(id.toString())) };
-          if (effectiveCompanyId) {
-            stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
-          }
-          if (effectiveBranchId) {
-            stockCriteria.branchId = new ObjectId(effectiveBranchId.toString());
+            // Skip variants with no stock (when filtering by stock is active)
+            if (!stock && shouldFilterByStock) return;
+
+            // Variant-level search filter
+            if (search) {
+              const query = (search as string).toLowerCase();
+              const parentMatch = productObj.name.toLowerCase().includes(query);
+              const variantMatch = variant.name.toLowerCase().includes(query);
+              const barcodeMatch = variant.barcode && variant.barcode.toLowerCase().includes(query);
+              const skuMatch = variant.sku && variant.sku.toLowerCase().includes(query);
+              if (!parentMatch && !variantMatch && !barcodeMatch && !skuMatch) return;
+            }
+
+            finalList.push({
+              ...productObj,
+              variants: undefined,           // remove the nested array — each variant is its own row
+              variantId: variant._id,
+              name: `${productObj.name} - ${variant.name}`,
+              barcode: variant.barcode ?? productObj.barcode ?? null,
+              barcodeType: variant.barcodeType ?? productObj.barcodeType ?? null,
+              sku: variant.sku ?? productObj.sku ?? null,
+              qty: stock?.qty ?? 0,
+              mrp: stock?.mrp ?? variant.mrp ?? productObj.mrp ?? 0,
+              sellingPrice: stock?.sellingPrice ?? variant.sellingPrice ?? productObj.sellingPrice ?? 0,
+              sellingDiscount: stock?.sellingDiscount ?? productObj.sellingDiscount ?? 0,
+              sellingMargin: stock?.sellingMargin ?? productObj.sellingMargin ?? 0,
+              landingCost: stock?.landingCost ?? productObj.landingCost ?? 0,
+              purchasePrice: stock?.purchasePrice ?? variant.purchasePrice ?? productObj.purchasePrice ?? 0,
+              purchaseTaxId: stock?.purchaseTaxId ?? null,
+              salesTaxId: stock?.salesTaxId ?? null,
+              isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding ?? false,
+              isSalesTaxIncluding: stock?.isSalesTaxIncluding ?? false,
+              uomId: stock?.uomId ?? null,
+              branchId: stock?.branchId ?? null,
+            });
+          });
+
+          // Also emit the parent product itself if it has a direct stock entry (no variantId)
+          // e.g. stock was added at the product level, not tied to any specific variant
+          const parentStock = stockByKey.get(String(product._id));
+          if (parentStock) {
+            let parentMatchesSearch = true;
+            if (search) {
+              const query = (search as string).toLowerCase();
+              parentMatchesSearch =
+                productObj.name.toLowerCase().includes(query) ||
+                (productObj.barcode && productObj.barcode.toLowerCase().includes(query)) ||
+                (productObj.sku && productObj.sku.toLowerCase().includes(query));
+            }
+            if (parentMatchesSearch) {
+              finalList.push({
+                ...productObj,
+                variants: undefined,
+                variantId: null,
+                qty: parentStock.qty ?? 0,
+                mrp: parentStock.mrp ?? productObj.mrp ?? 0,
+                sellingPrice: parentStock.sellingPrice ?? productObj.sellingPrice ?? 0,
+                sellingDiscount: parentStock.sellingDiscount ?? productObj.sellingDiscount ?? 0,
+                sellingMargin: parentStock.sellingMargin ?? productObj.sellingMargin ?? 0,
+                landingCost: parentStock.landingCost ?? productObj.landingCost ?? 0,
+                purchasePrice: parentStock.purchasePrice ?? productObj.purchasePrice ?? 0,
+                purchaseTaxId: parentStock.purchaseTaxId ?? null,
+                salesTaxId: parentStock.salesTaxId ?? null,
+                isPurchaseTaxIncluding: parentStock.isPurchaseTaxIncluding ?? false,
+                isSalesTaxIncluding: parentStock.isSalesTaxIncluding ?? false,
+                uomId: parentStock.uomId ?? null,
+                branchId: parentStock.branchId ?? null,
+              });
+            }
           }
         } else {
-          stockCriteria.productId = product._id;
-          if (effectiveCompanyId) {
-            stockCriteria.companyId = new ObjectId(effectiveCompanyId.toString());
+          // Product WITHOUT variants → one row as-is
+          const stockKey = String(product._id);
+          const stock = stockByKey.get(stockKey);
+
+          if (!stock && shouldFilterByStock) return;
+
+          finalList.push({
+            ...productObj,
+            qty: stock?.qty ?? 0,
+            mrp: stock?.mrp ?? productObj.mrp ?? 0,
+            sellingPrice: stock?.sellingPrice ?? productObj.sellingPrice ?? 0,
+            sellingDiscount: stock?.sellingDiscount ?? productObj.sellingDiscount ?? 0,
+            sellingMargin: stock?.sellingMargin ?? productObj.sellingMargin ?? 0,
+            landingCost: stock?.landingCost ?? productObj.landingCost ?? 0,
+            purchasePrice: stock?.purchasePrice ?? productObj.purchasePrice ?? 0,
+            purchaseTaxId: stock?.purchaseTaxId ?? null,
+            salesTaxId: stock?.salesTaxId ?? null,
+            isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding ?? false,
+            isSalesTaxIncluding: stock?.isSalesTaxIncluding ?? false,
+            uomId: stock?.uomId ?? null,
+            branchId: stock?.branchId ?? null,
+          });
+        }
+      } else {
+        // Return standard product with nested variants containing stock details
+        let totalQty = 0;
+        let mrp = productObj.mrp ?? 0;
+        let sellingPrice = productObj.sellingPrice ?? 0;
+        let sellingDiscount = productObj.sellingDiscount ?? 0;
+        let sellingMargin = productObj.sellingMargin ?? 0;
+        let landingCost = productObj.landingCost ?? 0;
+        let purchasePrice = productObj.purchasePrice ?? 0;
+        let purchaseTaxId = null;
+        let salesTaxId = null;
+        let isPurchaseTaxIncluding = false;
+        let isSalesTaxIncluding = false;
+        let uomId = null;
+        let branchId = null;
+
+        let firstStock: any = null;
+
+        if (productObj.variants && productObj.variants.length > 0) {
+          const variantsWithStock = productObj.variants.map((v: any) => {
+            const stockKey = `${product._id}_${v._id}`;
+            const stock = stockByKey.get(stockKey);
+
+            totalQty += stock?.qty ?? 0;
+            if (!firstStock && stock) {
+              firstStock = stock;
+            }
+
+            return {
+              ...v,
+              qty: stock?.qty ?? 0,
+              mrp: stock?.mrp ?? v.mrp ?? productObj.mrp ?? 0,
+              sellingPrice: stock?.sellingPrice ?? v.sellingPrice ?? productObj.sellingPrice ?? 0,
+              sellingDiscount: stock?.sellingDiscount ?? productObj.sellingDiscount ?? 0,
+              sellingMargin: stock?.sellingMargin ?? productObj.sellingMargin ?? 0,
+              landingCost: stock?.landingCost ?? productObj.landingCost ?? 0,
+              purchasePrice: stock?.purchasePrice ?? v.purchasePrice ?? productObj.purchasePrice ?? 0,
+              purchaseTaxId: stock?.purchaseTaxId ?? null,
+              salesTaxId: stock?.salesTaxId ?? null,
+              isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding ?? false,
+              isSalesTaxIncluding: stock?.isSalesTaxIncluding ?? false,
+              uomId: stock?.uomId ?? null,
+              branchId: stock?.branchId ?? null,
+            };
+          });
+
+          // Also check if parent product itself has stock
+          const parentStock = stockByKey.get(String(product._id));
+          if (parentStock) {
+            totalQty += parentStock.qty ?? 0;
+            if (!firstStock) {
+              firstStock = parentStock;
+            }
           }
-          if (effectiveBranchId) {
-            stockCriteria.branchId = new ObjectId(effectiveBranchId.toString());
+
+          if (firstStock) {
+            mrp = firstStock.mrp ?? mrp;
+            sellingPrice = firstStock.sellingPrice ?? sellingPrice;
+            sellingDiscount = firstStock.sellingDiscount ?? sellingDiscount;
+            sellingMargin = firstStock.sellingMargin ?? sellingMargin;
+            landingCost = firstStock.landingCost ?? landingCost;
+            purchasePrice = firstStock.purchasePrice ?? purchasePrice;
+            purchaseTaxId = firstStock.purchaseTaxId ?? null;
+            salesTaxId = firstStock.salesTaxId ?? null;
+            isPurchaseTaxIncluding = firstStock.isPurchaseTaxIncluding ?? false;
+            isSalesTaxIncluding = firstStock.isSalesTaxIncluding ?? false;
+            uomId = firstStock.uomId ?? null;
+            branchId = firstStock.branchId ?? null;
           }
+
+          productObj.variants = variantsWithStock;
+          productObj.variantsWithStock = variantsWithStock;
+          productObj.qty = totalQty;
+          productObj.mrp = mrp;
+          productObj.sellingPrice = sellingPrice;
+          productObj.sellingDiscount = sellingDiscount;
+          productObj.sellingMargin = sellingMargin;
+          productObj.landingCost = landingCost;
+          productObj.purchasePrice = purchasePrice;
+          productObj.purchaseTaxId = purchaseTaxId;
+          productObj.salesTaxId = salesTaxId;
+          productObj.isPurchaseTaxIncluding = isPurchaseTaxIncluding;
+          productObj.isSalesTaxIncluding = isSalesTaxIncluding;
+          productObj.uomId = uomId;
+          productObj.branchId = branchId;
+        } else {
+          // Product WITHOUT variants
+          const stockKey = String(product._id);
+          const stock = stockByKey.get(stockKey);
+
+          if (!stock && shouldFilterByStock) return;
+
+          if (stock) {
+            totalQty = stock.qty ?? 0;
+            mrp = stock.mrp ?? mrp;
+            sellingPrice = stock.sellingPrice ?? sellingPrice;
+            sellingDiscount = stock.sellingDiscount ?? sellingDiscount;
+            sellingMargin = stock.sellingMargin ?? sellingMargin;
+            landingCost = stock.landingCost ?? landingCost;
+            purchasePrice = stock.purchasePrice ?? purchasePrice;
+            purchaseTaxId = stock.purchaseTaxId ?? null;
+            salesTaxId = stock.salesTaxId ?? null;
+            isPurchaseTaxIncluding = stock.isPurchaseTaxIncluding ?? false;
+            isSalesTaxIncluding = stock.isSalesTaxIncluding ?? false;
+            uomId = stock.uomId ?? null;
+            branchId = stock.branchId ?? null;
+          }
+
+          productObj.qty = totalQty;
+          productObj.mrp = mrp;
+          productObj.sellingPrice = sellingPrice;
+          productObj.sellingDiscount = sellingDiscount;
+          productObj.sellingMargin = sellingMargin;
+          productObj.landingCost = landingCost;
+          productObj.purchasePrice = purchasePrice;
+          productObj.purchaseTaxId = purchaseTaxId;
+          productObj.salesTaxId = salesTaxId;
+          productObj.isPurchaseTaxIncluding = isPurchaseTaxIncluding;
+          productObj.isSalesTaxIncluding = isSalesTaxIncluding;
+          productObj.uomId = uomId;
+          productObj.branchId = branchId;
         }
 
-        const stockAggregation = await stockModel.aggregate([
-          { $match: stockCriteria },
-          {
-            $group: {
-              _id: "$productId",
-              totalQty: { $sum: "$qty" },
-              totalMrp: { $sum: "$mrp" },
+        finalList.push(productObj);
+      }
+    });
 
-              totalSellingPrice: { $sum: "$sellingPrice" },
-              totalSellingDiscount: { $sum: "$sellingDiscount" },
-              totalLandingCost: { $sum: "$landingCost" },
-              totalPurchasePrice: { $sum: "$purchasePrice" },
-              totalSellingMargin: { $sum: "$sellingMargin" },
-              uomId: { $first: "$uomId" },
-              purchaseTaxId: { $first: "$purchaseTaxId" },
-              salesTaxId: { $first: "$salesTaxId" },
-              isPurchaseTaxIncluding: { $first: "$isPurchaseTaxIncluding" },
-              isSalesTaxIncluding: { $first: "$isSalesTaxIncluding" },
-              branchId: { $first: "$branchId" },
-            },
-          },
-          {
-            $lookup: {
-              from: "branches",
-              localField: "branchId",
-              foreignField: "_id",
-              as: "branchData",
-            },
-          },
-          {
-            $lookup: {
-              from: "uoms",
-              localField: "uomId",
-              foreignField: "_id",
-              as: "uomData",
-            },
-          },
-          {
-            $lookup: {
-              from: "taxes",
-              localField: "purchaseTaxId",
-              foreignField: "_id",
-              as: "purchaseTaxData",
-            },
-          },
-          {
-            $lookup: {
-              from: "taxes",
-              localField: "salesTaxId",
-              foreignField: "_id",
-              as: "salesTaxData",
-            },
-          },
-          {
-            $unwind: {
-              path: "$uomData",
-              preserveNullAndEmptyArrays: true,
-            },
-          },
-          {
-            $unwind: {
-              path: "$purchaseTaxData",
-              preserveNullAndEmptyArrays: true,
-            },
-          },
-          {
-            $unwind: {
-              path: "$salesTaxData",
-              preserveNullAndEmptyArrays: true,
-            },
-          },
-          {
-            $unwind: {
-              path: "$branchData",
-              preserveNullAndEmptyArrays: true,
-            },
-          },
-          // 🎯 Shape the final output
-          {
-            $project: {
-              uomId: 1,
-              uomData: {
-                _id: "$uomData._id",
-                name: "$uomData.name",
-                code: "$uomData.code",
-              },
-              branchData: {
-                _id: "$branchData._id",
-                name: "$branchData.name",
-              },
-              purchaseTaxData: {
-                _id: "$purchaseTaxData._id",
-                name: "$purchaseTaxData.name",
-                percentage: "$purchaseTaxData.percentage",
-              },
-              salesTaxData: {
-                _id: "$salesTaxData._id",
-                name: "$salesTaxData.name",
-                percentage: "$salesTaxData.percentage",
-              },
-              totalQty: 1,
-              totalMrp: 1,
-              totalSellingPrice: 1,
-              totalSellingDiscount: 1,
-              totalLandingCost: 1,
-              totalPurchasePrice: 1,
-              totalSellingMargin: 1,
-              isPurchaseTaxIncluding: 1,
-              isSalesTaxIncluding: 1,
-            },
-          },
-        ]);
+    // ── Step 5: In-memory pagination over the final list ──────────
+    const totalData = finalList.length;
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || totalData || 1;
+    const totalPages = limit ? Math.ceil(totalData / limitNum) || 1 : 1;
 
-        const qty = stockAggregation.length > 0 ? stockAggregation[0].totalQty : 0;
+    const product_data = page && limit
+      ? finalList.slice((pageNum - 1) * limitNum, pageNum * limitNum)
+      : finalList;
 
-        return {
-          ...productObj,
-          mrp: stockAggregation.length > 0 ? stockAggregation[0].totalMrp : 0,
-          sellingPrice: stockAggregation.length > 0 ? stockAggregation[0].totalSellingPrice : 0,
-          sellingDiscount: stockAggregation.length > 0 ? stockAggregation[0].totalSellingDiscount : 0,
-          landingCost: stockAggregation.length > 0 ? stockAggregation[0].totalLandingCost : 0,
-          purchasePrice: stockAggregation.length > 0 ? stockAggregation[0].totalPurchasePrice : 0,
-          sellingMargin: stockAggregation.length > 0 ? stockAggregation[0].totalSellingMargin : 0,
-          purchaseTaxId: stockAggregation.length > 0 ? stockAggregation[0].purchaseTaxData : null,
-          salesTaxId: stockAggregation.length > 0 ? stockAggregation[0].salesTaxData : null,
-          isPurchaseTaxIncluding: stockAggregation.length > 0 ? stockAggregation[0].isPurchaseTaxIncluding : false,
-          isSalesTaxIncluding: stockAggregation.length > 0 ? stockAggregation[0].isSalesTaxIncluding : false,
-          qty,
-          uomId: stockAggregation.length > 0 ? stockAggregation[0].uomData : null,
-          branchId: stockAggregation.length > 0 ? stockAggregation[0].branchData : null,
-        };
-      }),
-    );
-
-    const totalPages = Math.ceil(totalData / limit) || 1;
-
-    const stateObj = {
-      page,
-      limit,
-      totalPages,
-    };
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), { product_data: productsWithStock, totalData, state: stateObj }, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), { product_data, totalData, state: { page: pageNum, limit: limitNum, totalPages } }, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -612,7 +811,7 @@ export const getProductDropdown = async (req, res) => {
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
 
-    const { productType, search, companyFilter, branchFilter, categoryFilter, brandFilter, isNewProduct, stockFilter, includeId } = req.query;
+    const { productType, search, barcodeSearch, companyFilter, branchFilter, categoryFilter, brandFilter, isNewProduct, stockFilter, includeId } = req.query;
 
     // Determine the effective company ID for filtering
     let effectiveCompanyId = companyId;
@@ -623,6 +822,69 @@ export const getProductDropdown = async (req, res) => {
     let effectiveBranchId = user?.branchId?._id;
     if (branchFilter) {
       effectiveBranchId = new ObjectId(branchFilter as string);
+    }
+
+    if (barcodeSearch) {
+      let barcodeCriteria: any = {
+        $or: [{ barcode: barcodeSearch }, { "variants.barcode": barcodeSearch }],
+        isDeleted: false,
+        isActive: true,
+      };
+      // Company scoping (same pattern already in the function)
+      if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+        barcodeCriteria.$and = [{ $or: barcodeCriteria.$or }, { $or: [{ companyId }, { companyId: null }, { companyId: { $exists: false } }] }];
+        delete barcodeCriteria.$or;
+      }
+
+      const product = await getFirstMatch(productModel, barcodeCriteria, {}, {});
+      if (!product) {
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [], {}));
+      }
+
+      // Determine matched variant (if any)
+      const productObj = product.toObject ? product.toObject() : product;
+      let matchedVariant = null;
+      if (product.barcode !== barcodeSearch) {
+        matchedVariant = (productObj.variants || []).find((v: any) => v.barcode === barcodeSearch) || null;
+      }
+
+      // Fetch stock — scoped to variant if matched
+      const stockCriteria: any = { productId: product._id, isDeleted: false };
+      if (effectiveCompanyId) stockCriteria.companyId = effectiveCompanyId;
+      if (effectiveBranchId) stockCriteria.branchId = effectiveBranchId;
+      if (matchedVariant) stockCriteria.variantId = matchedVariant._id;
+
+      const stock = await stockModel.findOne(stockCriteria).populate([
+        { path: "purchaseTaxId", select: "name percentage" },
+        { path: "salesTaxId", select: "name percentage" },
+        { path: "uomId", select: "name code" },
+      ]);
+
+      const result = {
+        _id: product._id,
+        variantId: matchedVariant ? matchedVariant._id : undefined,
+        name: matchedVariant ? `${product.name} - ${matchedVariant.name}` : product.name,
+        productType: product.productType,
+        barcode: matchedVariant ? (matchedVariant.barcode ?? null) : (product.barcode ?? null),
+        barcodeType: matchedVariant ? (matchedVariant.barcodeType ?? null) : (product.barcodeType ?? null),
+        matchedVariant,
+        qty: stock?.qty ?? 0,
+        mrp: stock?.mrp ?? matchedVariant?.mrp ?? productObj.mrp ?? 0,
+        sellingPrice: stock?.sellingPrice ?? matchedVariant?.sellingPrice ?? productObj.sellingPrice ?? 0,
+        sellingDiscount: stock?.sellingDiscount ?? productObj.sellingDiscount ?? 0,
+        sellingMargin: stock?.sellingMargin ?? productObj.sellingMargin ?? 0,
+        purchasePrice: stock?.purchasePrice ?? matchedVariant?.purchasePrice ?? productObj.purchasePrice ?? 0,
+        landingCost: stock?.landingCost ?? productObj.landingCost ?? 0,
+        purchaseTaxId: stock?.purchaseTaxId ?? null,
+        salesTaxId: stock?.salesTaxId ?? null,
+        isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding ?? false,
+        isSalesTaxIncluding: stock?.isSalesTaxIncluding ?? false,
+        uomId: stock?.uomId ?? null,
+        branchId: stock?.branchId ?? null,
+        images: productObj.images ?? [],
+      };
+
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), [result], {}));
     }
 
     // --- Stock filtering (only when NOT a new product) ---
@@ -644,7 +906,7 @@ export const getProductDropdown = async (req, res) => {
       const stockResponse = await getDataWithSorting(
         stockModel,
         stockCriteria,
-        { productId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1, uomId: 1, branchId: 1 },
+        { productId: 1, variantId: 1, qty: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, purchaseTaxId: 1, salesTaxId: 1, isPurchaseTaxIncluding: 1, isSalesTaxIncluding: 1, uomId: 1, branchId: 1 },
         {
           sort: { updatedAt: -1 },
           populate: [
@@ -663,7 +925,7 @@ export const getProductDropdown = async (req, res) => {
       }
 
       stockResponse.forEach((stock: any) => {
-        const key = String(stock.productId);
+        const key = stock.variantId ? `${stock.productId}_${stock.variantId}` : String(stock.productId);
         if (!stockByProductId.has(key)) stockByProductId.set(key, stock);
       });
     }
@@ -674,7 +936,6 @@ export const getProductDropdown = async (req, res) => {
       isActive: true,
     };
 
-    // Company scoping: company users see their own products + super admin products (companyId is null)
     if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
       criteria.$or = [{ companyId: companyId }, { companyId: null }, { companyId: { $exists: false } }];
     } else if (userType === USER_TYPES.SUPER_ADMIN && companyFilter) {
@@ -698,7 +959,12 @@ export const getProductDropdown = async (req, res) => {
     }
 
     if (search) {
-      const searchCondition = [{ name: { $regex: search, $options: "si" } }];
+      const searchCondition = [
+        { name: { $regex: search, $options: "si" } },
+        { barcode: { $regex: search, $options: "si" } },
+        { "variants.barcode": { $regex: search, $options: "si" } },
+        { "variants.sku": { $regex: search, $options: "si" } },
+      ];
       if (criteria.$or) {
         criteria.$and = [{ $or: criteria.$or }, { $or: searchCondition }];
         delete criteria.$or;
@@ -712,18 +978,121 @@ export const getProductDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       productModel,
       criteria,
-      { _id: 1, name: 1, productType: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, images: 1 },
+      { _id: 1, name: 1, productType: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, images: 1, barcode: 1, barcodeType: 1, variants: 1 },
       {
         sort: { name: 1 },
       },
     );
 
+<<<<<<< HEAD
     const mergedResponse = response.map((product) => {
         const stock = stockByProductId.get(String(product._id));
         return {
           _id: product._id,
           name: product.name,
           productType: product.productType,
+=======
+    const mergedResponse: any[] = [];
+
+    response.forEach((product: any) => {
+      const productObj = product.toObject ? product.toObject() : product;
+      if (productObj.variants && productObj.variants.length > 0) {
+        // 1. Add variant rows
+        productObj.variants.forEach((variant: any) => {
+          const stockKey = `${product._id}_${variant._id}`;
+          const stock = stockByProductId.get(stockKey);
+
+          if (isNewProduct !== "true" && (!stock || (stockFilter === "true" && stock.qty <= 0))) {
+            return;
+          }
+
+          // If a search query is entered, only show this variant if it matches the query, or if the parent product name matches
+          if (search) {
+            const query = (search as string).toLowerCase();
+            const parentNameMatch = product.name.toLowerCase().includes(query);
+            const variantNameMatch = variant.name.toLowerCase().includes(query);
+            const barcodeMatch = variant.barcode && variant.barcode.toLowerCase().includes(query);
+            const skuMatch = variant.sku && variant.sku.toLowerCase().includes(query);
+
+            if (!parentNameMatch && !variantNameMatch && !barcodeMatch && !skuMatch) {
+              return;
+            }
+          }
+
+          mergedResponse.push({
+            _id: product._id,
+            variantId: variant._id,
+            name: `${product.name} - ${variant.name}`,
+            productType: product.productType,
+            barcode: variant.barcode ?? null,
+            barcodeType: variant.barcodeType ?? null,
+            qty: stock?.qty ?? 0,
+            purchasePrice: stock?.purchasePrice ?? variant.purchasePrice ?? product.purchasePrice,
+            landingCost: stock?.landingCost ?? product.landingCost,
+            mrp: stock?.mrp ?? variant.mrp ?? product.mrp,
+            sellingPrice: stock?.sellingPrice ?? variant.sellingPrice ?? product.sellingPrice,
+            sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
+            sellingMargin: stock?.sellingMargin ?? product.sellingMargin,
+            purchaseTaxId: stock?.purchaseTaxId ?? null,
+            salesTaxId: stock?.salesTaxId ?? null,
+            isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding ?? false,
+            isSalesTaxIncluding: stock?.isSalesTaxIncluding ?? false,
+            uomId: stock?.uomId ?? null,
+            branchId: stock?.branchId ?? null,
+            images: product.images ?? [],
+          });
+        });
+
+        // 2. Also check if the parent product itself has stock
+        const parentStock = stockByProductId.get(String(product._id));
+        if (parentStock && parentStock.qty > 0) {
+          if (search) {
+            const query = (search as string).toLowerCase();
+            const parentNameMatch = product.name.toLowerCase().includes(query);
+            const barcodeMatch = product.barcode && product.barcode.toLowerCase().includes(query);
+            const skuMatch = product.sku && product.sku.toLowerCase().includes(query);
+
+            if (!parentNameMatch && !barcodeMatch && !skuMatch) {
+              return;
+            }
+          }
+
+          mergedResponse.push({
+            _id: product._id,
+            name: product.name,
+            productType: product.productType,
+            barcode: product.barcode ?? null,
+            barcodeType: product.barcodeType ?? null,
+            qty: parentStock.qty,
+            purchasePrice: parentStock.purchasePrice ?? product.purchasePrice,
+            landingCost: parentStock.landingCost ?? product.landingCost,
+            mrp: parentStock.mrp ?? product.mrp,
+            sellingPrice: parentStock.sellingPrice ?? product.sellingPrice,
+            sellingDiscount: parentStock.sellingDiscount ?? product.sellingDiscount,
+            sellingMargin: parentStock.sellingMargin ?? product.sellingMargin,
+            purchaseTaxId: parentStock.purchaseTaxId ?? null,
+            salesTaxId: parentStock.salesTaxId ?? null,
+            isPurchaseTaxIncluding: parentStock.isPurchaseTaxIncluding ?? false,
+            isSalesTaxIncluding: parentStock.isSalesTaxIncluding ?? false,
+            uomId: parentStock.uomId ?? null,
+            branchId: parentStock.branchId ?? null,
+            images: product.images ?? [],
+          });
+        }
+      } else {
+        const stock = stockByProductId.get(String(product._id));
+
+        if (isNewProduct !== "true" && stockFilter === "true" && (!stock || stock.qty <= 0)) {
+          return;
+        }
+
+        mergedResponse.push({
+          _id: product._id,
+          name: product.name,
+          productType: product.productType,
+          barcode: product.barcode ?? null,
+          barcodeType: product.barcodeType ?? null,
+>>>>>>> 364284a19b3c8ddeaa3e73aeebbf48b4bd3c9859
           qty: stock?.qty ?? 0,
           purchasePrice: stock?.purchasePrice ?? product.purchasePrice,
           landingCost: stock?.landingCost ?? product.landingCost,
@@ -731,6 +1100,7 @@ export const getProductDropdown = async (req, res) => {
           sellingPrice: stock?.sellingPrice ?? product.sellingPrice,
           sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
           sellingMargin: stock?.sellingMargin ?? product.sellingMargin,
+<<<<<<< HEAD
           purchaseTaxId: stock?.purchaseTaxId,
           salesTaxId: stock?.salesTaxId,
           isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
@@ -739,6 +1109,17 @@ export const getProductDropdown = async (req, res) => {
           branchId: stock?.branchId,
           images: product.images ?? [],
         };
+=======
+          purchaseTaxId: stock?.purchaseTaxId ?? null,
+          salesTaxId: stock?.salesTaxId ?? null,
+          isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding ?? false,
+          isSalesTaxIncluding: stock?.isSalesTaxIncluding ?? false,
+          uomId: stock?.uomId ?? null,
+          branchId: stock?.branchId ?? null,
+          images: product.images ?? [],
+        });
+      }
+>>>>>>> 364284a19b3c8ddeaa3e73aeebbf48b4bd3c9859
     });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), mergedResponse, {}));
@@ -784,10 +1165,27 @@ export const getOneProduct = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
 
+    const { variantId } = req.query;
+
+    if (variantId) {
+      const variantExists = (response.variants || []).some(
+        (v: any) => v._id.toString() === variantId.toString()
+      );
+      if (!variantExists) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "Variant not found on this product", {}, {}));
+      }
+    }
+
     const stockCriteria: any = {
       productId: response._id,
       isDeleted: false,
     };
+
+    if (variantId) {
+      stockCriteria.variantId = new ObjectId(variantId as string);
+    } else {
+      stockCriteria.variantId = null;
+    }
 
     if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
       stockCriteria.companyId = companyId;
@@ -872,6 +1270,7 @@ export const getOneProduct = async (req, res) => {
           isSalesTaxIncluding: { $first: "$isSalesTaxIncluding" },
           uomData: { $first: "$uomData" },
           branchId: { $first: "$branchId" },
+          variantId: { $first: "$variantId" },
         },
       },
       {
@@ -912,20 +1311,25 @@ export const getOneProduct = async (req, res) => {
           salesTaxId: 1,
           isPurchaseTaxIncluding: 1,
           isSalesTaxIncluding: 1,
+          variantId: 1,
         },
       },
     ]);
 
     const stock = stockAggregation.length > 0 ? stockAggregation[0] : {};
 
-    const productsWithStock = {
+    const matchedVariant = variantId
+      ? (response.variants || []).find((v: any) => v._id.toString() === variantId.toString())
+      : null;
+
+    const productsWithStock: any = {
       ...(response.toObject ? response.toObject() : response),
-      mrp: stock.totalMrp ?? 0,
-      sellingPrice: stock.totalSellingPrice ?? 0,
-      sellingDiscount: stock.totalSellingDiscount ?? 0,
-      landingCost: stock.totalLandingCost ?? 0,
-      purchasePrice: stock.totalPurchasePrice ?? 0,
-      sellingMargin: stock.totalSellingMargin ?? 0,
+      mrp: stock.totalMrp ?? (matchedVariant ? (matchedVariant.mrp ?? 0) : (response.mrp ?? 0)),
+      sellingPrice: stock.totalSellingPrice ?? (matchedVariant ? (matchedVariant.sellingPrice ?? 0) : (response.sellingPrice ?? 0)),
+      sellingDiscount: stock.totalSellingDiscount ?? (response.sellingDiscount ?? 0),
+      landingCost: stock.totalLandingCost ?? (response.landingCost ?? 0),
+      purchasePrice: stock.totalPurchasePrice ?? (matchedVariant ? (matchedVariant.purchasePrice ?? 0) : (response.purchasePrice ?? 0)),
+      sellingMargin: stock.totalSellingMargin ?? (response.sellingMargin ?? 0),
       qty: stock.totalQty ?? 0,
       purchaseTaxId: stock.purchaseTaxId,
       salesTaxId: stock.salesTaxId,
@@ -933,7 +1337,58 @@ export const getOneProduct = async (req, res) => {
       isSalesTaxIncluding: stock.isSalesTaxIncluding,
       uomId: stock.uomData,
       branchId: stock.branchData,
+      variantId: stock.variantId ?? (matchedVariant ? matchedVariant._id : null),
     };
+
+    if (matchedVariant) {
+      productsWithStock.name = `${response.name} - ${matchedVariant.name}`;
+      if (matchedVariant.sku) productsWithStock.sku = matchedVariant.sku;
+      if (matchedVariant.itemCode) productsWithStock.itemCode = matchedVariant.itemCode;
+      if (matchedVariant.barcode) productsWithStock.barcode = matchedVariant.barcode;
+      if (matchedVariant.barcodeType) productsWithStock.barcodeType = matchedVariant.barcodeType;
+      productsWithStock.isActive = matchedVariant.isActive ?? productsWithStock.isActive;
+      if (matchedVariant.attributes) productsWithStock.attributes = matchedVariant.attributes;
+    }
+
+    // Fetch all stock records for this product (all variants) in one query
+    const allVariantStock = await stockModel.find({
+      productId: response._id,
+      isDeleted: false,
+      ...(variantId ? { variantId: new ObjectId(variantId as string) } : {}),
+      ...(userType !== USER_TYPES.SUPER_ADMIN && companyId ? { companyId } : {}),
+    }).populate([
+      { path: "uomId", select: "name code" },
+      { path: "purchaseTaxId", select: "name percentage" },
+      { path: "salesTaxId", select: "name percentage" },
+    ]);
+
+    // Build a map keyed by variantId string
+    const variantStockMap = allVariantStock.reduce((acc, s) => {
+      if (s.variantId) acc[s.variantId.toString()] = s;
+      return acc;
+    }, {});
+
+    // Attach stock to each variant in the product
+    const targetVariants = variantId
+      ? (productsWithStock.variants || []).filter((v: any) => v._id.toString() === variantId.toString())
+      : (productsWithStock.variants || []);
+
+    const variantsWithStock = targetVariants.map((v: any) => {
+      const vs = variantStockMap[v._id?.toString()];
+      return {
+        ...v,
+        qty: vs?.qty ?? 0,
+        mrp: vs?.mrp ?? v.mrp ?? 0,
+        sellingPrice: vs?.sellingPrice ?? v.sellingPrice ?? 0,
+        purchasePrice: vs?.purchasePrice ?? v.purchasePrice ?? 0,
+        uomId: vs?.uomId ?? null,
+        purchaseTaxId: vs?.purchaseTaxId ?? null,
+        salesTaxId: vs?.salesTaxId ?? null,
+      };
+    });
+
+    productsWithStock.variants = targetVariants;
+    productsWithStock.variantsWithStock = variantsWithStock;
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), productsWithStock, {}));
   } catch (error) {
@@ -1307,3 +1762,199 @@ export const detectProduct = async (req, res) => {
 //     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, (responseMessage as any)?.internalServerError || "Internal server error", {}, error));
 //   }
 // };
+
+export const getByBarcode = async (req, res) => {
+  reqInfo(req);
+  try {
+    const code = req.params.code;
+    const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+
+    let criteria: any = {
+      $or: [{ barcode: code }, { "variants.barcode": code }],
+      isDeleted: false,
+    };
+    if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+      criteria.$and = [{ $or: criteria.$or }, { $or: [{ companyId }, { companyId: null }, { companyId: { $exists: false } }] }];
+      delete criteria.$or;
+    }
+
+    const product = await getFirstMatch(productModel, criteria, {}, {
+      populate: [
+        { path: "categoryId", select: "name" },
+        { path: "brandId", select: "name" },
+        { path: "productTypeId", select: "name" },
+      ],
+    });
+    if (!product) return res.status(HTTP_STATUS.NOT_FOUND).json(
+      new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {})
+    );
+
+    // Determine matchedVariant
+    const productObj = product.toObject ? product.toObject() : product;
+    let matchedVariant = null;
+    if (product.barcode !== code) {
+      matchedVariant = (productObj.variants || []).find((v: any) => v.barcode === code) || null;
+    }
+
+    // Fetch stock
+    const stockCriteria: any = { productId: product._id, isDeleted: false };
+    if (companyId) stockCriteria.companyId = new ObjectId(companyId.toString());
+    if (branchId) stockCriteria.branchId = new ObjectId(branchId.toString());
+    if (matchedVariant) stockCriteria.variantId = matchedVariant._id;
+
+    const stock = await stockModel.findOne(stockCriteria).populate([
+      { path: "uomId", select: "name code" },
+      { path: "purchaseTaxId", select: "name percentage" },
+      { path: "salesTaxId", select: "name percentage" },
+      { path: "branchId", select: "name" },
+    ]);
+
+    const result = {
+      product: { ...productObj, variants: undefined },
+      matchedVariant,
+      stock: stock ? {
+        qty: stock.qty,
+        mrp: stock.mrp,
+        sellingPrice: stock.sellingPrice,
+        sellingDiscount: stock.sellingDiscount,
+        purchasePrice: stock.purchasePrice,
+        landingCost: stock.landingCost,
+        uomId: stock.uomId,
+        purchaseTaxId: stock.purchaseTaxId,
+        salesTaxId: stock.salesTaxId,
+        isPurchaseTaxIncluding: stock.isPurchaseTaxIncluding,
+        isSalesTaxIncluding: stock.isSalesTaxIncluding,
+        branchId: stock.branchId,
+      } : null,
+    };
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), result, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const assignBarcodes = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req.headers;
+    const userType = user?.userType;
+    const userCompanyId = user?.companyId?._id;
+
+    // Optional productId from body to target a specific product
+    const { productId } = req.body;
+
+    const companyId = userType !== USER_TYPES.SUPER_ADMIN ? userCompanyId : null;
+
+    let productsToProcess: any[] = [];
+
+    if (productId) {
+      const criteria: any = { _id: productId, isDeleted: false };
+      if (companyId) criteria.companyId = companyId;
+
+      const product = await productModel.findOne(criteria);
+      if (!product) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json(
+          new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {})
+        );
+      }
+      productsToProcess = [product];
+    } else {
+      // Find all products for the company (or all if super admin) that are missing barcodes
+      // either at the product level or in any of their variants
+      let query: any = { isDeleted: false };
+      if (companyId) query.companyId = companyId;
+
+      query.$or = [
+        { barcode: { $in: [null, undefined, ""] } },
+        { barcode: { $exists: false } },
+        {
+          $and: [
+            { variants: { $exists: true, $not: { $size: 0 } } },
+            {
+              $or: [
+                { "variants.barcode": { $in: [null, undefined, ""] } },
+                { "variants.barcode": { $exists: false } }
+              ]
+            }
+          ]
+        }
+      ];
+
+      productsToProcess = await productModel.find(query);
+    }
+
+    if (productsToProcess.length === 0) {
+      return res.status(HTTP_STATUS.OK).json(
+        new apiResponse(HTTP_STATUS.OK, "No products found that require barcode assignment", { updatedProductsCount: 0, updatedVariantsCount: 0 }, {})
+      );
+    }
+
+    let updatedProductsCount = 0;
+    let updatedVariantsCount = 0;
+    const localGeneratedBarcodes = new Set<string>();
+
+    for (const product of productsToProcess) {
+      let isUpdated = false;
+      const targetCompanyId = product.companyId || companyId;
+
+      // 1. Assign product-level barcode if missing
+      if (!product.barcode || product.barcode.trim() === "") {
+        product.barcode = await generateUniqueEan13Barcode(targetCompanyId, localGeneratedBarcodes);
+        product.barcodeType = "EAN_13";
+        localGeneratedBarcodes.add(product.barcode);
+        isUpdated = true;
+        updatedProductsCount++;
+      }
+
+      // 2. Assign variant-level barcodes if missing
+      if (product.variants && product.variants.length > 0) {
+        for (const variant of product.variants) {
+          if (!variant.barcode || variant.barcode.trim() === "") {
+            variant.barcode = await generateUniqueEan13Barcode(targetCompanyId, localGeneratedBarcodes);
+            variant.barcodeType = "EAN_13";
+            localGeneratedBarcodes.add(variant.barcode);
+            isUpdated = true;
+            updatedVariantsCount++;
+          }
+        }
+      }
+
+      if (isUpdated) {
+        await productModel.updateOne(
+          { _id: product._id },
+          {
+            $set: {
+              barcode: product.barcode,
+              barcodeType: product.barcodeType,
+              variants: product.variants,
+              updatedBy: user?._id || null
+            }
+          }
+        );
+      }
+    }
+
+    return res.status(HTTP_STATUS.OK).json(
+      new apiResponse(
+        HTTP_STATUS.OK,
+        "Barcodes assigned successfully",
+        {
+          updatedProductsCount,
+          updatedVariantsCount,
+          totalProductsProcessed: productsToProcess.length,
+        },
+        {}
+      )
+    );
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
+      new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error)
+    );
+  }
+};

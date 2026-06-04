@@ -10,7 +10,8 @@ const materialSchema = new Schema(
     description: { type: String },
     materialTaken: [
       {
-        productId: { type: String },
+        productId: { type: Schema.Types.ObjectId, ref: "product" },
+        variantId: { type: Schema.Types.ObjectId, ref: "product", default: null },
         qty: { type: Number },
         mrp: { type: Number },
         unitCost: { type: Number },
@@ -23,7 +24,8 @@ const materialSchema = new Schema(
     materialTakenTotalAmount: { type: Number },
     goodsReceived: [
       {
-        productId: { type: String },
+        productId: { type: Schema.Types.ObjectId, ref: "product" },
+        variantId: { type: Schema.Types.ObjectId, ref: "product", default: null },
         qty: { type: Number },
         mrp: { type: Number },
         batch: { type: String },

@@ -43,9 +43,15 @@ export const addReturnPosOrder = async (req, res) => {
 
     // Validate return quantities
     for (const returnItem of value.items) {
-      const originalItem = originalOrder.items.find((item) => item.productId.toString() === returnItem.productId.toString());
+      const originalItem = originalOrder.items.find((item) => {
+        const prodMatch = item.productId.toString() === returnItem.productId.toString();
+        const varMatch = returnItem.variantId
+          ? item.variantId?.toString() === returnItem.variantId.toString()
+          : !item.variantId;
+        return prodMatch && varMatch;
+      });
       if (!originalItem) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Product was not part of original order`, {}, {}));
+        return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Product/Variant was not part of original order`, {}, {}));
       }
 
       const availableToReturn = originalItem.qty - (originalItem.returnedQty || 0);
@@ -94,7 +100,13 @@ export const addReturnPosOrder = async (req, res) => {
     let totalReturnedAmount = 0;
 
     originalOrder.items.forEach((originalItem: any) => {
-      const returnItem = response.items.find((item: any) => item.productId.toString() === originalItem.productId.toString());
+      const returnItem = response.items.find((item: any) => {
+        const prodMatch = item.productId.toString() === originalItem.productId.toString();
+        const varMatch = item.variantId
+          ? originalItem.variantId?.toString() === item.variantId.toString()
+          : !originalItem.variantId;
+        return prodMatch && varMatch;
+      });
       if (returnItem) {
         originalItem.returnedQty = (Number(originalItem.returnedQty) || 0) + Number(returnItem.qty);
       }
@@ -129,7 +141,16 @@ export const addReturnPosOrder = async (req, res) => {
     // --- Stock Management Logic ---
     // Increase stock for returned items
     for (const item of response.items) {
-      await stockModel.findOneAndUpdate({ productId: item.productId, companyId: response.companyId, isDeleted: false }, { $inc: { qty: item.qty } });
+      const stockMatchCriteria: any = {
+        productId: item.productId,
+        companyId: response.companyId,
+        branchId: response.branchId,
+        isDeleted: false,
+      };
+      if (item.variantId) stockMatchCriteria.variantId = item.variantId;
+      else stockMatchCriteria.variantId = { $exists: false };
+
+      await stockModel.findOneAndUpdate(stockMatchCriteria, { $inc: { qty: item.qty } });
     }
     // ----------------------------
 
@@ -201,9 +222,15 @@ export const editReturnPosOrder = async (req, res) => {
       // Note: In return orders, reducing 'qty' means DECREASING stock,
       // so we calculate it such that netChange > 0 represents a stock deduction.
       const checkItems = isExist.items.map((item) => {
-        const newItem = value.items.find((ni) => ni.productId?.toString() === item.productId?.toString());
+        const newItem = value.items.find((ni) => {
+          const prodMatch = ni.productId?.toString() === item.productId?.toString();
+          const varMatch = ni.variantId
+            ? item.variantId?.toString() === ni.variantId.toString()
+            : !item.variantId;
+          return prodMatch && varMatch;
+        });
         const newQty = newItem ? newItem.qty : 0;
-        return { productId: item.productId, qty: item.qty - newQty };
+        return { productId: item.productId, variantId: item.variantId, qty: item.qty - newQty };
       });
       if (!(await checkStockQty(checkItems, isExist.branchId, res))) return;
     }
@@ -216,12 +243,24 @@ export const editReturnPosOrder = async (req, res) => {
     // Validate return quantities (taking into account already returned quantities minus this order's quantities)
     if (value.items) {
       for (const returnItem of value.items) {
-        const originalItem = originalOrder.items.find((item) => item.productId.toString() === returnItem.productId.toString());
+        const originalItem = originalOrder.items.find((item) => {
+          const prodMatch = item.productId.toString() === returnItem.productId.toString();
+          const varMatch = returnItem.variantId
+            ? item.variantId?.toString() === returnItem.variantId.toString()
+            : !item.variantId;
+          return prodMatch && varMatch;
+        });
         if (!originalItem) {
-          return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Product was not part of original order`, {}, {}));
+          return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, `Product/Variant was not part of original order`, {}, {}));
         }
 
-        const oldReturnItem = isExist.items.find((item) => item.productId.toString() === returnItem.productId.toString());
+        const oldReturnItem = isExist.items.find((item) => {
+          const prodMatch = item.productId.toString() === returnItem.productId.toString();
+          const varMatch = returnItem.variantId
+            ? item.variantId?.toString() === returnItem.variantId.toString()
+            : !item.variantId;
+          return prodMatch && varMatch;
+        });
         const otherReturnedQty = (originalItem.returnedQty || 0) - (oldReturnItem ? oldReturnItem.qty : 0);
         const availableToReturn = originalItem.qty - otherReturnedQty;
 
@@ -242,7 +281,13 @@ export const editReturnPosOrder = async (req, res) => {
     // Update original order quantities and status
     // 1. Revert old returned quantities
     originalOrder.items.forEach((originalItem: any) => {
-      const oldReturnItem = isExist.items.find((item: any) => item.productId.toString() === originalItem.productId.toString());
+      const oldReturnItem = isExist.items.find((item: any) => {
+        const prodMatch = item.productId.toString() === originalItem.productId.toString();
+        const varMatch = item.variantId
+          ? originalItem.variantId?.toString() === item.variantId.toString()
+          : !originalItem.variantId;
+        return prodMatch && varMatch;
+      });
       if (oldReturnItem) {
         originalItem.returnedQty = Math.max(0, (Number(originalItem.returnedQty) || 0) - Number(oldReturnItem.qty));
       }
@@ -254,7 +299,13 @@ export const editReturnPosOrder = async (req, res) => {
     let totalReturnedAmount = 0;
 
     originalOrder.items.forEach((originalItem: any) => {
-      const newReturnItem = response.items.find((item: any) => item.productId.toString() === originalItem.productId.toString());
+      const newReturnItem = response.items.find((item: any) => {
+        const prodMatch = item.productId.toString() === originalItem.productId.toString();
+        const varMatch = item.variantId
+          ? originalItem.variantId?.toString() === item.variantId.toString()
+          : !originalItem.variantId;
+        return prodMatch && varMatch;
+      });
       if (newReturnItem) {
         originalItem.returnedQty = (Number(originalItem.returnedQty) || 0) + Number(newReturnItem.qty);
       }
@@ -289,12 +340,30 @@ export const editReturnPosOrder = async (req, res) => {
     // --- Stock Management Logic ---
     // 1. Revert old quantities (decrease stock since we increased it on create)
     for (const item of isExist.items) {
-      await stockModel.findOneAndUpdate({ productId: item.productId, companyId: isExist.companyId, isDeleted: false }, { $inc: { qty: -item.qty } });
+      const stockMatchCriteria: any = {
+        productId: item.productId,
+        companyId: isExist.companyId,
+        branchId: isExist.branchId,
+        isDeleted: false,
+      };
+      if (item.variantId) stockMatchCriteria.variantId = item.variantId;
+      else stockMatchCriteria.variantId = { $exists: false };
+
+      await stockModel.findOneAndUpdate(stockMatchCriteria, { $inc: { qty: -item.qty } });
     }
 
     // 2. Apply new quantities (increase stock)
     for (const item of response.items) {
-      await stockModel.findOneAndUpdate({ productId: item.productId, companyId: response.companyId, isDeleted: false }, { $inc: { qty: item.qty } });
+      const stockMatchCriteria: any = {
+        productId: item.productId,
+        companyId: response.companyId,
+        branchId: response.branchId,
+        isDeleted: false,
+      };
+      if (item.variantId) stockMatchCriteria.variantId = item.variantId;
+      else stockMatchCriteria.variantId = { $exists: false };
+
+      await stockModel.findOneAndUpdate(stockMatchCriteria, { $inc: { qty: item.qty } });
     }
     // ----------------------------
     // --- Update associated Credit Note ---
@@ -440,7 +509,7 @@ export const getAllReturnPosOrder = async (req, res) => {
             {
               $lookup: {
                 from: "stocks",
-                let: { productId: "$items.productId._id", companyName: "$companyId.name" },
+                let: { productId: "$items.productId._id", companyName: "$companyId.name", variantId: "$items.variantId" },
                 pipeline: [
                   {
                     $lookup: {
@@ -451,7 +520,24 @@ export const getAllReturnPosOrder = async (req, res) => {
                     },
                   },
                   { $unwind: "$company" },
-                  { $match: { $expr: { $and: [{ $eq: ["$productId", "$$productId"] }, { $eq: ["$company.name", "$$companyName"] }, { $eq: ["$isDeleted", false] }] } } },
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ["$productId", "$$productId"] },
+                          { $eq: ["$company.name", "$$companyName"] },
+                          { $eq: ["$isDeleted", false] },
+                          {
+                            $cond: {
+                              if: { $ne: ["$$variantId", null] },
+                              then: { $eq: ["$variantId", "$$variantId"] },
+                              else: { $or: [{ $eq: ["$variantId", null] }, { $not: ["$variantId"] }] }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  },
                   { $sort: { updatedAt: -1 } },
                   { $limit: 1 },
                 ],
@@ -518,6 +604,7 @@ export const getAllReturnPosOrder = async (req, res) => {
                       isSalesTaxIncluding: "$items.stock.isSalesTaxIncluding",
                       uomId: "$items.stock.uomId",
                     },
+                    variantId: "$items.variantId",
                     qty: "$items.qty",
                     mrp: "$items.mrp",
                     discountAmount: "$items.discountAmount",
@@ -689,7 +776,7 @@ export const getOneReturnPosOrder = async (req, res) => {
       {
         $lookup: {
           from: "stocks",
-          let: { productId: "$items.productId._id", companyName: "$companyId.name" },
+          let: { productId: "$items.productId._id", companyName: "$companyId.name", variantId: "$items.variantId" },
           pipeline: [
             {
               $lookup: {
@@ -700,7 +787,24 @@ export const getOneReturnPosOrder = async (req, res) => {
               },
             },
             { $unwind: "$company" },
-            { $match: { $expr: { $and: [{ $eq: ["$productId", "$$productId"] }, { $eq: ["$company.name", "$$companyName"] }, { $eq: ["$isDeleted", false] }] } } },
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$productId", "$$productId"] },
+                    { $eq: ["$company.name", "$$companyName"] },
+                    { $eq: ["$isDeleted", false] },
+                    {
+                      $cond: {
+                        if: { $ne: ["$$variantId", null] },
+                        then: { $eq: ["$variantId", "$$variantId"] },
+                        else: { $or: [{ $eq: ["$variantId", null] }, { $not: ["$variantId"] }] }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
             { $sort: { updatedAt: -1 } },
             { $limit: 1 },
           ],
@@ -767,6 +871,7 @@ export const getOneReturnPosOrder = async (req, res) => {
                 isSalesTaxIncluding: "$items.stock.isSalesTaxIncluding",
                 uomId: "$items.stock.uomId",
               },
+              variantId: "$items.variantId",
               qty: "$items.qty",
               mrp: "$items.mrp",
               discountAmount: "$items.discountAmount",
@@ -879,7 +984,13 @@ export const deleteReturnPosOrder = async (req, res) => {
       let totalReturnedAmount = 0;
 
       originalOrder.items.forEach((originalItem: any) => {
-        const deletedReturnItem = isExist.items.find((item: any) => item.productId.toString() === originalItem.productId.toString());
+        const deletedReturnItem = isExist.items.find((item: any) => {
+          const prodMatch = item.productId.toString() === originalItem.productId.toString();
+          const varMatch = item.variantId
+            ? originalItem.variantId?.toString() === item.variantId.toString()
+            : !originalItem.variantId;
+          return prodMatch && varMatch;
+        });
         if (deletedReturnItem) {
           originalItem.returnedQty = Math.max(0, (Number(originalItem.returnedQty) || 0) - Number(deletedReturnItem.qty));
         }
@@ -915,12 +1026,21 @@ export const deleteReturnPosOrder = async (req, res) => {
     // --- Stock Management Logic ---
     // When we delete a return, we revert the stock increase (which means we decrease stock).
     // We pass the items as 'new' items to check against current stock.
-    const itemsToDeduct = isExist.items.map((item) => ({ productId: item.productId, qty: item.qty }));
+    const itemsToDeduct = isExist.items.map((item) => ({ productId: item.productId, variantId: item.variantId, qty: item.qty }));
     if (!(await checkStockQty(itemsToDeduct, isExist.branchId, res))) return;
 
     // Decrease stock for deleted return order
     for (const item of isExist.items) {
-      await stockModel.findOneAndUpdate({ productId: item.productId, companyId: isExist.companyId, branchId: isExist.branchId, isDeleted: false }, { $inc: { qty: -item.qty } });
+      const stockMatchCriteria: any = {
+        productId: item.productId,
+        companyId: isExist.companyId,
+        branchId: isExist.branchId,
+        isDeleted: false,
+      };
+      if (item.variantId) stockMatchCriteria.variantId = item.variantId;
+      else stockMatchCriteria.variantId = { $exists: false };
+
+      await stockModel.findOneAndUpdate(stockMatchCriteria, { $inc: { qty: -item.qty } });
     }
     // ----------------------------
 

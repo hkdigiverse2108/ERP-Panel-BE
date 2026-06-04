@@ -5,6 +5,7 @@ import { RETURN_POS_ORDER_TYPE } from "../../common";
 export const returnPosItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
+    variantId: { type: Schema.Types.ObjectId, default: null },
     qty: { type: Number },
     mrp: { type: Number },
     discountAmount: { type: Number, default: 0 },

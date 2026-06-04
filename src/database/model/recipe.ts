@@ -24,6 +24,11 @@ const recipeSchema = new Schema<IRecipe>(
           ref: "product",
           required: true,
         },
+        variantId: {
+          type: Schema.Types.ObjectId,
+          ref: "product",
+          default: null,
+        },
         mrp: { type: Number, default: 0 },
         useQty: { type: Number, required: true },
       },
@@ -34,6 +39,11 @@ const recipeSchema = new Schema<IRecipe>(
         type: Schema.Types.ObjectId,
         ref: "product",
         required: true,
+      },
+      variantId: {
+        type: Schema.Types.ObjectId,
+        ref: "product",
+        default: null,
       },
       mrp: { type: Number, default: 0 },
       qtyGenerate: { type: Number, required: true },

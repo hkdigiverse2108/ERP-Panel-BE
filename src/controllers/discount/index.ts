@@ -12,10 +12,10 @@ const discountPopulate = [
   { path: "categoryIds", select: "name" },
   { path: "subcategoryIds", select: "name" },
   { path: "brandIds", select: "name" },
-  { path: "productIds", select: "name" },
-  { path: "excludedProductIds", select: "name" },
-  { path: "buyXGetY.getProductIds", select: "name" },
-  { path: "productAtFixAmount.freeProductIds", select: "name" },
+  { path: "productIds.productId", select: "name" },
+  { path: "excludedProductIds.productId", select: "name" },
+  { path: "buyXGetY.getProductIds.productId", select: "name" },
+  { path: "productAtFixAmount.freeProductIds.productId", select: "name" },
   { path: "createdBy", select: "fullName userType" },
   { path: "updatedBy", select: "fullName userType" },
 ];
@@ -470,8 +470,22 @@ const getQualifyingItems = async (discount: any, items: any[]) => {
 
   // Filter by appliesTo
   if (discount.appliesTo === DISCOUNT_APPLIES_TO.SPECIFIC_PRODUCTS) {
-    const productIdSet = new Set((discount.productIds || []).map((id: any) => id.toString()));
-    qualifyingItems = qualifyingItems.filter((item: any) => productIdSet.has(item.productId?.toString()));
+    qualifyingItems = qualifyingItems.filter((item: any) => {
+      return (discount.productIds || []).some((entry: any) => {
+        if (!entry || !entry.productId) return false;
+        const entryProductId = entry.productId._id ? entry.productId._id.toString() : entry.productId.toString();
+        const entryVariantId = entry.variantId ? entry.variantId.toString() : null;
+
+        const itemProductId = item.productId ? item.productId.toString() : null;
+        const itemVariantId = item.variantId ? item.variantId.toString() : null;
+
+        if (itemProductId !== entryProductId) return false;
+        if (entryVariantId) {
+          return itemVariantId === entryVariantId;
+        }
+        return true;
+      });
+    });
   } else if (discount.appliesTo === DISCOUNT_APPLIES_TO.SPECIFIC_CATEGORY || discount.appliesTo === DISCOUNT_APPLIES_TO.SPECIFIC_BRAND) {
     // Fetch product details for category/brand matching
     const productIds = items.map((item: any) => item.productId);
@@ -499,8 +513,23 @@ const getQualifyingItems = async (discount: any, items: any[]) => {
 
   // Exclude specific products
   if (discount.excludedProductIds && discount.excludedProductIds.length > 0) {
-    const excludeSet = new Set(discount.excludedProductIds.map((id: any) => id.toString()));
-    qualifyingItems = qualifyingItems.filter((item: any) => !excludeSet.has(item.productId?.toString()));
+    qualifyingItems = qualifyingItems.filter((item: any) => {
+      const isExcluded = discount.excludedProductIds.some((entry: any) => {
+        if (!entry || !entry.productId) return false;
+        const entryProductId = entry.productId._id ? entry.productId._id.toString() : entry.productId.toString();
+        const entryVariantId = entry.variantId ? entry.variantId.toString() : null;
+
+        const itemProductId = item.productId ? item.productId.toString() : null;
+        const itemVariantId = item.variantId ? item.variantId.toString() : null;
+
+        if (itemProductId !== entryProductId) return false;
+        if (entryVariantId) {
+          return itemVariantId === entryVariantId;
+        }
+        return true;
+      });
+      return !isExcluded;
+    });
   }
 
   // Exclude already discounted
@@ -510,13 +539,32 @@ const getQualifyingItems = async (discount: any, items: any[]) => {
 
   // Ensure reward products for BUY_X_GET_Y are included if they are in the cart
   if (discount.discountMode === DISCOUNT_MODE.BUY_X_GET_Y && discount.buyXGetY?.getProductIds?.length > 0) {
-    const rewardProductIdSet = new Set(discount.buyXGetY.getProductIds.map((id: any) => id.toString()));
-    const rewardItemsInCart = items.filter((item: any) => rewardProductIdSet.has(item.productId?.toString()));
+    const rewardItemsInCart = items.filter((item: any) => {
+      return discount.buyXGetY.getProductIds.some((entry: any) => {
+        if (!entry || !entry.productId) return false;
+        const entryProductId = entry.productId._id ? entry.productId._id.toString() : entry.productId.toString();
+        const entryVariantId = entry.variantId ? entry.variantId.toString() : null;
+
+        const itemProductId = item.productId ? item.productId.toString() : null;
+        const itemVariantId = item.variantId ? item.variantId.toString() : null;
+
+        if (itemProductId !== entryProductId) return false;
+        if (entryVariantId) {
+          return itemVariantId === entryVariantId;
+        }
+        return true;
+      });
+    });
 
     // Add reward items if they are not already in qualifyingItems
-    const existingQualifyingIds = new Set(qualifyingItems.map((item: any) => item.productId?.toString()));
     for (const rewardItem of rewardItemsInCart) {
-      if (!existingQualifyingIds.has(rewardItem.productId?.toString())) {
+      const exists = qualifyingItems.some((item: any) => {
+        return (
+          item.productId?.toString() === rewardItem.productId?.toString() &&
+          item.variantId?.toString() === rewardItem.variantId?.toString()
+        );
+      });
+      if (!exists) {
         qualifyingItems.push(rewardItem);
       }
     }
@@ -572,12 +620,22 @@ const calculateDiscountAmount = (discount: any, qualifyingItems: any[], totalAmo
 
         if (bxgy.getProductIds && bxgy.getProductIds.length > 0) {
           // Discount applies to specific products in the cart
-          const rewardProductIdSet = new Set(bxgy.getProductIds.map((id: any) => id.toString()));
-          // Important: reward items must be in the original items list, not just qualifyingItems
-          // However, qualifyingItems usually already includes relevant items.
-          // Let's assume reward items should also be from the list of items provided (passed through qualifyingItems logic or similar)
-          // Actually, let's use all items from qualifyingItems if they match rewardProductIdSet
-          potentialRewardItems = qualifyingItems.filter((item: any) => rewardProductIdSet.has(item.productId?.toString()));
+          potentialRewardItems = qualifyingItems.filter((item: any) => {
+            return bxgy.getProductIds.some((entry: any) => {
+              if (!entry || !entry.productId) return false;
+              const entryProductId = entry.productId._id ? entry.productId._id.toString() : entry.productId.toString();
+              const entryVariantId = entry.variantId ? entry.variantId.toString() : null;
+
+              const itemProductId = item.productId ? item.productId.toString() : null;
+              const itemVariantId = item.variantId ? item.variantId.toString() : null;
+
+              if (itemProductId !== entryProductId) return false;
+              if (entryVariantId) {
+                return itemVariantId === entryVariantId;
+              }
+              return true;
+            });
+          });
         } else {
           // Discount applies to the same items that qualified
           potentialRewardItems = [...qualifyingItems];

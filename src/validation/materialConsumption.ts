@@ -4,6 +4,7 @@ import { CONSUMPTION_TYPE } from "../common";
 
 const materialConsumptionItemSchema = Joi.object({
   productId: objectId().required(),
+  variantId: objectId().optional().allow(null),
   qty: Joi.number().positive().optional(),
   price: Joi.number().min(0).optional().default(0),
   totalPrice: Joi.number().min(0).optional().default(0),

@@ -134,12 +134,18 @@ export const addInvoice = async (req, res) => {
     // --- Stock Management Logic ---
     if (response.status !== INVOICE_STATUS.CANCELLED) {
       for (const item of response.items) {
+        const stockFilter: any = {
+          productId: item.productId,
+          branchId: response.branchId,
+          isDeleted: false,
+        };
+        if (item.variantId) {
+          stockFilter.variantId = item.variantId;
+        } else {
+          stockFilter.variantId = { $exists: false };
+        }
         await stockModel.findOneAndUpdate(
-          {
-            productId: item.productId,
-            branchId: response.branchId,
-            isDeleted: false,
-          },
+          stockFilter,
           { $inc: { qty: -item.qty } },
         );
       }
@@ -307,12 +313,18 @@ export const editInvoice = async (req, res) => {
     // 1. Revert the old quantities back to stock if it was active
     if (wasActive) {
       for (const item of isExist.items) {
+        const stockFilter: any = {
+          productId: item.productId,
+          branchId: isExist.branchId,
+          isDeleted: false,
+        };
+        if (item.variantId) {
+          stockFilter.variantId = item.variantId;
+        } else {
+          stockFilter.variantId = { $exists: false };
+        }
         await stockModel.findOneAndUpdate(
-          {
-            productId: item.productId,
-            branchId: isExist.branchId,
-            isDeleted: false,
-          },
+          stockFilter,
           { $inc: { qty: item.qty } },
         );
       }
@@ -321,12 +333,18 @@ export const editInvoice = async (req, res) => {
     // 2. Deduct the new quantities from stock if it is now active
     if (isActive) {
       for (const item of response.items) {
+        const stockFilter: any = {
+          productId: item.productId,
+          branchId: response.branchId,
+          isDeleted: false,
+        };
+        if (item.variantId) {
+          stockFilter.variantId = item.variantId;
+        } else {
+          stockFilter.variantId = { $exists: false };
+        }
         await stockModel.findOneAndUpdate(
-          {
-            productId: item.productId,
-            branchId: response.branchId,
-            isDeleted: false,
-          },
+          stockFilter,
           { $inc: { qty: -item.qty } },
         );
       }
@@ -419,12 +437,18 @@ export const deleteInvoice = async (req, res) => {
     // Revert stock if the invoice was not cancelled
     if (invoice.status !== INVOICE_STATUS.CANCELLED) {
       for (const item of invoice.items) {
+        const stockFilter: any = {
+          productId: item.productId,
+          branchId: invoice.branchId,
+          isDeleted: false,
+        };
+        if (item.variantId) {
+          stockFilter.variantId = item.variantId;
+        } else {
+          stockFilter.variantId = { $exists: false };
+        }
         await stockModel.findOneAndUpdate(
-          {
-            productId: item.productId,
-            branchId: invoice.branchId,
-            isDeleted: false,
-          },
+          stockFilter,
           { $inc: { qty: item.qty } },
         );
       }
@@ -526,7 +550,7 @@ export const getAllInvoice = async (req, res) => {
         { path: "salesOrderIds", select: "salesOrderNo" },
         { path: "deliveryChallanIds", select: "deliveryChallanNo" },
         { path: "salesManId", select: "firstName lastName" },
-        { path: "items.productId", select: "name itemCode" },
+        { path: "items.productId", select: "name itemCode variants" },
         { path: "items.taxId", select: "name percentage" },
         { path: "items.uomId", select: "name" },
         { path: "companyId", select: "name " },
@@ -665,7 +689,7 @@ export const getOneInvoice = async (req, res) => {
           { path: "salesOrderIds", select: "salesOrderNo date netAmount" },
           { path: "deliveryChallanIds", select: "deliveryChallanNo date netAmount" },
           { path: "salesManId", select: "firstName lastName" },
-          { path: "items.productId", select: "name itemCode sellingPrice mrp" },
+          { path: "items.productId", select: "name itemCode sellingPrice mrp variants" },
           { path: "items.taxId", select: "name percentage type" },
           { path: "items.uomId", select: "name" },
           { path: "companyId", select: "name " },

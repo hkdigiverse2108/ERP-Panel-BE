@@ -6,6 +6,7 @@ import { ISupplierBill } from "../../types";
 export const supplierBillItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
+    variantId: { type: Schema.Types.ObjectId, ref: "product", default: null },
     qty: { type: Number, min: 0 },
     freeQty: { type: Number, default: 0, min: 0 },
     uomId: { type: Schema.Types.ObjectId, ref: "uom" },
@@ -28,6 +29,7 @@ export const supplierBillItemSchema = new Schema(
 export const supplierBillReturnItemSchema = new Schema(
   {
     productId: { type: Schema.Types.ObjectId, ref: "product", required: true },
+    variantId: { type: Schema.Types.ObjectId, ref: "product", default: null },
     qty: { type: Number, min: 0 },
     discount1: { type: Number, default: 0, min: 0 },
     discount2: { type: Number, default: 0, min: 0 },

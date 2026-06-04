@@ -23,6 +23,7 @@ const stockTransferSchema = new Schema<IStockTransfer>(
     items: [
       {
         productId: { type: ObjectId, ref: "product", required: true },
+        variantId: { type: ObjectId, ref: "product", default: null },
         price: { type: Number, default: 0 },
         requestedQty: { type: Number, required: true }, // what A asked
         approvedQty: { type: Number, default: 0 }, // what B approved

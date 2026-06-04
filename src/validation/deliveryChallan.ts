@@ -5,6 +5,7 @@ import { DELIVERY_CHALLAN_STATUS, TAX_TYPE } from "../common";
 const deliveryChallanItemSchema = Joi.object().keys({
   refId: objectId().optional().allow(null),
   productId: objectId().required(),
+  variantId: objectId().optional().allow(null),
   qty: Joi.number().min(0).required(),
   freeQty: Joi.number().min(0).default(0).optional(),
   uomId: objectId().optional().allow(null),

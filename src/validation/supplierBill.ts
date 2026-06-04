@@ -4,6 +4,7 @@ import { SUPPLIER_BILL_STATUS, SUPPLIER_PAYMENT_STATUS } from "../common";
 
 const supplierBillItemSchema = Joi.object({
   productId: objectId().required(),
+  variantId: objectId().optional().allow(null),
   qty: Joi.number().min(0).required(),
   uomId: objectId().required(),
   unit: Joi.string().required(),
@@ -23,6 +24,7 @@ const supplierBillItemSchema = Joi.object({
 
 const supplierBillReturnItemSchema = Joi.object({
   productId: objectId().required(),
+  variantId: objectId().optional().allow(null),
   qty: Joi.number().min(0).required(),
   uomId: objectId().optional(),
   unit: Joi.string().optional(),

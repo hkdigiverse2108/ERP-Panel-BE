@@ -14,6 +14,7 @@ export const addRecipeSchema = Joi.object({
     .items(
       Joi.object({
         productId: objectId().required(),
+        variantId: objectId().optional().allow(null),
         mrp: Joi.number().optional(),
         useQty: Joi.number().positive().required(),
       })
@@ -23,6 +24,7 @@ export const addRecipeSchema = Joi.object({
 
   finalProducts: Joi.object({
     productId: objectId().required(),
+    variantId: objectId().optional().allow(null),
     mrp: Joi.number().optional(),
     qtyGenerate: Joi.number().positive().required(),
   }).required(),
@@ -42,6 +44,7 @@ export const editRecipeSchema = Joi.object({
   rawProducts: Joi.array().items(
     Joi.object({
       productId: objectId().required(),
+      variantId: objectId().optional().allow(null),
       mrp: Joi.number().optional(),
       useQty: Joi.number().positive().required(),
     })
@@ -49,6 +52,7 @@ export const editRecipeSchema = Joi.object({
 
   finalProducts: Joi.object({
     productId: objectId().required(),
+    variantId: objectId().optional().allow(null),
     mrp: Joi.number().optional(),
     qtyGenerate: Joi.number().positive().required(),
   }),

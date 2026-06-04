@@ -14,6 +14,7 @@ import {
 
 const estimateItemSchema = Joi.object().keys({
   productId: objectId().required(),
+  variantId: objectId().optional().allow(null),
   qty: Joi.number().min(0).required(),
   freeQty: Joi.number().min(0).default(0).optional(),
   uomId: objectId().optional().allow(null),

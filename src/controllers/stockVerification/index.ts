@@ -45,13 +45,19 @@ export const addStockVerification = async (req, res) => {
 
     if (response.status === APPROVAL_STATUS.APPROVED) {
       for (const item of response.items) {
+        const stockFilter: any = {
+          productId: item.productId,
+          companyId: response.companyId,
+          branchId: response.branchId,
+          isDeleted: false,
+        };
+        if (item.variantId) {
+          stockFilter.variantId = item.variantId;
+        } else {
+          stockFilter.variantId = { $exists: false };
+        }
         await stockModel.findOneAndUpdate(
-          {
-            productId: item.productId,
-            companyId: response.companyId,
-            branchId: response.branchId,
-            isDeleted: false,
-          },
+          stockFilter,
           { $set: { qty: item.physicalQty } },
         );
       }
@@ -97,13 +103,19 @@ export const editStockVerification = async (req, res) => {
 
     if (response.status === APPROVAL_STATUS.APPROVED) {
       for (const item of response.items) {
+        const stockFilter: any = {
+          productId: item.productId,
+          companyId: response.companyId,
+          branchId: response.branchId,
+          isDeleted: false,
+        };
+        if (item.variantId) {
+          stockFilter.variantId = item.variantId;
+        } else {
+          stockFilter.variantId = { $exists: false };
+        }
         await stockModel.findOneAndUpdate(
-          {
-            productId: item.productId,
-            companyId: response.companyId,
-            branchId: response.branchId,
-            isDeleted: false,
-          },
+          stockFilter,
           { $set: { qty: item.physicalQty } },
         );
       }
@@ -197,7 +209,7 @@ export const getAllStockVerification = async (req, res) => {
         { path: "branchId", select: "name" },
         {
           path: "items.productId",
-          select: "name itemCode",
+          select: "name itemCode variants",
           // populate: [{ path: "uomId", select: "name code" }],
         },
         { path: "createdBy", select: "fullName userType" },
@@ -247,7 +259,7 @@ export const getOneStockVerification = async (req, res) => {
           { path: "branchId", select: "name" },
           {
             path: "items.productId",
-            select: "name itemCode",
+            select: "name itemCode variants",
             populate: [
               // { path: "uomId", select: "name code" },
               { path: "categoryId", select: "name" },

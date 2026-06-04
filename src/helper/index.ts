@@ -12,3 +12,5 @@ export * from "./stockHelper";
 export * from "./cronHelper";
 export * from "./bulkDataHelper";
 export * from "./dropdownHelper";
+export * from "./barcode";
+

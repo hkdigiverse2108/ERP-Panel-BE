@@ -3,6 +3,7 @@ import { baseApiSchema, objectId } from "./common";
 
 const ingredientSchema = Joi.object({
   productId: objectId().required(),
+  variantId: objectId().optional().allow(null),
   batch: Joi.string().optional(),
   availableQty: Joi.number().optional(),
   useQty: Joi.number().required(),
@@ -10,6 +11,7 @@ const ingredientSchema = Joi.object({
 
 const productDetailSchema = Joi.object({
   productId: objectId().required(),
+  variantId: objectId().optional().allow(null),
   qty: Joi.number().required(),
   purchasePrice: Joi.number().optional(),
   landingCost: Joi.number().optional(),

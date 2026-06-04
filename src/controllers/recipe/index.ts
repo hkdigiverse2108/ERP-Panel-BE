@@ -1,5 +1,5 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES, PREFIX_MODULES } from "../../common";
-import { companyModel, productModel, recipeModel } from "../../database";
+import { companyModel, productModel, recipeModel, stockModel } from "../../database";
 import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addRecipeSchema, deleteRecipeSchema, editRecipeSchema, getRecipeSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -195,40 +195,90 @@ export const getRecipeForBOM = async (req, res) => {
   reqInfo(req);
   try {
     const recipeId = req.params.id;
+    const { user } = req?.headers;
 
     const recipe = await getFirstMatch(recipeModel, { _id: new ObjectId(recipeId), isDeleted: false }, {}, {});
 
     if (!recipe) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Recipe"), {}, {}));
 
-    const finalProducts = await Promise.all(
-      recipe.finalProducts.map(async (fp) => {
-        const product = await getFirstMatch(productModel, { _id: fp._id, isDeleted: false }, {}, {});
-        return {
-          itemCode: product?.itemCode || "",
-          productId: product?._id,
-          productName: product?.name,
+    const branchId = user?.branchId?._id || user?.branchId || recipe.branchId;
+
+    const fp = recipe.finalProducts;
+    let finalProducts: any[] = [];
+    if (fp && fp.productId) {
+      const product = await getFirstMatch(productModel, { _id: fp.productId, isDeleted: false }, {}, {});
+      if (product) {
+        let name = product.name;
+        let itemCode = product.itemCode || "";
+        let purchasePrice = product.purchasePrice || 0;
+        let landingCost = product.landingCost || 0;
+        let mrp = fp.mrp || product.mrp || 0;
+        let sellingPrice = product.sellingPrice || 0;
+
+        if (fp.variantId) {
+          const variant = product.variants?.find((v: any) => v._id.toString() === fp.variantId.toString());
+          if (variant) {
+            name = `${product.name} - ${variant.name}`;
+            itemCode = variant.itemCode || product.itemCode || "";
+            purchasePrice = variant.purchasePrice || product.purchasePrice || 0;
+            mrp = fp.mrp || variant.mrp || product.mrp || 0;
+            sellingPrice = variant.sellingPrice || product.sellingPrice || 0;
+          }
+        }
+
+        finalProducts.push({
+          itemCode,
+          productId: product._id,
+          variantId: fp.variantId || null,
+          productName: name,
           qty: fp.qtyGenerate,
-          purchasePrice: product?.purchasePrice || 0,
-          landingCost: product?.landingCost || 0,
-          mrp: product?.mrp || 0,
-          sellingPrice: product?.sellingPrice || 0,
+          purchasePrice,
+          landingCost,
+          mrp,
+          sellingPrice,
           mfgDate: new Date(),
-          expiryDays: product?.expiryDays || 0,
-          expiryDate: product?.expiryDays ? new Date(Date.now() + product.expiryDays * 24 * 60 * 60 * 1000) : null,
+          expiryDays: product.expiryDays || 0,
+          expiryDate: product.expiryDays ? new Date(Date.now() + product.expiryDays * 24 * 60 * 60 * 1000) : null,
           batchNo: "",
-        };
-      }),
-    );
+        });
+      }
+    }
 
     const rawProducts = await Promise.all(
-      recipe.rawProducts.map(async (rp) => {
+      (recipe.rawProducts || []).map(async (rp) => {
         const product = await getFirstMatch(productModel, { _id: rp.productId, isDeleted: false }, {}, {});
+        let name = product?.name || "";
+        let itemCode = product?.itemCode || "";
+
+        if (rp.variantId && product) {
+          const variant = product.variants?.find((v: any) => v._id.toString() === rp.variantId.toString());
+          if (variant) {
+            name = `${product.name} - ${variant.name}`;
+            itemCode = variant.itemCode || product.itemCode || "";
+          }
+        }
+
+        const stockFilter: any = { productId: rp.productId, isDeleted: false };
+        if (branchId) {
+          stockFilter.branchId = branchId;
+        }
+
+        if (rp.variantId) {
+          stockFilter.variantId = rp.variantId;
+        } else {
+          stockFilter.variantId = { $exists: false };
+        }
+
+        const stock = await getFirstMatch(stockModel, stockFilter, {}, {});
+        const availableQty = stock ? stock.qty : 0;
+
         return {
-          itemCode: product?.itemCode || "",
+          itemCode,
           productId: product?._id,
-          productName: product?.name,
+          variantId: rp.variantId || null,
+          productName: name,
           batchNo: "",
-          availableQty: product?.availableQty || 0,
+          availableQty,
           useQty: rp.useQty,
         };
       }),

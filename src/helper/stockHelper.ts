@@ -8,7 +8,17 @@ export const checkStockQty = async (items: any[], branchId: string, res: any, ol
     for (const item of items) {
       if (!item.productId) continue;
 
-      const oldItem = oldItems.find((oi) => (oi.productId?._id || oi.productId)?.toString() === (item.productId?._id || item.productId)?.toString());
+      const oldItem = oldItems.find((oi) => {
+        const oiProdId = (oi.productId?._id || oi.productId)?.toString();
+        const itemProdId = (item.productId?._id || item.productId)?.toString();
+        const prodMatch = oiProdId === itemProdId;
+        const oiVarId = (oi.variantId?._id || oi.variantId)?.toString();
+        const itemVarId = (item.variantId?._id || item.variantId)?.toString();
+        const varMatch = itemVarId
+          ? oiVarId === itemVarId
+          : !oiVarId;
+        return prodMatch && varMatch;
+      });
       const oldQty = oldItem ? oldItem.qty || 0 : 0;
       const currentRequestedQty = item.qty || 0;
 
@@ -17,7 +27,11 @@ export const checkStockQty = async (items: any[], branchId: string, res: any, ol
       if (netChange <= 0) continue;
 
       // Filter stock by branch
-      const stock = await getFirstMatch(stockModel, { productId: item.productId, branchId, isDeleted: false }, {}, {});
+      const stockCriteria: any = { productId: item.productId, branchId, isDeleted: false };
+      if (item.variantId) stockCriteria.variantId = item.variantId;
+      else stockCriteria.variantId = { $exists: false };
+
+      const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
 
       if (!stock || stock.qty < netChange) {
         const product = await getFirstMatch(productModel, { _id: item.productId, isDeleted: false }, { name: 1 }, {});

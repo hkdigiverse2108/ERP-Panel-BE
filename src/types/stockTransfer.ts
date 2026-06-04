@@ -8,6 +8,7 @@ export interface IStockTransfer extends IBase {
   status: "pending" | "approved" | "partially_approved" | "rejected" | "completed" | "cancelled";
   items: {
     productId: Schema.Types.ObjectId;
+    variantId?: Schema.Types.ObjectId;
     price: number;
     requestedQty: number;
     approvedQty: number;

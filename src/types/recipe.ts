@@ -11,6 +11,7 @@ export interface IRecipe extends IBase {
   rawProducts: {
     itemCode?: string;
     productId: Schema.Types.ObjectId;
+    variantId?: Schema.Types.ObjectId;
     mrp?: number;
     useQty: number;
   }[];
@@ -18,9 +19,10 @@ export interface IRecipe extends IBase {
   finalProducts: {
     itemCode?: string;
     productId: Schema.Types.ObjectId;
+    variantId?: Schema.Types.ObjectId;
     mrp?: number;
     qtyGenerate: number;
-  }[];
+  };
 
   status: "active" | "inactive";
 }

@@ -74,6 +74,7 @@ export const addCompanySchema = Joi.object().keys({
   reportFormatLogo: Joi.string().optional().allow("", null),
   authorizedSignature: Joi.string().optional().allow("", null),
   isActive: Joi.boolean().optional(),
+  allowBarcode: Joi.boolean().optional(),
 
   currentPlan: Joi.string().optional(),
   planStartDate: Joi.date().optional(),
@@ -151,6 +152,7 @@ export const editCompanySchema = Joi.object().keys({
   reportFormatLogo: Joi.string().optional().allow("", null),
   authorizedSignature: Joi.string().optional().allow("", null),
   isActive: Joi.boolean().optional(),
+  allowBarcode: Joi.boolean().optional(),
 
   currentPlan: Joi.string().optional(),
   planStartDate: Joi.date().optional(),

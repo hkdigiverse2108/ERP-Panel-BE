@@ -10,6 +10,7 @@ const billOfLiveProductSchema = new mongoose.Schema(
     productDetails: [
       {
         productId: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
+        variantId: { type: mongoose.Schema.Types.ObjectId, ref: "product", default: null },
         qty: { type: Number },
         purchasePrice: { type: Number },
         landingCost: { type: Number },
@@ -22,6 +23,7 @@ const billOfLiveProductSchema = new mongoose.Schema(
         ingredients: [
           {
             productId: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
+            variantId: { type: mongoose.Schema.Types.ObjectId, ref: "product", default: null },
             batch: { type: String },
             availableQty: { type: Number },
             useQty: { type: Number },

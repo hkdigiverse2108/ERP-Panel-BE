@@ -3,6 +3,7 @@ import { IBase } from "./base";
 
 export interface IStockVerificationItem {
   productId: Schema.Types.ObjectId;
+  variantId?: Schema.Types.ObjectId;
   batchNo?: string;
   landingCost?: number;
   price?: number;

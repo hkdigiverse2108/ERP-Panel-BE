@@ -3440,7 +3440,11 @@
             "url": {
               "raw": "{{BASE_URL}}/recipe/6941217703088f375ba25da5/product_of_material",
               "host": ["{{BASE_URL}}"],
-              "path": ["recipe", "6941217703088f375ba25da5", "product_of_material"]
+              "path": [
+                "recipe",
+                "6941217703088f375ba25da5",
+                "product_of_material"
+              ]
             }
           },
           "response": []

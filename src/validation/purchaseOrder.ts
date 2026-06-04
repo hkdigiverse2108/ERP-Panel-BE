@@ -4,6 +4,7 @@ import { ORDER_STATUS, TAX_TYPE } from "../common";
 
 const purchaseOrderItemSchema = Joi.object({
   productId: objectId().required(),
+  variantId: objectId().optional().allow(null),
   qty: Joi.number().min(0.01).required(),
   uomId: objectId().optional(),
   unit: Joi.string().optional().allow("", null),
