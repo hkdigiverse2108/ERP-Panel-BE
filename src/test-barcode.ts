@@ -2,7 +2,7 @@ import "dotenv/config";
 import mongoose from "mongoose";
 import { connectDb } from "./database/connection";
 import { companyModel, branchModel, productModel, stockModel, PosOrderModel, uomModel, taxModel, userModel, PosCashRegisterModel, contactModel, supplierBillModel, InvoiceModel, recipeModel, purchaseDebitNoteModel, materialModel, billOfLiveProductModel, discountModel } from "./database";
-import { addProduct, editProduct, getOneProduct, getProductDropdown, getByBarcode, getAllProduct } from "./controllers/product";
+import { addProduct, editProduct, getOneProduct, getProductDropdown, getByBarcode, getAllProduct, assignBarcodes } from "./controllers/product";
 import { verifyDiscount } from "./controllers/discount";
 import { addStock, getOneStock, getAllStock, bulkStockAdjustment } from "./controllers/stock";
 import { addPosOrder, editPosOrder, deletePosOrder } from "./controllers/posOrder";
@@ -1140,6 +1140,105 @@ async function runTests() {
     await discountModel.deleteOne({ _id: variantDiscount._id });
     await discountModel.deleteOne({ _id: productDiscount._id });
     console.log("Cleaned up test discounts.");
+
+    // ----------------------------------------------------
+    // TEST 18: assignBarcodes API testing
+    // ----------------------------------------------------
+    console.log("\n[Test 18] Testing assignBarcodes API...");
+
+    // 1. Create a product with variants WITHOUT barcodes (so we can backfill/assign them)
+    const rawProductWithoutBarcode = await productModel.create({
+      name: "Old Product " + Date.now(),
+      companyId: company._id,
+      variants: [
+        {
+          name: "Old Variant Red",
+          sku: "OLD-VAR-RED",
+          mrp: 100,
+          sellingPrice: 80,
+          purchasePrice: 50
+        }
+      ]
+    });
+    productsToClean.push(rawProductWithoutBarcode._id.toString());
+    console.log(`Created old product without barcodes: ${rawProductWithoutBarcode._id}`);
+
+    // Call assignBarcodes for this specific product
+    const assignReq1 = mockRequest({ productId: rawProductWithoutBarcode._id.toString() }, mockHeaders);
+    const assignRes1 = mockResponse();
+    await assignBarcodes(assignReq1, assignRes1);
+
+    if (assignRes1.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`assignBarcodes failed for specific product: ${assignRes1.jsonData?.message}`);
+    }
+
+    console.log(`assignBarcodes response:`, assignRes1.jsonData.data);
+    if (assignRes1.jsonData.data.updatedProductsCount !== 1 || assignRes1.jsonData.data.updatedVariantsCount !== 1) {
+      throw new Error(`Expected 1 product and 1 variant barcode updated, got: ${JSON.stringify(assignRes1.jsonData.data)}`);
+    }
+
+    // Verify it in DB
+    const updatedProd = await productModel.findById(rawProductWithoutBarcode._id);
+    console.log(`Product barcode after assignment: ${updatedProd?.barcode} (Type: ${updatedProd?.barcodeType})`);
+    if (!updatedProd?.barcode || !updatedProd.barcode.startsWith("200") || updatedProd.barcode.length !== 13) {
+      throw new Error(`Invalid assigned product barcode: ${updatedProd?.barcode}`);
+    }
+
+    const updatedVar = updatedProd.variants[0];
+    console.log(`Variant barcode after assignment: ${updatedVar?.barcode} (Type: ${updatedVar?.barcodeType})`);
+    if (!updatedVar?.barcode || !updatedVar.barcode.startsWith("200") || updatedVar.barcode.length !== 13) {
+      throw new Error(`Invalid assigned variant barcode: ${updatedVar?.barcode}`);
+    }
+
+    // 2. Create multiple products/variants without barcodes to test bulk assignment
+    const p1 = await productModel.create({
+      name: "Bulk Old Product 1 " + Date.now(),
+      companyId: company._id,
+      variants: [
+        {
+          name: "Bulk Var 1",
+          sku: "B-VAR-1",
+          mrp: 100
+        }
+      ]
+    });
+    productsToClean.push(p1._id.toString());
+
+    const p2 = await productModel.create({
+      name: "Bulk Old Product 2 " + Date.now(),
+      companyId: company._id
+      // No variants
+    });
+    productsToClean.push(p2._id.toString());
+
+    console.log("Created 2 more products without barcodes for bulk backfill test");
+
+    // Call assignBarcodes without productId to perform bulk backfill
+    const assignReq2 = mockRequest({}, mockHeaders);
+    const assignRes2 = mockResponse();
+    await assignBarcodes(assignReq2, assignRes2);
+
+    if (assignRes2.statusCode !== HTTP_STATUS.OK) {
+      throw new Error(`assignBarcodes bulk backfill failed: ${assignRes2.jsonData?.message}`);
+    }
+
+    console.log(`assignBarcodes bulk backfill response:`, assignRes2.jsonData.data);
+    // At least 2 products and 1 variant should have been updated
+    if (assignRes2.jsonData.data.updatedProductsCount < 2 || assignRes2.jsonData.data.updatedVariantsCount < 1) {
+      throw new Error(`Expected at least 2 products and 1 variant updated in bulk, got: ${JSON.stringify(assignRes2.jsonData.data)}`);
+    }
+
+    // Verify p1 and p2 got barcodes
+    const bulkP1 = await productModel.findById(p1._id);
+    const bulkP2 = await productModel.findById(p2._id);
+    if (!bulkP1?.barcode || !bulkP2?.barcode || !bulkP1.variants[0]?.barcode) {
+      throw new Error("Bulk assign failed to populate some barcodes in database");
+    }
+    console.log(`Bulk Product 1 barcode: ${bulkP1.barcode}`);
+    console.log(`Bulk Product 1 Variant barcode: ${bulkP1.variants[0].barcode}`);
+    console.log(`Bulk Product 2 barcode: ${bulkP2.barcode}`);
+
+    console.log("Success: assignBarcodes API verified successfully!");
 
     console.log("\n=== ALL TESTS PASSED SUCCESSFULLY ===");
 

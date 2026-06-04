@@ -11,6 +11,7 @@ router.post("/detect", upload.array('images', 10), productController.detectProdu
 router.get("/dropdown", productController.getProductDropdown);
 router.post("/add", productController.addProduct);
 router.post("/bulk-add", upload.single("file"), productController.bulkAddProduct);
+router.post("/assign-barcodes", productController.assignBarcodes);
 router.put("/edit", productController.editProduct);
 router.get("/barcode/:code", productController.getByBarcode);
 router.delete("/:id", productController.deleteProduct);

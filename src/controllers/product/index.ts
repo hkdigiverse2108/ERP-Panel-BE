@@ -1815,3 +1815,124 @@ export const getByBarcode = async (req, res) => {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
   }
 };
+
+export const assignBarcodes = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req.headers;
+    const userType = user?.userType;
+    const userCompanyId = user?.companyId?._id;
+
+    // Optional productId from body to target a specific product
+    const { productId } = req.body;
+
+    const companyId = userType !== USER_TYPES.SUPER_ADMIN ? userCompanyId : null;
+
+    let productsToProcess: any[] = [];
+
+    if (productId) {
+      const criteria: any = { _id: productId, isDeleted: false };
+      if (companyId) criteria.companyId = companyId;
+
+      const product = await productModel.findOne(criteria);
+      if (!product) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json(
+          new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {})
+        );
+      }
+      productsToProcess = [product];
+    } else {
+      // Find all products for the company (or all if super admin) that are missing barcodes
+      // either at the product level or in any of their variants
+      let query: any = { isDeleted: false };
+      if (companyId) query.companyId = companyId;
+
+      query.$or = [
+        { barcode: { $in: [null, undefined, ""] } },
+        { barcode: { $exists: false } },
+        {
+          $and: [
+            { variants: { $exists: true, $not: { $size: 0 } } },
+            {
+              $or: [
+                { "variants.barcode": { $in: [null, undefined, ""] } },
+                { "variants.barcode": { $exists: false } }
+              ]
+            }
+          ]
+        }
+      ];
+
+      productsToProcess = await productModel.find(query);
+    }
+
+    if (productsToProcess.length === 0) {
+      return res.status(HTTP_STATUS.OK).json(
+        new apiResponse(HTTP_STATUS.OK, "No products found that require barcode assignment", { updatedProductsCount: 0, updatedVariantsCount: 0 }, {})
+      );
+    }
+
+    let updatedProductsCount = 0;
+    let updatedVariantsCount = 0;
+    const localGeneratedBarcodes = new Set<string>();
+
+    for (const product of productsToProcess) {
+      let isUpdated = false;
+      const targetCompanyId = product.companyId || companyId;
+
+      // 1. Assign product-level barcode if missing
+      if (!product.barcode || product.barcode.trim() === "") {
+        product.barcode = await generateUniqueEan13Barcode(targetCompanyId, localGeneratedBarcodes);
+        product.barcodeType = "EAN_13";
+        localGeneratedBarcodes.add(product.barcode);
+        isUpdated = true;
+        updatedProductsCount++;
+      }
+
+      // 2. Assign variant-level barcodes if missing
+      if (product.variants && product.variants.length > 0) {
+        for (const variant of product.variants) {
+          if (!variant.barcode || variant.barcode.trim() === "") {
+            variant.barcode = await generateUniqueEan13Barcode(targetCompanyId, localGeneratedBarcodes);
+            variant.barcodeType = "EAN_13";
+            localGeneratedBarcodes.add(variant.barcode);
+            isUpdated = true;
+            updatedVariantsCount++;
+          }
+        }
+      }
+
+      if (isUpdated) {
+        await productModel.updateOne(
+          { _id: product._id },
+          {
+            $set: {
+              barcode: product.barcode,
+              barcodeType: product.barcodeType,
+              variants: product.variants,
+              updatedBy: user?._id || null
+            }
+          }
+        );
+      }
+    }
+
+    return res.status(HTTP_STATUS.OK).json(
+      new apiResponse(
+        HTTP_STATUS.OK,
+        "Barcodes assigned successfully",
+        {
+          updatedProductsCount,
+          updatedVariantsCount,
+          totalProductsProcessed: productsToProcess.length,
+        },
+        {}
+      )
+    );
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
+      new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error)
+    );
+  }
+};

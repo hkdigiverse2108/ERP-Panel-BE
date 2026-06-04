@@ -100,6 +100,7 @@ const companySchema: any = new mongoose.Schema(
       },
     ],
     headBranchId: { type: mongoose.Schema.Types.ObjectId, ref: "branch", default: null },
+    allowBarcode: { type: Boolean, default: false },
 
     ...baseCommonFields,
   },
