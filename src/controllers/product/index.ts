@@ -984,14 +984,6 @@ export const getProductDropdown = async (req, res) => {
       },
     );
 
-<<<<<<< HEAD
-    const mergedResponse = response.map((product) => {
-        const stock = stockByProductId.get(String(product._id));
-        return {
-          _id: product._id,
-          name: product.name,
-          productType: product.productType,
-=======
     const mergedResponse: any[] = [];
 
     response.forEach((product: any) => {
@@ -1092,7 +1084,6 @@ export const getProductDropdown = async (req, res) => {
           productType: product.productType,
           barcode: product.barcode ?? null,
           barcodeType: product.barcodeType ?? null,
->>>>>>> 364284a19b3c8ddeaa3e73aeebbf48b4bd3c9859
           qty: stock?.qty ?? 0,
           purchasePrice: stock?.purchasePrice ?? product.purchasePrice,
           landingCost: stock?.landingCost ?? product.landingCost,
@@ -1100,16 +1091,6 @@ export const getProductDropdown = async (req, res) => {
           sellingPrice: stock?.sellingPrice ?? product.sellingPrice,
           sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
           sellingMargin: stock?.sellingMargin ?? product.sellingMargin,
-<<<<<<< HEAD
-          purchaseTaxId: stock?.purchaseTaxId,
-          salesTaxId: stock?.salesTaxId,
-          isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding,
-          isSalesTaxIncluding: stock?.isSalesTaxIncluding,
-          uomId: stock?.uomId,
-          branchId: stock?.branchId,
-          images: product.images ?? [],
-        };
-=======
           purchaseTaxId: stock?.purchaseTaxId ?? null,
           salesTaxId: stock?.salesTaxId ?? null,
           isPurchaseTaxIncluding: stock?.isPurchaseTaxIncluding ?? false,
@@ -1119,7 +1100,6 @@ export const getProductDropdown = async (req, res) => {
           images: product.images ?? [],
         });
       }
->>>>>>> 364284a19b3c8ddeaa3e73aeebbf48b4bd3c9859
     });
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), mergedResponse, {}));
@@ -1475,7 +1455,7 @@ export const detectProduct = async (req, res) => {
             const stockInfo = await stockModel.findOne(stockCriteria).populate([
               { path: "companyId", select: "name" },
               { path: "branchId", select: "name" },
-              { path: "purchaseTaxId"},
+              { path: "purchaseTaxId" },
               { path: "salesTaxId" },
               { path: "uomId", select: "name code" },
             ]);
