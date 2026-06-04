@@ -371,35 +371,45 @@ export const editProduct = async (req, res) => {
     delete updatePayload.variants;
     delete updatePayload.removeVariantIds;
 
-    // 1. Remove variants by _id if requested
-    if (value.removeVariantIds && value.removeVariantIds.length > 0) {
-      await updateData(productModel, { _id: value.productId },
-        { $pull: { variants: { _id: { $in: value.removeVariantIds.map(id => new ObjectId(id)) } } } }, {}
-      );
-    }
+    // If variants array is explicitly provided in the request body
+    if (value.variants) {
+      // 1. Identify which variants to remove (any existing variant that is NOT in value.variants)
+      const incomingIds = value.variants
+        .filter((v: any) => v._id)
+        .map((v: any) => v._id.toString());
 
-    // 2. For each variant in the payload:
-    //    - If it has an _id → update that sub-document using arrayFilters
-    //    - If no _id → push as new variant
-    if (value.variants && value.variants.length > 0) {
-      for (const variant of value.variants) {
-        if (variant._id) {
-          // Update existing variant
-          const variantUpdateFields: any = {};
-          Object.keys(variant).forEach(k => {
-            if (k !== '_id') variantUpdateFields[`variants.$[elem].${k}`] = variant[k];
-          });
-          await productModel.updateOne(
-            { _id: value.productId },
-            { $set: variantUpdateFields },
-            { arrayFilters: [{ "elem._id": new ObjectId(variant._id) }] }
-          );
-        } else {
-          // Add new variant
-          await productModel.updateOne(
-            { _id: value.productId },
-            { $push: { variants: variant } }
-          );
+      const existingVariants = currentProduct.variants || [];
+      const idsToRemove = existingVariants
+        .map((v: any) => v._id.toString())
+        .filter((id: string) => !incomingIds.includes(id));
+
+      if (idsToRemove.length > 0) {
+        await updateData(productModel, { _id: value.productId },
+          { $pull: { variants: { _id: { $in: idsToRemove.map(id => new ObjectId(id)) } } } }, {}
+        );
+      }
+
+      // 2. Add or update the variants that are in the payload
+      if (value.variants.length > 0) {
+        for (const variant of value.variants) {
+          if (variant._id) {
+            // Update existing variant
+            const variantUpdateFields: any = {};
+            Object.keys(variant).forEach(k => {
+              if (k !== '_id') variantUpdateFields[`variants.$[elem].${k}`] = variant[k];
+            });
+            await productModel.updateOne(
+              { _id: value.productId },
+              { $set: variantUpdateFields },
+              { arrayFilters: [{ "elem._id": new ObjectId(variant._id) }] }
+            );
+          } else {
+            // Add new variant
+            await productModel.updateOne(
+              { _id: value.productId },
+              { $push: { variants: variant } }
+            );
+          }
         }
       }
     }
