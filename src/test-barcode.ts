@@ -249,7 +249,6 @@ async function runTests() {
     const req4 = mockRequest({
       productId: product1._id.toString(),
       name: product1.name + " (Edited)",
-      removeVariantIds: [variantToRemove._id.toString()],
       variants: [
         {
           _id: variantToUpdate._id.toString(),
