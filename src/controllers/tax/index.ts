@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { taxModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addTaxSchema, deleteTaxSchema, editTaxSchema, getTaxSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -35,6 +35,7 @@ export const addTax = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
+    await redisdelPattern("tax:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Tax"), response, {}));
   } catch (error) {
     console.error(error);
@@ -83,6 +84,7 @@ export const editTax = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Tax"), {}, {}));
 
+    await redisdelPattern("tax:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Tax"), response, {}));
   } catch (error) {
     console.error(error);
@@ -115,6 +117,7 @@ export const deleteTax = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Tax"), {}, {}));
 
+    await redisdelPattern("tax:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Tax"), response, {}));
   } catch (error) {
     console.error(error);
@@ -127,6 +130,10 @@ export const getAllTax = async (req, res) => {
   try {
     const { user } = req.headers;
     const companyId = user?.companyId?._id;
+    const cacheKey = `tax:all:req:${JSON.stringify(req.query)}:user:${user?.userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Tax"), cachedData, {}));
+
     let { page, limit, search, activeFilter, companyFilter } = req.query;
 
     page = Number(page);
@@ -168,7 +175,10 @@ export const getAllTax = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Tax"), { tax_data: response, totalData, state }, {}));
+    const result = { tax_data: response, totalData, state };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Tax"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -181,6 +191,10 @@ export const getTaxById = async (req, res) => {
     const { error, value } = getTaxSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    const cacheKey = `tax:getOne:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Tax"), cachedData, {}));
 
     const { user } = req.headers;
     let criteria: any = { _id: value?.id, isDeleted: false };
@@ -204,6 +218,7 @@ export const getTaxById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Tax"), {}, {}));
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Tax"), response, {}));
   } catch (error) {
     console.error(error);
@@ -216,6 +231,10 @@ export const getTaxDropdown = async (req, res) => {
   try {
     const { user } = req.headers;
     const companyId = user?.companyId?._id;
+    const cacheKey = `tax:dropdown:req:${JSON.stringify(req.query)}:user:${user?.userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Tax"), cachedData, {}));
+
     const { companyFilter, search, includeId } = req.query;
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -243,6 +262,7 @@ export const getTaxDropdown = async (req, res) => {
       percentage: item.percentage,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Tax"), dropdownData, {}));
   } catch (error) {
     console.error(error);

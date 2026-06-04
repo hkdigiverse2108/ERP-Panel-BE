@@ -1,13 +1,20 @@
 import { Request, Response } from "express";
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { reportFormatModel, branchModel } from "../../database";
-import { getFirstMatch, reqInfo, responseMessage } from "../../helper";
+import { getFirstMatch, reqInfo, responseMessage, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addReportFormatValidation, updateReportFormatValidation } from "../../validation";
 
 export const getAllReportFormats = async (req: Request | any, res: Response | any) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchIdParams = user?.branchId?._id;
+    const cacheKey = `reportFormat:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchIdParams}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Report Formats"), cachedData, {}));
+
     const { search, type, branchFilter } = req.query;
 
     const branchId = branchFilter || req.query.branchId || user?.branchId;
@@ -57,6 +64,7 @@ export const getAllReportFormats = async (req: Request | any, res: Response | an
       return reportType;
     });
 
+    await redisSet(cacheKey, result, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Report Formats"), result, {}));
   } catch (error) {
     console.error(error);
@@ -91,6 +99,7 @@ export const addReportFormat = async (req: Request | any, res: Response | any) =
       { upsert: true, new: true }
     );
 
+    await redisdelPattern("reportFormat:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Report formats updated successfully for this type", reportType, {}));
   } catch (error) {
     console.error(error);
@@ -126,6 +135,7 @@ export const updateReportFormat = async (req: Request | any, res: Response | any
       { upsert: true, new: true }
     );
 
+    await redisdelPattern("reportFormat:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Report formats updated successfully for this type", reportType, {}));
   } catch (error) {
     console.error(error);
@@ -142,6 +152,7 @@ export const deleteReportFormat = async (req: Request | any, res: Response | any
     const response = await reportFormatModel.findByIdAndUpdate(id, { isDeleted: true });
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, "Report format not found", {}, {}));
 
+    await redisdelPattern("reportFormat:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Report type deleted successfully", {}, {}));
   } catch (error) {
     console.error(error);
@@ -153,6 +164,13 @@ export const getBranchReportConfig = async (req: Request | any, res: Response | 
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchIdParams = user?.branchId?._id;
+    const cacheKey = `reportFormat:branchConfig:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchIdParams}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Effective report configuration retrieved", cachedData, {}));
+
     const branchId = req.query.branchId || user?.branchId;
 
     const { typeFilter, search } = req.query;
@@ -191,6 +209,7 @@ export const getBranchReportConfig = async (req: Request | any, res: Response | 
       });
     }
 
+    await redisSet(cacheKey, configMap, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Effective report configuration retrieved", configMap, {}));
   } catch (error) {
     console.error(error);

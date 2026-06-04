@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { bankModel, branchModel, companyModel, locationModel, PrefixModel } from "../../database";
 import { cloneDefaultPaymentTermsToCompany } from "../paymentTerm/helper";
-import { applyDateFilter, checkIdExist, checkLocationExist, clonePrefixesToBranch, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkIdExist, checkLocationExist, clonePrefixesToBranch, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addCompanySchema, deleteCompanySchema, editCompanySchema, getCompanySchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -104,8 +104,7 @@ export const addCompany = async (req, res) => {
       await companyModel.deleteOne({ _id: response._id });
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, "Company creation failed during initialization.", {}, unexpectedError));
     }
-
-
+    await redisdelPattern("company:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Company"), response, {}));
   } catch (error) {
     console.error(error);
@@ -167,6 +166,7 @@ export const editCompanyById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Company details"), {}, {}));
 
+    await redisdelPattern("company:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Company details"), response, {}));
   } catch (error) {
     console.error(error);
@@ -195,6 +195,7 @@ export const deleteCompanyById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Company details"), {}, {}));
 
+    await redisdelPattern("company:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Company details"), response, {}));
   } catch (error) {
     console.error(error);
@@ -205,6 +206,13 @@ export const deleteCompanyById = async (req, res) => {
 export const getAllCompany = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const cacheKey = `company:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company"), cachedData, {}));
+
     let { page, limit, search, startDate, endDate, activeFilter, planStartDate, planEndDate } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -246,7 +254,10 @@ export const getAllCompany = async (req, res) => {
 
     const stateObj = { page, limit, totalPages };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company"), { company_data: response, totalData, state: stateObj }, {}));
+    const responsePayload = { company_data: response, totalData, state: stateObj };
+    await redisSet(cacheKey, responsePayload, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company"), responsePayload, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -256,6 +267,13 @@ export const getAllCompany = async (req, res) => {
 export const getCompanyById = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const cacheKey = `company:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company details"), cachedData, {}));
+
     const { error, value } = getCompanySchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
@@ -282,6 +300,7 @@ export const getCompanyById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Company details"), {}, {}));
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company details"), response, {}));
   } catch (error) {
     console.error(error);
@@ -292,6 +311,13 @@ export const getCompanyById = async (req, res) => {
 export const getCompanyDropdown = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const cacheKey = `company:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company"), cachedData, {}));
+
     const { search, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
@@ -317,6 +343,7 @@ export const getCompanyDropdown = async (req, res) => {
       displayName: item.displayName,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company"), dropdownData, {}));
   } catch (error) {
     console.error(error);

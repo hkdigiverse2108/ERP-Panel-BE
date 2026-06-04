@@ -2,6 +2,7 @@ import { countData, createOne, getData, getDataWithSorting, getFirstMatch, reqIn
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { moduleModel, permissionModel, userModel } from "../../database";
 import { addModuleSchema, editModuleSchema, deleteModuleSchema, getModuleSchema, getModuleByIdSchema, bulkEditModuleSchema, getUsersPermissionsByModuleIdSchema } from "../../validation";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -47,10 +48,9 @@ export const add_module = async (req, res) => {
         }
 
         const response = await createOne(moduleModel, body);
-        if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.addDataError, {}, {}));
-
         await grantPermissionToSuperAdmins(response._id);
 
+        await redisdelPattern("module:*");
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("module"), response, {}));
     } catch (error) {
         console.error(error);
@@ -80,6 +80,7 @@ export const edit_module_by_id = async (req, res) => {
         const response = await updateData(moduleModel, { _id: new ObjectId(body.moduleId) }, body, {});
         if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("module"), {}, {}));
 
+        await redisdelPattern("module:*");
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.updateDataSuccess("module"), response, {}));
     } catch (error) {
         console.error(error);
@@ -97,6 +98,7 @@ export const delete_module_by_id = async (req, res) => {
         if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.getDataNotFound("module"), {}, {}));
         await updateMany(permissionModel, { moduleId: new ObjectId(value.id), isDeleted: false }, { isDeleted: true }, {});
 
+        await redisdelPattern("module:*");
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("module"), response, {}));
     } catch (error) {
         console.error(error);
@@ -107,6 +109,9 @@ export const delete_module_by_id = async (req, res) => {
 export const get_all_module = async (req, res) => {
     reqInfo(req);
     try {
+        const cacheKey = `module:all:req:${JSON.stringify(req.query)}`;
+        const cachedData = await redisGet(cacheKey);
+        if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess('module'), cachedData, {}));
         let { error, value } = getModuleSchema.validate(req.query);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
@@ -154,11 +159,13 @@ export const get_all_module = async (req, res) => {
             totalPages,
         };
 
-        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess('module'), {
+        const result = {
             module_data: response,
             totalData,
             state: stateObj
-        }, {}));
+        };
+        await redisSet(cacheKey, result, 3600);
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess('module'), result, {}));
     } catch (error) {
         console.error(error);
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error))
@@ -171,10 +178,14 @@ export const get_by_id_module = async (req, res) => {
         let { error, value } = getModuleByIdSchema.validate({ id: req.params.id });
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
+        const cacheKey = `module:one:req:${JSON.stringify(req.params)}`;
+        const cachedData = await redisGet(cacheKey);
+        if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("module"), cachedData, {}));
 
         const response = await getFirstMatch(moduleModel, { _id: new ObjectId(value.id), isDeleted: false }, {}, {});
         if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("module"), {}, {}));
 
+        await redisSet(cacheKey, response, 3600);
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("module"), response, {}));
     } catch (error) {
         console.error(error);
@@ -204,6 +215,7 @@ export const bulk_edit_permissions_by_module = async (req, res) => {
             const updated = await updateData(permissionModel, { userId: new ObjectId(user._id), moduleId: new ObjectId(moduleId) }, setData, { upsert: true });
             updatedPermissions.push(updated);
         }
+        await redisdelPattern("module:*");
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("bulk user permissions"), updatedPermissions, {}));
     } catch (error) {
         console.error(error);
@@ -216,6 +228,10 @@ export const get_users_permissions_by_moduleId = async (req, res) => {
     try {
         let { error, value } = getUsersPermissionsByModuleIdSchema.validate(req.query);
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+        const cacheKey = `module:permissions:req:${JSON.stringify(req.query)}`;
+        const cachedData = await redisGet(cacheKey);
+        if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess('users permissions for module'), cachedData, {}));
 
         let { moduleId, search } = value;
 
@@ -265,6 +281,7 @@ export const get_users_permissions_by_moduleId = async (req, res) => {
             }
         })
 
+        await redisSet(cacheKey, payload, 3600);
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess('users permissions for module'), payload, {}))
     } catch (error) {
         console.error(error)

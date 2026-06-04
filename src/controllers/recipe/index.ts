@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES, PREFIX_MODULES } from "../../common";
 import { companyModel, productModel, recipeModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addRecipeSchema, deleteRecipeSchema, editRecipeSchema, getRecipeSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -35,6 +35,7 @@ export const addRecipe = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
+    await redisdelPattern("recipe:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Recipe"), response, {}));
   } catch (error) {
     console.error(error);
@@ -63,6 +64,7 @@ export const editRecipeById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Recipe"), {}, {}));
 
+    await redisdelPattern("recipe:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Recipe"), response, {}));
   } catch (error) {
     console.error(error);
@@ -86,6 +88,7 @@ export const deleteRecipeById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Recipe"), {}, {}));
 
+    await redisdelPattern("recipe:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Recipe"), response, {}));
   } catch (error) {
     console.error(error);
@@ -97,8 +100,13 @@ export const getAllRecipe = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `recipe:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe"), cachedData, {}));
+
     let { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     page = Number(page);
@@ -153,7 +161,10 @@ export const getAllRecipe = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe"), { recipe_data: response, totalData, state: stateObj }, {}));
+    const result = { recipe_data: response, totalData, state: stateObj };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -166,6 +177,10 @@ export const getRecipeById = async (req, res) => {
     let { error, value } = getRecipeSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+    const cacheKey = `recipe:getOne:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe"), cachedData, {}));
 
     const response = await getFirstMatch(
       recipeModel,
@@ -184,6 +199,7 @@ export const getRecipeById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Recipe"), {}, {}));
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe"), response, {}));
   } catch (error) {
     console.error(error);
@@ -195,6 +211,9 @@ export const getRecipeForBOM = async (req, res) => {
   reqInfo(req);
   try {
     const recipeId = req.params.id;
+    const cacheKey = `recipe:getBOM:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe BOM Data"), cachedData, {}));
 
     const recipe = await getFirstMatch(recipeModel, { _id: new ObjectId(recipeId), isDeleted: false }, {}, {});
 
@@ -234,16 +253,19 @@ export const getRecipeForBOM = async (req, res) => {
       }),
     );
 
+    const result = {
+      recipeId: recipe._id,
+      name: recipe.name,
+      finalProducts,
+      rawProducts,
+    };
+    await redisSet(cacheKey, result, 3600);
+
     return res.status(HTTP_STATUS.OK).json(
       new apiResponse(
         HTTP_STATUS.OK,
         responseMessage?.getDataSuccess("Recipe BOM Data"),
-        {
-          recipeId: recipe._id,
-          name: recipe.name,
-          finalProducts,
-          rawProducts,
-        },
+        result,
         {},
       ),
     );
@@ -257,10 +279,14 @@ export const getRecipeDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
-    const { search, companyFilter, branchFilter, includeId } = req.query;
-
+    const userType = user?.userType;
     let companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `recipe:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe Dropdown"), cachedData, {}));
+
+    const { search, companyFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -292,6 +318,7 @@ export const getRecipeDropdown = async (req, res) => {
       number: item.number,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Recipe Dropdown"), dropdownData, {}));
   } catch (error) {
     console.error(error);

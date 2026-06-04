@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS } from "../../common";
 import { ExpenseModel } from "../../database";
 import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, aggregateAndPopulate } from "../../helper";
 import { addExpenseSchema, deleteExpenseSchema, editExpenseSchema, getExpenseSchema } from "../../validation";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -27,6 +28,7 @@ export const addExpense = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("expense:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Expense"), response, {}));
   } catch (error) {
     console.error(error);
@@ -38,8 +40,12 @@ export const getAllExpense = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `expense:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Expense"), cachedData, {}));
     let { page, limit, search, startDate, endDate, companyFilter, branchFilter, typeFilter, activeFilter, avoidSalary } = req.query;
 
     page = parseInt(page);
@@ -209,15 +215,13 @@ export const getAllExpense = async (req, res) => {
       totalPages,
     };
 
+    const result = { expense_data: response, totalData, state };
+    await redisSet(cacheKey, result, 3600);
     return res.status(HTTP_STATUS.OK).json(
       new apiResponse(
         HTTP_STATUS.OK,
         responseMessage?.getDataSuccess("Expense"),
-        {
-          expense_data: response,
-          totalData,
-          state,
-        },
+        result,
         {},
       ),
     );
@@ -233,7 +237,17 @@ export const getExpenseById = async (req, res) => {
   try {
     const { error, value } = getExpenseSchema.validate(req.params);
 
-    if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+    if (error) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+    }
+
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `expense:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Expense"), cachedData, {}));
 
     const response = await getFirstMatch(
       ExpenseModel,
@@ -258,6 +272,7 @@ export const getExpenseById = async (req, res) => {
       select: response.isSalary ? "fullName" : "firstName lastName companyName",
     });
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Expense"), response, {}));
   } catch (error) {
     console.error(error);
@@ -284,6 +299,7 @@ export const editExpenseById = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Expense"), {}, {}));
     }
 
+    await redisdelPattern("expense:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Expense"), response, {}));
   } catch (error) {
     console.error(error);
@@ -307,6 +323,7 @@ export const deleteExpenseById = async (req, res) => {
 
     const response = await updateData(ExpenseModel, { _id: value.id }, { isDeleted: true, updatedBy: user?._id || null }, {});
 
+    await redisdelPattern("expense:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Expense"), response, {}));
   } catch (error) {
     console.error(error);

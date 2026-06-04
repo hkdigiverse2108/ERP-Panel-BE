@@ -1,12 +1,16 @@
 import { Request, Response } from "express";
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { settingsModel } from "../../database";
-import { createOne, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { createOne, getFirstMatch, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { updateSettingsValidation } from "../../validation";
 
 export const getSettings = async (req: Request | any, res: Response | any) => {
   reqInfo(req);
   try {
+    const cacheKey = `settings:all`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Settings"), cachedData, {}));
+
     const response = await getFirstMatch(
       settingsModel,
       { isDeleted: false },
@@ -24,6 +28,7 @@ export const getSettings = async (req: Request | any, res: Response | any) => {
       return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Settings"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Settings"), response, {}));
   } catch (error: any) {
     console.error(error);
@@ -58,6 +63,7 @@ export const updateSettings = async (req: Request | any, res: Response | any) =>
         return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Settings"), {}, {}));
       }
 
+      await redisdelPattern("settings:*");
       return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Settings"), response, {}));
     } else {
       // Create new
@@ -73,6 +79,7 @@ export const updateSettings = async (req: Request | any, res: Response | any) =>
         return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
       }
 
+      await redisdelPattern("settings:*");
       return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Settings"), response, {}));
     }
   } catch (error: any) {

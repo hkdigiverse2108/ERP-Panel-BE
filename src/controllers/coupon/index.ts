@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { contactModel, couponModel, PosOrderModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addCouponSchema, verifyCouponSchema, deleteCouponSchema, editCouponSchema, getCouponSchema, removeCouponSchema } from "../../validation";
 import { COUPON_DISCOUNT_TYPE, COUPON_STATUS } from "../../common";
 
@@ -39,6 +39,7 @@ export const addCoupon = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("coupon:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Coupon"), response, {}));
   } catch (error) {
     console.error(error);
@@ -85,6 +86,7 @@ export const editCoupon = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Coupon"), {}, {}));
     }
 
+    await redisdelPattern("coupon:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Coupon"), response, {}));
   } catch (error) {
     console.error(error);
@@ -115,6 +117,7 @@ export const deleteCoupon = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Coupon"), {}, {}));
     }
 
+    await redisdelPattern("coupon:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Coupon"), response, {}));
   } catch (error) {
     console.error(error);
@@ -126,7 +129,12 @@ export const getAllCoupon = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const cacheKey = `coupon:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Coupon"), cachedData, {}));
+
     let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter } = req.query;
 
     page = Number(page) || 1;
@@ -186,7 +194,10 @@ export const getAllCoupon = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Coupon"), { coupon_data: response, totalData, state }, {}));
+    const responsePayload = { coupon_data: response, totalData, state };
+    await redisSet(cacheKey, responsePayload, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Coupon"), responsePayload, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -196,6 +207,13 @@ export const getAllCoupon = async (req, res) => {
 export const getOneCoupon = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const cacheKey = `coupon:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Coupon"), cachedData, {}));
+
     const { error, value } = getCouponSchema.validate(req.params);
 
     if (error) {
@@ -219,6 +237,7 @@ export const getOneCoupon = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Coupon"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Coupon"), response, {}));
   } catch (error) {
     console.error(error);
@@ -360,6 +379,7 @@ export const removeCoupon = async (req, res) => {
       await couponModel.updateOne({ _id: couponId }, { $pull: { customerIds: { id: customerId } } });
     }
 
+    await redisdelPattern("coupon:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Coupon removed successfully", {}, {}));
   } catch (error) {
     console.error(error);
@@ -371,7 +391,12 @@ export const getCouponDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const cacheKey = `coupon:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Coupon"), cachedData, {}));
+
     const { expiredFilter, limitReachedFilter, search, companyFilter, includeId } = req.query;
 
     const now = new Date();
@@ -428,6 +453,7 @@ export const getCouponDropdown = async (req, res) => {
       couponPrice: coupon.couponPrice,
     }));
 
+    await redisSet(cacheKey, finalResponse, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Coupon"), finalResponse, {}));
   } catch (error) {
     console.error(error);

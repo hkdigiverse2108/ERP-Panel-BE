@@ -4,6 +4,7 @@ import { applyDateFilter, checkIdExist, countData, getDataWithSorting, getFirstM
 import { getPosCreditNoteSchema, deletePosCreditNoteSchema, checkRedeemCreditSchema, refundPosCreditSchema } from "../../validation";
 import { returnPosOrderModel, PosCashRegisterModel, bankModel } from "../../database";
 import { CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS } from "../../common";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -160,6 +161,7 @@ export const refundPosCredit = async (req, res) => {
       );
     }
 
+    await redisdelPattern("posCreditNote:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Credit Note refunded successfully", updatedCreditNote, {}));
   } catch (error) {
     console.error(error);
@@ -171,8 +173,12 @@ export const getAllPosCreditNote = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `posCreditNote:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Credit Note"), cachedData, {}));
 
     let { page, limit, search, customerFilter, startDate, endDate, companyFilter, branchFilter, statusFilter } = req.query;
 
@@ -220,15 +226,18 @@ export const getAllPosCreditNote = async (req, res) => {
     const response = await getDataWithSorting(posCreditNoteModel, criteria, {}, options);
     const totalData = await countData(posCreditNoteModel, criteria);
 
+    const result = {
+      posCreditNote_data: response,
+      totalData,
+      state: { page, limit, totalPages: Math.ceil(totalData / limit) || 1 },
+    };
+    await redisSet(cacheKey, result, 3600);
+
     return res.status(HTTP_STATUS.OK).json(
       new apiResponse(
         HTTP_STATUS.OK,
         responseMessage?.getDataSuccess("POS Credit Note"),
-        {
-          posCreditNote_data: response,
-          totalData,
-          state: { page, limit, totalPages: Math.ceil(totalData / limit) || 1 },
-        },
+        result,
         {},
       ),
     );
@@ -245,6 +254,14 @@ export const getOnePosCreditNote = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `posCreditNote:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Credit Note"), cachedData, {}));
 
     const response = await getFirstMatch(
       posCreditNoteModel,
@@ -333,7 +350,9 @@ export const getOnePosCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Credit Note"), {}, {}));
     }
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Credit Note"), { response, updatedResponse }, {}));
+    const result = { response, updatedResponse };
+    await redisSet(cacheKey, result, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Credit Note"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
@@ -360,6 +379,7 @@ export const deletePosCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.deleteDataError("POS Credit Note"), {}, {}));
     }
 
+    await redisdelPattern("posCreditNote:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Credit Note"), response, {}));
   } catch (error) {
     console.error(error);
@@ -371,16 +391,23 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `posCreditNote:redeemDropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Credit Note"), cachedData, {}));
+
     const { customerFilter, typeFilter, companyFilter, branchFilter, includeId } = req.query;
 
-    let companyId = companyFilter || user?.companyId?._id;
-    let branchId = branchFilter || user?.branchId?._id;
+    let filterCompanyId = companyFilter || companyId;
+    let filterBranchId = branchFilter || branchId;
     let response: any[] = [];
 
     if (typeFilter === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
       let criteria: any = { isDeleted: false, creditsRemaining: { $gt: 0 }, status: POS_CREDIT_NOTE_STATUS.AVAILABLE };
-      if (companyId) criteria.companyId = new ObjectId(companyId as string);
-      if (branchId) criteria.branchId = new ObjectId(branchId as string);
+      if (filterCompanyId) criteria.companyId = new ObjectId(filterCompanyId as string);
+      if (filterBranchId) criteria.branchId = new ObjectId(filterBranchId as string);
       if (customerFilter) criteria.customerId = new ObjectId(customerFilter as string);
 
       criteria = handleIncludeId(criteria, includeId);
@@ -399,8 +426,8 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
         paymentType: POS_PAYMENT_TYPE.ADVANCE,
         amount: { $gt: 0 },
       };
-      if (companyId) criteria.companyId = new ObjectId(companyId as string);
-      if (branchId) criteria.branchId = new ObjectId(branchId as string);
+      if (filterCompanyId) criteria.companyId = new ObjectId(filterCompanyId as string);
+      if (filterBranchId) criteria.branchId = new ObjectId(filterBranchId as string);
       if (customerFilter) criteria.partyId = new ObjectId(customerFilter as string);
 
       criteria = handleIncludeId(criteria, includeId);
@@ -415,6 +442,7 @@ export const getCreditNoteRedeemDropdown = async (req, res) => {
       }));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Credit Note"), response, {}));
   } catch (error) {
     console.error(error);
@@ -426,16 +454,23 @@ export const getPosCreditNoteDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `posCreditNote:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Credit Note Dropdown"), cachedData, {}));
+
     const { customerFilter, typeFilter, companyFilter, branchFilter, includeId } = req.query;
 
-    let companyId = companyFilter || user?.companyId?._id;
-    let branchId = branchFilter || user?.branchId?._id;
+    let filterCompanyId = companyFilter || user?.companyId?._id;
+    let filterBranchId = branchFilter || user?.branchId?._id;
     let response: any[] = [];
 
     if (typeFilter === REDEEM_CREDIT_TYPE.CREDIT_NOTE) {
       let criteria: any = { isDeleted: false, creditsRemaining: { $gt: 0 }, status: POS_CREDIT_NOTE_STATUS.AVAILABLE };
-      if (companyId) criteria.companyId = new ObjectId(companyId as string);
-      if (branchId) criteria.branchId = new ObjectId(branchId as string);
+      if (filterCompanyId) criteria.companyId = new ObjectId(filterCompanyId as string);
+      if (filterBranchId) criteria.branchId = new ObjectId(filterBranchId as string);
       if (customerFilter) criteria.customerId = new ObjectId(customerFilter as string);
 
       criteria = handleIncludeId(criteria, includeId);
@@ -476,6 +511,7 @@ export const getPosCreditNoteDropdown = async (req, res) => {
       }));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Credit Note Dropdown"), response, {}));
   } catch (error) {
     console.error(error);

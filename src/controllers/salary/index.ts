@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { ExpenseModel } from "../../database";
-import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
+import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addSalarySchema, deleteSalarySchema, editSalarySchema, getSalarySchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -27,6 +27,7 @@ export const addSalary = async (req, res) => {
             return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
         }
 
+        await redisdelPattern("salary:*");
         return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Salary"), response, {}));
     } catch (error) {
         console.error(error);
@@ -38,8 +39,12 @@ export const getAllSalary = async (req, res) => {
     reqInfo(req);
     try {
         const { user } = req?.headers;
+        const userType = user?.userType;
         const companyId = user?.companyId?._id; 
         const branchId = user?.branchId?._id;
+        const cacheKey = `salary:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+        const cachedData = await redisGet(cacheKey);
+        if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Salary"), cachedData, {}));
 
         let { page, limit, search, startDate, endDate, companyFilter, branchFilter } = req.query;
 
@@ -97,7 +102,10 @@ export const getAllSalary = async (req, res) => {
             totalPages,
         };
 
-        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Salary"), { salary_data: response, totalData, state }, {}));
+        const result = { salary_data: response, totalData, state };
+        await redisSet(cacheKey, result, 3600);
+
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Salary"), result, {}));
     } catch (error) {
         console.error(error);
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -110,6 +118,10 @@ export const getSalaryById = async (req, res) => {
         const { error, value } = getSalarySchema.validate(req.params);
 
         if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+        const cacheKey = `salary:getOne:req:${JSON.stringify(req.params)}`;
+        const cachedData = await redisGet(cacheKey);
+        if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Salary"), cachedData, {}));
 
         const response = await getFirstMatch(
             ExpenseModel,
@@ -130,6 +142,7 @@ export const getSalaryById = async (req, res) => {
             return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Salary"), {}, {}));
         }
 
+        await redisSet(cacheKey, response, 3600);
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Salary"), response, {}));
     } catch (error) {
         console.error(error);
@@ -156,6 +169,7 @@ export const editSalaryById = async (req, res) => {
             return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Salary"), {}, {}));
         }
 
+        await redisdelPattern("salary:*");
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Salary"), response, {}));
     } catch (error) {
         console.error(error);
@@ -179,6 +193,7 @@ export const deleteSalaryById = async (req, res) => {
 
         const response = await updateData(ExpenseModel, { _id: value.id }, { isDeleted: true, updatedBy: user?._id || null }, {});
 
+        await redisdelPattern("salary:*");
         return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Salary"), response, {}));
     } catch (error) {
         console.error(error);

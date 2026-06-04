@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { billOfLiveProductModel, productModel, recipeModel, stockModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, redisGet, redisSet, redisdelPattern, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBillOfLiveProductSchema, deleteBillOfLiveProductSchema, editBillOfLiveProductSchema, getBillOfLiveProductSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -89,6 +89,9 @@ export const addBillOfLiveProduct = async (req, res) => {
         }
       }
     }
+
+    await redisdelPattern("bill-of-live-product:*");
+    await redisdelPattern("product:*");
 
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Bill Of Live Product"), response, {}));
   } catch (error) {
@@ -206,6 +209,9 @@ export const editBillOfLiveProductById = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Bill Of Live Product"), {}, {}));
     }
 
+    await redisdelPattern("bill-of-live-product:*");
+    await redisdelPattern("product:*");
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Bill Of Live Product"), response, {}));
   } catch (error) {
     console.error(error);
@@ -245,6 +251,9 @@ export const deleteBillOfLiveProductById = async (req, res) => {
 
     const response = await updateData(billOfLiveProductModel, { _id: value.id }, { isDeleted: true, updatedBy: user?._id || null }, {});
 
+    await redisdelPattern("bill-of-live-product:*");
+    await redisdelPattern("product:*");
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Bill Of Live Product"), response, {}));
   } catch (error) {
     console.error(error);
@@ -256,8 +265,15 @@ export const getAllBillOfLiveProduct = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `bill-of-live-product:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bill Of Live Product"), cachedData, {}));
+    }
+
     let { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -317,18 +333,14 @@ export const getAllBillOfLiveProduct = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(
-      new apiResponse(
-        HTTP_STATUS.OK,
-        responseMessage?.getDataSuccess("Bill Of Live Product"),
-        {
-          billOfLiveProduct_data: response,
-          totalData,
-          state,
-        },
-        {},
-      ),
-    );
+    const responsePayload = {
+      billOfLiveProduct_data: response,
+      totalData,
+      state,
+    };
+    await redisSet(cacheKey, responsePayload, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bill Of Live Product"), responsePayload, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -338,6 +350,16 @@ export const getAllBillOfLiveProduct = async (req, res) => {
 export const getBillOfLiveProductById = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `bill-of-live-product:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bill Of Live Product"), cachedData, {}));
+    }
+
     const { error, value } = getBillOfLiveProductSchema.validate(req.params);
 
     if (error) {
@@ -370,6 +392,8 @@ export const getBillOfLiveProductById = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Bill Of Live Product"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bill Of Live Product"), response, {}));
   } catch (error) {
     console.error(error);
@@ -383,6 +407,13 @@ export const getBillOfLiveProductDropdown = async (req, res) => {
     let { user } = req?.headers,
       companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const userType = user?.userType;
+    const cacheKey = `bill-of-live-product:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bill Of Live Product"), cachedData, {}));
+    }
+
     const { companyFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
@@ -408,6 +439,8 @@ export const getBillOfLiveProductDropdown = async (req, res) => {
       _id: item._id,
       number: item.number,
     }));
+
+    await redisSet(cacheKey, dropdownData, 3600);
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bill Of Live Product"), dropdownData, {}));
   } catch (error) {

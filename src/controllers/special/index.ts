@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { monthlySpecialModel } from "../../database";
-import { countData, createOne, getDataWithSorting, reqInfo, responseMessage, updateData } from "../../helper";
+import { countData, createOne, getDataWithSorting, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addSpecialSchema, editSpecialSchema, getSpecialSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -22,6 +22,7 @@ export const addSpecial = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("special:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Special Item"), response, {}));
   } catch (error) {
     console.error(error);
@@ -45,6 +46,7 @@ export const editSpecialById = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Special Item"), {}, {}));
     }
 
+    await redisdelPattern("special:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Special Item"), response, {}));
   } catch (error) {
     console.error(error);
@@ -62,6 +64,7 @@ export const deleteSpecialById = async (req, res) => {
 
     const response = await updateData(monthlySpecialModel, { _id: value.id }, { isDeleted: true, updatedBy: user?._id || null }, {});
 
+    await redisdelPattern("special:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Special Item"), response, {}));
   } catch (error) {
     console.error(error);
@@ -72,6 +75,10 @@ export const deleteSpecialById = async (req, res) => {
 export const getAllSpecial = async (req, res) => {
   reqInfo(req);
   try {
+    const cacheKey = `special:all:req:${JSON.stringify(req.query)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Special Item"), cachedData, {}));
+
     let { page, limit, search, activeFilter } = req.query;
     let criteria: any = { isDeleted: false };
 
@@ -99,7 +106,10 @@ export const getAllSpecial = async (req, res) => {
 
     const state = { page, limit, totalPages };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Special Item"), { specials_data: response, totalData, state }, {}));
+    const result = { specials_data: response, totalData, state };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Special Item"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

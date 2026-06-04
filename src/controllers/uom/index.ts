@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { uomModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addUOMSchema, deleteUOMSchema, editUOMSchema, getUOMSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -35,6 +35,7 @@ export const addUOM = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
+    await redisdelPattern("uom:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("UOM"), response, {}));
   } catch (error) {
     console.error(error);
@@ -81,6 +82,7 @@ export const editUOM = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("UOM"), {}, {}));
 
+    await redisdelPattern("uom:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("UOM"), response, {}));
   } catch (error) {
     console.error(error);
@@ -109,6 +111,7 @@ export const deleteUOM = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("UOM"), {}, {}));
 
+    await redisdelPattern("uom:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("UOM"), response, {}));
   } catch (error) {
     console.error(error);
@@ -120,6 +123,9 @@ export const getAllUOM = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const cacheKey = `uom:all:req:${JSON.stringify(req.query)}:user:${user?.userType}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("UOM"), cachedData, {}));
 
     let { page, limit, search, activeFilter } = req.query;
 
@@ -155,7 +161,10 @@ export const getAllUOM = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("UOM"), { uom_data: response, totalData, state }, {}));
+    const result = { uom_data: response, totalData, state };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("UOM"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -165,6 +174,10 @@ export const getAllUOM = async (req, res) => {
 export const getUOMDropdown = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+    const cacheKey = `uom:dropdown:req:${JSON.stringify(req.query)}:user:${user?.userType}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("UOM"), cachedData, {}));
 
     const { includeId } = req.query;
 
@@ -187,6 +200,7 @@ export const getUOMDropdown = async (req, res) => {
       code: item.code,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("UOM"), dropdownData, {}));
   } catch (error) {
     console.error(error);
@@ -201,6 +215,10 @@ export const getUOMById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
+    const cacheKey = `uom:getOne:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("UOM"), cachedData, {}));
+
     const response = await getFirstMatch(uomModel, { _id: value?.id, isDeleted: false }, {}, {
       populate: [
         { path: "createdBy", select: "fullName userType" },
@@ -210,6 +228,7 @@ export const getUOMById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("UOM"), {}, {}));
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("UOM"), response, {}));
   } catch (error) {
     console.error(error);

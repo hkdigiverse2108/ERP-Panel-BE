@@ -1,6 +1,6 @@
 import { apiResponse, generateHash, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
 import { branchModel, companyModel, locationModel, moduleModel, permissionModel, roleModel, userModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkLocationExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkLocationExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addUserSchema, deleteUserSchema, editUserSchema, getUserSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -89,6 +89,9 @@ export const addUser = async (req, res) => {
       }
     }
 
+    await redisdelPattern("user:*");
+    await redisdelPattern("company:*");
+    await redisdelPattern("branch:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("User"), response, {}));
   } catch (error) {
     console.error(error);
@@ -156,6 +159,10 @@ export const editUserById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("User"), {}, {}));
     const { password, ...rest } = response;
+
+    await redisdelPattern("user:*");
+    await redisdelPattern("company:*");
+    await redisdelPattern("branch:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("User"), rest, {}));
   } catch (error) {
     console.error(error);
@@ -188,6 +195,9 @@ export const deleteUserById = async (req, res) => {
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("User"), {}, {}));
     const { password, ...rest } = response;
 
+    await redisdelPattern("user:*");
+    await redisdelPattern("company:*");
+    await redisdelPattern("branch:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("User"), rest, {}));
   } catch (error) {
     console.error(error);
@@ -201,6 +211,10 @@ export const getAllUser = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `user:all:req:${JSON.stringify(req.query)}:user:${user?.userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("User"), cachedData, {}));
+
     let { page, limit, search, startDate, endDate, activeFilter, branchFilter, companyFilter, typeFilter } = req.query;
 
     // let criteria: any = { isDeleted: false, role: USER_ROLES.USER };
@@ -270,7 +284,10 @@ export const getAllUser = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("User"), { user_data: response, totalData, state: stateObj }, {}));
+    const result = { user_data: response, totalData, state: stateObj };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("User"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -283,6 +300,10 @@ export const getUserById = async (req, res) => {
     const { error, value } = getUserSchema.validate(req.params);
     const { id } = value;
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    const cacheKey = `user:getOne:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("User"), cachedData, {}));
 
     const response = await getFirstMatch(
       userModel,
@@ -304,6 +325,7 @@ export const getUserById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("User"), {}, {}));
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("User"), response, {}));
   } catch (error) {
     console.error(error);
@@ -334,6 +356,7 @@ export const superAdminOverridePermissions = async (req, res) => {
     adminUser.permissions = newPermissions;
     await updateData(userModel, { _id: adminId }, adminUser, {});
 
+    await redisdelPattern("user:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Admin permissions updated by Super Admin.", adminUser, {}));
   } catch (error) {
     console.error(error);
@@ -347,6 +370,10 @@ export const getUserDropDown = async (req, res) => {
     let { user } = req?.headers;
     let companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `user:dropdown:req:${JSON.stringify(req.query)}:user:${user?.userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("User"), cachedData, {}));
+
     let { typeFilter, companyFilter, roleFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
@@ -379,6 +406,7 @@ export const getUserDropDown = async (req, res) => {
 
     const response = await getData(userModel, criteria, { _id: 1, fullName: 1, userType: 1, role: 1, branchId: 1 }, { sort: { fullName: 1 }, populate: [{ path: "role", select: "name" }, { path: "branchId", select: "name" }] });
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("User"), response, {}));
   } catch (error) {
     console.error(error);

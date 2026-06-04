@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS } from "../../common";
 import { loyaltyPointsModel } from "../../database";
 import { checkCompany, getFirstMatch, reqInfo, responseMessage } from "../../helper";
 import { addLoyaltyPointsSchema, getLoyaltyPointsSchema } from "../../validation";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 export const addOrUpdateLoyaltyPoints = async (req, res) => {
   reqInfo(req);
@@ -28,6 +29,7 @@ export const addOrUpdateLoyaltyPoints = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, isExist ? responseMessage?.updateDataError("Loyalty Points") : responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("loyaltyPoints:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, isExist ? responseMessage?.updateDataSuccess("Loyalty Points") : responseMessage?.addDataSuccess("Loyalty Points"), response, {}));
   } catch (error) {
     console.error(error);
@@ -53,6 +55,11 @@ export const getLoyaltyPoints = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
     }
 
+    const userType = user?.userType;
+    const cacheKey = `loyaltyPoints:one:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Loyalty Points"), cachedData, {}));
+
     const response = await getFirstMatch(
       loyaltyPointsModel,
       { companyId: companyId },
@@ -69,6 +76,7 @@ export const getLoyaltyPoints = async (req, res) => {
     //   return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Loyalty Points"), {}, {}));
     // }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Loyalty Points"), response, {}));
   } catch (error) {
     console.error(error);

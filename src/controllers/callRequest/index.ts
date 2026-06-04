@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { callRequestModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, redisGet, redisSet, redisdelPattern, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
 import { addCallRequestSchema, deleteCallRequestSchema, editCallRequestSchema, getCallRequestSchema } from "../../validation";
 
 export const addCallRequest = async (req, res) => {
@@ -20,7 +20,7 @@ export const addCallRequest = async (req, res) => {
     const response = await createOne(callRequestModel, value);
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, response, {}));
-
+    await redisdelPattern("call-request:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Call Request"), response, {}));
   } catch (error) {
     console.error(error);
@@ -46,7 +46,7 @@ export const editCallRequest = async (req, res) => {
     const response = await updateData(callRequestModel, { _id: value?.callRequestId }, value, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, response, {}));
-
+    await redisdelPattern("call-request:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Call Request"), response, {}));
   } catch (error) {
     console.error(error);
@@ -75,7 +75,7 @@ export const deleteCallRequest = async (req, res) => {
     const response = await updateData(callRequestModel, { _id: value?.id }, payload, {});
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Call Request"), {}, {}));
-
+    await redisdelPattern("call-request:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Call Request"), response, {}));
   } catch (error) {
     console.error(error);
@@ -87,8 +87,15 @@ export const getAllCallRequest = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `call-request:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Call Request"), cachedData, {}));
+    }
+
     let { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -142,7 +149,10 @@ export const getAllCallRequest = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Call Request"), { call_Request_data: response, totalData, state: stateObj }, {}));
+    const responsePayload = { call_Request_data: response, totalData, state: stateObj };
+    await redisSet(cacheKey, responsePayload, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Call Request"), responsePayload, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -152,6 +162,16 @@ export const getAllCallRequest = async (req, res) => {
 export const getOneCallRequest = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `call-request:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Call Request"), cachedData, {}));
+    }
+
     const { error, value } = getCallRequestSchema.validate(req.params);
     const { id } = value;
 
@@ -171,7 +191,7 @@ export const getOneCallRequest = async (req, res) => {
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Call Request"), {}, {}));
-
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Call Request"), response, {}));
   } catch (error) {
     console.error(error);

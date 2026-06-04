@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, purchaseDebitNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, purchaseOrderModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addPurchaseDebitNoteSchema, deletePurchaseDebitNoteSchema, editPurchaseDebitNoteSchema, getPurchaseDebitNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -95,6 +95,7 @@ export const addPurchaseDebitNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("purchaseDebitNote:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Purchase Debit Note"), response, {}));
   } catch (error) {
     console.error(error);
@@ -187,6 +188,7 @@ export const editPurchaseDebitNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Purchase Debit Note"), {}, {}));
     }
 
+    await redisdelPattern("purchaseDebitNote:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Purchase Debit Note"), response, {}));
   } catch (error) {
     console.error(error);
@@ -217,6 +219,7 @@ export const deletePurchaseDebitNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Purchase Debit Note"), {}, {}));
     }
 
+    await redisdelPattern("purchaseDebitNote:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Purchase Debit Note"), response, {}));
   } catch (error) {
     console.error(error);
@@ -228,8 +231,13 @@ export const getAllPurchaseDebitNote = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `purchaseDebitNote:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Debit Note"), cachedData, {}));
+
     let { page, limit, search, activeFilter, companyFilter, branchFilter, statusFilter, startDate, endDate } = req.query;
 
     page = Number(page);
@@ -352,7 +360,10 @@ export const getAllPurchaseDebitNote = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Debit Note"), { purchaseDebitNote_data: response, totalData, totalAmount, state }, {}));
+    const result = { purchaseDebitNote_data: response, totalData, totalAmount, state };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Debit Note"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -367,6 +378,10 @@ export const getOnePurchaseDebitNote = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    const cacheKey = `purchaseDebitNote:getOne:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Debit Note"), cachedData, {}));
 
     const response = await getFirstMatch(
       purchaseDebitNoteModel,
@@ -436,6 +451,7 @@ export const getOnePurchaseDebitNote = async (req, res) => {
       }
     }
 
+    await redisSet(cacheKey, pdnObj, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Debit Note"), pdnObj, {}));
   } catch (error) {
     console.error(error);
@@ -447,8 +463,13 @@ export const getPurchaseDebitNoteDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `purchaseDebitNote:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Debit Note Dropdown"), cachedData, {}));
+
     const { supplierFilter, search, companyFilter, branchFilter, statusFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -510,6 +531,7 @@ export const getPurchaseDebitNoteDropdown = async (req, res) => {
       netAmount: item.summary?.netAmount || 0,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Purchase Debit Note Dropdown"), dropdownData, {}));
   } catch (error) {
     console.error(error);

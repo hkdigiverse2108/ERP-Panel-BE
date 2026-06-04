@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES, SUPPLIER_PAYMENT_STATUS } from "../../common";
 import { contactModel, supplierBillModel, productModel, termsConditionModel, additionalChargeModel, stockModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 // import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addSupplierBillSchema, deleteSupplierBillSchema, editSupplierBillSchema, getSupplierBillSchema } from "../../validation";
 
@@ -129,6 +129,9 @@ export const addSupplierBill = async (req, res) => {
       }
     }
 
+    await redisdelPattern("supplierBill:*");
+    await redisdelPattern("stock:*");
+    await redisdelPattern("product:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Supplier Bill"), response, {}));
   } catch (error) {
     console.error(error);
@@ -258,6 +261,9 @@ export const editSupplierBill = async (req, res) => {
       }
     }
 
+    await redisdelPattern("supplierBill:*");
+    await redisdelPattern("stock:*");
+    await redisdelPattern("product:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Supplier Bill"), response, {}));
   } catch (error) {
     console.error(error);
@@ -303,6 +309,9 @@ export const deleteSupplierBill = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Supplier Bill"), {}, {}));
     }
 
+    await redisdelPattern("supplierBill:*");
+    await redisdelPattern("stock:*");
+    await redisdelPattern("product:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Supplier Bill"), response, {}));
   } catch (error) {
     console.error(error);
@@ -316,6 +325,10 @@ export const getAllSupplierBill = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `supplierBill:all:req:${JSON.stringify(req.query)}:user:${user?.userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Supplier Bill"), cachedData, {}));
+
     let { page, limit, search, activeFilter, companyFilter, branchFilter, statusFilter, paymentStatus, startDate, endDate, supplierFilter } = req.query;
 
     page = Number(page);
@@ -484,7 +497,10 @@ export const getAllSupplierBill = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Supplier Bill"), { supplierBill_data: response, totalData, summary, state }, {}));
+    const result = { supplierBill_data: response, totalData, summary, state };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Supplier Bill"), result, {}));
 
   } catch (error) {
     console.error(error);
@@ -500,6 +516,10 @@ export const getOneSupplierBill = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    const cacheKey = `supplierBill:getOne:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Supplier Bill"), cachedData, {}));
 
     const response = await getFirstMatch(
       supplierBillModel,
@@ -581,6 +601,7 @@ export const getOneSupplierBill = async (req, res) => {
       }
     }
 
+    await redisSet(cacheKey, sbObj, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Supplier Bill"), sbObj, {}));
   } catch (error) {
     console.error(error);
@@ -594,6 +615,10 @@ export const getSupplierBillDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `supplierBill:dropdown:req:${JSON.stringify(req.query)}:user:${user?.userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Supplier Bill Dropdown"), cachedData, {}));
+
     const { supplierId, status, paymentStatus, search, companyFilter, branchFilter, includeId } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false };
@@ -674,6 +699,7 @@ export const getSupplierBillDropdown = async (req, res) => {
       paymentStatus: item.paymentStatus,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Supplier Bill Dropdown"), dropdownData, {}));
   } catch (error) {
     console.error(error);

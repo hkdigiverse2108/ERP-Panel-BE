@@ -1,6 +1,6 @@
 import { CashControlModel, PosCashRegisterModel, branchModel } from "../../database";
 import { apiResponse, HTTP_STATUS, CASH_REGISTER_STATUS } from "../../common";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getData, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addCashControlSchema, editCashControlSchema, getCashControlSchema, deleteCashControlSchema } from "../../validation";
 
 export const addCashControl = async (req, res) => {
@@ -58,6 +58,7 @@ export const addCashControl = async (req, res) => {
     //     );
     // }
 
+    await redisdelPattern("cash-control:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Cash Control"), response, {}));
   } catch (error) {
     console.error(error);
@@ -87,6 +88,7 @@ export const editCashControl = async (req, res) => {
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.updateDataError("Cash Control"), {}, {}));
     }
 
+    await redisdelPattern("cash-control:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Cash Control"), response, {}));
   } catch (error) {
     console.error(error);
@@ -98,8 +100,13 @@ export const getAllCashControl = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `cash-control:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Cash Control"), cachedData, {}));
+
     let { page, limit, search, registerFilter, typeFilter, startDate, endDate, companyFilter, branchFilter } = req?.query;
     page = Number(page);
     limit = Number(limit);
@@ -154,19 +161,14 @@ export const getAllCashControl = async (req, res) => {
 
     const totalAmount = totalAmountAggregate[0]?.totalAmount || 0;
 
-    return res.status(HTTP_STATUS.OK).json(
-      new apiResponse(
-        HTTP_STATUS.OK,
-        responseMessage?.getDataSuccess("Cash Control"),
-        {
-          cashControl_data: response,
-          totalData,
-          totalAmount,
-          state: { page, limit, totalPages: Math.ceil(totalData / limit) || 1 },
-        },
-        {},
-      ),
-    );
+    const responsePayload = {
+      cashControl_data: response,
+      totalData,
+      totalAmount,
+      state: { page, limit, totalPages: Math.ceil(totalData / limit) || 1 },
+    };
+    await redisSet(cacheKey, responsePayload, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Cash Control"), responsePayload, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
@@ -176,6 +178,15 @@ export const getAllCashControl = async (req, res) => {
 export const getOneCashControl = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    
+    const cacheKey = `cash-control:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Cash Control"), cachedData, {}));
+
     const { error, value } = getCashControlSchema.validate(req.params);
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -194,6 +205,7 @@ export const getOneCashControl = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Cash Control"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Cash Control"), response, {}));
   } catch (error) {
     console.error(error);
@@ -220,6 +232,7 @@ export const deleteCashControl = async (req, res) => {
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.deleteDataError("Cash Control"), {}, {}));
     }
 
+    await redisdelPattern("cash-control:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Cash Control"), response, {}));
   } catch (error) {
     console.error(error);
@@ -231,8 +244,13 @@ export const cashControlDropDown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `cash-control:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Cash Control Dropdown"), cachedData, {}));
+
     const { search, branchFilter, companyFilter, registerFilter, startDate, endDate, includeId } = req.query;
     let criteria: any = { isDeleted: false };
     if (companyId) criteria.companyId = companyId;
@@ -278,6 +296,7 @@ export const cashControlDropDown = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(100);
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Cash Control Dropdown"), response, {}));
   } catch (error) {
     console.error(error);

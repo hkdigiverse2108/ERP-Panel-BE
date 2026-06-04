@@ -1,6 +1,6 @@
 import { ADJUSTMENT_TYPE, apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { adjustmentNoteModel, bankModel } from "../../database";
-import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkIdExist, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkIdExist, getAndIncrementPrefix, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addCreditNoteSchema, deleteCreditNoteSchema, editCreditNoteSchema, getCreditNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -46,6 +46,7 @@ export const addCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("credit-note:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Credit Note"), response, {}));
   } catch (error) {
     console.error(error);
@@ -86,6 +87,7 @@ export const editCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Credit Note"), {}, {}));
     }
 
+    await redisdelPattern("credit-note:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Credit Note"), response, {}));
   } catch (error) {
     console.error(error);
@@ -116,6 +118,7 @@ export const deleteCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Credit Note"), {}, {}));
     }
 
+    await redisdelPattern("credit-note:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Credit Note"), response, {}));
   } catch (error) {
     console.error(error);
@@ -127,8 +130,13 @@ export const getAllCreditNote = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `credit-note:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Credit Note"), cachedData, {}));
+
     let { page, limit, search, startDate, endDate, companyFilter, activeFilter, branchFilter } = req.query;
 
     page = Number(page);
@@ -182,7 +190,10 @@ export const getAllCreditNote = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Credit Note"), { creditNote_data: response, totalData, state }, {}));
+    const responsePayload = { creditNote_data: response, totalData, state };
+    await redisSet(cacheKey, responsePayload, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Credit Note"), responsePayload, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -192,6 +203,14 @@ export const getAllCreditNote = async (req, res) => {
 export const getOneCreditNote = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `credit-note:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Credit Note"), cachedData, {}));
+
     const { error, value } = getCreditNoteSchema.validate(req.params);
 
     if (error) {
@@ -216,6 +235,7 @@ export const getOneCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Credit Note"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Credit Note"), response, {}));
   } catch (error) {
     console.error(error);

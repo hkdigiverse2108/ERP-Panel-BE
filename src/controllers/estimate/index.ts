@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS, ESTIMATE_STATUS, PREFIX_MODULES } from "../..
 import { contactModel, EstimateModel, productModel, taxModel, termsConditionModel, uomModel, additionalChargeModel } from "../../database";
 import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addEstimateSchema, deleteEstimateSchema, editEstimateSchema, getEstimateSchema } from "../../validation";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -89,6 +90,7 @@ export const addEstimate = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("estimate:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Estimate"), response, {}));
   } catch (error) {
     console.error(error);
@@ -179,6 +181,7 @@ export const editEstimate = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Estimate"), {}, {}));
     }
 
+    await redisdelPattern("estimate:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Estimate"), response, {}));
   } catch (error) {
     console.error(error);
@@ -214,6 +217,7 @@ export const deleteEstimate = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Estimate"), {}, {}));
     }
 
+    await redisdelPattern("estimate:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Estimate"), response, {}));
   } catch (error) {
     console.error(error);
@@ -225,8 +229,12 @@ export const getAllEstimate = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `estimate:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Estimate"), cachedData, {}));
     let { page, limit, search, startDate, endDate, companyFilter, activeFilter, customerFilter, statusFilter, branchFilter } = req.query;
 
     page = Number(page);
@@ -370,7 +378,9 @@ export const getAllEstimate = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Estimate"), { estimate_data: response, totalData, summary, state }, {}));
+    const result = { estimate_data: response, totalData, summary, state };
+    await redisSet(cacheKey, result, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Estimate"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -385,6 +395,14 @@ export const getOneEstimate = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `estimate:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Estimate"), cachedData, {}));
 
     const response = await getFirstMatch(
       EstimateModel,
@@ -451,6 +469,7 @@ export const getOneEstimate = async (req, res) => {
       }
     }
 
+    await redisSet(cacheKey, estObj, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Estimate"), estObj, {}));
   } catch (error) {
     console.error(error);
@@ -462,8 +481,12 @@ export const getEstimateDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `estimate:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Estimate Dropdown"), cachedData, {}));
     let { search, customerId, branchFilter, companyFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, status: "pending" }; // Usually dropdowns only show pending estimates
@@ -501,6 +524,7 @@ export const getEstimateDropdown = async (req, res) => {
 
     const response = await getDataWithSorting(EstimateModel, criteria, {}, options);
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Estimate Dropdown"), response, {}));
   } catch (error) {
     console.error(error);

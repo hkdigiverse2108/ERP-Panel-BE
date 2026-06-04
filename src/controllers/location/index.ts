@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS, LOCATION_TYPE } from "../../common";
 import { locationModel } from "../../database";
 import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter } from "../../helper";
 import { addLocationSchema, deleteLocationSchema, editLocationSchema, getCityByStateSchema, getLocationSchema, getStateByCountrySchema } from "../../validation";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 export const addLocation = async (req, res) => {
   reqInfo(req);
@@ -83,6 +84,7 @@ export const addLocation = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("location:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Location"), response, {}));
   } catch (error) {
     console.error(error);
@@ -175,6 +177,7 @@ export const editLocationById = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Location"), {}, {}));
     }
 
+    await redisdelPattern("location:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Location"), response, {}));
   } catch (error) {
     console.error(error);
@@ -213,6 +216,7 @@ export const deleteLocationById = async (req, res) => {
       {},
     );
 
+    await redisdelPattern("location:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Location"), response, {}));
   } catch (error) {
     console.error(error);
@@ -223,6 +227,9 @@ export const deleteLocationById = async (req, res) => {
 export const getAllLocation = async (req, res) => {
   reqInfo(req);
   try {
+    const cacheKey = `location:all:req:${JSON.stringify(req.query)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Location"), cachedData, {}));
     let { page, limit, search, startDate, endDate, activeFilter, typeFilter, parentFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -266,7 +273,9 @@ export const getAllLocation = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Location"), { location_data: response, totalData, state }, {}));
+    const result = { location_data: response, totalData, state };
+    await redisSet(cacheKey, result, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Location"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -279,6 +288,10 @@ export const getLocationById = async (req, res) => {
     const { error, value } = getLocationSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+    const cacheKey = `location:one:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Location"), cachedData, {}));
 
     const response = await getFirstMatch(
       locationModel,
@@ -293,6 +306,7 @@ export const getLocationById = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Location"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Location"), response, {}));
   } catch (error) {
     console.error(error);
@@ -304,6 +318,10 @@ export const getAllCountries = async (req, res) => {
   reqInfo(req);
 
   try {
+    const cacheKey = `location:countries:req:${JSON.stringify(req.query)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Country"), cachedData, {}));
+
     const countries = await getDataWithSorting(
       locationModel,
       {
@@ -321,6 +339,7 @@ export const getAllCountries = async (req, res) => {
       code: item.code,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Country"), dropdownData, {}));
   } catch (error) {
     console.error(error);
@@ -335,6 +354,10 @@ export const getStatesByCountry = async (req, res) => {
     const { countryId } = value;
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+    const cacheKey = `location:states:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("State"), cachedData, {}));
 
     // Ensure country exists
     if (!(await checkIdExist(locationModel, countryId, "Country", res))) return;
@@ -351,6 +374,7 @@ export const getStatesByCountry = async (req, res) => {
       { sort: { name: 1 } },
     );
 
+    await redisSet(cacheKey, states, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("State"), states, {}));
   } catch (error) {
     console.error(error);
@@ -365,6 +389,10 @@ export const getCitiesByState = async (req, res) => {
     const { stateId } = value;
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+    const cacheKey = `location:cities:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("City"), cachedData, {}));
 
     // Ensure state exists
     if (!(await checkIdExist(locationModel, stateId, "State", res))) return;
@@ -381,6 +409,7 @@ export const getCitiesByState = async (req, res) => {
       { sort: { name: 1 } },
     );
 
+    await redisSet(cacheKey, cities, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("City"), cities, {}));
   } catch (error) {
     console.error(error);

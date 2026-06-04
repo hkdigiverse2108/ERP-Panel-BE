@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES, SOCKET_EVENTS, SOCKET_TYPE, STOCK_TRANSFER_STATUS, USER_TYPES } from "../../common";
 import { stockModel, stockTransferModel, productModel, ConsumptionTypeModel, materialConsumptionModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix, checkCompany, checkBranch } from "../../helper";
+import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, getAndIncrementPrefix, checkCompany, checkBranch, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { sendNotification } from "../../helper/socket";
 import { addStockTransferSchema, approveStockTransferSchema, confirmReceiptStockTransferSchema, rejectStockTransferSchema, getStockTransferSchema, deleteStockTransferSchema, editStockTransferSchema, dispatchStockTransferSchema } from "../../validation";
 
@@ -49,6 +49,7 @@ export const requestStockTransfer = async (req, res) => {
       meta: { type: SOCKET_TYPE.STOCK_TRANSFER, action: "requested", actionId: String((response as any)?._id), text: response?.transferNo },
     });
 
+    await redisdelPattern("stockTransfer:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock Transfer Request"), response, {}));
   } catch (error) {
     console.error(error);
@@ -131,6 +132,7 @@ export const approveStockTransfer = async (req, res) => {
       meta: { type: SOCKET_TYPE.STOCK_TRANSFER, action: "approved", actionId: String((transfer as any)?._id), text: transfer?.transferNo },
     });
 
+    await redisdelPattern("stockTransfer:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer"), response, {}));
   } catch (error) {
     console.error(error);
@@ -197,6 +199,9 @@ export const dispatchStockTransfer = async (req, res) => {
       meta: { type: SOCKET_TYPE.STOCK_TRANSFER, action: "dispatched", actionId: String((transfer as any)?._id), text: transfer?.transferNo },
     });
 
+    await redisdelPattern("stockTransfer:*");
+    await redisdelPattern("stock:*");
+    await redisdelPattern("product:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer Dispatched"), response, {}));
   } catch (error) {
     console.error(error);
@@ -348,6 +353,9 @@ export const confirmReceiptStockTransfer = async (req, res) => {
       meta: { type: SOCKET_TYPE.STOCK_TRANSFER, action: "completed", actionId: String((transfer as any)?._id), text: transfer?.transferNo },
     });
 
+    await redisdelPattern("stockTransfer:*");
+    await redisdelPattern("stock:*");
+    await redisdelPattern("product:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer Completed"), response, {}));
   } catch (error) {
     console.error(error);
@@ -414,6 +422,9 @@ export const rejectStockTransfer = async (req, res) => {
       meta: { type: SOCKET_TYPE.STOCK_TRANSFER, action: "rejected", actionId: String((transfer as any)?._id), text: transfer?.transferNo },
     });
 
+    await redisdelPattern("stockTransfer:*");
+    await redisdelPattern("stock:*");
+    await redisdelPattern("product:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer Rejected"), response, {}));
   } catch (error) {
     console.error(error);
@@ -485,6 +496,7 @@ export const editStockTransfer = async (req, res) => {
     const response = await updateData(stockTransferModel, { _id: stockTransferId }, updatePayload, {});
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Stock Transfer"), {}, {}));
 
+    await redisdelPattern("stockTransfer:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Transfer"), response, {}));
   } catch (error) {
     console.error(error);
@@ -498,6 +510,10 @@ export const getAllStockTransfer = async (req, res) => {
     const { user } = req.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `stockTransfer:all:req:${JSON.stringify(req.query)}:user:${user?.userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Transfer"), cachedData, {}));
+
     const { page, limit, search, activeFilter, statusFilter, typeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -574,7 +590,10 @@ export const getAllStockTransfer = async (req, res) => {
     const totalData = await countData(stockTransferModel, criteria);
     const totalPages = Math.ceil(totalData / (limit ? parseInt(limit as string) : totalData)) || 1;
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Transfer"), { stock_transfer: response, totalData, state: { page, limit, totalPages } }, {}));
+    const result = { stock_transfer: response, totalData, state: { page, limit, totalPages } };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Transfer"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -586,6 +605,10 @@ export const getStockTransferById = async (req, res) => {
   try {
     const { error, value } = getStockTransferSchema.validate(req.params);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    const cacheKey = `stockTransfer:getOne:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Transfer"), cachedData, {}));
 
     const response = await getFirstMatch(
       stockTransferModel,
@@ -606,6 +629,7 @@ export const getStockTransferById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Transfer"), {}, {}));
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Transfer"), response, {}));
   } catch (error) {
     console.error(error);
@@ -625,6 +649,7 @@ export const deleteStockTransfer = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Transfer"), {}, {}));
     }
 
+    await redisdelPattern("stockTransfer:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Stock Transfer"), {}, {}));
   } catch (error) {
     console.error(error);

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES, PURCHASE_DEBIT_NOTE_STATUS } from "../../common";
 import { contactModel, salesCreditNoteModel, productModel, termsConditionModel, additionalChargeModel, uomModel, taxModel, SalesOrderModel, InvoiceModel, userModel, stockModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addSalesCreditNoteSchema, deleteSalesCreditNoteSchema, editSalesCreditNoteSchema, getSalesCreditNoteSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -124,6 +124,7 @@ export const addSalesCreditNote = async (req, res) => {
       }
     }
 
+    await redisdelPattern("salesCreditNote:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Sales Credit Note"), response, {}));
   } catch (error) {
     console.error(error);
@@ -269,6 +270,7 @@ export const editSalesCreditNote = async (req, res) => {
       }
     }
 
+    await redisdelPattern("salesCreditNote:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Sales Credit Note"), response, {}));
   } catch (error) {
     console.error(error);
@@ -312,6 +314,7 @@ export const deleteSalesCreditNote = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Sales Credit Note"), {}, {}));
     }
 
+    await redisdelPattern("salesCreditNote:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Sales Credit Note"), response, {}));
   } catch (error) {
     console.error(error);
@@ -323,8 +326,13 @@ export const getAllSalesCreditNote = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `salesCreditNote:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Credit Note"), cachedData, {}));
+
     let { page, limit, search, activeFilter, companyFilter, branchFilter, statusFilter, startDate, endDate, customerFilter } = req.query;
 
     page = Number(page);
@@ -443,7 +451,10 @@ export const getAllSalesCreditNote = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Credit Note"), { salesCreditNote_data: response, totalData, state }, {}));
+    const result = { salesCreditNote_data: response, totalData, state };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Credit Note"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -458,6 +469,10 @@ export const getOneSalesCreditNote = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    const cacheKey = `salesCreditNote:getOne:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Credit Note"), cachedData, {}));
 
     let response: any = await getFirstMatch(
       salesCreditNoteModel,
@@ -530,6 +545,7 @@ export const getOneSalesCreditNote = async (req, res) => {
       }
     }
 
+    await redisSet(cacheKey, scnObj, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Credit Note"), scnObj, {}));
   } catch (error) {
     console.error(error);
@@ -541,8 +557,13 @@ export const getSalesCreditNoteDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `salesCreditNote:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Credit Note Dropdown"), cachedData, {}));
+
     const { customerFilter, search, companyFilter, statusFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -604,6 +625,7 @@ export const getSalesCreditNoteDropdown = async (req, res) => {
       netAmount: item.summary?.netAmount || 0,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Credit Note Dropdown"), dropdownData, {}));
   } catch (error) {
     console.error(error);

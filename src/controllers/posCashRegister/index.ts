@@ -3,6 +3,7 @@ import { apiResponse, HTTP_STATUS, CASH_REGISTER_STATUS, CASH_CONTROL_TYPE, POS_
 import mongoose from "mongoose";
 import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosCashRegisterSchema, editPosCashRegisterSchema, getPosCashRegisterSchema, deletePosCashRegisterSchema, posCashRegisterDropDownSchema } from "../../validation";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addPosCashRegister = async (req, res) => {
@@ -67,6 +68,7 @@ export const addPosCashRegister = async (req, res) => {
       updatedBy: user?._id || null,
     });
 
+    await redisdelPattern("posCashRegister:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("POS Cash Register"), response, {}));
   } catch (error) {
     console.error(error);
@@ -124,6 +126,7 @@ export const editPosCashRegister = async (req, res) => {
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.updateDataError("POS Cash Register"), {}, {}));
     }
 
+    await redisdelPattern("posCashRegister:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("POS Cash Register"), response, {}));
   } catch (error) {
     console.error(error);
@@ -150,6 +153,11 @@ export const getAllPosCashRegister = async (req, res) => {
     //       ),
     //     );
     // }
+
+    const userType = user?.userType;
+    const cacheKey = `posCashRegister:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Cash Register"), cachedData, {}));
 
     let { page, limit, salesManFilter, companyFilter, branchFilter, statusFilter, startDate, endDate } = req.query;
     page = Number(page);
@@ -181,15 +189,18 @@ export const getAllPosCashRegister = async (req, res) => {
     const response = await getDataWithSorting(PosCashRegisterModel, criteria, {}, options);
     const totalData = await countData(PosCashRegisterModel, criteria);
 
+    const result = {
+      posCashRegister_data: response,
+      totalData,
+      state: { page, limit, totalPages: Math.ceil(totalData / limit) || 1 },
+    };
+    await redisSet(cacheKey, result, 3600);
+
     return res.status(HTTP_STATUS.OK).json(
       new apiResponse(
         HTTP_STATUS.OK,
         responseMessage?.getDataSuccess("POS Cash Register"),
-        {
-          posCashRegister_data: response,
-          totalData,
-          state: { page, limit, totalPages: Math.ceil(totalData / limit) || 1 },
-        },
+        result,
         {},
       ),
     );
@@ -206,6 +217,14 @@ export const getOnePosCashRegister = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `posCashRegister:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Cash Register"), cachedData, {}));
 
     const response = await getFirstMatch(
       PosCashRegisterModel,
@@ -226,6 +245,7 @@ export const getOnePosCashRegister = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Cash Register"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Cash Register"), response, {}));
   } catch (error) {
     console.error(error);
@@ -252,6 +272,7 @@ export const deletePosCashRegister = async (req, res) => {
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.deleteDataError("POS Cash Register"), {}, {}));
     }
 
+    await redisdelPattern("posCashRegister:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Cash Register"), response, {}));
   } catch (error) {
     console.error(error);
@@ -263,8 +284,12 @@ export const posCashRegisterDropDown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `posCashRegister:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Cash Register Dropdown"), cachedData, {}));
 
     const { statusFilter, companyFilter, branchFilter, includeId } = req.query;
 
@@ -286,6 +311,7 @@ export const posCashRegisterDropDown = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(100);
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Cash Register Dropdown"), response, {}));
   } catch (error) {
     console.error(error);
@@ -297,8 +323,13 @@ export const getCashRegisterDetails = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `posCashRegister:details:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Cash Register Details"), cachedData, {}));
+
     const openRegister = await getFirstMatch(
       PosCashRegisterModel,
       {
@@ -499,6 +530,7 @@ export const getCashRegisterDetails = async (req, res) => {
       },
     };
 
+    await redisSet(cacheKey, result, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Cash Register Details"), result, {}));
   } catch (error) {
     console.error(error);

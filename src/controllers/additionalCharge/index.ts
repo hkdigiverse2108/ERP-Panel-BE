@@ -1,7 +1,7 @@
 import { USER_TYPES } from "./../../common/enum";
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { additionalChargeModel, taxModel } from "../../database";
-import { applyDateFilter, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, redisGet, redisSet, redisdelPattern, reqInfo, responseMessage, updateData } from "../../helper";
 import { addAdditionalChargeSchema, deleteAdditionalChargeSchema, editAdditionalChargeSchema, getAdditionalChargeSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -13,13 +13,10 @@ export const addAdditionalCharge = async (req, res) => {
     const { error, value } = addAdditionalChargeSchema.validate(req.body);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
-
     value.companyId = await checkCompany(user, value);
-
     if (!(await checkIdExist(taxModel, value?.taxId, "Tax", res))) return;
 
     const existingCharge = await getFirstMatch(additionalChargeModel, { name: value.name, type: value.type, isDeleted: false }, {}, {});
-
     if (existingCharge) return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Additional Charge"), {}, {}));
 
     value.createdBy = user?._id || null;
@@ -30,7 +27,7 @@ export const addAdditionalCharge = async (req, res) => {
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
-
+    await redisdelPattern("additional-charge:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Additional Charge"), response, {}));
   } catch (error) {
     console.error(error);
@@ -53,15 +50,12 @@ export const editAdditionalChargeById = async (req, res) => {
     if (existingCharge) {
       return res.status(HTTP_STATUS.CONFLICT).json(new apiResponse(HTTP_STATUS.CONFLICT, responseMessage?.dataAlreadyExist("Additional Charge"), {}, {}));
     }
-
     value.updatedBy = user?._id || null;
-
     const response = await updateData(additionalChargeModel, { _id: new ObjectId(value.additionalChargeId), isDeleted: false }, value, {});
-
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Additional Charge"), {}, {}));
     }
-
+    await redisdelPattern("additional-charge:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Additional Charge"), response, {}));
   } catch (error) {
     console.error(error);
@@ -82,9 +76,8 @@ export const deleteAdditionalChargeById = async (req, res) => {
     if (!charge) {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Additional Charge"), {}, {}));
     }
-
     const response = await updateData(additionalChargeModel, { _id: value.id }, { isDeleted: true, updatedBy: user?._id || null }, {});
-
+    await redisdelPattern("additional-charge:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Additional Charge"), response, {}));
   } catch (error) {
     console.error(error);
@@ -96,11 +89,17 @@ export const getAllAdditionalCharge = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id || user?.companyId || null;
+
+    const cacheKey = `additional-charge:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Additional Charge"), cachedData, {}));
+    }
 
     let { page, limit, search, startDate, endDate, activeFilter, companyFilter, typeFilter } = req.query;
-
     let criteria: any = { isDeleted: false };
-
     if (user?.userType !== USER_TYPES.SUPER_ADMIN) {
       criteria.companyId = user?.companyId;
     }
@@ -118,9 +117,7 @@ export const getAllAdditionalCharge = async (req, res) => {
     }
 
     if (activeFilter !== undefined) criteria.isActive = activeFilter == "true";
-
     applyDateFilter(criteria, startDate as string, endDate as string);
-
     const options: any = {
       sort: { createdAt: -1 },
       populate: [
@@ -146,7 +143,9 @@ export const getAllAdditionalCharge = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Additional Charge"), { additional_charge_data: response, totalData, state }, {}));
+    const responsePayload = { additional_charge_data: response, totalData, state };
+    await redisSet(cacheKey, responsePayload, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Additional Charge"), responsePayload, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -156,10 +155,18 @@ export const getAllAdditionalCharge = async (req, res) => {
 export const getAdditionalChargeById = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id || user?.companyId || null;
+
+    const cacheKey = `additional-charge:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Additional Charge"), cachedData, {}));
+    }
+
     const { error, value } = getAdditionalChargeSchema.validate(req.params);
-
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
-
     const response = await getFirstMatch(
       additionalChargeModel,
       { _id: value.id, isDeleted: false },
@@ -177,6 +184,8 @@ export const getAdditionalChargeById = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Additional Charge"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Additional Charge"), response, {}));
   } catch (error) {
     console.error(error);
@@ -187,8 +196,17 @@ export const getAdditionalChargeById = async (req, res) => {
 export const getAdditionalChargeDropdown = async (req, res) => {
   reqInfo(req);
   try {
-    let { typeFilter, companyFilter, search, includeId } = req.query;
+    const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id || user?.companyId || null;
 
+    const cacheKey = `additional-charge:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Additional Charge"), cachedData, {}));
+    }
+
+    let { typeFilter, companyFilter, search, includeId } = req.query;
     let criteria: any = { isDeleted: false, isActive: true };
 
     if (companyFilter) {
@@ -200,7 +218,6 @@ export const getAdditionalChargeDropdown = async (req, res) => {
     }
 
     criteria = handleIncludeId(criteria, includeId);
-
     const response = await getDataWithSorting(
       additionalChargeModel,
       criteria,
@@ -220,6 +237,7 @@ export const getAdditionalChargeDropdown = async (req, res) => {
       taxId: item.taxId,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Additional Charge"), dropdownData, {}));
   } catch (error) {
     console.error(error);

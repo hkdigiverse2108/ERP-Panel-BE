@@ -5,6 +5,7 @@ import http from "http";
 import bodyParser from "body-parser";
 import * as packageInfo from "../package.json";
 import { connectDb } from "./database/connection";
+import { connectRedis } from "./database/redis";
 import { router } from "./routes";
 import path from "path";
 import { apiResponse, HTTP_STATUS } from "./common";
@@ -21,6 +22,7 @@ app.use(bodyParser.urlencoded({ extended: true, limit: "100mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 connectDb();
+connectRedis();
 initCronJobs();
 
 const health = (_, res) => {

@@ -2,7 +2,7 @@ import path, { parse } from "path";
 import url from "url";
 import fs from "fs";
 import { apiResponse, HTTP_STATUS } from "../../common";
-import { reqInfo, responseMessage } from "../../helper";
+import { reqInfo, responseMessage, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { deleteImageSchema } from "../../validation";
 
 export const uploadFile = async (req, res) => {
@@ -34,6 +34,7 @@ export const uploadFile = async (req, res) => {
       });
     }
 
+    await redisdelPattern("upload:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.fileUploadSuccess, { images: uploadedImages, pdfs: uploadedPdfs }, {}));
   } catch (error) {
     console.error(error);
@@ -67,6 +68,7 @@ export const deleteUploadedFile = async (req, res) => {
     }
 
     fs.unlinkSync(filePath);
+    await redisdelPattern("upload:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess(type), {}, {}));
   } catch (error) {
     console.error(error);
@@ -80,13 +82,18 @@ export const getAllImages = async (req, res) => {
     let folderName = req.headers.user?.companyId?._id?.toString() || "default";
     folderName = folderName?.replace(/[^a-zA-Z0-9_-]/g, "_");
 
+    const cacheKey = `upload:images:user:${req.headers.user?.userType}:company:${folderName}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Images"), cachedData, {}));
+
     const dir = path.join("public/images", folderName);
 
     if (!fs.existsSync(dir)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.noFileUploaded, {}, {}));
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Images"), [], {}));
     }
 
     const images = fs.readdirSync(dir).map((file) => `${process.env.BACKEND_URL}/public/images/${folderName}/${file}`);
+    await redisSet(cacheKey, images, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Images"), images, {}));
   } catch (error) {
     console.error(error);
@@ -101,13 +108,18 @@ export const getAllPdf = async (req, res) => {
     let folderName = req?.headers?.user?.companyId?._id?.toString() || "default";
     folderName = folderName?.replace(/[^a-zA-Z0-9_-]/g, "_");
 
+    const cacheKey = `upload:pdfs:user:${req.headers.user?.userType}:company:${folderName}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("pdf"), cachedData, {}));
+
     const dir = path.join("public/pdfs", folderName);
 
     if (!fs.existsSync(dir)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.noFileUploaded, {}, {}));
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("pdf"), [], {}));
     }
 
     const pdfs = fs.readdirSync(dir).map((file) => `${process.env.BACKEND_URL}/public/pdfs/${folderName}/${file}`);
+    await redisSet(cacheKey, pdfs, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("pdf"), pdfs, {}));
   } catch (error) {
     console.error(error);

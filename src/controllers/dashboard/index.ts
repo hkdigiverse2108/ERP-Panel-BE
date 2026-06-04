@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { apiResponse, CUSTOMER_CATEGORY_ENUM, HTTP_STATUS, POS_ORDER_STATUS, VOUCHAR_TYPE, POS_VOUCHER_TYPE, RETURN_POS_ORDER_TYPE, PAYMENT_MODE, CASH_REGISTER_STATUS, POS_PAYMENT_METHOD, ADJUSTMENT_TYPE } from "../../common";
 import { adjustmentNoteModel, InvoiceModel, PosOrderModel, PosPaymentModel, returnPosOrderModel, salesCreditNoteModel, stockModel, supplierBillModel, voucherModel, PosCashRegisterModel, companyModel } from "../../database";
-import { applyDateFilter, countData, getData, reqInfo, responseMessage } from "../../helper";
+import { applyDateFilter, countData, getData, reqInfo, responseMessage, redisGet, redisSet } from "../../helper";
 import { getCategoryWiseCustomersSchema } from "../../validation";
 
 // Frequency-based thresholds for customer categorization
@@ -14,6 +14,12 @@ const CUSTOMER_THRESHOLDS = {
 export const transactionDetails = async (req, res) => {
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const cacheCompanyId = user?.companyId?._id;
+    const cacheBranchId = user?.branchId?._id;
+    const cacheKey = `dashboard:transactionDetails:req:${JSON.stringify(req.query)}:user:${userType}:company:${cacheCompanyId}:branch:${cacheBranchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Dashboard Transaction Details"), cachedData, {}));
 
     let { startDate, endDate, companyFilter, branchFilter } = req.query;
 
@@ -251,6 +257,7 @@ export const transactionDetails = async (req, res) => {
       avgBillsCount: Number(avgBillsCount.toFixed(2)),
     };
 
+    await redisSet(cacheKey, result, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Dashboard Transaction Details"), result, {}));
   } catch (error) {
     console.error(error);
@@ -261,6 +268,12 @@ export const transactionDetails = async (req, res) => {
 export const topCustomers = async (req, res) => {
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const cacheCompanyId = user?.companyId?._id;
+    const cacheBranchId = user?.branchId?._id;
+    const cacheKey = `dashboard:topCustomers:req:${JSON.stringify(req.query)}:user:${userType}:company:${cacheCompanyId}:branch:${cacheBranchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Top Customers"), cachedData, {}));
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
     let { limit = 20, startDate, endDate, companyFilter, branchFilter } = req.query;
@@ -329,6 +342,7 @@ export const topCustomers = async (req, res) => {
       },
     ]);
 
+    await redisSet(cacheKey, data, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Top Customers"), data, {}));
   } catch (error) {
     console.error(error);
@@ -339,6 +353,12 @@ export const topCustomers = async (req, res) => {
 export const categoryWiseCustomersCount = async (req, res) => {
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const cacheCompanyId = user?.companyId?._id;
+    const cacheBranchId = user?.branchId?._id;
+    const cacheKey = `dashboard:categoryWiseCustomersCount:req:${JSON.stringify(req.query)}:user:${userType}:company:${cacheCompanyId}:branch:${cacheBranchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Category Wise Customers Count"), cachedData, {}));
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
     let { startDate, endDate, companyFilter, branchFilter } = req.query;
@@ -441,6 +461,7 @@ export const categoryWiseCustomersCount = async (req, res) => {
       { $replaceRoot: { newRoot: "$data" } },
     ]);
 
+    await redisSet(cacheKey, data, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Category Wise Customers Count"), data, {}));
   } catch (error) {
     console.error(error);
@@ -451,6 +472,12 @@ export const categoryWiseCustomersCount = async (req, res) => {
 export const categoryWiseCustomers = async (req, res) => {
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const cacheCompanyId = user?.companyId?._id;
+    const cacheBranchId = user?.branchId?._id;
+    const cacheKey = `dashboard:categoryWiseCustomers:req:${JSON.stringify(req.query)}:user:${userType}:company:${cacheCompanyId}:branch:${cacheBranchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Category Wise Customers"), cachedData, {}));
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
 
@@ -553,6 +580,7 @@ export const categoryWiseCustomers = async (req, res) => {
 
     const data = await PosOrderModel.aggregate(pipeline);
 
+    await redisSet(cacheKey, data, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Category Wise Customers"), data, {}));
   } catch (error) {
     console.error(error);
@@ -563,6 +591,12 @@ export const categoryWiseCustomers = async (req, res) => {
 export const bestSellingProducts = async (req, res) => {
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const cacheCompanyId = user?.companyId?._id;
+    const cacheBranchId = user?.branchId?._id;
+    const cacheKey = `dashboard:bestSellingProducts:req:${JSON.stringify(req.query)}:user:${userType}:company:${cacheCompanyId}:branch:${cacheBranchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Best Selling Products"), cachedData, {}));
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
 
@@ -659,6 +693,7 @@ export const bestSellingProducts = async (req, res) => {
       { $sort: { totalSalesQty: -1 } },
     ]);
 
+    await redisSet(cacheKey, data, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Best Selling Products"), data, {}));
   } catch (error) {
     console.error(error);
@@ -669,6 +704,12 @@ export const bestSellingProducts = async (req, res) => {
 export const leastSellingProducts = async (req, res) => {
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const cacheCompanyId = user?.companyId?._id;
+    const cacheBranchId = user?.branchId?._id;
+    const cacheKey = `dashboard:leastSellingProducts:req:${JSON.stringify(req.query)}:user:${userType}:company:${cacheCompanyId}:branch:${cacheBranchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Least Selling Products"), cachedData, {}));
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
 
@@ -765,6 +806,7 @@ export const leastSellingProducts = async (req, res) => {
       { $sort: { totalSalesQty: 1 } },
     ]);
 
+    await redisSet(cacheKey, data, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Least Selling Products"), data, {}));
   } catch (error) {
     console.error(error);
@@ -775,6 +817,12 @@ export const leastSellingProducts = async (req, res) => {
 export const topExpenses = async (req, res) => {
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const cacheCompanyId = user?.companyId?._id;
+    const cacheBranchId = user?.branchId?._id;
+    const cacheKey = `dashboard:topExpenses:req:${JSON.stringify(req.query)}:user:${userType}:company:${cacheCompanyId}:branch:${cacheBranchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Top Expenses"), cachedData, {}));
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
     const { startDate, endDate, companyFilter, branchFilter } = req.query;
@@ -830,6 +878,7 @@ export const topExpenses = async (req, res) => {
       { $limit: Number(limit) },
     ]);
 
+    await redisSet(cacheKey, data, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Top Expenses"), data, {}));
   } catch (error) {
     console.error(error);
@@ -840,6 +889,12 @@ export const topExpenses = async (req, res) => {
 export const topCoupons = async (req, res) => {
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const cacheCompanyId = user?.companyId?._id;
+    const cacheBranchId = user?.branchId?._id;
+    const cacheKey = `dashboard:topCoupons:req:${JSON.stringify(req.query)}:user:${userType}:company:${cacheCompanyId}:branch:${cacheBranchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Top Coupons"), cachedData, {}));
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
     const { startDate, endDate, companyFilter, branchFilter } = req.query;
@@ -895,6 +950,7 @@ export const topCoupons = async (req, res) => {
       { $limit: Number(limit) },
     ]);
 
+    await redisSet(cacheKey, data, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Top Coupons"), data, {}));
   } catch (error) {
     console.error(error);
@@ -905,6 +961,12 @@ export const topCoupons = async (req, res) => {
 export const receivable = async (req, res) => {
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const cacheCompanyId = user?.companyId?._id;
+    const cacheBranchId = user?.branchId?._id;
+    const cacheKey = `dashboard:receivable:req:${JSON.stringify(req.query)}:user:${userType}:company:${cacheCompanyId}:branch:${cacheBranchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Receivable Data"), cachedData, {}));
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
     const { startDate, endDate, companyFilter, branchFilter } = req.query;
@@ -1000,6 +1062,7 @@ export const receivable = async (req, res) => {
 
     const data = combined;
 
+    await redisSet(cacheKey, data, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Receivable Data"), data, {}));
   } catch (error) {
     console.error(error);
@@ -1010,6 +1073,12 @@ export const receivable = async (req, res) => {
 export const payable = async (req, res) => {
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const cacheCompanyId = user?.companyId?._id;
+    const cacheBranchId = user?.branchId?._id;
+    const cacheKey = `dashboard:payable:req:${JSON.stringify(req.query)}:user:${userType}:company:${cacheCompanyId}:branch:${cacheBranchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payable Data"), cachedData, {}));
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
     const { startDate, endDate, companyFilter, branchFilter } = req.query;
@@ -1064,6 +1133,7 @@ export const payable = async (req, res) => {
 
     const result = data;
 
+    await redisSet(cacheKey, result, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payable Data"), result, {}));
   } catch (error) {
     console.error(error);
@@ -1074,6 +1144,12 @@ export const payable = async (req, res) => {
 export const salesAndPurchaseGraph = async (req, res) => {
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const cacheCompanyId = user?.companyId?._id;
+    const cacheBranchId = user?.branchId?._id;
+    const cacheKey = `dashboard:salesAndPurchaseGraph:req:${JSON.stringify(req.query)}:user:${userType}:company:${cacheCompanyId}:branch:${cacheBranchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales and Purchase Graph"), cachedData, {}));
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
     const { startDate, endDate, companyFilter, branchFilter } = req.query;
@@ -1277,6 +1353,7 @@ export const salesAndPurchaseGraph = async (req, res) => {
     // Sort chronologically
     graphData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+    await redisSet(cacheKey, graphData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales and Purchase Graph"), graphData, {}));
   } catch (error) {
     console.error(error);
@@ -1288,6 +1365,12 @@ export const transactionGraph = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const cacheCompanyId = user?.companyId?._id;
+    const cacheBranchId = user?.branchId?._id;
+    const cacheKey = `dashboard:transactionGraph:req:${JSON.stringify(req.query)}:user:${userType}:company:${cacheCompanyId}:branch:${cacheBranchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Transaction Graph"), cachedData, {}));
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
     let { startDate, endDate, companyFilter, typeFilter, branchFilter } = req.query;
@@ -1439,6 +1522,7 @@ export const transactionGraph = async (req, res) => {
 
     graphData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+    await redisSet(cacheKey, graphData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Transaction Graph"), graphData, {}));
   } catch (error) {
     console.error(error);
@@ -1450,6 +1534,12 @@ export const getCategorySales = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const cacheCompanyId = user?.companyId?._id;
+    const cacheBranchId = user?.branchId?._id;
+    const cacheKey = `dashboard:getCategorySales:req:${JSON.stringify(req.query)}:user:${userType}:company:${cacheCompanyId}:branch:${cacheBranchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Category Sales"), cachedData, {}));
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
     let { startDate, endDate, companyFilter, branchFilter } = req.query;
@@ -1551,6 +1641,7 @@ export const getCategorySales = async (req, res) => {
       { $sort: { totalSalesQty: -1 } },
     ]);
 
+    await redisSet(cacheKey, data, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Category Sales"), data, {}));
   } catch (error) {
     console.error(error);
@@ -1560,6 +1651,10 @@ export const getCategorySales = async (req, res) => {
 
 export const getRenewalDueOfMonth = async (req, res) => {
   try {
+    const { user } = req?.headers || {};
+    const cacheKey = `dashboard:getRenewalDueOfMonth:req:${JSON.stringify(req.query)}:user:${user?.userType}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Renewal Due Companies"), cachedData, {}));
     let { startDate, endDate, search } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
@@ -1580,7 +1675,9 @@ export const getRenewalDueOfMonth = async (req, res) => {
     const data = await getData(companyModel, criteria, {}, { sort: { planEndDate: 1 } });
     const total = await countData(companyModel, criteria);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Renewal Due Companies"), { company_data: data, totalData: total }, {}));
+    const result = { company_data: data, totalData: total };
+    await redisSet(cacheKey, result, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Renewal Due Companies"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -1589,6 +1686,10 @@ export const getRenewalDueOfMonth = async (req, res) => {
 
 export const getNewRegistrations = async (req, res) => {
   try {
+    const { user } = req?.headers || {};
+    const cacheKey = `dashboard:getNewRegistrations:req:${JSON.stringify(req.query)}:user:${user?.userType}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("New Registrations"), cachedData, {}));
     let { startDate, endDate, search } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -1609,7 +1710,9 @@ export const getNewRegistrations = async (req, res) => {
     const data = await getData(companyModel, criteria, {}, { sort: { createdAt: -1 } });
     const total = await countData(companyModel, criteria);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("New Registrations"), { company_data: data, totalData: total }, {}));
+    const result = { company_data: data, totalData: total };
+    await redisSet(cacheKey, result, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("New Registrations"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

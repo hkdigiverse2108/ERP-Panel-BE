@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel, productModel, productTypeModel, stockModel, uomModel, brandModel, categoryModel } from "../../database";
-import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, findAllAndPopulateWithSorting, extractDataFromFile, handleIncludeId } from "../../helper";
+import { checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, findAllAndPopulateWithSorting, extractDataFromFile, handleIncludeId, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addBulkProductSchema, addProductSchema, deleteProductSchema, editProductSchema, getProductSchema } from "../../validation";
 import axios from "axios";
 
@@ -39,6 +39,8 @@ export const addProduct = async (req, res) => {
     let response = await createOne(productModel, value);
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+
+    await redisdelPattern("product:*");
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Product"), response, {}));
   } catch (error) {
@@ -224,6 +226,8 @@ export const bulkAddProduct = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("product:*");
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Bulk Products"), response, {}));
   } catch (error) {
     console.error(error);
@@ -277,6 +281,8 @@ export const editProduct = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Product"), {}, {}));
 
+    await redisdelPattern("product:*");
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Product"), response, {}));
   } catch (error) {
     console.error(error);
@@ -316,6 +322,8 @@ export const deleteProduct = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Product"), {}, {}));
 
+    await redisdelPattern("product:*");
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Product"), response, {}));
   } catch (error) {
     console.error(error);
@@ -330,6 +338,14 @@ export const getAllProduct = async (req, res) => {
     const userType = user?.userType;
 
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id || req.query?.branchFilter || null;
+
+    const cacheKey = `product:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), cachedData, {}));
+    }
+
     const { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, productTypeIdFilter } = req.query;
     const effectiveCompanyId = companyFilter || (userType !== USER_TYPES.SUPER_ADMIN ? companyId : null);
     const effectiveBranchId = branchFilter || (userType !== USER_TYPES.SUPER_ADMIN ? user?.branchId?._id : null);
@@ -598,7 +614,10 @@ export const getAllProduct = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), { product_data: productsWithStock, totalData, state: stateObj }, {}));
+    const responsePayload = { product_data: productsWithStock, totalData, state: stateObj };
+    await redisSet(cacheKey, responsePayload, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), responsePayload, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -611,6 +630,13 @@ export const getProductDropdown = async (req, res) => {
     let { user } = req?.headers;
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id || req.query?.branchFilter || null;
+
+    const cacheKey = `product:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), cachedData, {}));
+    }
 
     const { productType, search, companyFilter, branchFilter, categoryFilter, brandFilter, isNewProduct, stockFilter, includeId } = req.query;
 
@@ -741,6 +767,7 @@ export const getProductDropdown = async (req, res) => {
       };
     });
 
+    await redisSet(cacheKey, mergedResponse, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), mergedResponse, {}));
   } catch (error) {
     console.error(error);
@@ -754,6 +781,13 @@ export const getOneProduct = async (req, res) => {
     const { user } = req.headers;
     const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id || req.query?.branchId || null;
+
+    const cacheKey = `product:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), cachedData, {}));
+    }
 
     const { error, value } = getProductSchema.validate(req.params);
 
@@ -935,6 +969,7 @@ export const getOneProduct = async (req, res) => {
       branchId: stock.branchData,
     };
 
+    await redisSet(cacheKey, productsWithStock, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Product"), productsWithStock, {}));
   } catch (error) {
     console.error(error);

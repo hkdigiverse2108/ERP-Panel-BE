@@ -1,6 +1,6 @@
 import { COUPON_DISCOUNT_TYPE, COUPON_STATUS, LOYALTY_TYPE, REDEEM_CREDIT_TYPE, POS_CREDIT_NOTE_STATUS, POS_PAYMENT_TYPE, REDEEM_CREDIT_MODEL } from "../../common";
 import { couponModel, discountModel, loyaltyModel, posCreditNoteModel, PosPaymentModel } from "../../database";
-import { getFirstMatch } from "../../helper";
+import { getFirstMatch, redisdelPattern } from "../../helper";
 import mongoose from "mongoose";
 
 const ObjectId = mongoose.Types.ObjectId;
@@ -84,6 +84,7 @@ export const applyCoupon = async (couponId: string, customerId: string, totalAmo
       await couponModel.updateOne({ _id: coupon._id }, { $push: { customerIds: { id: customerId, count: 1 } }, $inc: { usedCount: 1 } });
     }
 
+    await redisdelPattern("coupon:*");
     return "Coupon applied successfully";
   } catch (error) {
     console.error(error);
@@ -113,6 +114,7 @@ export const applyRedeemCredit = async (redeemCreditId: string, redeemCreditType
       if (updatedCreditNote && updatedCreditNote.creditsRemaining <= 0) {
         await posCreditNoteModel.updateOne({ _id: redeemCreditId }, { status: POS_CREDIT_NOTE_STATUS.USED });
       }
+      await redisdelPattern("posCreditNote:*");
     } else if (redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT || redeemCreditType === REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT) {
       const advancePayment = await getFirstMatch(PosPaymentModel, { _id: redeemCreditId, isDeleted: false, paymentType: POS_PAYMENT_TYPE.ADVANCE }, {}, {});
       if (!advancePayment) {
@@ -126,6 +128,7 @@ export const applyRedeemCredit = async (redeemCreditId: string, redeemCreditType
       }
 
       await PosPaymentModel.updateOne({ _id: redeemCreditId }, { $inc: { amount: -redeemCreditAmount } });
+      await redisdelPattern("posPayment:*");
     } else {
       return `Invalid redemption type`;
     }
@@ -201,6 +204,7 @@ export const applyLoyalty = async (loyaltyId: string, customerId: string, totalA
       await loyaltyModel.updateOne({ _id: loyaltyId }, { $push: { customerIds: { id: customerId, count: 1 } }, $inc: { usedCount: 1 } });
     }
 
+    await redisdelPattern("loyalty:*");
     return "Loyalty redeemed successfully";
   } catch (error) {
     console.error(error);
@@ -221,6 +225,7 @@ export const revertCoupon = async (couponId: string, customerId: string) => {
         await couponModel.updateOne({ _id: new ObjectId(couponId) as any }, { $pull: { customerIds: { id: new ObjectId(customerId) as any } }, $inc: { usedCount: -1 } });
       }
     }
+    await redisdelPattern("coupon:*");
   } catch (error) {
     console.error("Error in revertCoupon:", error);
   }
@@ -236,8 +241,10 @@ export const revertRedeemCredit = async (redeemCreditId: string, redeemCreditTyp
       if (posOrderId) updatePayload.$pull = { usedOnOrderIds: posOrderId };
 
       await posCreditNoteModel.updateOne({ _id: new ObjectId(redeemCreditId) as any }, updatePayload);
+      await redisdelPattern("posCreditNote:*");
     } else if (redeemCreditType === REDEEM_CREDIT_TYPE.ADVANCE_PAYMENT || redeemCreditType === REDEEM_CREDIT_MODEL.ADVANCE_PAYMENT) {
       await PosPaymentModel.updateOne({ _id: new ObjectId(redeemCreditId) }, { $inc: { amount: redeemCreditAmount } });
+      await redisdelPattern("posPayment:*");
     }
   } catch (error) {
     console.error("Error in revertRedeemCredit:", error);
@@ -257,6 +264,7 @@ export const revertLoyalty = async (loyaltyId: string, customerId: string) => {
         await loyaltyModel.updateOne({ _id: new ObjectId(loyaltyId) as any }, { $pull: { customerIds: { id: new ObjectId(customerId) as any } }, $inc: { usedCount: -1 } });
       }
     }
+    await redisdelPattern("loyalty:*");
   } catch (error) {
     console.error("Error in revertLoyalty:", error);
   }
@@ -281,6 +289,7 @@ export const applyPosDiscount = async (discountId: string, customerId: string | 
       await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: 1 } });
     }
 
+    await redisdelPattern("discount:*");
     return "Discount applied successfully";
   } catch (error) {
     console.error("Error in applyPosDiscount:", error);
@@ -307,6 +316,7 @@ export const revertDiscount = async (discountId: string, customerId?: string) =>
     } else {
       await discountModel.updateOne({ _id: discount._id }, { $inc: { usedCount: -1 } });
     }
+    await redisdelPattern("discount:*");
   } catch (error) {
     console.error("Error in revertDiscount:", error);
   }

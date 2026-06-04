@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS, LOYALTY_REDEMPTION_TYPE, LOYALTY_STATUS, LOYA
 import { contactModel, loyaltyModel } from "../../database";
 import { applyDateFilter, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addLoyaltySchema, deleteLoyaltySchema, editLoyaltySchema, getLoyaltySchema, redeemLoyaltySchema, removeLoyaltySchema } from "../../validation";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -33,6 +34,7 @@ export const addLoyalty = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("loyalty:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Loyalty Campaign"), response, {}));
   } catch (error) {
     console.error(error);
@@ -73,6 +75,7 @@ export const editLoyalty = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Loyalty Campaign"), {}, {}));
     }
 
+    await redisdelPattern("loyalty:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Loyalty Campaign"), response, {}));
   } catch (error) {
     console.error(error);
@@ -103,6 +106,7 @@ export const deleteLoyalty = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Loyalty Campaign"), {}, {}));
     }
 
+    await redisdelPattern("loyalty:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Loyalty Campaign"), response, {}));
   } catch (error) {
     console.error(error);
@@ -114,7 +118,12 @@ export const getAllLoyalty = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `loyalty:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Loyalty Campaign"), cachedData, {}));
     let { page, limit, search, type, status, activeFilter, companyFilter, startDate, endDate } = req.query;
 
     page = Number(page);
@@ -166,7 +175,9 @@ export const getAllLoyalty = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Loyalty Campaign"), { loyalty_data: response, totalData, state }, {}));
+    const result = { loyalty_data: response, totalData, state };
+    await redisSet(cacheKey, result, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Loyalty Campaign"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -181,6 +192,14 @@ export const getOneLoyalty = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `loyalty:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Loyalty Campaign"), cachedData, {}));
 
     const response = await getFirstMatch(
       loyaltyModel,
@@ -199,6 +218,7 @@ export const getOneLoyalty = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Loyalty Campaign"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Loyalty Campaign"), response, {}));
   } catch (error) {
     console.error(error);
@@ -335,7 +355,12 @@ export const loyaltyDropDown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `loyalty:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Loyalty Dropdown"), cachedData, {}));
     const { search, customerId, totalAmount, companyFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
@@ -370,6 +395,7 @@ export const loyaltyDropDown = async (req, res) => {
 
     const response = await loyaltyModel.find(criteria, { name: 1, type: 1, minimumPurchaseAmount: 1 }).sort({ name: 1 }).limit(100);
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Loyalty Dropdown"), response, {}));
   } catch (error) {
     console.error(error);

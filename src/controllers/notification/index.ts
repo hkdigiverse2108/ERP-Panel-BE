@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS } from "../../common";
 import { notificationModel } from "../../database";
 import { countData, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, updateMany } from "../../helper";
 import { deleteNotificationSchema, readNotificationSchema } from "../../validation";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -9,8 +10,12 @@ export const getAllNotification = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `notification:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Notification"), cachedData, {}));
     let { page, limit, search, activeFilter, companyFilter, branchFilter, readFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -57,7 +62,9 @@ export const getAllNotification = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Notification"), { notification_data: response, totalData, unreadCount: totalUnreadData, state }, {}));
+    const result = { notification_data: response, totalData, unreadCount: totalUnreadData, state };
+    await redisSet(cacheKey, result, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Notification"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -77,6 +84,7 @@ export const readNotification = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Notification"), {}, {}));
     }
 
+    await redisdelPattern("notification:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Notification"), response, {}));
   } catch (error) {
     console.error(error);
@@ -97,6 +105,7 @@ export const readAllNotification = async (req, res) => {
 
     const response = await updateMany(notificationModel, criteria, { isRead: true, updatedBy: user?._id }, {});
 
+    await redisdelPattern("notification:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("All Notifications"), response, {}));
   } catch (error) {
     console.error(error);
@@ -118,6 +127,7 @@ export const deleteNotification = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Notification"), {}, {}));
     }
 
+    await redisdelPattern("notification:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Notification"), response, {}));
   } catch (error) {
     console.error(error);

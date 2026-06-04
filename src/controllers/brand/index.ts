@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { brandModel } from "../../database";
-import { applyDateFilter, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, redisGet, redisSet, redisdelPattern, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBrandSchema, deleteBrandSchema, editBrandSchema, getBrandSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -25,6 +25,8 @@ export const addBrand = async (req, res) => {
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
+
+    await redisdelPattern("brand:*");
 
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Brand"), response, {}));
   } catch (error) {
@@ -55,6 +57,8 @@ export const editBrandById = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Brand"), {}, {}));
     }
 
+    await redisdelPattern("brand:*");
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Brand"), response, {}));
   } catch (error) {
     console.error(error);
@@ -78,6 +82,8 @@ export const deleteBrandById = async (req, res) => {
 
     const response = await updateData(brandModel, { _id: value.id }, { isDeleted: true, updatedBy: user?._id || null }, {});
 
+    await redisdelPattern("brand:*");
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Brand"), response, {}));
   } catch (error) {
     console.error(error);
@@ -88,6 +94,16 @@ export const deleteBrandById = async (req, res) => {
 export const getAllBrand = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id || user?.companyId || null;
+    const branchId = user?.branchId?._id || user?.branchId || null;
+    const cacheKey = `brand:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Brand"), cachedData, {}));
+    }
+
     let { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -134,7 +150,10 @@ export const getAllBrand = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Brand"), { brand_data: response, totalData, state }, {}));
+    const responsePayload = { brand_data: response, totalData, state };
+    await redisSet(cacheKey, responsePayload, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Brand"), responsePayload, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -144,6 +163,16 @@ export const getAllBrand = async (req, res) => {
 export const getBrandById = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id || user?.companyId || null;
+    const branchId = user?.branchId?._id || user?.branchId || null;
+    const cacheKey = `brand:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Brand"), cachedData, {}));
+    }
+
     const { error, value } = getBrandSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
@@ -166,6 +195,8 @@ export const getBrandById = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Brand"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Brand"), response, {}));
   } catch (error) {
     console.error(error);
@@ -177,6 +208,16 @@ export const getBrandById = async (req, res) => {
 export const getBrandDropdown = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id || user?.companyId || null;
+    const branchId = user?.branchId?._id || user?.branchId || null;
+    const cacheKey = `brand:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Brand"), cachedData, {}));
+    }
+
     let { parentBrandFilter, onlyBrandFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
@@ -206,6 +247,8 @@ export const getBrandDropdown = async (req, res) => {
       branchId: item.branchId,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Brand"), dropdownData, {}));
   } catch (error) {
     console.error(error);
@@ -216,6 +259,16 @@ export const getBrandDropdown = async (req, res) => {
 export const getBrandTree = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id || user?.companyId || null;
+    const branchId = user?.branchId?._id || user?.branchId || null;
+    const cacheKey = `brand:tree:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Brand tree"), cachedData, {}));
+    }
+
     const brands = await brandModel.aggregate([
       {
         $match: {
@@ -269,6 +322,8 @@ export const getBrandTree = async (req, res) => {
     };
 
     const response = brands.map(buildTree);
+
+    await redisSet(cacheKey, response, 3600);
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Brand tree"), response, {}));
   } catch (error) {

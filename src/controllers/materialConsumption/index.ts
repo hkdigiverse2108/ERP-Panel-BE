@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { branchModel, ConsumptionTypeModel, materialConsumptionModel, productModel, stockModel } from "../../database";
 import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
 import { addMaterialConsumptionSchema, deleteMaterialConsumptionSchema, editMaterialConsumptionSchema, getMaterialConsumptionSchema } from "../../validation";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 export const addMaterialConsumption = async (req, res) => {
   reqInfo(req);
@@ -63,6 +64,7 @@ export const addMaterialConsumption = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.addDataError, {}, {}));
 
+    await redisdelPattern("materialConsumption:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Material Consumption"), response, {}));
   } catch (error) {
     console.error(error);
@@ -158,6 +160,7 @@ export const editMaterialConsumption = async (req, res) => {
     const response = await updateData(materialConsumptionModel, { _id: materialConsumptionId }, value, { new: true });
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.updateDataError("Material Consumption"), {}, {}));
 
+    await redisdelPattern("materialConsumption:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Material Consumption"), response, {}));
   } catch (error) {
     console.error(error);
@@ -178,6 +181,7 @@ export const deleteMaterialConsumption = async (req, res) => {
     const response = await updateData(materialConsumptionModel, { _id: value.id }, { isDeleted: true, updatedBy: user?._id || null }, {});
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.deleteDataError("Material Consumption"), {}, {}));
 
+    await redisdelPattern("materialConsumption:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Material Consumption"), response, {}));
   } catch (error) {
     console.error(error);
@@ -189,8 +193,12 @@ export const getAllMaterialConsumption = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `materialConsumption:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Material Consumption"), cachedData, {}));
     let { page, limit, search, startDate, endDate, typeFilter, branchFilter, activeFilter, companyFilter } = req.query;
 
     page = Number(page) || 1;
@@ -246,7 +254,9 @@ export const getAllMaterialConsumption = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Material Consumption"), { material_consumption_data: response, totalData, state: stateObj }, {}));
+    const result = { material_consumption_data: response, totalData, state: stateObj };
+    await redisSet(cacheKey, result, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Material Consumption"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -258,6 +268,14 @@ export const getMaterialConsumptionById = async (req, res) => {
   try {
     const { error, value } = getMaterialConsumptionSchema.validate(req.params);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error.details[0].message, {}, {}));
+
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `materialConsumption:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Material Consumption"), cachedData, {}));
 
     const response = await getFirstMatch(
       materialConsumptionModel,
@@ -276,6 +294,7 @@ export const getMaterialConsumptionById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Material Consumption"), {}, {}));
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Material Consumption"), response, {}));
   } catch (error) {
     console.error(error);

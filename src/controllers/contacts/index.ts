@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { contactModel, locationModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, extractDataFromFile, getData, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, extractDataFromFile, getData, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addContactSchema, deleteContactSchema, editContactSchema, getContactSchema, addBulkContactSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -48,6 +48,7 @@ export const addContact = async (req, res) => {
     const response = await createOne(contactModel, value);
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
+    await redisdelPattern("contact:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Contact"), response, {}));
   } catch (error) {
     console.error(error);
@@ -102,6 +103,7 @@ export const editContactById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Contact"), {}, {}));
 
+    await redisdelPattern("contact:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Contact details"), response, {}));
   } catch (error) {
     console.error(error);
@@ -128,6 +130,7 @@ export const deleteContactById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Contact details"), {}, {}));
 
+    await redisdelPattern("contact:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Contact details"), response, {}));
   } catch (error) {
     console.error(error);
@@ -139,7 +142,12 @@ export const getAllContact = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const cacheKey = `contact:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Contact"), cachedData, {}));
+
     let { page, limit, search, startDate, endDate, activeFilter, typeFilter, companyFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -186,7 +194,10 @@ export const getAllContact = async (req, res) => {
 
     const stateObj = { page, limit, totalPages };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Contact"), { contact_data: response, totalData, state: stateObj }, {}));
+    const responsePayload = { contact_data: response, totalData, state: stateObj };
+    await redisSet(cacheKey, responsePayload, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Contact"), responsePayload, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -196,6 +207,13 @@ export const getAllContact = async (req, res) => {
 export const getContactById = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const cacheKey = `contact:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Contact"), cachedData, {}));
+
     const { error, value } = getContactSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0].message, {}, {}));
@@ -219,6 +237,7 @@ export const getContactById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Contact"), {}, {}));
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Contact"), response, {}));
   } catch (error) {
     console.error(error);
@@ -230,7 +249,12 @@ export const getContactDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const cacheKey = `contact:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Contact Dropdown"), cachedData, {}));
+
     const { typeFilter, search, companyFilter, startDate, endDate, includeId } = req.query; // typeFilter: 'supplier', 'customer', 'both'
 
     let criteria: any = { isDeleted: false, isActive: true };
@@ -312,6 +336,7 @@ export const getContactDropdown = async (req, res) => {
       dob: item.dob,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Contact Dropdown"), dropdownData, {}));
   } catch (error) {
     console.error(error);
@@ -507,6 +532,7 @@ export const addBulkContact = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("contact:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Bulk Contacts"), response, {}));
   } catch (error) {
     console.error(error);

@@ -1,3 +1,5 @@
+import redisClient from "../database/redis";
+
 // ================ All Find Services ================
 
 export const deleteSingleRecord = async (modelName, criteria, projection, options) => {
@@ -75,4 +77,59 @@ export const aggregateDataWithSorting = async (modelName, criteria) => {
 export const aggregateAndPopulate = async (modelName, criteria, populateModel) => {
   const result = await modelName.aggregate(criteria);
   return modelName.populate(result, populateModel);
+};
+
+// ================ Redis Services ================
+
+export const redisGet = async (key: string): Promise<any | null> => {
+  try {
+    const data = await redisClient.get(key);
+    if (data) {
+      return JSON.parse(data as string);
+    }
+    return null;
+  } catch (error) {
+    console.error(`Error in redisGet for key ${key}:`, error);
+    return null;
+  }
+};
+
+export const redisSet = async (key: string, value: any, expiryInSeconds: number = 3600): Promise<void> => {
+  try {
+    const stringValue = JSON.stringify(value);
+    await redisClient.set(key, stringValue, {
+      EX: expiryInSeconds,
+    });
+  } catch (error) {
+    console.error(`Error in redisSet for key ${key}:`, error);
+  }
+};
+
+export const redisDel = async (key: string): Promise<void> => {
+  try {
+    await redisClient.del(key);
+  } catch (error) {
+    console.error(`Error in redisDel for key ${key}:`, error);
+  }
+};
+
+export const redisdelPattern = async (pattern: string): Promise<void> => {
+  try {
+    const keys: string[] = [];
+
+    for await (const keyOrKeys of redisClient.scanIterator({ MATCH: pattern, COUNT: 100, })) {
+      const matchedKeys = Array.isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys];
+      keys.push(...matchedKeys);
+
+      if (keys.length >= 100) {
+        await redisClient.del(keys);
+        keys.length = 0;
+      }
+    }
+    if (keys.length > 0) {
+      await redisClient.del(keys);
+    }
+  } catch (error) {
+    console.error(`Error in redisdelPattern for pattern ${pattern}:`, error);
+  }
 };

@@ -2,6 +2,7 @@ import { apiResponse, DELIVERY_CHALLAN_STATUS, HTTP_STATUS, INVOICE_STATUS, SALE
 import { contactModel, deliveryChallanModel, InvoiceModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel } from "../../database";
 import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addDeliveryChallanSchema, deleteDeliveryChallanSchema, editDeliveryChallanSchema, getDeliveryChallanSchema } from "../../validation";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -123,6 +124,7 @@ export const addDeliveryChallan = async (req, res) => {
       }
     }
 
+    await redisdelPattern("delivery-challan:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Delivery Challan"), response, {}));
   } catch (error) {
     console.error(error);
@@ -272,7 +274,7 @@ export const editDeliveryChallan = async (req, res) => {
     }
     // ------------------------------------
 
-
+    await redisdelPattern("delivery-challan:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Delivery Challan"), response, {}));
   } catch (error) {
     console.error(error);
@@ -320,6 +322,7 @@ export const deleteDeliveryChallan = async (req, res) => {
       }
     }
 
+    await redisdelPattern("delivery-challan:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Delivery Challan"), response, {}));
   } catch (error) {
     console.error(error);
@@ -331,8 +334,12 @@ export const getAllDeliveryChallan = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `delivery-challan:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan"), cachedData, {}));
     let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, branchFilter, customerFilter } = req.query;
 
     page = Number(page);
@@ -473,7 +480,9 @@ export const getAllDeliveryChallan = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan"), { deliveryChallan_data: finalResponse, totalData, summary, state }, {}));
+    const result = { deliveryChallan_data: finalResponse, totalData, summary, state };
+    await redisSet(cacheKey, result, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -488,6 +497,14 @@ export const getOneDeliveryChallan = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `delivery-challan:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan"), cachedData, {}));
 
     const response = await getFirstMatch(
       deliveryChallanModel,
@@ -552,6 +569,7 @@ export const getOneDeliveryChallan = async (req, res) => {
       }
     }
 
+    await redisSet(cacheKey, dcObj, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan"), dcObj, {}));
   } catch (error) {
     console.error(error);
@@ -564,8 +582,12 @@ export const getDeliveryChallanDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `delivery-challan:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan Dropdown"), cachedData, {}));
     let { customerFilter, statusFilter, search, companyFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -621,6 +643,7 @@ export const getDeliveryChallanDropdown = async (req, res) => {
       netAmount: item.transactionSummary?.netAmount || 0,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Delivery Challan Dropdown"), dropdownData, {}));
   } catch (error) {
     console.error(error);

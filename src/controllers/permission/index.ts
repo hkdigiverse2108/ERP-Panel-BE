@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { moduleModel, permissionModel, userModel } from "../../database";
 import { getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
 import { editPermissionSchema, getPermissionSchema } from "../../validation";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -34,6 +35,7 @@ export const edit_permission_by_id = async (req, res) => {
     }
 
     let updatedRoleDetails = await permissionModel.find({ userId: new ObjectId(userId) });
+    await redisdelPattern("permission:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("role details"), updatedRoleDetails, {}));
   } catch (error) {
     console.error(error);
@@ -48,8 +50,17 @@ export const get_permission_by_userId = async (req, res) => {
     let { error, value } = getPermissionSchema.validate(req.query);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
+    const userType = user?.userType;
+    const companyIdHeader = user?.companyId?._id;
+    const branchIdHeader = user?.branchId?._id;
+    const cacheKey = `permission:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyIdHeader}:branch:${branchIdHeader}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("user permissions"), cachedData, {}));
+
     let { userId, search } = value,
       match: any = {};
+
+    userId = userId || user?._id;
 
     let userData = await getFirstMatch(userModel, { _id: new ObjectId(userId), isDeleted: false }, {}, {});
     if (!userData) return res.status(HTTP_STATUS.METHOD_NOT_ALLOWED).json(new apiResponse(HTTP_STATUS.METHOD_NOT_ALLOWED, responseMessage.getDataNotFound("user"), {}, {}));
@@ -116,11 +127,14 @@ export const get_permission_by_userId = async (req, res) => {
       newUserPermissionData.push({ ...item, ...newObj });
     });
 
+    const sortedData = newUserPermissionData.sort((a, b) => a.number - b.number);
+    await redisSet(cacheKey, sortedData, 3600);
+
     return res.status(HTTP_STATUS.OK).json(
       new apiResponse(
         HTTP_STATUS.OK,
         responseMessage?.getDataSuccess("user permissions"),
-        newUserPermissionData.sort((a, b) => a.number - b.number),
+        sortedData,
         {},
       ),
     );
@@ -137,8 +151,14 @@ export const get_permission_by_userId_child = async (req, res) => {
     let { error, value } = getPermissionSchema.validate(req.query);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
+    const cacheKey = `permission:byUserChild:req:${JSON.stringify(req.query)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("user permissions"), cachedData, {}));
+
     let { userId, search } = value,
       match: any = {};
+
+    userId = userId || user?._id;
 
     let userPermissionData = await getData(permissionModel, { userId: new ObjectId(userId) }, {}, {});
     if (!userPermissionData) return res.status(HTTP_STATUS.METHOD_NOT_ALLOWED).json(new apiResponse(HTTP_STATUS.METHOD_NOT_ALLOWED, responseMessage.getDataNotFound("user permissions"), {}, {}));
@@ -236,6 +256,7 @@ export const get_permission_by_userId_child = async (req, res) => {
     });
 
     newUserPermissionData.sort((a, b) => a.number - b.number);
+    await redisSet(cacheKey, newUserPermissionData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("user permissions"), newUserPermissionData, {}));
   } catch (error) {
     console.error(error);

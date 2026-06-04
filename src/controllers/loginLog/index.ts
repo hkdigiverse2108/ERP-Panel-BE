@@ -1,6 +1,7 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { loginLogModel } from "../../database";
 import { countData, createOne, getDataWithSorting, reqInfo, responseMessage } from "../../helper";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 export const createLoginLogEntry = async (req, user: any, eventType: "LOGIN" | "FINANCIAL_YEAR_UPDATE", message: string) => {
 
@@ -30,14 +31,20 @@ export const createLoginLogEntry = async (req, user: any, eventType: "LOGIN" | "
         createdBy: user?._id || null,
         updatedBy: user?._id || null,
     });
+
+    await redisdelPattern("loginLog:*");
 };
 
 export const getAllLoginLog = async (req, res) => {
     reqInfo(req);
     try {
         const { user } = req?.headers;
+        const userType = user?.userType;
         const companyId = user?.companyId?._id;
         const branchId = user?.branchId?._id;
+        const cacheKey = `loginLog:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+        const cachedData = await redisGet(cacheKey);
+        if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Login Log"), cachedData, {}));
         let { page, limit, search, companyFilter, branchFilter, startDate, endDate } = req.query;
 
         const criteria: any = { isDeleted: false };
@@ -84,11 +91,13 @@ export const getAllLoginLog = async (req, res) => {
         const logs = await getDataWithSorting(loginLogModel, criteria, {}, options);
         const totalData = await countData(loginLogModel, criteria);
 
-        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Login Log"), {
+        const result = {
             loginLog_data: logs,
             totalData,
             state: { page, limit, totalPages: Math.ceil(totalData / limit) || 1 },
-        }, {}));
+        };
+        await redisSet(cacheKey, result, 3600);
+        return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Login Log"), result, {}));
     } catch (error) {
         console.error(error);
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

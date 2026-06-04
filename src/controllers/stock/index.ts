@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { branchModel, ConsumptionTypeModel, materialConsumptionModel, productModel, stockModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, redisdelPattern, reqInfo, responseMessage, updateData, redisGet, redisSet } from "../../helper";
 import { addStockSchema, bulkStockAdjustmentSchema, deleteStockSchema, editStockSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -33,6 +33,8 @@ export const addStock = async (req, res) => {
     if (existingStock) {
       let stock = await updateData(stockModel, { _id: existingStock?._id }, value, {});
       if (!stock) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+      await redisdelPattern("product:*");
+      await redisdelPattern("stock:*");
       return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock"), stock, {}));
     }
 
@@ -44,6 +46,8 @@ export const addStock = async (req, res) => {
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
     if (!existingStock) await updateData(productModel, { _id: value?.productId }, { $push: { stockIds: response?._id } }, {});
+    await redisdelPattern("product:*");
+    await redisdelPattern("stock:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock"), response, {}));
   } catch (error) {
     console.error(error);
@@ -88,7 +92,8 @@ export const editStock = async (req, res) => {
 
       updatedItems.push(updatedStock);
     }
-
+    await redisdelPattern("product:*");
+    await redisdelPattern("stock:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), { items: updatedItems }, {}));
   } catch (error) {
     console.error(error);
@@ -184,6 +189,10 @@ export const bulkStockAdjustment = async (req, res) => {
       consumptionRecord = await createOne(materialConsumptionModel, consumptionPayload);
     }
 
+    if (updatedItems.length > 0) {
+      await redisdelPattern("product:*");
+      await redisdelPattern("stock:*");
+    }
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock"), { items: updatedItems, consumption: consumptionRecord }, {}));
   } catch (error) {
     console.error(error);
@@ -214,6 +223,8 @@ export const deleteStock = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Stock"), {}, {}));
     }
     await updateData(productModel, { _id: isExist?.productId }, { $pull: { stockIds: isExist?._id } }, {});
+    await redisdelPattern("product:*");
+    await redisdelPattern("stock:*");
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Stock"), response, {}));
   } catch (error) {
@@ -228,6 +239,10 @@ export const getAllStock = async (req, res) => {
     const { user } = req.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `stock:all:req:${JSON.stringify(req.query)}:user:${user?.userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock"), cachedData, {}));
+
     const { page, limit, search, activeFilter, companyFilter, branchFilter, categoryFilter, subCategoryFilter, brandFilter, subBrandFilter, hsnCodeFilter, purchaseTaxFilter, salesTaxIdFilter, productTypeFilter, minStockQty, maxStockQty, expiryFilter } = req.query;
 
     const stockMatchCriteria: any = { isDeleted: false };
@@ -308,15 +323,18 @@ export const getAllStock = async (req, res) => {
         limit: parseInt(limit as string),
         totalPages: 0,
       };
+
+      const result = {
+        stock_data: [],
+        totalData: 0,
+        state: stateObj,
+      };
+      await redisSet(cacheKey, result, 3600);
       return res.status(HTTP_STATUS.OK).json(
         new apiResponse(
           HTTP_STATUS.OK,
           responseMessage?.getDataSuccess("Stock"),
-          {
-            stock_data: [],
-            totalData: 0,
-            state: stateObj,
-          },
+          result,
           {},
         ),
       );
@@ -376,15 +394,18 @@ export const getAllStock = async (req, res) => {
       totalPages,
     };
 
+    const result = {
+      stock_data: stockData,
+      totalData,
+      state: stateObj,
+    };
+    await redisSet(cacheKey, result, 3600);
+
     return res.status(HTTP_STATUS.OK).json(
       new apiResponse(
         HTTP_STATUS.OK,
         responseMessage?.getDataSuccess("Stock"),
-        {
-          stock_data: stockData,
-          totalData,
-          state: stateObj,
-        },
+        result,
         {},
       ),
     );
@@ -399,6 +420,10 @@ export const getOneStock = async (req, res) => {
   try {
     const { id } = req.params;
     const { branchId } = req.query;
+
+    const cacheKey = `stock:getOne:req:${JSON.stringify(req.params)}:query:${JSON.stringify(req.query)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock"), cachedData, {}));
 
     const product = await getFirstMatch(
       productModel,
@@ -453,6 +478,7 @@ export const getOneStock = async (req, res) => {
       availableQty: totalQty,
     };
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock"), response, {}));
   } catch (error) {
     console.error(error);

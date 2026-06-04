@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { feedbackModel, PosOrderModel, contactModel } from "../../database";
-import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, checkBranch, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addFeedbackSchema, deleteFeedbackSchema, editFeedbackSchema, getFeedbackSchema } from "../../validation/feedback";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -18,7 +18,9 @@ export const addFeedback = async (req, res) => {
 
     value.companyId = await checkCompany(user, value);
     value.branchId = await checkBranch(user, value);
+
     if (!value.companyId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Company Id"), {}, {}));
+
     if (!value.branchId) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.fieldIsRequired("Branch Id"), {}, {}));
     // Validate invoice if provided
     if (value.orderId && !(await checkIdExist(PosOrderModel, value.orderId, "Order", res))) return;
@@ -35,6 +37,8 @@ export const addFeedback = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("feedback:*");
+    
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Feedback"), response, {}));
   } catch (error) {
     console.error(error);
@@ -76,7 +80,7 @@ export const editFeedback = async (req, res) => {
     if (!response) {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Feedback"), {}, {}));
     }
-
+    await redisdelPattern("feedback:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Feedback"), response, {}));
   } catch (error) {
     console.error(error);
@@ -107,6 +111,7 @@ export const deleteFeedback = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Feedback"), {}, {}));
     }
 
+    await redisdelPattern("feedback:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Feedback"), response, {}));
   } catch (error) {
     console.error(error);
@@ -118,8 +123,13 @@ export const getAllFeedback = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `feedback:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Feedback"), cachedData, {}));
+    
     let { page, limit, search, customerId, rating, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     page = Number(page);
@@ -164,7 +174,7 @@ export const getAllFeedback = async (req, res) => {
         { path: "companyId", select: "name" },
         { path: "branchId", select: "name" },
         { path: "createdBy", select: "fullName userType" },
-        { path: "invoiceId", select: "documentNo date netAmount" },
+        { path: "orderId", select: "orderNo createdAt totalAmount" },
         { path: "customerId", select: "firstName lastName companyName" },
       ],
       skip: (page - 1) * limit,
@@ -182,7 +192,9 @@ export const getAllFeedback = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Feedback"), { feedback_data: response, totalData, state }, {}));
+    const result = { feedback_data: response, totalData, state };
+    await redisSet(cacheKey, result, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Feedback"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -198,13 +210,21 @@ export const getOneFeedback = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `feedback:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Feedback"), cachedData, {}));
+
     const response = await getFirstMatch(
       feedbackModel,
       { _id: value?.id, isDeleted: false },
       {},
       {
         populate: [
-          { path: "invoiceId", select: "documentNo date netAmount customerName" },
+          { path: "orderId", select: "orderNo createdAt totalAmount" },
           { path: "customerId", select: "firstName lastName companyName email phoneNo" },
           { path: "companyId", select: "name" },
           { path: "branchId", select: "name" },
@@ -217,6 +237,7 @@ export const getOneFeedback = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Feedback"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Feedback"), response, {}));
   } catch (error) {
     console.error(error);

@@ -3,6 +3,7 @@ import { PosPaymentModel, PosOrderModel, contactModel, PosCashRegisterModel, tax
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
 import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, updateData, responseMessage, applyDateFilter, getAndIncrementPrefix, handleIncludeId } from "../../helper";
 import { addPosPaymentSchema, editPosPaymentSchema, getPosPaymentSchema, deletePosPaymentSchema, pendingPaymentDropDownSchema, pendingCreditDropDownSchema } from "../../validation";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 export const addPosPayment = async (req, res) => {
   reqInfo(req);
@@ -189,6 +190,7 @@ export const addPosPayment = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("posPayment:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("POS Payment"), response, {}));
   } catch (error) {
     console.error(error);
@@ -364,6 +366,7 @@ export const editPosPayment = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("POS Payment"), {}, {}));
     }
 
+    await redisdelPattern("posPayment:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("POS Payment"), response, {}));
   } catch (error) {
     console.error(error);
@@ -375,8 +378,13 @@ export const getAllPosPayment = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `posPayment:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Payment"), cachedData, {}));
+
     let { page, limit, search, posOrderFilter, voucherTypeFilter, paymentTypeFilter, startDate, endDate, companyFilter, branchFilter, partyFilter, activeFilter, date } = req.query;
     page = Number(page);
     limit = Number(limit);
@@ -420,7 +428,10 @@ export const getAllPosPayment = async (req, res) => {
     const response = await getDataWithSorting(PosPaymentModel, criteria, {}, options);
     const totalData = await countData(PosPaymentModel, criteria);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Payment"), { posPayment_data: response, totalData, state: { page, limit, totalPages: Math.ceil(totalData / limit) || 1 } }, {}));
+    const result = { posPayment_data: response, totalData, state: { page, limit, totalPages: Math.ceil(totalData / limit) || 1 } };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Payment"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -434,6 +445,14 @@ export const getOnePosPayment = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `posPayment:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Payment"), cachedData, {}));
 
     const response = await getFirstMatch(
       PosPaymentModel,
@@ -459,6 +478,7 @@ export const getOnePosPayment = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("POS Payment"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Payment"), response, {}));
   } catch (error) {
     console.error(error);
@@ -586,6 +606,7 @@ export const deletePosPayment = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("POS Payment"), {}, {}));
     }
 
+    await redisdelPattern("posPayment:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Payment"), response, {}));
   } catch (error) {
     console.error(error);
@@ -599,6 +620,13 @@ export const getPendingPaymentDropdown = async (req, res) => {
     const { user } = req?.headers;
     const { error, value } = pendingPaymentDropDownSchema.validate(req.query);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    const userType = user?.userType;
+    const companyIdHeader = user?.companyId?._id;
+    const branchIdHeader = user?.branchId?._id;
+    const cacheKey = `posPayment:pendingPaymentDropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyIdHeader}:branch:${branchIdHeader}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Pending Payment"), cachedData, {}));
 
     value.companyId = value.companyFilter;
     value.branchId = value.branchFilter;
@@ -659,6 +687,7 @@ export const getPendingPaymentDropdown = async (req, res) => {
       }))
     ];
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Pending Payment"), response, {}));
   } catch (error) {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -671,6 +700,13 @@ export const getPendingCreditDropdown = async (req, res) => {
     const { user } = req?.headers;
     const { error, value } = pendingCreditDropDownSchema.validate(req.query);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    const userType = user?.userType;
+    const companyIdHeader = user?.companyId?._id;
+    const branchIdHeader = user?.branchId?._id;
+    const cacheKey = `posPayment:pendingCreditDropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyIdHeader}:branch:${branchIdHeader}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Pending Credit"), cachedData, {}));
 
     value.companyId = value.companyFilter;
     value.branchId = value.branchFilter;
@@ -731,6 +767,7 @@ export const getPendingCreditDropdown = async (req, res) => {
       }))
     ];
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Pending Credit"), response, {}));
   } catch (error) {
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));

@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { companyDriveModel } from "../../database";
-import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, checkCompany, checkBranch } from "../../helper";
+import { countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, checkCompany, checkBranch, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { createCompanyDriveSchema, editCompanyDriveSchema, getCompanyDriveSchema, deleteCompanyDriveSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -29,6 +29,7 @@ export const addCompanyDrive = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("company-drive:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Company Drive"), response, {}));
   } catch (error: any) {
     console.error(error);
@@ -40,8 +41,13 @@ export const getCompanyDrives = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `company-drive:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company Drives"), cachedData, {}));
+
     let { page, limit, search, activeFilter, companyFilter, branchFilter } = req.query;
 
     page = Number(page) || 1;
@@ -90,7 +96,10 @@ export const getCompanyDrives = async (req, res) => {
 
     const state = { page, limit, totalPages };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company Drives"), { companyDrive_data: response, totalData, state }, {}));
+    const responsePayload = { companyDrive_data: response, totalData, state };
+    await redisSet(cacheKey, responsePayload, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company Drives"), responsePayload, {}));
   } catch (error: any) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -100,6 +109,14 @@ export const getCompanyDrives = async (req, res) => {
 export const getCompanyDriveById = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `company-drive:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company Drive"), cachedData, {}));
+
     const { error, value } = getCompanyDriveSchema.validate(req.params);
 
     if (error) {
@@ -123,6 +140,7 @@ export const getCompanyDriveById = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Company Drive"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Company Drive"), response, {}));
   } catch (error: any) {
     console.error(error);
@@ -153,6 +171,7 @@ export const updateCompanyDrive = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Company Drive"), {}, {}));
     }
 
+    await redisdelPattern("company-drive:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Company Drive"), response, {}));
   } catch (error: any) {
     console.error(error);
@@ -186,6 +205,7 @@ export const deleteCompanyDrive = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Company Drive"), {}, {}));
     }
 
+    await redisdelPattern("company-drive:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Company Drive"), response, {}));
   } catch (error: any) {
     console.error(error);

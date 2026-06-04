@@ -1,10 +1,13 @@
 import { apiResponse, generateHash, generateToken, getOtpExpireTime, getUniqueOtp, HTTP_STATUS, LOGIN_SOURCES, USER_TYPES } from "../../common";
 import { companyModel, roleModel, userModel } from "../../database";
-import { checkIdExist, createOne, emailVerificationMail, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkIdExist, createOne, emailVerificationMail, getFirstMatch, redisDel, redisGet, redisSet, reqInfo, responseMessage, updateData } from "../../helper";
 import { forgotPasswordSchema, loginSchema, registerSchema, resendOtpSchema, resetPasswordSchema, updatePasswordSchema, verifyOtpSchema } from "../../validation";
 
 import bcryptjs from "bcryptjs";
 import { createLoginLogEntry } from "../loginLog";
+
+const OTP_TTL_SECONDS = 10 * 60;
+const getOtpCacheKey = (email: string) => `auth:otp:${email?.toLowerCase()}`;
 
 export const register = async (req, res) => {
   reqInfo(req);
@@ -48,11 +51,11 @@ export const register = async (req, res) => {
     );
 
     const { password, ...rest } = response?._doc || {};
+    
     response = {
       ...rest,
       token,
     };
-
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.signupSuccess, response, {}));
   } catch (error) {
     console.error(error);
@@ -114,6 +117,7 @@ export const login = async (req, res) => {
       const otpExpireTime = getOtpExpireTime();
 
       await userModel.findOneAndUpdate({ _id: response?._id }, { otp, otpExpireTime }, { new: true });
+      await redisSet(getOtpCacheKey(response?.email), otp, OTP_TTL_SECONDS);
     }
 
     if (isSourceAdminPanel && (isTypeAdmin || isTypeEmployee)) {
@@ -174,6 +178,7 @@ export const forgotPassword = async (req, res) => {
     }
 
     await updateData(userModel, { _id: response?._id }, { otp, otpExpireTime }, {});
+    await redisSet(getOtpCacheKey(response?.email), otp, OTP_TTL_SECONDS);
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.otpSendSuccess, {}, {}));
   } catch (error) {
@@ -202,6 +207,7 @@ export const updatePassword = async (req, res) => {
     const hashPassword = await generateHash(value?.newPassword);
 
     await updateData(userModel, { _id: response?._id }, { password: hashPassword, otp: null, otpExpireTime: null }, {});
+    await redisDel(getOtpCacheKey(response?.email));
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.resetPasswordSuccess, {}, {}));
   } catch (error) {
@@ -253,6 +259,7 @@ export const resetPassword = async (req, res) => {
     const hashedPassword = await generateHash(value?.newPassword);
 
     response = await updateData(userModel, { _id: response?._id }, { password: hashedPassword }, {});
+    await redisDel(getOtpCacheKey(response?.email));
     const { password, ...rest } = response;
 
     response = {
@@ -277,11 +284,15 @@ export const verifyOtp = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.getDataNotFound("User"), {}, {}));
 
-    if (Number(response?.otp) !== Number(value?.otp)) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidOTP, {}, {}));
+    const cachedOtp = await redisGet(getOtpCacheKey(value?.email));
+    const otpToVerify = cachedOtp ?? response?.otp;
 
-    if (response?.otpExpireTime < new Date()) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.expireOTP, {}, {}));
+    if (Number(otpToVerify) !== Number(value?.otp)) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.invalidOTP, {}, {}));
+
+    if (!cachedOtp && response?.otpExpireTime < new Date()) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage?.expireOTP, {}, {}));
 
     response = await updateData(userModel, { _id: response?._id }, { otp: null, otpExpireTime: null }, {});
+    await redisDel(getOtpCacheKey(response?.email));
     const { password, otp, otpExpireTime, ...rest } = response;
 
     response = rest;
@@ -314,6 +325,7 @@ export const resendOtp = async (req, res) => {
     }
 
     response = await updateData(userModel, { _id: response?._id }, { otp, otpExpireTime }, {});
+    await redisSet(getOtpCacheKey(response?.email), otp, OTP_TTL_SECONDS);
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.resendOtpSuccess, {}, {}));
   } catch (error) {

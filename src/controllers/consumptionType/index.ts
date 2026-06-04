@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { ConsumptionTypeModel } from "../../database";
-import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { createConsumptionTypeSchema, deleteConsumptionTypeSchema, getConsumptionTypeSchema, updateConsumptionTypeSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -38,6 +38,7 @@ export const addConsumptionType = async (req: any, res: any) => {
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.addDataError, {}, {}));
     }
 
+    await redisdelPattern("consumption-type:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.addDataSuccess("Consumption Type"), response, {}));
   } catch (error: any) {
     console.error(error);
@@ -87,6 +88,7 @@ export const editConsumptionType = async (req: any, res: any) => {
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.updateDataError("Consumption Type"), {}, {}));
     }
 
+    await redisdelPattern("consumption-type:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.updateDataSuccess("Consumption Type"), response, {}));
   } catch (error: any) {
     console.error(error);
@@ -126,6 +128,7 @@ export const deleteConsumptionType = async (req: any, res: any) => {
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage.deleteDataError("Consumption Type"), {}, {}));
     }
 
+    await redisdelPattern("consumption-type:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.deleteDataSuccess("Consumption Type"), response, {}));
   } catch (error: any) {
     console.error(error);
@@ -137,6 +140,12 @@ export const getOneConsumptionType = async (req: any, res: any) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id || user?.companyId;
+    const cacheKey = `consumption-type:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Consumption Type"), cachedData, {}));
+
     const { error, value } = getConsumptionTypeSchema.validate(req.params);
 
     if (error) {
@@ -160,6 +169,7 @@ export const getOneConsumptionType = async (req: any, res: any) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage.getDataNotFound("Consumption Type"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Consumption Type"), response, {}));
   } catch (error: any) {
     console.error(error);
@@ -171,6 +181,12 @@ export const getAllConsumptionType = async (req: any, res: any) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id || user?.companyId;
+    const cacheKey = `consumption-type:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Consumption Type"), cachedData, {}));
+
     let { page, limit, search, companyFilter, activeFilter } = req.query;
 
     page = Number(page) || 1;
@@ -203,7 +219,9 @@ export const getAllConsumptionType = async (req: any, res: any) => {
     const response = await getDataWithSorting(ConsumptionTypeModel, criteria, {}, options);
     const totalData = await countData(ConsumptionTypeModel, criteria);
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Consumption Type"), { consumptionType_data: response, totalData }, {}));
+    const responsePayload = { consumptionType_data: response, totalData };
+    await redisSet(cacheKey, responsePayload, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Consumption Type"), responsePayload, {}));
   } catch (error: any) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || responseMessage.internalServerError, {}, error));
@@ -214,6 +232,12 @@ export const consumptionTypeDropDown = async (req: any, res: any) => {
   reqInfo(req);
   try {
     const { user } = req.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id || user?.companyId;
+    const cacheKey = `consumption-type:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Consumption Type Dropdown"), cachedData, {}));
+
     const { search, companyFilter, includeId } = req.query;
 
     let criteria: any = {
@@ -230,6 +254,7 @@ export const consumptionTypeDropDown = async (req: any, res: any) => {
 
     const response = await ConsumptionTypeModel.find(criteria, { name: 1, isDefault: 1 }).sort({ name: 1 });
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage.getDataSuccess("Consumption Type Dropdown"), response, {}));
   } catch (error: any) {
     console.error(error);

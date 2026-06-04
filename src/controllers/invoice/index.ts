@@ -2,6 +2,7 @@ import { apiResponse, HTTP_STATUS, SALES_ORDER_STATUS, ESTIMATE_STATUS, DELIVERY
 import { contactModel, InvoiceModel, SalesOrderModel, EstimateModel, productModel, taxModel, userModel, termsConditionModel, deliveryChallanModel, stockModel, salesCreditNoteModel } from "../../database";
 import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, checkStockQty } from "../../helper";
 import { addInvoiceSchema, deleteInvoiceSchema, editInvoiceSchema, getInvoiceSchema } from "../../validation";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -163,6 +164,7 @@ export const addInvoice = async (req, res) => {
       }
     }
 
+    await redisdelPattern("invoice:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Invoice"), response, {}));
   } catch (error) {
     console.error(error);
@@ -373,6 +375,7 @@ export const editInvoice = async (req, res) => {
       await updateData(deliveryChallanModel, { _id: new ObjectId(dcId) }, { status: DELIVERY_CHALLAN_STATUS.DELIVERED }, {});
     }
 
+    await redisdelPattern("invoice:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Invoice"), response, {}));
   } catch (error) {
     console.error(error);
@@ -451,6 +454,7 @@ export const deleteInvoice = async (req, res) => {
       }
     }
 
+    await redisdelPattern("invoice:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Invoice"), response, {}));
   } catch (error) {
     console.error(error);
@@ -462,8 +466,12 @@ export const getAllInvoice = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `invoice:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice"), cachedData, {}));
     let { page, limit, search, activeFilter, companyFilter, status, paymentStatus, startDate, endDate, customerFilter, statusFilter, branchFilter } = req.query;
 
     page = Number(page);
@@ -630,7 +638,9 @@ export const getAllInvoice = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice"), { invoice_data: finalResponse, totalData, summary, state }, {}));
+    const result = { invoice_data: finalResponse, totalData, summary, state };
+    await redisSet(cacheKey, result, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -645,6 +655,14 @@ export const getOneInvoice = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `invoice:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice"), cachedData, {}));
 
     const response = await getFirstMatch(
       InvoiceModel,
@@ -714,6 +732,7 @@ export const getOneInvoice = async (req, res) => {
       }
     }
 
+    await redisSet(cacheKey, invObj, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice"), invObj, {}));
   } catch (error) {
     console.error(error);
@@ -726,8 +745,12 @@ export const getInvoiceDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `invoice:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice Dropdown"), cachedData, {}));
     const { customerId, status, paymentStatus, search, branchFilter, companyFilter, includeId, isCreditNoteCreated } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false, isActive: true };
@@ -798,6 +821,7 @@ export const getInvoiceDropdown = async (req, res) => {
       balanceAmount: item.balanceAmount,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Invoice Dropdown"), dropdownData, {}));
   } catch (error) {
     console.error(error);

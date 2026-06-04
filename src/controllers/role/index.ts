@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_ROLES, USER_TYPES } from "../../common";
 import { companyModel, roleModel, userModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addRoleSchema, deleteRoleSchema, editRoleSchema, getRoleSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -46,6 +46,7 @@ export const addRole = async (req, res) => {
 
     if (value?.companyId) await updateData(companyModel, { _id: value?.companyId, isDeleted: false }, { $push: { roles: response?._id } }, {});
 
+    await redisdelPattern("role:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Role"), response, {}));
   } catch (error) {
     console.error(error);
@@ -95,6 +96,7 @@ export const editRole = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Role"), {}, {}));
 
+    await redisdelPattern("role:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Role"), response, {}));
   } catch (error) {
     console.error(error);
@@ -133,6 +135,7 @@ export const deleteRole = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Role"), {}, {}));
 
+    await redisdelPattern("role:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Role"), response, {}));
   } catch (error) {
     console.error(error);
@@ -144,7 +147,12 @@ export const getAllRole = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `role:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), cachedData, {}));
 
     let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
 
@@ -190,7 +198,10 @@ export const getAllRole = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), { role_data: response, totalData, state: stateObj }, {}));
+    const result = { role_data: response, totalData, state: stateObj };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -206,6 +217,10 @@ export const getRoleById = async (req, res) => {
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).status(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
+    const cacheKey = `role:getOne:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), cachedData, {}));
+
     const response = await getFirstMatch(
       roleModel,
       { _id: id },
@@ -220,6 +235,7 @@ export const getRoleById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Role"), {}, {}));
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), response, {}));
   } catch (error) {
     console.error(error);
@@ -231,8 +247,12 @@ export const getRoleDropdown = async (req, res) => {
   reqInfo(req);
   try {
     let { user } = req?.headers;
-
+    const userType = user?.userType;
     let companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `role:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), cachedData, {}));
 
     const { companyFilter, includeId } = req.query;
 
@@ -252,6 +272,7 @@ export const getRoleDropdown = async (req, res) => {
 
     const response = await getDataWithSorting(roleModel, criteria, { _id: 1, name: 1 }, { sort: { name: 1 } });
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Role"), response, {}));
   } catch (error) {
     console.error(error);

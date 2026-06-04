@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { termsConditionModel } from "../../database";
-import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkBranch, checkCompany, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addTermsConditionSchema, deleteTermsConditionSchema, editTermsConditionSchema, getTermsConditionSchema } from "../../validation";
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -28,6 +28,7 @@ export const addTermsCondition = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
+    await redisdelPattern("termsCondition:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Terms & Condition"), response, {}));
   } catch (error) {
     console.error(error);
@@ -58,6 +59,7 @@ export const editTermsCondition = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Terms & Condition"), {}, {}));
 
+    await redisdelPattern("termsCondition:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Terms & Condition"), response, {}));
   } catch (error) {
     console.error(error);
@@ -86,6 +88,7 @@ export const deleteTermsCondition = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Terms & Condition"), {}, {}));
 
+    await redisdelPattern("termsCondition:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Terms & Condition"), response, {}));
   } catch (error) {
     console.error(error);
@@ -99,6 +102,10 @@ export const getAllTermsCondition = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `termsCondition:all:req:${JSON.stringify(req.query)}:user:${user?.userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Terms & Condition"), cachedData, {}));
+
     let { page, limit, search, activeFilter, isDefaultFilter, companyFilter, branchFilter } = req.query;
 
     page = Number(page);
@@ -154,7 +161,10 @@ export const getAllTermsCondition = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Terms & Condition"), { termsCondition_data: response, totalData, state }, {}));
+    const result = { termsCondition_data: response, totalData, state };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Terms & Condition"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -167,6 +177,10 @@ export const getTermsConditionById = async (req, res) => {
     const { error, value } = getTermsConditionSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    const cacheKey = `termsCondition:getOne:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Terms & Condition"), cachedData, {}));
 
     const response = await getFirstMatch(
       termsConditionModel,
@@ -184,6 +198,7 @@ export const getTermsConditionById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Terms & Condition"), {}, {}));
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Terms & Condition"), response, {}));
   } catch (error) {
     console.error(error);
@@ -197,6 +212,10 @@ export const getTermsConditionDropdown = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `termsCondition:dropdown:req:${JSON.stringify(req.query)}:user:${user?.userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Terms & Condition"), cachedData, {}));
+
     const { search, isDefault, companyFilter, branchFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
@@ -244,6 +263,7 @@ export const getTermsConditionDropdown = async (req, res) => {
       branchId: item.branchId,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Terms & Condition"), dropdownData, {}));
   } catch (error) {
     console.error(error);

@@ -90,7 +90,6 @@ router.use("/stock-verification", stockVerificationRouter);
 router.use("/stock-transfer", stockTransferRouter);
 router.use("/notification", notificationRouter);
 
-
 router.use("/contacts", contactRouter);
 router.use("/bank", bankRouter);
 router.use("/payment-term", paymentTermRouter);
@@ -109,9 +108,10 @@ router.use("/invoice", invoiceRouter);
 router.use("/delivery-challan", deliveryChallanRouter);
 router.use("/credit-note", creditNoteRouter);
 router.use("/sales-credit-note", salesCreditNoteRouter);
+import { VOUCHAR_TYPE } from "../common";
 router.use("/voucher", voucherRouter);
-router.use("/payment", voucherRouter);
-router.use("/receipt", voucherRouter);
+router.use("/payment", (req, res, next) => { req.query.type = VOUCHAR_TYPE.PAYMENT; req.body.type = VOUCHAR_TYPE.PAYMENT; next(); }, voucherRouter);
+router.use("/receipt", (req, res, next) => { req.query.type = VOUCHAR_TYPE.RECEIPT; req.body.type = VOUCHAR_TYPE.RECEIPT; next(); }, voucherRouter);
 router.use("/expense", expenseRouter);
 router.use("/salary", salaryRouter);
 router.use("/coupon", couponRouter);

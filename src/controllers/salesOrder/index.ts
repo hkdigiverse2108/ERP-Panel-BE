@@ -1,6 +1,6 @@
 import { apiResponse, ESTIMATE_STATUS, HTTP_STATUS, SALES_ORDER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, SalesOrderModel, productModel, taxModel, uomModel, termsConditionModel, additionalChargeModel, EstimateModel, userModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addSalesOrderSchema, deleteSalesOrderSchema, editSalesOrderSchema, getSalesOrderSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -101,6 +101,7 @@ export const addSalesOrder = async (req, res) => {
       await updateData(EstimateModel, { _id: value.selectedEstimateId }, { status: ESTIMATE_STATUS.ORDER_CREATED }, {});
     }
 
+    await redisdelPattern("salesOrder:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Sales Order"), response, {}));
   } catch (error) {
     console.error(error);
@@ -198,6 +199,7 @@ export const editSalesOrder = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Sales Order"), {}, {}));
     }
 
+    await redisdelPattern("salesOrder:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Sales Order"), response, {}));
   } catch (error) {
     console.error(error);
@@ -238,6 +240,7 @@ export const deleteSalesOrder = async (req, res) => {
       await updateData(EstimateModel, { _id: response.selectedEstimateId }, { status: ESTIMATE_STATUS.PENDING }, {});
     }
 
+    await redisdelPattern("salesOrder:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Sales Order"), response, {}));
   } catch (error) {
     console.error(error);
@@ -249,8 +252,13 @@ export const getAllSalesOrder = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `salesOrder:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order"), cachedData, {}));
+
     let { page, limit, search, statusFilter, startDate, endDate, activeFilter, companyFilter, customerFilter, branchFilter } = req.query;
 
     page = Number(page);
@@ -395,7 +403,10 @@ export const getAllSalesOrder = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order"), { salesOrder_data: finalResponse, totalData, summary, state }, {}));
+    const result = { salesOrder_data: finalResponse, totalData, summary, state };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order"), result, {}));
 
   } catch (error) {
     console.error(error);
@@ -411,6 +422,10 @@ export const getOneSalesOrder = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    const cacheKey = `salesOrder:getOne:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order"), cachedData, {}));
 
     const response = await getFirstMatch(
       SalesOrderModel,
@@ -474,6 +489,7 @@ export const getOneSalesOrder = async (req, res) => {
       }
     }
 
+    await redisSet(cacheKey, soObj, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order"), soObj, {}));
   } catch (error) {
     console.error(error);
@@ -486,8 +502,13 @@ export const getSalesOrderDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `salesOrder:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order Dropdown"), cachedData, {}));
+
     const { customerId, statusFilter, search, companyFilter, branchFilter, includeId } = req.query; // Optional filters
 
     let criteria: any = { isDeleted: false };
@@ -539,6 +560,7 @@ export const getSalesOrderDropdown = async (req, res) => {
       netAmount: item.transactionSummary?.netAmount || 0,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Sales Order Dropdown"), dropdownData, {}));
   } catch (error) {
     console.error(error);

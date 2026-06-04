@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, RETURN_POS_ORDER_TYPE, POS_ORDER_STATUS, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, POS_CREDIT_NOTE_STATUS, PREFIX_MODULES } from "../../common";
 import { returnPosOrderModel, productModel, stockModel, contactModel, PosOrderModel, bankModel, posCreditNoteModel, additionalChargeModel, taxModel, PosCashRegisterModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkStockQty, createOne, getAndIncrementPrefix, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkStockQty, createOne, getAndIncrementPrefix, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addReturnPosOrderSchema, editReturnPosOrderSchema, getReturnPosOrderSchema, deleteReturnPosOrderSchema, returnPosOrderDropDownSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -156,6 +156,7 @@ export const addReturnPosOrder = async (req, res) => {
     }
     // ------------------------------------------------------
 
+    await redisdelPattern("returnPosOrder:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Return POS Order"), response, {}));
   } catch (error) {
     console.error(error);
@@ -322,6 +323,7 @@ export const editReturnPosOrder = async (req, res) => {
     }
     // -------------------------------------
 
+    await redisdelPattern("returnPosOrder:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Return POS Order"), response, {}));
   } catch (error) {
     console.error(error);
@@ -333,8 +335,13 @@ export const getAllReturnPosOrder = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `returnPosOrder:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), cachedData, {}));
+
     let { page, limit, search, customerId, type, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     page = Number(page) || 1;
@@ -607,7 +614,10 @@ export const getAllReturnPosOrder = async (req, res) => {
 
     response = await returnPosOrderModel.populate(response, { path: "createdBy", select: "name userType" });
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), { returnPosOrder_data: response, totalData, state: { page, limit, totalPages: Math.ceil(totalData / limit) } }, {}));
+    const responseData = { returnPosOrder_data: response, totalData, state: { page, limit, totalPages: Math.ceil(totalData / limit) } };
+    await redisSet(cacheKey, responseData, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), responseData, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
@@ -619,6 +629,10 @@ export const getOneReturnPosOrder = async (req, res) => {
   try {
     const { error, value } = getReturnPosOrderSchema.validate(req.params);
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    const cacheKey = `returnPosOrder:getOne:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), cachedData, {}));
 
     const response = await returnPosOrderModel.aggregate([
       { $match: { _id: new ObjectId(value.id), isDeleted: false } },
@@ -850,6 +864,7 @@ export const getOneReturnPosOrder = async (req, res) => {
 
     const populatedResponse = await returnPosOrderModel.populate(response[0], { path: "createdBy", select: "name userType" });
 
+    await redisSet(cacheKey, populatedResponse, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order"), populatedResponse, {}));
   } catch (error) {
     console.error(error);
@@ -934,6 +949,7 @@ export const deleteReturnPosOrder = async (req, res) => {
     }
     // -------------------------------------------
 
+    await redisdelPattern("returnPosOrder:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Return POS Order"), response, {}));
   } catch (error) {
     console.error(error);
@@ -945,8 +961,13 @@ export const returnPosOrderDropDown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `returnPosOrder:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order Dropdown"), cachedData, {}));
+
     // const { error, value } = returnPosOrderDropDownSchema.validate(req.query);
     // if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
 
@@ -972,6 +993,7 @@ export const returnPosOrderDropDown = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(100);
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Return POS Order Dropdown"), response, {}));
   } catch (error) {
     console.error(error);

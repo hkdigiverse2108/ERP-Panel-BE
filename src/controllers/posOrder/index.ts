@@ -3,6 +3,7 @@ import { contactModel, productModel, taxModel, branchModel, PosOrderModel, addit
 import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkStockQty, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, releasePosOrderSchema, getCustomerPosDetailsSchema } from "../../validation";
 import { applyCoupon, applyLoyalty, applyPosDiscount, applyRedeemCredit, revertCoupon, revertDiscount, revertLoyalty, revertRedeemCredit } from "./helper";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 
 const ObjectId = require("mongoose").Types.ObjectId;
 
@@ -245,6 +246,7 @@ export const addPosOrder = async (req, res) => {
       }
     }
 
+    await redisdelPattern("posOrder:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("POS Order"), response, {}));
   } catch (error) {
     console.error(error);
@@ -543,6 +545,7 @@ export const editPosOrder = async (req, res) => {
       }
     }
 
+    await redisdelPattern("posOrder:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("POS Order"), response, {}));
   } catch (error) {
     console.error(error);
@@ -659,6 +662,7 @@ export const deletePosOrder = async (req, res) => {
       await revertRedeemCredit(isExist.redeemCreditId, isExist.redeemCreditType, isExist.redeemCreditAmount, isExist._id);
     }
 
+    await redisdelPattern("posOrder:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("POS Order"), response, {}));
   } catch (error) {
     console.error(error);
@@ -670,8 +674,13 @@ export const posOrderDropDown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `posOrder:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Order Dropdown"), cachedData, {}));
+
     const { customerFilter, branchFilter, companyFilter, duePaymentFilter, search, returnableFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
@@ -719,6 +728,7 @@ export const posOrderDropDown = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(100);
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Order Dropdown"), response, {}));
   } catch (error) {
     console.error(error);
@@ -730,8 +740,13 @@ export const getAllPosOrder = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `posOrder:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Order"), cachedData, {}));
+
     let { page, limit, search, activeFilter, companyFilter, statusFilter, customerFilter, duePaymentFilter, paymentStatusFilter, methodFilter, branchFilter, tableNoFilter, orderTypeFilter, startDate, endDate, lastBillFilter, orderListFilter } = req.query;
 
     page = Number(page);
@@ -874,6 +889,14 @@ export const getOnePosOrder = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
 
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `posOrder:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Order"), cachedData, {}));
+
     const response = await getFirstMatch(
       PosOrderModel,
       { _id: value?.id, isDeleted: false },
@@ -975,6 +998,7 @@ export const getOnePosOrder = async (req, res) => {
       }),
     };
 
+    await redisSet(cacheKey, updatedResponse, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("POS Order"), updatedResponse, {}));
   } catch (error) {
     console.error(error);
@@ -986,14 +1010,19 @@ export const getAllHoldOrders = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `posOrder:holdOrders:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Hold Orders"), cachedData, {}));
+
     const { search } = req.query;
 
     let criteria: any = { isDeleted: false, status: POS_ORDER_STATUS.HOLD };
     if (companyId) {
       criteria.companyId = companyId;
     }
-    const branchId = user?.branchId?._id;
     if (branchId) {
       criteria.branchId = branchId;
     }
@@ -1089,6 +1118,7 @@ export const getAllHoldOrders = async (req, res) => {
       return order;
     });
 
+    await redisSet(cacheKey, updatedResponse, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Hold Orders"), updatedResponse, {}));
   } catch (error) {
     console.error(error);
@@ -1100,8 +1130,13 @@ export const getShortHoldOrders = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `posOrder:shortHoldOrders:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Hold Orders"), cachedData, {}));
+
     const { search, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false, status: POS_ORDER_STATUS.HOLD };
@@ -1135,6 +1170,7 @@ export const getShortHoldOrders = async (req, res) => {
 
     const response = await getDataWithSorting(PosOrderModel, criteria, selectedFields, options);
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Hold Orders"), response, {}));
   } catch (error) {
     console.error(error);
@@ -1152,6 +1188,13 @@ export const getCustomerPosDetails = async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
     const { id } = value;
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `posOrder:customerPosDetails:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Customer POS Details"), cachedData, {}));
 
     const select = "firstName lastName  email phoneNo whatsappNo productDetails loyaltyPoints remarks status";
 
@@ -1190,18 +1233,22 @@ export const getCustomerPosDetails = async (req, res) => {
       mostPurchasedProduct = await getFirstMatch(productModel, { _id: mostPurchasedProductId, isDeleted: false }, "name", {});
     }
 
+    const resultData = {
+      customer,
+      totalDueAmount,
+      totalPaidAmount,
+      totalPurchaseAmount,
+      lastBill,
+      mostPurchasedProduct,
+    };
+
+    await redisSet(cacheKey, resultData, 3600);
+
     return res.status(HTTP_STATUS.OK).json(
       new apiResponse(
         HTTP_STATUS.OK,
         responseMessage?.getDataSuccess("Customer POS Details"),
-        {
-          customer,
-          totalDueAmount,
-          totalPaidAmount,
-          totalPurchaseAmount,
-          lastBill,
-          mostPurchasedProduct,
-        },
+        resultData,
         {},
       ),
     );
@@ -1262,6 +1309,7 @@ export const releasePosOrder = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("POS Order"), {}, {}));
     }
 
+    await redisdelPattern("posOrder:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "POS Order released from hold successfully", response, {}));
   } catch (error) {
     console.error(error);

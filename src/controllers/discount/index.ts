@@ -1,7 +1,7 @@
 import { apiResponse, HTTP_STATUS, DISCOUNT_MODE, DISCOUNT_APPLICABLE, DISCOUNT_APPLIES_TO, MINIMUM_REQUIREMENT, DISCOUNT_STATUS, VALUE_TYPE } from "../../common";
 import { discountModel, productModel, PosOrderModel } from "../../database";
 
-import { checkCompany, checkIdExist, countData, createOne, findAllAndPopulate, getData, getFirstMatch, reqInfo, responseMessage, updateData } from "../../helper";
+import { checkCompany, checkIdExist, countData, createOne, findAllAndPopulate, getData, getFirstMatch, reqInfo, responseMessage, updateData, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addDiscountSchema, deleteDiscountSchema, editDiscountSchema, getDiscountSchema, verifyDiscountSchema, applyDiscountSchema, removeDiscountSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -63,6 +63,7 @@ export const addDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
     }
 
+    await redisdelPattern("discount:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Discount"), response, {}));
   } catch (error) {
     console.error(error);
@@ -121,6 +122,7 @@ export const editDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Discount"), {}, {}));
     }
 
+    await redisdelPattern("discount:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Discount"), response, {}));
   } catch (error) {
     console.error(error);
@@ -151,6 +153,7 @@ export const deleteDiscount = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Discount"), {}, {}));
     }
 
+    await redisdelPattern("discount:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Discount"), response, {}));
   } catch (error) {
     console.error(error);
@@ -162,7 +165,12 @@ export const getAllDiscount = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `discount:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), cachedData, {}));
     let { page, limit, search, status, startDateTime, endDateTime, activeFilter, companyFilter, discountMode, appliesTo } = req.query;
 
     page = Number(page);
@@ -281,7 +289,9 @@ export const getAllDiscount = async (req, res) => {
     };
     // ----------------------------
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), { discount_data: enrichedResponse, totalData, state, ...summary }, {}));
+    const result = { discount_data: enrichedResponse, totalData, state, ...summary };
+    await redisSet(cacheKey, result, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -296,6 +306,14 @@ export const getOneDiscount = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `discount:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), cachedData, {}));
 
     const response = await findAllAndPopulate(discountModel, { _id: value?.id, isDeleted: false }, {}, {}, discountPopulate);
 
@@ -322,6 +340,7 @@ export const getOneDiscount = async (req, res) => {
       revenue: s.revenue,
     };
 
+    await redisSet(cacheKey, enrichedDiscount, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), enrichedDiscount, {}));
   } catch (error) {
     console.error(error);
@@ -333,7 +352,12 @@ export const getDropdownDiscount = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `discount:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount Dropdown"), cachedData, {}));
     let { search, status, startDateTime, endDateTime, activeFilter, companyFilter, discountMode, appliesTo } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -411,6 +435,7 @@ export const getDropdownDiscount = async (req, res) => {
 
     const response = await getData(discountModel, criteria, projection, {});
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Discount"), response, {}));
   } catch (error) {
     console.error(error);

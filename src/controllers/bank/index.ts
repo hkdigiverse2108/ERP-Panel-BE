@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { bankModel, branchModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, redisGet, redisSet, redisdelPattern, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBankSchema, deleteBankSchema, editBankSchema, getBankSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -31,6 +31,8 @@ export const addBank = async (req, res) => {
 
     const response = await createOne(bankModel, value);
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
+
+    await redisdelPattern("bank:*");
 
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Bank"), response, {}));
   } catch (error) {
@@ -63,6 +65,8 @@ export const editBank = async (req, res) => {
     const response = await updateData(bankModel, { _id: value?.bankId, isDeleted: false }, value, {});
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.addDataError, {}, {}));
 
+    await redisdelPattern("bank:*");
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Bank"), response, {}));
   } catch (error) {
     console.error(error);
@@ -86,6 +90,8 @@ export const deleteBankById = async (req, res) => {
     const response = await updateData(bankModel, { _id: value?.id, isDeleted: false }, value, {});
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Bank"), {}, {}));
 
+    await redisdelPattern("bank:*");
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Bank"), response, {}));
   } catch (error) {
     console.error(error);
@@ -97,8 +103,15 @@ export const getAllBank = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `bank:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bank"), cachedData, {}));
+    }
+
     let { page, limit, search, startDate, endDate, activeFilter, companyFilter, branchFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -143,7 +156,10 @@ export const getAllBank = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bank"), { bank_data: response, totalData, state: stateObj }, {}));
+    const responsePayload = { bank_data: response, totalData, state: stateObj };
+    await redisSet(cacheKey, responsePayload, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bank"), responsePayload, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -153,6 +169,16 @@ export const getAllBank = async (req, res) => {
 export const getBankById = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `bank:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bank"), cachedData, {}));
+    }
+
     const { error, value } = getBankSchema.validate(req.params);
     const { id } = value;
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -175,6 +201,8 @@ export const getBankById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Bank"), {}, {}));
 
+    await redisSet(cacheKey, response, 3600);
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bank"), response, {}));
   } catch (error) {
     console.error(error);
@@ -191,6 +219,12 @@ export const getBankDropdown = async (req, res) => {
 
     let companyId = user?.companyId?._id;
     let branchId = user?.branchId?._id;
+    const userType = user?.userType;
+    const cacheKey = `bank:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bank Dropdown"), cachedData, {}));
+    }
 
     let criteria: any = { isDeleted: false, isActive: true };
 
@@ -233,6 +267,8 @@ export const getBankDropdown = async (req, res) => {
       ifscCode: item.ifscCode,
       upiId: item.upiId,
     }));
+
+    await redisSet(cacheKey, dropdownData, 3600);
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Bank Dropdown"), dropdownData, {}));
   } catch (error) {

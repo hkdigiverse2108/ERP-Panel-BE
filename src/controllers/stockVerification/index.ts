@@ -1,6 +1,6 @@
 import { apiResponse, APPROVAL_STATUS, HTTP_STATUS, PREFIX_MODULES } from "../../common";
 import { stockVerificationModel, productModel, categoryModel, stockModel } from "../../database";
-import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix } from "../../helper";
+import { checkBranch, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, reqInfo, responseMessage, updateData, applyDateFilter, getAndIncrementPrefix, redisGet, redisSet, redisdelPattern } from "../../helper";
 import { addStockVerificationSchema, deleteStockVerificationSchema, editStockVerificationSchema, getStockVerificationSchema } from "../../validation";
 
 export const addStockVerification = async (req, res) => {
@@ -57,6 +57,9 @@ export const addStockVerification = async (req, res) => {
       }
     }
 
+    await redisdelPattern("stockVerification:*");
+    await redisdelPattern("stock:*");
+    await redisdelPattern("product:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.addDataSuccess("Stock Verification"), response, {}));
   } catch (error) {
     console.error(error);
@@ -109,6 +112,9 @@ export const editStockVerification = async (req, res) => {
       }
     }
 
+    await redisdelPattern("stockVerification:*");
+    await redisdelPattern("stock:*");
+    await redisdelPattern("product:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Stock Verification"), response, {}));
   } catch (error) {
     console.error(error);
@@ -137,6 +143,7 @@ export const deleteStockVerification = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Stock Verification"), {}, {}));
     }
 
+    await redisdelPattern("stockVerification:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Stock Verification"), response, {}));
   } catch (error) {
     console.error(error);
@@ -150,6 +157,10 @@ export const getAllStockVerification = async (req, res) => {
     const { user } = req?.headers;
     const companyId = user?.companyId?._id;
     const branchId = user?.branchId?._id;
+    const cacheKey = `stockVerification:all:req:${JSON.stringify(req.query)}:user:${user?.userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Verification"), cachedData, {}));
+
     const { page, limit, search, startDate, endDate, status, branchFilter, activeFilter, companyFilter, statusFilter } = req.query;
 
     let criteria: any = { isDeleted: false };
@@ -221,7 +232,10 @@ export const getAllStockVerification = async (req, res) => {
       // hasPrevPage: parseInt(page as string) > 1,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Verification"), { stockVerification_data: response, totalData, state: stateObj }, {}));
+    const result = { stockVerification_data: response, totalData, state: stateObj };
+    await redisSet(cacheKey, result, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Verification"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -236,6 +250,10 @@ export const getOneStockVerification = async (req, res) => {
     if (error) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
     }
+
+    const cacheKey = `stockVerification:getOne:req:${JSON.stringify(req.params)}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Verification"), cachedData, {}));
 
     const response = await getFirstMatch(
       stockVerificationModel,
@@ -264,6 +282,7 @@ export const getOneStockVerification = async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Stock Verification"), {}, {}));
     }
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Stock Verification"), response, {}));
   } catch (error) {
     console.error(error);

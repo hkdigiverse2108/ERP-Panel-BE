@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, USER_TYPES } from "../../common";
 import { branchModel, companyModel } from "../../database";
-import { applyDateFilter, checkIdExist, clonePrefixesToBranch, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkIdExist, clonePrefixesToBranch, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, redisGet, redisSet, redisdelPattern, reqInfo, responseMessage, updateData } from "../../helper";
 import { addBranchSchema, deleteBranchSchema, editBranchSchema, getBranchSchema, updateBranchReportConfigSchema } from "../../validation";
 
 const ObjectId = require("mongoose").Types.ObjectId;
@@ -32,6 +32,8 @@ export const addBranch = async (req, res) => {
 
     // Auto-clone prefixes for the new branch
     await clonePrefixesToBranch(value.companyId, response._id, user?._id);
+
+    await redisdelPattern("branch:*");
 
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Branch"), response, {}));
   } catch (error) {
@@ -69,6 +71,8 @@ export const editBranchById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Branch details"), {}, {}));
 
+    await redisdelPattern("branch:*");
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Branch details"), response, {}));
   } catch (error) {
     console.error(error);
@@ -102,6 +106,8 @@ export const deleteBranchById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Branch details"), {}, {}));
 
+    await redisdelPattern("branch:*");
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Branch details"), response, {}));
   } catch (error) {
     console.error(error);
@@ -113,7 +119,13 @@ export const getAllBranch = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const cacheKey = `branch:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Branch"), cachedData, {}));
+    }
 
     let { page, limit, search, startDate, endDate, activeFilter, companyFilter } = req.query;
 
@@ -160,7 +172,10 @@ export const getAllBranch = async (req, res) => {
 
     const stateObj = { page, limit, totalPages };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Branch"), { branch_data: response, totalData, state: stateObj }, {}));
+    const responsePayload = { branch_data: response, totalData, state: stateObj };
+    await redisSet(cacheKey, responsePayload, 3600);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Branch"), responsePayload, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -170,6 +185,15 @@ export const getAllBranch = async (req, res) => {
 export const getBranchById = async (req, res) => {
   reqInfo(req);
   try {
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const cacheKey = `branch:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Branch details"), cachedData, {}));
+    }
+
     const { error, value } = getBranchSchema.validate(req.params);
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
@@ -193,6 +217,8 @@ export const getBranchById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Branch details"), {}, {}));
 
+    await redisSet(cacheKey, response, 3600);
+
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Branch details"), response, {}));
   } catch (error) {
     console.error(error);
@@ -206,6 +232,11 @@ export const getBranchDropdown = async (req, res) => {
     const { user } = req?.headers;
     const userType = user?.userType;
     let companyId = user?.companyId?._id;
+    const cacheKey = `branch:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Branch"), cachedData, {}));
+    }
 
     const { companyFilter, includeId } = req.query;
 
@@ -229,6 +260,8 @@ export const getBranchDropdown = async (req, res) => {
       _id: item._id,
       name: item.name,
     }));
+
+    await redisSet(cacheKey, dropdownData, 3600);
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Branch"), dropdownData, {}));
   } catch (error) {
@@ -274,6 +307,8 @@ export const updateBranchReportConfig = async (req: any, res: any) => {
     );
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Branch"), {}, {}));
+
+    await redisdelPattern("branch:*");
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Branch report configuration"), response, {}));
   } catch (error) {

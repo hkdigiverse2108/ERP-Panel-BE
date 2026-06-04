@@ -1,7 +1,8 @@
+import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { apiResponse, HTTP_STATUS } from "../../common";
 import { credentialModel, monthlySpecialModel, productModel } from "../../database";
-import { reqInfo, responseMessage } from "../../helper";
+import { redisGet, redisSet, reqInfo, responseMessage } from "../../helper";
 
 // Helper to normalize strings for better matching (strips symbols and extra spaces, handles units)
 const normalize = (str: string) => {
@@ -14,7 +15,6 @@ const normalize = (str: string) => {
     .trim();
 };
 
-
 export const analyzeTable = async (req, res) => {
   reqInfo(req);
   try {
@@ -25,6 +25,11 @@ export const analyzeTable = async (req, res) => {
 
     // Strip the dataURI prefix (e.g., "data:image/jpeg;base64,")
     const rawBase64 = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
+    const cacheKey = `ai:analyze:image:${crypto.createHash("sha256").update(rawBase64).digest("hex")}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) {
+      return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "AI analysis successful", cachedData, {}));
+    }
 
     console.log(`Analyzing image (stripped length: ${rawBase64.length} chars, ~${Math.round(rawBase64.length / 1024)} KB)`);
 
@@ -162,6 +167,8 @@ Respond ONLY in JSON:
 
     // console.log(`AI Analysis complete. Detected ${enrichedItems.length} items. Resolved matches via keyword overlap.`);
     // console.log("aiItems =>", enrichedItems);
+
+    await redisSet(cacheKey, enrichedItems, 1800);
 
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "AI analysis successful", enrichedItems, {}));
 

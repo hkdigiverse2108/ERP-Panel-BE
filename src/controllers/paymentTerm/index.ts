@@ -3,6 +3,7 @@ import { paymentTermsModel } from "../../database";
 import { applyDateFilter, checkCompany, checkIdExist, countData, createOne, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPaymentTermSchema, deletePaymentTermSchema, editPaymentTermSchema, getPaymentTermSchema } from "../../validation";
 import { propagateDefaultPaymentTermToAllCompanies } from "./helper";
+import { redisGet, redisSet, redisdelPattern } from "../../helper";
 const ObjectId = require("mongoose").Types.ObjectId;
 
 export const addPaymentTerm = async (req, res) => {
@@ -35,6 +36,7 @@ export const addPaymentTerm = async (req, res) => {
       await propagateDefaultPaymentTermToAllCompanies(response._id, user?._id);
     }
 
+    await redisdelPattern("paymentTerm:*");
     return res.status(HTTP_STATUS.CREATED).json(new apiResponse(HTTP_STATUS.CREATED, responseMessage?.addDataSuccess("Payment Term"), response, {}));
   } catch (error) {
     console.error(error);
@@ -71,6 +73,7 @@ export const editPaymentTerm = async (req, res) => {
     const response = await updateData(paymentTermsModel, { _id: value?.paymentTermId, isDeleted: false }, value, {});
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.updateDataError("Payment Term"), {}, {}));
 
+    await redisdelPattern("paymentTerm:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.updateDataSuccess("Payment Term"), response, {}));
   } catch (error) {
     console.error(error);
@@ -96,6 +99,7 @@ export const deletePaymentTermById = async (req, res) => {
     const response = await updateData(paymentTermsModel, { _id: value?.id, isDeleted: false }, updateObj, {});
     if (!response) return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.deleteDataError("Payment Term"), {}, {}));
 
+    await redisdelPattern("paymentTerm:*");
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.deleteDataSuccess("Payment Term"), response, {}));
   } catch (error) {
     console.error(error);
@@ -107,7 +111,12 @@ export const getAllPaymentTerm = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `paymentTerm:all:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payment Term"), cachedData, {}));
     let { page, limit, search, activeFilter, companyFilter, startDate, endDate } = req.query;
 
     page = Number(page);
@@ -153,7 +162,9 @@ export const getAllPaymentTerm = async (req, res) => {
       totalPages,
     };
 
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payment Term"), { paymentTerm_data: response, totalData, state }, {}));
+    const result = { paymentTerm_data: response, totalData, state };
+    await redisSet(cacheKey, result, 3600);
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payment Term"), result, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
@@ -167,6 +178,14 @@ export const getPaymentTermById = async (req, res) => {
     const { id } = value;
 
     if (error) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, error?.details[0]?.message, {}, {}));
+
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `paymentTerm:one:req:${JSON.stringify(req.params)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payment Term"), cachedData, {}));
 
     const response = await getFirstMatch(
       paymentTermsModel,
@@ -182,6 +201,7 @@ export const getPaymentTermById = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Payment Term"), {}, {}));
 
+    await redisSet(cacheKey, response, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payment Term"), response, {}));
   } catch (error) {
     console.error(error);
@@ -194,7 +214,12 @@ export const getPaymentTermDropdown = async (req, res) => {
   reqInfo(req);
   try {
     const { user } = req?.headers;
+    const userType = user?.userType;
     const companyId = user?.companyId?._id;
+    const branchId = user?.branchId?._id;
+    const cacheKey = `paymentTerm:dropdown:req:${JSON.stringify(req.query)}:user:${userType}:company:${companyId}:branch:${branchId}`;
+    const cachedData = await redisGet(cacheKey);
+    if (cachedData) return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payment Term"), cachedData, {}));
     const { companyFilter, includeId } = req.query;
 
     let criteria: any = { isDeleted: false, isActive: true };
@@ -225,6 +250,7 @@ export const getPaymentTermDropdown = async (req, res) => {
       day: item.day,
     }));
 
+    await redisSet(cacheKey, dropdownData, 3600);
     return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, responseMessage?.getDataSuccess("Payment Term"), dropdownData, {}));
   } catch (error) {
     console.error(error);
