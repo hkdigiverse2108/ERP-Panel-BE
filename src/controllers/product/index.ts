@@ -1173,7 +1173,7 @@ export const getOneProduct = async (req, res) => {
 
     if (!response) return res.status(HTTP_STATUS.NOT_FOUND).json(new apiResponse(HTTP_STATUS.NOT_FOUND, responseMessage?.getDataNotFound("Product"), {}, {}));
 
-    const { variantId } = req.query;
+    const { variantId, branchId } = req.query;
 
     if (variantId) {
       const variantExists = (response.variants || []).some(
@@ -1185,7 +1185,7 @@ export const getOneProduct = async (req, res) => {
     }
 
     const stockCriteria: any = {
-      productId: response._id,
+      productId: new ObjectId(response._id.toString()),
       isDeleted: false,
     };
 
@@ -1196,8 +1196,11 @@ export const getOneProduct = async (req, res) => {
     }
 
     if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
-      stockCriteria.companyId = companyId;
-      stockCriteria.branchId = user?.branchId?._id;
+      stockCriteria.companyId = new ObjectId(companyId.toString());
+    }
+
+    if (branchId) {
+      stockCriteria.branchId = new ObjectId(branchId.toString());
     }
 
     const stockAggregation = await stockModel.aggregate([
