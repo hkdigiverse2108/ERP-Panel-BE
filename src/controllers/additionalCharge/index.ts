@@ -188,10 +188,15 @@ export const getAdditionalChargeDropdown = async (req, res) => {
   reqInfo(req);
   try {
     let { typeFilter, companyFilter, search, includeId } = req.query;
+    const { user } = req?.headers;
+    const userType = user?.userType;
+    const companyId = user?.companyId?._id || user?.companyId;
 
     let criteria: any = { isDeleted: false, isActive: true };
 
-    if (companyFilter) {
+    if (userType !== USER_TYPES.SUPER_ADMIN && companyId) {
+      criteria.companyId = companyId;
+    } else if (companyFilter) {
       criteria.companyId = companyFilter;
     }
 

@@ -161,17 +161,35 @@ export const addPosOrder = async (req, res) => {
     // --- Stock Management Logic ---
     if (response.status !== POS_ORDER_STATUS.CANCELLED) {
       for (const item of response.items) {
+        let deductFromParent = false;
+        let parentStockRatio = 1;
+        if (item.variantId) {
+          const product = await productModel.findById(item.productId).lean();
+          if (product && product.variants) {
+            const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
+            if (variant && variant.deductFromParent) {
+              deductFromParent = true;
+              parentStockRatio = variant.parentStockRatio || 1;
+            }
+          }
+        }
+
         const stockMatchCriteria: any = {
           productId: item.productId,
           branchId: response.branchId,
           isDeleted: false,
         };
-        if (item.variantId) stockMatchCriteria.variantId = item.variantId;
-        else stockMatchCriteria.variantId = { $exists: false };
+        if (deductFromParent) {
+          stockMatchCriteria.variantId = { $exists: false };
+        } else if (item.variantId) {
+          stockMatchCriteria.variantId = item.variantId;
+        } else {
+          stockMatchCriteria.variantId = { $exists: false };
+        }
 
         await stockModel.findOneAndUpdate(
           stockMatchCriteria,
-          { $inc: { qty: -item.qty } },
+          { $inc: { qty: -(item.qty * parentStockRatio) } },
         );
       }
     }
@@ -443,17 +461,35 @@ export const editPosOrder = async (req, res) => {
     // 1. Revert the old quantities back to stock if it was active
     if (wasActive) {
       for (const item of isExist.items) {
+        let deductFromParent = false;
+        let parentStockRatio = 1;
+        if (item.variantId) {
+          const product = await productModel.findById(item.productId).lean();
+          if (product && product.variants) {
+            const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
+            if (variant && variant.deductFromParent) {
+              deductFromParent = true;
+              parentStockRatio = variant.parentStockRatio || 1;
+            }
+          }
+        }
+
         const stockMatchCriteria: any = {
           productId: item.productId,
           branchId: isExist.branchId,
           isDeleted: false,
         };
-        if (item.variantId) stockMatchCriteria.variantId = item.variantId;
-        else stockMatchCriteria.variantId = { $exists: false };
+        if (deductFromParent) {
+          stockMatchCriteria.variantId = { $exists: false };
+        } else if (item.variantId) {
+          stockMatchCriteria.variantId = item.variantId;
+        } else {
+          stockMatchCriteria.variantId = { $exists: false };
+        }
 
         await stockModel.findOneAndUpdate(
           stockMatchCriteria,
-          { $inc: { qty: item.qty } },
+          { $inc: { qty: item.qty * parentStockRatio } },
         );
       }
     }
@@ -461,17 +497,35 @@ export const editPosOrder = async (req, res) => {
     // 2. Deduct the new quantities from stock if it is now active
     if (isActive) {
       for (const item of response.items) {
+        let deductFromParent = false;
+        let parentStockRatio = 1;
+        if (item.variantId) {
+          const product = await productModel.findById(item.productId).lean();
+          if (product && product.variants) {
+            const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
+            if (variant && variant.deductFromParent) {
+              deductFromParent = true;
+              parentStockRatio = variant.parentStockRatio || 1;
+            }
+          }
+        }
+
         const stockMatchCriteria: any = {
           productId: item.productId,
           branchId: response.branchId,
           isDeleted: false,
         };
-        if (item.variantId) stockMatchCriteria.variantId = item.variantId;
-        else stockMatchCriteria.variantId = { $exists: false };
+        if (deductFromParent) {
+          stockMatchCriteria.variantId = { $exists: false };
+        } else if (item.variantId) {
+          stockMatchCriteria.variantId = item.variantId;
+        } else {
+          stockMatchCriteria.variantId = { $exists: false };
+        }
 
         await stockModel.findOneAndUpdate(
           stockMatchCriteria,
-          { $inc: { qty: -item.qty } },
+          { $inc: { qty: -(item.qty * parentStockRatio) } },
         );
       }
     }
@@ -611,17 +665,35 @@ export const deletePosOrder = async (req, res) => {
     // Revert stock if the order was not cancelled
     if (isExist.status !== POS_ORDER_STATUS.CANCELLED) {
       for (const item of isExist.items) {
+        let deductFromParent = false;
+        let parentStockRatio = 1;
+        if (item.variantId) {
+          const product = await productModel.findById(item.productId).lean();
+          if (product && product.variants) {
+            const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
+            if (variant && variant.deductFromParent) {
+              deductFromParent = true;
+              parentStockRatio = variant.parentStockRatio || 1;
+            }
+          }
+        }
+
         const stockMatchCriteria: any = {
           productId: item.productId,
           branchId: isExist.branchId,
           isDeleted: false,
         };
-        if (item.variantId) stockMatchCriteria.variantId = item.variantId;
-        else stockMatchCriteria.variantId = { $exists: false };
+        if (deductFromParent) {
+          stockMatchCriteria.variantId = { $exists: false };
+        } else if (item.variantId) {
+          stockMatchCriteria.variantId = item.variantId;
+        } else {
+          stockMatchCriteria.variantId = { $exists: false };
+        }
 
         await stockModel.findOneAndUpdate(
           stockMatchCriteria,
-          { $inc: { qty: item.qty } },
+          { $inc: { qty: item.qty * parentStockRatio } },
         );
       }
     }
@@ -1343,6 +1415,80 @@ export const releasePosOrder = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
+  }
+};
+
+export const festivalAnalytics = async (req, res) => {
+  reqInfo(req);
+  try {
+    const { user } = req?.headers;
+    const companyId = user?.companyId?._id || user?.companyId;
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "Start date and End date are required", {}, {}));
+    }
+
+    const start = new Date(startDate as string);
+    const end = new Date(endDate as string);
+
+    const criteria: any = {
+      isDeleted: false,
+      companyId,
+      status: { $ne: POS_ORDER_STATUS.CANCELLED },
+      createdAt: { $gte: start, $lte: end }
+    };
+
+    const orders = await PosOrderModel.find(criteria)
+      .populate("customerId")
+      .populate("items.productId")
+      .lean();
+
+    let totalSales = 0;
+    const customerMap = new Map();
+    const productQtyMap = new Map();
+
+    for (const order of orders) {
+      totalSales += order.totalAmount || 0;
+
+      if (order.customerId) {
+        const custId = order.customerId._id.toString();
+        if (!customerMap.has(custId)) {
+          customerMap.set(custId, {
+            _id: order.customerId._id,
+            name: `${order.customerId.firstName} ${order.customerId.lastName || ""}`.trim(),
+            phone: order.customerId.phoneNo ? `${order.customerId.phoneNo.countryCode}-${order.customerId.phoneNo.phoneNo}` : "-",
+            whatsapp: order.customerId.whatsappNo ? `${order.customerId.whatsappNo.countryCode}-${order.customerId.whatsappNo.phoneNo}` : "-",
+          });
+        }
+      }
+
+      if (order.items) {
+        for (const item of order.items) {
+          if (item.productId) {
+            const prodId = item.productId._id.toString();
+            const current = productQtyMap.get(prodId) || { name: item.productId.name, qty: 0 };
+            current.qty += item.qty || 0;
+            productQtyMap.set(prodId, current);
+          }
+        }
+      }
+    }
+
+    const customers = Array.from(customerMap.values());
+    const topProducts = Array.from(productQtyMap.values())
+      .sort((a: any, b: any) => b.qty - a.qty)
+      .slice(0, 5);
+
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, "Festival analytics retrieved successfully", {
+      totalSales,
+      ordersCount: orders.length,
+      customers,
+      topProducts
+    }, {}));
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || responseMessage?.internalServerError, {}, error));
   }
 };
 

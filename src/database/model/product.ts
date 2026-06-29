@@ -15,6 +15,8 @@ export const variantSchema = new Schema(
     sellingPrice: { type: Number, default: 0 },
     purchasePrice: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
+    deductFromParent: { type: Boolean, default: false },
+    parentStockRatio: { type: Number, default: 1 },
   }
 );
 
@@ -82,6 +84,7 @@ const productSchema = new Schema<IProduct>(
     barcode: { type: String, index: true, sparse: true },
     barcodeType: { type: String, enum: Object.values(BARCODE_TYPE) },
     variants: { type: [variantSchema], default: [] },
+    isFavorite: { type: Boolean, default: false },
   },
   baseSchemaOptions,
 );

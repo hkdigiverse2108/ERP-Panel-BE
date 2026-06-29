@@ -26,19 +26,39 @@ export const checkStockQty = async (items: any[], branchId: string, res: any, ol
 
       if (netChange <= 0) continue;
 
+      let deductFromParent = false;
+      let parentStockRatio = 1;
+
+      if (item.variantId) {
+        const product = await getFirstMatch(productModel, { _id: item.productId, isDeleted: false }, { variants: 1, name: 1 }, {});
+        if (product && product.variants) {
+          const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString());
+          if (variant && variant.deductFromParent) {
+            deductFromParent = true;
+            parentStockRatio = variant.parentStockRatio || 1;
+          }
+        }
+      }
+
       // Filter stock by branch
       const stockCriteria: any = { productId: item.productId, branchId, isDeleted: false };
-      if (item.variantId) stockCriteria.variantId = item.variantId;
-      else stockCriteria.variantId = { $exists: false };
+      if (deductFromParent) {
+        stockCriteria.variantId = { $exists: false }; // Check parent stock
+      } else if (item.variantId) {
+        stockCriteria.variantId = item.variantId;
+      } else {
+        stockCriteria.variantId = { $exists: false };
+      }
 
+      const checkQty = netChange * parentStockRatio;
       const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
 
-      if (!stock || stock.qty < netChange) {
+      if (!stock || stock.qty < checkQty) {
         const product = await getFirstMatch(productModel, { _id: item.productId, isDeleted: false }, { name: 1 }, {});
         const productName = product ? product.name : "Product";
         const availableQty = stock ? stock.qty : 0;
 
-        res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.insufficientStock(productName, availableQty, netChange), {}, {}));
+        res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.insufficientStock(productName, availableQty / parentStockRatio, netChange), {}, {}));
         return false;
       }
     }

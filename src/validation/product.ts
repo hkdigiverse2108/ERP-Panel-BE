@@ -99,8 +99,11 @@ export const addProductSchema = Joi.object().keys({
       sellingPrice: Joi.number().min(0).default(0).optional(),
       purchasePrice: Joi.number().min(0).default(0).optional(),
       isActive: Joi.boolean().default(true).optional(),
+      deductFromParent: Joi.boolean().optional(),
+      parentStockRatio: Joi.number().min(0.001).optional(),
     })
   ).optional(),
+  isFavorite: Joi.boolean().optional(),
   ...baseCompanyApiSchema,
 });
 
@@ -196,8 +199,11 @@ export const editProductSchema = Joi.object().keys({
       sellingPrice: Joi.number().min(0).optional(),
       purchasePrice: Joi.number().min(0).optional(),
       isActive: Joi.boolean().optional(),
+      deductFromParent: Joi.boolean().optional(),
+      parentStockRatio: Joi.number().min(0.001).optional(),
     })
   ).optional(),
+  isFavorite: Joi.boolean().optional(),
   removeVariantIds: Joi.array().items(Joi.string()).optional(),
   ...baseCompanyApiSchema,
 });

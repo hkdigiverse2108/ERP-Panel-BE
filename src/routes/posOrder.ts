@@ -11,6 +11,7 @@ router.put("/edit", posOrderController.editPosOrder);
 
 router.get("/customer/:id", posOrderController.getCustomerPosDetails);
 router.put("/release", posOrderController.releasePosOrder);
+router.get("/festival-analytics", posOrderController.festivalAnalytics);
 
 router.delete("/:id", posOrderController.deletePosOrder);
 router.get("/:id", posOrderController.getOnePosOrder);

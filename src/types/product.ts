@@ -75,7 +75,7 @@ export interface IProduct extends IBase {
   barcode?: string;
   barcodeType?: string;
   variants?: IProductVariant[];
-
+  isFavorite?: boolean;
   // departmentId?: Schema.Types.ObjectId; //  Commented in schema
   // image?: string; //  single image not used
   // netWeightUnit?: string; //  Commented in schema
@@ -100,6 +100,8 @@ export interface IProductVariant {
   sellingPrice?: number;
   purchasePrice?: number;
   isActive?: boolean;
+  deductFromParent?: boolean;
+  parentStockRatio?: number;
 }
 
 export interface IProductType extends IBase {

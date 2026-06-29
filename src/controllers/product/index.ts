@@ -999,9 +999,9 @@ export const getProductDropdown = async (req, res) => {
     const response = await getDataWithSorting(
       productModel,
       criteria,
-      { _id: 1, name: 1, productType: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, images: 1, barcode: 1, barcodeType: 1, variants: 1 },
+      { _id: 1, name: 1, productType: 1, mrp: 1, sellingDiscount: 1, sellingPrice: 1, sellingMargin: 1, landingCost: 1, purchasePrice: 1, images: 1, barcode: 1, barcodeType: 1, variants: 1, isFavorite: 1 },
       {
-        sort: { name: 1 },
+        sort: { isFavorite: -1, name: 1 },
       },
     );
 
@@ -1054,6 +1054,7 @@ export const getProductDropdown = async (req, res) => {
             branchId: stock?.branchId ?? null,
             quickPick: stock?.quickPick ?? false,
             images: product.images ?? [],
+            isFavorite: product.isFavorite ?? false,
           });
         });
 
@@ -1093,6 +1094,7 @@ export const getProductDropdown = async (req, res) => {
             branchId: parentStock.branchId ?? null,
             quickPick: parentStock.quickPick ?? false,
             images: product.images ?? [],
+            isFavorite: product.isFavorite ?? false,
           });
         }
       } else {
@@ -1126,6 +1128,7 @@ export const getProductDropdown = async (req, res) => {
           branchId: stock?.branchId ?? null,
           quickPick: stock?.quickPick ?? false,
           images: product.images ?? [],
+          isFavorite: product.isFavorite ?? false,
         });
       }
     });
