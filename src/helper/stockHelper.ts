@@ -30,11 +30,11 @@ export const checkStockQty = async (items: any[], branchId: string, res: any, ol
       let parentStockRatio = 1;
 
       if (item.variantId) {
+        deductFromParent = true;
         const product = await getFirstMatch(productModel, { _id: item.productId, isDeleted: false }, { variants: 1, name: 1 }, {});
         if (product && product.variants) {
           const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString());
-          if (variant && variant.deductFromParent) {
-            deductFromParent = true;
+          if (variant) {
             parentStockRatio = variant.parentStockRatio || 1;
           }
         }

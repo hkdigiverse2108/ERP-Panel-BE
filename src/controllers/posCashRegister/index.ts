@@ -117,8 +117,15 @@ export const editPosCashRegister = async (req, res) => {
       }
     }
 
+    const registerId = value.posCashRegisterId;
+    delete value.posCashRegisterId;
+
+    if (value.denominations && value.denominations.length > 0) {
+      value.totalDenominationAmount = value.denominations.reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0);
+    }
+
     value.updatedBy = user?._id || null;
-    const response = await updateData(PosCashRegisterModel, { _id: value?.posCashRegisterId }, value, {});
+    const response = await updateData(PosCashRegisterModel, { _id: registerId }, value, {});
 
     if (!response) {
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.updateDataError("POS Cash Register"), {}, {}));

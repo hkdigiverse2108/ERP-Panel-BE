@@ -316,14 +316,16 @@ export const editProduct = async (req, res) => {
     }
 
     // Duplicate name check scoped to company
-    let duplicateCriteria: any = { isDeleted: false, name: value?.name, _id: { $ne: value?.productId } };
-    if (companyId) duplicateCriteria.companyId = companyId;
-    let isExist = await getFirstMatch(productModel, duplicateCriteria, {}, {});
+    if (value?.name) {
+      let duplicateCriteria: any = { isDeleted: false, name: value?.name, _id: { $ne: value?.productId } };
+      if (companyId) duplicateCriteria.companyId = companyId;
+      let isExist = await getFirstMatch(productModel, duplicateCriteria, {}, {});
 
-    if (isExist) {
-      let errorText = "";
-      if (isExist?.name === value?.name) errorText = "Product Name";
-      return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.dataAlreadyExist(errorText), {}, {}));
+      if (isExist) {
+        let errorText = "";
+        if (isExist?.name === value?.name) errorText = "Product Name";
+        return res.status(HTTP_STATUS.NOT_IMPLEMENTED).json(new apiResponse(HTTP_STATUS.NOT_IMPLEMENTED, responseMessage?.dataAlreadyExist(errorText), {}, {}));
+      }
     }
 
     const generatedBarcodesInEdit = new Set<string>();

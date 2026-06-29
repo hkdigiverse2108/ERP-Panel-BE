@@ -141,16 +141,34 @@ export const addReturnPosOrder = async (req, res) => {
     // --- Stock Management Logic ---
     // Increase stock for returned items
     for (const item of response.items) {
+      let deductFromParent = false;
+      let parentStockRatio = 1;
+      if (item.variantId) {
+        deductFromParent = true;
+        const product = await productModel.findById(item.productId).lean();
+        if (product && product.variants) {
+          const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
+          if (variant) {
+            parentStockRatio = variant.parentStockRatio || 1;
+          }
+        }
+      }
+
       const stockMatchCriteria: any = {
         productId: item.productId,
         companyId: response.companyId,
         branchId: response.branchId,
         isDeleted: false,
       };
-      if (item.variantId) stockMatchCriteria.variantId = item.variantId;
-      else stockMatchCriteria.variantId = { $exists: false };
+      if (deductFromParent) {
+        stockMatchCriteria.variantId = { $exists: false };
+      } else if (item.variantId) {
+        stockMatchCriteria.variantId = item.variantId;
+      } else {
+        stockMatchCriteria.variantId = { $exists: false };
+      }
 
-      await stockModel.findOneAndUpdate(stockMatchCriteria, { $inc: { qty: item.qty } });
+      await stockModel.findOneAndUpdate(stockMatchCriteria, { $inc: { qty: item.qty * parentStockRatio } });
     }
     // ----------------------------
 
@@ -340,30 +358,66 @@ export const editReturnPosOrder = async (req, res) => {
     // --- Stock Management Logic ---
     // 1. Revert old quantities (decrease stock since we increased it on create)
     for (const item of isExist.items) {
+      let deductFromParent = false;
+      let parentStockRatio = 1;
+      if (item.variantId) {
+        deductFromParent = true;
+        const product = await productModel.findById(item.productId).lean();
+        if (product && product.variants) {
+          const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
+          if (variant) {
+            parentStockRatio = variant.parentStockRatio || 1;
+          }
+        }
+      }
+
       const stockMatchCriteria: any = {
         productId: item.productId,
         companyId: isExist.companyId,
         branchId: isExist.branchId,
         isDeleted: false,
       };
-      if (item.variantId) stockMatchCriteria.variantId = item.variantId;
-      else stockMatchCriteria.variantId = { $exists: false };
+      if (deductFromParent) {
+        stockMatchCriteria.variantId = { $exists: false };
+      } else if (item.variantId) {
+        stockMatchCriteria.variantId = item.variantId;
+      } else {
+        stockMatchCriteria.variantId = { $exists: false };
+      }
 
-      await stockModel.findOneAndUpdate(stockMatchCriteria, { $inc: { qty: -item.qty } });
+      await stockModel.findOneAndUpdate(stockMatchCriteria, { $inc: { qty: -(item.qty * parentStockRatio) } });
     }
 
     // 2. Apply new quantities (increase stock)
     for (const item of response.items) {
+      let deductFromParent = false;
+      let parentStockRatio = 1;
+      if (item.variantId) {
+        deductFromParent = true;
+        const product = await productModel.findById(item.productId).lean();
+        if (product && product.variants) {
+          const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
+          if (variant) {
+            parentStockRatio = variant.parentStockRatio || 1;
+          }
+        }
+      }
+
       const stockMatchCriteria: any = {
         productId: item.productId,
         companyId: response.companyId,
         branchId: response.branchId,
         isDeleted: false,
       };
-      if (item.variantId) stockMatchCriteria.variantId = item.variantId;
-      else stockMatchCriteria.variantId = { $exists: false };
+      if (deductFromParent) {
+        stockMatchCriteria.variantId = { $exists: false };
+      } else if (item.variantId) {
+        stockMatchCriteria.variantId = item.variantId;
+      } else {
+        stockMatchCriteria.variantId = { $exists: false };
+      }
 
-      await stockModel.findOneAndUpdate(stockMatchCriteria, { $inc: { qty: item.qty } });
+      await stockModel.findOneAndUpdate(stockMatchCriteria, { $inc: { qty: item.qty * parentStockRatio } });
     }
     // ----------------------------
     // --- Update associated Credit Note ---
@@ -1078,16 +1132,34 @@ export const deleteReturnPosOrder = async (req, res) => {
 
     // Decrease stock for deleted return order
     for (const item of isExist.items) {
+      let deductFromParent = false;
+      let parentStockRatio = 1;
+      if (item.variantId) {
+        deductFromParent = true;
+        const product = await productModel.findById(item.productId).lean();
+        if (product && product.variants) {
+          const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
+          if (variant) {
+            parentStockRatio = variant.parentStockRatio || 1;
+          }
+        }
+      }
+
       const stockMatchCriteria: any = {
         productId: item.productId,
         companyId: isExist.companyId,
         branchId: isExist.branchId,
         isDeleted: false,
       };
-      if (item.variantId) stockMatchCriteria.variantId = item.variantId;
-      else stockMatchCriteria.variantId = { $exists: false };
+      if (deductFromParent) {
+        stockMatchCriteria.variantId = { $exists: false };
+      } else if (item.variantId) {
+        stockMatchCriteria.variantId = item.variantId;
+      } else {
+        stockMatchCriteria.variantId = { $exists: false };
+      }
 
-      await stockModel.findOneAndUpdate(stockMatchCriteria, { $inc: { qty: -item.qty } });
+      await stockModel.findOneAndUpdate(stockMatchCriteria, { $inc: { qty: -(item.qty * parentStockRatio) } });
     }
     // ----------------------------
 

@@ -39,7 +39,7 @@ export const addContactSchema = Joi.object({
   companyName: Joi.string().optional(),
   // contactPerson: Joi.string().optional(),
 
-  phoneNo: commonContactSchema.required(),
+  phoneNo: commonContactSchema.optional(),
   whatsappNo: commonContactSchema.optional(),
 
   email: Joi.string().email().optional(),

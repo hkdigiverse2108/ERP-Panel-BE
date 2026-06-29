@@ -164,11 +164,11 @@ export const addPosOrder = async (req, res) => {
         let deductFromParent = false;
         let parentStockRatio = 1;
         if (item.variantId) {
+          deductFromParent = true;
           const product = await productModel.findById(item.productId).lean();
           if (product && product.variants) {
             const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
-            if (variant && variant.deductFromParent) {
-              deductFromParent = true;
+            if (variant) {
               parentStockRatio = variant.parentStockRatio || 1;
             }
           }
@@ -464,11 +464,11 @@ export const editPosOrder = async (req, res) => {
         let deductFromParent = false;
         let parentStockRatio = 1;
         if (item.variantId) {
+          deductFromParent = true;
           const product = await productModel.findById(item.productId).lean();
           if (product && product.variants) {
             const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
-            if (variant && variant.deductFromParent) {
-              deductFromParent = true;
+            if (variant) {
               parentStockRatio = variant.parentStockRatio || 1;
             }
           }
@@ -500,11 +500,11 @@ export const editPosOrder = async (req, res) => {
         let deductFromParent = false;
         let parentStockRatio = 1;
         if (item.variantId) {
+          deductFromParent = true;
           const product = await productModel.findById(item.productId).lean();
           if (product && product.variants) {
             const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
-            if (variant && variant.deductFromParent) {
-              deductFromParent = true;
+            if (variant) {
               parentStockRatio = variant.parentStockRatio || 1;
             }
           }
@@ -668,11 +668,11 @@ export const deletePosOrder = async (req, res) => {
         let deductFromParent = false;
         let parentStockRatio = 1;
         if (item.variantId) {
+          deductFromParent = true;
           const product = await productModel.findById(item.productId).lean();
           if (product && product.variants) {
             const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
-            if (variant && variant.deductFromParent) {
-              deductFromParent = true;
+            if (variant) {
               parentStockRatio = variant.parentStockRatio || 1;
             }
           }

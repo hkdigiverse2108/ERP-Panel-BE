@@ -15,7 +15,7 @@ export const variantSchema = new Schema(
     sellingPrice: { type: Number, default: 0 },
     purchasePrice: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
-    deductFromParent: { type: Boolean, default: false },
+    deductFromParent: { type: Boolean, default: true },
     parentStockRatio: { type: Number, default: 1 },
   }
 );

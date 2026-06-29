@@ -51,8 +51,9 @@ export const get_permission_by_userId = async (req, res) => {
     let { userId, search } = value,
       match: any = {};
 
-    let userData = await getFirstMatch(userModel, { _id: new ObjectId(userId), isDeleted: false }, {}, {});
+    let userData = await userModel.findOne({ _id: new ObjectId(userId), isDeleted: false }).populate("role").lean();
     if (!userData) return res.status(HTTP_STATUS.METHOD_NOT_ALLOWED).json(new apiResponse(HTTP_STATUS.METHOD_NOT_ALLOWED, responseMessage.getDataNotFound("user"), {}, {}));
+    const isPosRole = (userData?.role as any)?.name?.toLowerCase().includes("pos") || false;
 
     let userPermissionData = await getData(permissionModel, { userId: new ObjectId(userId), isDeleted: false, isActive: true }, {}, {});
     if (!userPermissionData) return res.status(HTTP_STATUS.METHOD_NOT_ALLOWED).json(new apiResponse(HTTP_STATUS.METHOD_NOT_ALLOWED, responseMessage.getDataNotFound("user permissions"), {}, {}));
@@ -106,8 +107,13 @@ export const get_permission_by_userId = async (req, res) => {
         delete: false,
       };
 
+      const isRecipe = item.tabName?.toLowerCase().includes("recipe") ||
+                       item.displayName?.toLowerCase().includes("recipe") ||
+                       item.tabUrl?.toLowerCase().includes("recipe") ||
+                       (item.parentTab && (item.parentTab.tabName?.toLowerCase().includes("recipe") || item.parentTab.displayName?.toLowerCase().includes("recipe") || item.parentTab.tabUrl?.toLowerCase().includes("recipe")));
+
       let permission = userPermissionData?.find((item2) => item2.userId.toString() == userId.toString() && item2.moduleId.toString() == item._id.toString() && item.isActive == true);
-      if (permission) {
+      if (permission && !(isPosRole && isRecipe)) {
         newObj.view = permission.view;
         newObj.add = permission.add;
         newObj.edit = permission.edit;
@@ -139,6 +145,9 @@ export const get_permission_by_userId_child = async (req, res) => {
 
     let { userId, search } = value,
       match: any = {};
+
+    let userData = await userModel.findOne({ _id: new ObjectId(userId), isDeleted: false }).populate("role").lean();
+    const isPosRole = (userData?.role as any)?.name?.toLowerCase().includes("pos") || false;
 
     let userPermissionData = await getData(permissionModel, { userId: new ObjectId(userId) }, {}, {});
     if (!userPermissionData) return res.status(HTTP_STATUS.METHOD_NOT_ALLOWED).json(new apiResponse(HTTP_STATUS.METHOD_NOT_ALLOWED, responseMessage.getDataNotFound("user permissions"), {}, {}));
@@ -206,8 +215,12 @@ export const get_permission_by_userId_child = async (req, res) => {
         delete: false,
       };
 
+      const isParentRecipe = item.tabName?.toLowerCase().includes("recipe") ||
+                             item.displayName?.toLowerCase().includes("recipe") ||
+                             item.tabUrl?.toLowerCase().includes("recipe");
+
       let permission = userPermissionData?.find((item2) => item2.userId && item2.userId.toString() == userId.toString() && item2.moduleId && item2.moduleId.toString() == item._id.toString() && item.isActive == true);
-      if (permission) {
+      if (permission && !(isPosRole && isParentRecipe)) {
         newObj.view = permission.view || false;
         newObj.add = permission.add || false;
         newObj.edit = permission.edit || false;
@@ -219,14 +232,18 @@ export const get_permission_by_userId_child = async (req, res) => {
       let itemIdStr = item._id.toString();
       if (childModulesByParent[itemIdStr] && childModulesByParent[itemIdStr].length > 0) {
         let children = childModulesByParent[itemIdStr].map((child: any) => {
+          const isChildRecipe = child.tabName?.toLowerCase().includes("recipe") ||
+                                child.displayName?.toLowerCase().includes("recipe") ||
+                                child.tabUrl?.toLowerCase().includes("recipe");
+
           let childPermission = userPermissionData?.find((item2) => item2.userId && item2.userId.toString() == userId.toString() && item2.moduleId && item2.moduleId.toString() == child._id.toString() && child.isActive == true);
           return {
             ...child,
             parentTab: item,
-            view: childPermission?.view || false,
-            add: childPermission?.add || false,
-            edit: childPermission?.edit || false,
-            delete: childPermission?.delete || false,
+            view: (childPermission?.view && !(isPosRole && isChildRecipe)) || false,
+            add: (childPermission?.add && !(isPosRole && isChildRecipe)) || false,
+            edit: (childPermission?.edit && !(isPosRole && isChildRecipe)) || false,
+            delete: (childPermission?.delete && !(isPosRole && isChildRecipe)) || false,
           };
         });
         moduleItem.children = children.sort((a: any, b: any) => a.number - b.number);
