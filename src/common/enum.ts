@@ -448,3 +448,42 @@ export const BARCODE_TYPE = {
   CUSTOM: "CUSTOM",
 } as const;
 
+export const MESSENGER_TEMPLATE_CATEGORY = {
+  UTILITY: "UTILITY",
+  MARKETING: "MARKETING",
+} as const;
+
+export const MESSENGER_TEMPLATE_STATUS = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+  DELETED: "DELETED",
+} as const;
+
+export const MESSENGER_LOG_STATUS = {
+  QUEUED: "QUEUED",
+  SENT: "SENT",
+  FAILED: "FAILED",
+  DELIVERED: "DELIVERED",
+  READ: "READ",
+} as const;
+
+export const MESSENGER_TRIGGER_EVENT = {
+  POS_ORDER_CREATED: "POS_ORDER_CREATED",
+  INVOICE_CREATED: "INVOICE_CREATED",
+  DELIVERY_CHALLAN_CREATED: "DELIVERY_CHALLAN_CREATED",
+  MANUAL: "MANUAL",
+} as const;
+
+export const MESSENGER_TEMPLATE_HEADER_FORMAT = {
+  NONE: "NONE",
+  TEXT: "TEXT",
+  IMAGE: "IMAGE",
+} as const;
+
+export const MESSENGER_BUTTON_TYPE = {
+  QUICK_REPLY: "quick_reply",
+  URL: "url",
+  PHONE_NUMBER: "phone_number",
+} as const;
+

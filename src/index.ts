@@ -39,6 +39,9 @@ app.get("/isServerUp", (_, res) => {
   res.send("Server is running");
 });
 
+import { messengerWebhookRouter } from "./routes/messengerWebhook";
+app.use("/webhook/messenger", messengerWebhookRouter);
+
 app.use(router);
 
 app.use((err, req, res, next) => {

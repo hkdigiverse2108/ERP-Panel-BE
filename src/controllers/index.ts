@@ -64,3 +64,8 @@ export * as aiController from "./ai";
 export * as stockTransferController from "./stockTransfer";
 export * as notificationController from "./notification";
 export * as reportFormatController from "./reportFormat";
+export * as messengerConfigController from "./messengerConfig";
+export * as messengerTemplateController from "./messengerTemplate";
+export * as messengerLogController from "./messengerLog";
+export * as messengerWebhookController from "./messengerWebhook";
+export * as metaWhatsAppController from "./metaWhatsApp";

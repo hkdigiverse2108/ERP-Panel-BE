@@ -32,3 +32,4 @@ export * from "./expense";
 export * from "./paymentTerm";
 export * from "./consumptionType";
 export * from "./reportFormat";
+export * from "./messenger";

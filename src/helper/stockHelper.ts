@@ -26,39 +26,41 @@ export const checkStockQty = async (items: any[], branchId: string, res: any, ol
 
       if (netChange <= 0) continue;
 
-      let deductFromParent = false;
       let parentStockRatio = 1;
 
       if (item.variantId) {
-        deductFromParent = true;
         const product = await getFirstMatch(productModel, { _id: item.productId, isDeleted: false }, { variants: 1, name: 1 }, {});
         if (product && product.variants) {
           const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString());
           if (variant) {
-            parentStockRatio = variant.parentStockRatio || 1;
+            parentStockRatio = variant.packQty || 1;
           }
         }
       }
 
-      // Filter stock by branch
+      // Try variant-specific stock first, then fall back to parent-level stock
       const stockCriteria: any = { productId: item.productId, branchId, isDeleted: false };
-      if (deductFromParent) {
-        stockCriteria.variantId = { $exists: false }; // Check parent stock
-      } else if (item.variantId) {
+      if (item.variantId) {
         stockCriteria.variantId = item.variantId;
       } else {
         stockCriteria.variantId = { $exists: false };
       }
 
+      let stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
+
+      if (!stock && item.variantId) {
+        stockCriteria.variantId = { $exists: false };
+        stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
+      }
+
       const checkQty = netChange * parentStockRatio;
-      const stock = await getFirstMatch(stockModel, stockCriteria, {}, {});
 
       if (!stock || stock.qty < checkQty) {
         const product = await getFirstMatch(productModel, { _id: item.productId, isDeleted: false }, { name: 1 }, {});
         const productName = product ? product.name : "Product";
         const availableQty = stock ? stock.qty : 0;
 
-        res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.insufficientStock(productName, availableQty / parentStockRatio, netChange), {}, {}));
+        res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, responseMessage.insufficientStock(productName, availableQty / (parentStockRatio || 1), netChange), {}, {}));
         return false;
       }
     }

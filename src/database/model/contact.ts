@@ -75,6 +75,10 @@ const contactSchema = new Schema<IContact>(
 
     // ************************* Transport *************************
     transporterId: { type: String },
+
+    // ************************* Messenger *************************
+    messengerPsid: { type: String, index: true },
+    messengerOptIn: { type: Boolean, default: false },
   },
   baseSchemaOptions,
 );

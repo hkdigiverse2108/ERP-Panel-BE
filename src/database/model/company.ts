@@ -63,6 +63,7 @@ const companySchema: any = new mongoose.Schema(
     outletSize: { type: String },
 
     enableFeedbackModule: { type: String },
+    enableWhatsApp: { type: Boolean, default: false },
     allowRoundOff: { type: String },
 
     financialYear: { type: String },

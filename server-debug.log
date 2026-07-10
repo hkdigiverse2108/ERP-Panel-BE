@@ -1,0 +1,16 @@
+[CRON] Coupon expiry cron job initialized (runs every 1 hour)
+[CRON] Discount expiry cron job initialized (runs every 1 hour)
+[CRON] Financial Year Prefix Reset cron job initialized (runs every April 1st at 12:00 AM)
+[CRON] Stock expiry check cron job initialized (runs daily at 12:00 AM)
+[CRON] Stock low check cron job initialized (runs daily at 12:00 AM)
+[CRON] Out-of-stock check cron job initialized (runs daily at 12:00 AM)
+server started at port http://localhost:4001
+Database Connected successfully
+[96m[Q&A] [95mWed Jul 08 2026 19:07:46 GMT+0530 [33m- [32mhttp[33m: [32mPOST localhost:4001/meta-whatsapp/send/pos-bill [33m device os => [Windows NT; Windows NT 10.0; en-IN] [1m[37mip address => ::1 [33m[39m
+[33m[32m[36m browser =>  WindowsPowerShell/5.1.26100.8737[33m[39m
+[PDF] Generated: pos_bill_Test_42_1783517868939.pdf, full path: E:\Company\ERP\ERP-Panel-BE\public\invoices\pos_bill_Test_42_1783517868939.pdf, exists: true
+[PDF UPLOAD] URL: https://graph.facebook.com/v23.0/1160367790492107/media, file: E:\Company\ERP\ERP-Panel-BE\public\invoices\pos_bill_Test_42_1783517868939.pdf, size: 1914 bytes
+[PDF UPLOAD] Response: {"id":"1356071046015208"}
+[PDF SEND] mediaId: 1356071046015208, to: 916355809873
+[PDF SEND] URL: https://graph.facebook.com/v23.0/1160367790492107/messages, payload: {"messaging_product":"whatsapp","to":"916355809873","type":"document","document":{"id":"1356071046015208","caption":"Invoice: Test-42"}}
+[PDF SEND] Response: {"messaging_product":"whatsapp","contacts":[{"input":"916355809873","wa_id":"916355809873"}],"messages":[{"id":"wamid.HBgMOTE2MzU1ODA5ODczFQIAERgSOEIyNzc2RjcwNjcyNkMxRjU4AA=="}]}

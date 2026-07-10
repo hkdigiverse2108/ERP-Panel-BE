@@ -101,6 +101,7 @@ export const addProductSchema = Joi.object().keys({
       isActive: Joi.boolean().default(true).optional(),
       deductFromParent: Joi.boolean().optional(),
       parentStockRatio: Joi.number().min(0.001).optional(),
+      packQty: Joi.number().min(1).default(1).required(),
     })
   ).optional(),
   isFavorite: Joi.boolean().optional(),
@@ -201,6 +202,7 @@ export const editProductSchema = Joi.object().keys({
       isActive: Joi.boolean().optional(),
       deductFromParent: Joi.boolean().optional(),
       parentStockRatio: Joi.number().min(0.001).optional(),
+      packQty: Joi.number().min(1).optional(),
     })
   ).optional(),
   isFavorite: Joi.boolean().optional(),

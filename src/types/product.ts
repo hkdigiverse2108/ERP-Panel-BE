@@ -102,6 +102,7 @@ export interface IProductVariant {
   isActive?: boolean;
   deductFromParent?: boolean;
   parentStockRatio?: number;
+  packQty?: number;
 }
 
 export interface IProductType extends IBase {

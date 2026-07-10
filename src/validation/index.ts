@@ -62,3 +62,5 @@ export * from "./credential";
 export * from "./stockTransfer";
 export * from "./notification";
 export * from "./reportFormat";
+export * from "./messenger";
+export * from "./metaWhatsApp";

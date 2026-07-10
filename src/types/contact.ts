@@ -62,4 +62,6 @@ export interface IContact extends IBase {
   // CRM
   loyaltyPoints: number;
   membershipId?: Schema.Types.ObjectId;
+  messengerPsid?: string;
+  messengerOptIn?: boolean;
 }

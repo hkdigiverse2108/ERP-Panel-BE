@@ -865,7 +865,9 @@ export const getProductDropdown = async (req, res) => {
       const stockCriteria: any = { productId: product._id, isDeleted: false };
       if (effectiveCompanyId) stockCriteria.companyId = effectiveCompanyId;
       if (effectiveBranchId) stockCriteria.branchId = effectiveBranchId;
-      if (matchedVariant) stockCriteria.variantId = matchedVariant._id;
+      if (matchedVariant && matchedVariant.deductFromParent === false) {
+        stockCriteria.variantId = matchedVariant._id;
+      }
       if (isQuickPickFilter) stockCriteria.quickPick = true;
 
       const stock = await stockModel.findOne(stockCriteria).populate([
@@ -886,12 +888,12 @@ export const getProductDropdown = async (req, res) => {
         barcode: matchedVariant ? (matchedVariant.barcode ?? null) : (product.barcode ?? null),
         barcodeType: matchedVariant ? (matchedVariant.barcodeType ?? null) : (product.barcodeType ?? null),
         matchedVariant,
-        qty: stock?.qty ?? 0,
-        mrp: stock?.mrp ?? matchedVariant?.mrp ?? productObj.mrp ?? 0,
-        sellingPrice: stock?.sellingPrice ?? matchedVariant?.sellingPrice ?? productObj.sellingPrice ?? 0,
+        qty: matchedVariant && matchedVariant.deductFromParent !== false ? (stock?.qty ?? 0) / (matchedVariant.packQty || 1) : (stock?.qty ?? 0),
+        mrp: matchedVariant?.mrp ?? stock?.mrp ?? productObj.mrp ?? 0,
+        sellingPrice: matchedVariant?.sellingPrice ?? stock?.sellingPrice ?? productObj.sellingPrice ?? 0,
         sellingDiscount: stock?.sellingDiscount ?? productObj.sellingDiscount ?? 0,
         sellingMargin: stock?.sellingMargin ?? productObj.sellingMargin ?? 0,
-        purchasePrice: stock?.purchasePrice ?? matchedVariant?.purchasePrice ?? productObj.purchasePrice ?? 0,
+        purchasePrice: matchedVariant?.purchasePrice ?? stock?.purchasePrice ?? productObj.purchasePrice ?? 0,
         landingCost: stock?.landingCost ?? productObj.landingCost ?? 0,
         purchaseTaxId: stock?.purchaseTaxId ?? null,
         salesTaxId: stock?.salesTaxId ?? null,
@@ -1007,15 +1009,34 @@ export const getProductDropdown = async (req, res) => {
       },
     );
 
+    const filteredResponse = userType !== USER_TYPES.SUPER_ADMIN
+      ? response.filter((p: any) => {
+          const name = p.name ? String(p.name) : "";
+          return !name.startsWith("?") && !name.startsWith("\u200b");
+        })
+      : response;
+
     const mergedResponse: any[] = [];
 
-    response.forEach((product: any) => {
+    filteredResponse.forEach((product: any) => {
       const productObj = product.toObject ? product.toObject() : product;
       if (productObj.variants && productObj.variants.length > 0) {
         // 1. Add variant rows
         productObj.variants.forEach((variant: any) => {
-          const stockKey = `${product._id}_${variant._id}`;
-          const stock = stockByProductId.get(stockKey);
+          const deductFromParent = variant.deductFromParent !== false;
+
+          let stock = null;
+          let isParentStock = deductFromParent;
+
+          if (deductFromParent) {
+            stock = stockByProductId.get(String(product._id));
+            if (!stock) {
+              stock = stockByProductId.get(`${product._id}_${variant._id}`);
+              isParentStock = false;
+            }
+          } else {
+            stock = stockByProductId.get(`${product._id}_${variant._id}`);
+          }
 
           if ((isNewProduct !== "true" || isQuickPickFilter) && (!stock || (stockFilter === "true" && stock.qty <= 0))) {
             return;
@@ -1041,11 +1062,11 @@ export const getProductDropdown = async (req, res) => {
             productType: product.productType,
             barcode: variant.barcode ?? null,
             barcodeType: variant.barcodeType ?? null,
-            qty: stock?.qty ?? 0,
-            purchasePrice: stock?.purchasePrice ?? variant.purchasePrice ?? product.purchasePrice,
+            qty: isParentStock ? (stock?.qty ?? 0) / (variant.packQty || 1) : (stock?.qty ?? 0),
+            purchasePrice: variant.purchasePrice ?? stock?.purchasePrice ?? product.purchasePrice,
             landingCost: stock?.landingCost ?? product.landingCost,
-            mrp: stock?.mrp ?? variant.mrp ?? product.mrp,
-            sellingPrice: stock?.sellingPrice ?? variant.sellingPrice ?? product.sellingPrice,
+            mrp: variant.mrp ?? stock?.mrp ?? product.mrp,
+            sellingPrice: variant.sellingPrice ?? stock?.sellingPrice ?? product.sellingPrice,
             sellingDiscount: stock?.sellingDiscount ?? product.sellingDiscount,
             sellingMargin: stock?.sellingMargin ?? product.sellingMargin,
             purchaseTaxId: stock?.purchaseTaxId ?? null,

@@ -56,6 +56,7 @@ export const addCompanySchema = Joi.object().keys({
   outletSize: Joi.string().optional(),
 
   enableFeedbackModule: Joi.boolean().optional(),
+  enableWhatsApp: Joi.boolean().optional(),
   allowRoundOff: Joi.boolean().optional(),
 
   financialYear: Joi.string().optional(),
@@ -99,22 +100,10 @@ export const editCompanySchema = Joi.object().keys({
 
   // ******************* Communication Details *******************
   address: editAddressSchemaOptional.optional(),
-  // address: Joi.string().optional(),
-  // city: objectId().optional(),
-  // state: objectId().optional(),
-  // country: objectId().optional(),
-  // pinCode: Joi.number().optional(),
-  // timeZone: Joi.string().optional().allow("", null),
   webSite: Joi.string().optional().allow("", null),
 
   // ******************* Bank Details *******************
   bankId: objectId().optional(),
-  // upiId: Joi.string().optional(),
-  // accountHolderName: Joi.string().optional(),
-  // bankAccountNumber: Joi.string().optional(),
-  // name: Joi.string().optional(),
-  // bankIFSC: Joi.string().optional(),
-  // branchName: Joi.string().optional().allow("", null),
 
   // ******************* Additional Details *******************
   userName: Joi.string().optional().allow("", null),
@@ -122,7 +111,6 @@ export const editCompanySchema = Joi.object().keys({
   gstRegistrationType: Joi.string().optional().allow("", null),
   gstIdentificationNumber: Joi.string().optional().allow("", null),
   financialMonthInterval: Joi.string().optional().allow("", null),
-  // defaultFinancialYear: Joi.string().optional(),
 
   // *******************  Other Details *******************
   corporateIdentificationNumber: Joi.string().optional().allow("", null),
@@ -134,6 +122,7 @@ export const editCompanySchema = Joi.object().keys({
   outletSize: Joi.string().optional().allow("", null),
 
   enableFeedbackModule: Joi.boolean().optional(),
+  enableWhatsApp: Joi.boolean().optional(),
   allowRoundOff: Joi.boolean().optional(),
 
   financialYear: Joi.string().optional(),

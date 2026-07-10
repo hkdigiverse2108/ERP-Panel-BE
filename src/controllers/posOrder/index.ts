@@ -169,7 +169,7 @@ export const addPosOrder = async (req, res) => {
           if (product && product.variants) {
             const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
             if (variant) {
-              parentStockRatio = variant.parentStockRatio || 1;
+              parentStockRatio = variant.packQty || 1;
             }
           }
         }
@@ -469,7 +469,7 @@ export const editPosOrder = async (req, res) => {
           if (product && product.variants) {
             const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
             if (variant) {
-              parentStockRatio = variant.parentStockRatio || 1;
+              parentStockRatio = variant.packQty || 1;
             }
           }
         }
@@ -505,7 +505,7 @@ export const editPosOrder = async (req, res) => {
           if (product && product.variants) {
             const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
             if (variant) {
-              parentStockRatio = variant.parentStockRatio || 1;
+              parentStockRatio = variant.packQty || 1;
             }
           }
         }
@@ -673,7 +673,7 @@ export const deletePosOrder = async (req, res) => {
           if (product && product.variants) {
             const variant = product.variants.find((v: any) => v._id.toString() === item.variantId.toString()) as any;
             if (variant) {
-              parentStockRatio = variant.parentStockRatio || 1;
+              parentStockRatio = variant.packQty || 1;
             }
           }
         }

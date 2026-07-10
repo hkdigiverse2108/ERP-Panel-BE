@@ -67,6 +67,10 @@ import migrationRouter from "./migration";
 import { notificationRouter } from "./notification";
 import { stockTransferRouter } from "./stockTransfer";
 import { reportFormatRouter } from "./reportFormat";
+import { messengerConfigRouter } from "./messengerConfig";
+import { messengerTemplateRouter } from "./messengerTemplate";
+import { messengerLogRouter } from "./messengerLog";
+import { metaWhatsAppRouter } from "./metaWhatsApp";
 
 const router = Router();
 
@@ -132,6 +136,10 @@ router.use("/material-consumption", materialConsumptionRouter);
 router.use("/bill-of-live-product", billOfLiveProductRouter);
 router.use("/settings", settingsRouter);
 router.use("/report-format", reportFormatRouter);
+router.use("/messenger-config", messengerConfigRouter);
+router.use("/messenger-template", messengerTemplateRouter);
+router.use("/messenger-log", messengerLogRouter);
+router.use("/meta-whatsapp", metaWhatsAppRouter);
 
 // === For Super Admin
 router.use("/company", companyRouter);

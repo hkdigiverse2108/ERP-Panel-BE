@@ -13,4 +13,6 @@ export * from "./cronHelper";
 export * from "./bulkDataHelper";
 export * from "./dropdownHelper";
 export * from "./barcode";
+export * from "./messenger";
+export * from "../services/metaWhatsApp.service";
 
