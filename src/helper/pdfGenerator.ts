@@ -45,24 +45,39 @@ export const generatePosBillPdf = async (order: PdfOrder): Promise<string> => {
   let y = 40;
 
   const addLine = (text: string, opts: any = {}) => {
-    doc.fontSize(opts.fontSize || 10).font(opts.bold ? "Helvetica-Bold" : "Helvetica");
+    const fontSize = opts.fontSize || 10;
+    doc.fontSize(fontSize).font(opts.bold ? "Helvetica-Bold" : "Helvetica");
     if (opts.color) doc.fillColor(opts.color);
     else doc.fillColor("#000");
-    if (opts.align === "center") doc.text(text, leftMargin, y, { width: 525, align: "center" });
-    else if (opts.align === "right") doc.text(text, leftMargin, y, { width: 525, align: "right" });
-    else doc.text(text, leftMargin, y);
-    y += opts.marginBottom || 16;
+    
+    const textWidth = 520;
+    if (opts.align === "center") {
+      doc.text(text, leftMargin, y, { width: textWidth, align: "center" });
+    } else if (opts.align === "right") {
+      doc.text(text, leftMargin, y, { width: textWidth, align: "right" });
+    } else {
+      doc.text(text, leftMargin, y, { width: textWidth });
+    }
+    
+    const textHeight = doc.heightOfString(text, { width: textWidth });
+    y += textHeight + (opts.marginBottom || 4);
   };
 
   const addDivider = () => {
-    y += 4;
+    y += 6;
     doc.moveTo(leftMargin, y).lineTo(leftMargin + 520, y).strokeColor("#ccc").stroke();
-    y += 10;
+    y += 12;
   };
 
-  addLine(order.companyName, { fontSize: 16, bold: true, align: "center", marginBottom: 6 });
-  if (order.companyAddress) addLine(order.companyAddress, { fontSize: 8, align: "center", marginBottom: 4 });
-  if (order.companyPhone) addLine(`Ph: ${order.companyPhone}`, { fontSize: 8, align: "center", marginBottom: 10 });
+  if (order.companyName) {
+    addLine(order.companyName, { fontSize: 16, bold: true, align: "center", marginBottom: 6 });
+  }
+  if (order.companyAddress) {
+    addLine(order.companyAddress, { fontSize: 9, align: "center", marginBottom: 4 });
+  }
+  if (order.companyPhone) {
+    addLine(`Ph: ${order.companyPhone}`, { fontSize: 9, align: "center", marginBottom: 10 });
+  }
 
   addDivider();
 
@@ -70,12 +85,12 @@ export const generatePosBillPdf = async (order: PdfOrder): Promise<string> => {
 
   addDivider();
 
-  addLine(`Customer: ${order.customerName}${order.customerPhone ? `  |  ${order.customerPhone}` : ""}`, { fontSize: 9, marginBottom: 6 });
-  addLine(`Invoice No: ${order.orderNo}     Date: ${order.createdAt}`, { fontSize: 9, marginBottom: 8 });
+  addLine(`Customer: ${order.customerName}${order.customerPhone ? `  |  ${order.customerPhone}` : ""}`, { fontSize: 10, marginBottom: 6 });
+  addLine(`Invoice No: ${order.orderNo}     Date: ${order.createdAt}`, { fontSize: 10, marginBottom: 8 });
 
   addDivider();
 
-  addLine("Items:", { fontSize: 10, bold: true, marginBottom: 6 });
+  addLine("Items:", { fontSize: 11, bold: true, marginBottom: 8 });
 
   const colX = [leftMargin, leftMargin + 180, leftMargin + 280, leftMargin + 350, leftMargin + 420];
   const colW = [170, 90, 60, 60, 90];

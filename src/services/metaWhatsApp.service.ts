@@ -25,6 +25,7 @@ const uploadMedia = async (account: any, filePath: string) => {
 
 export const MetaWhatsAppService = {
   normalizePhone,
+  uploadMedia,
 
   async sendTemplate({ account, to, templateName, language, components }) {
     const url = `https://graph.facebook.com/${account.graphVersion || "v23.0"}/${account.phoneNumberId}/messages`;

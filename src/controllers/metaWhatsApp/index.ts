@@ -322,7 +322,7 @@ export const sendPosBill = async (req, res) => {
     const account = await getFirstMatch(metaWhatsAppAccountModel, { _id: template.accountId, isDeleted: false }, {}, {});
     if (!account) return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, "WhatsApp account not found for template.", {}, {}));
 
-    const components = [
+    const components: any[] = [
       {
         type: "body",
         parameters: [
@@ -332,6 +332,70 @@ export const sendPosBill = async (req, res) => {
         ],
       },
     ];
+
+    let pdfSent = false;
+    let pdfPath = null;
+    const shouldSendPdf = template.sendAttachment || template.sendPdf;
+    if (shouldSendPdf && template.attachmentType === "pdf" && order.items?.length) {
+      try {
+        const { generatePosBillPdf } = require("../../helper/pdfGenerator");
+        const getTaxPercent = (item: any) => item?.productId?.salesTaxId?.percentage || 0;
+        const items = (order.items || []).map((item: any) => ({
+          name: item.productId?.name || "",
+          qty: item.qty || 0,
+          mrp: item.mrp || 0,
+          taxPercent: getTaxPercent(item),
+          netAmount: item.netAmount || 0,
+          discountAmount: (item.discountAmount || 0) + (item.additionalDiscountAmount || 0),
+        }));
+
+        const companyAddr = order.companyId?.address;
+        const addrParts = [companyAddr?.address, companyAddr?.city?.name, companyAddr?.state?.name, companyAddr?.country?.name].filter(Boolean);
+        if (companyAddr?.pinCode) addrParts.push(companyAddr.pinCode);
+
+        const pdfFileName = await generatePosBillPdf({
+          companyName: order.companyId?.name || "",
+          companyAddress: addrParts.join(", "),
+          companyPhone: order.companyId?.phoneNo ? `${order.companyId.phoneNo.countryCode || ""}${order.companyId.phoneNo.phoneNo || ""}` : "",
+          customerName: `${contact.firstName || ""} ${contact.lastName || ""}`.trim() || "Customer",
+          customerPhone: contact.phoneNo ? `${contact.phoneNo.countryCode || ""}${contact.phoneNo.phoneNo || ""}` : "",
+          orderNo: order.orderNo || "",
+          createdAt: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "",
+          items,
+          additionalCharges: (order.additionalCharges || []).map((ac: any) => ({ name: ac.chargeId?.name || "Charge", amount: ac.totalAmount || 0 })),
+          totalDiscount: order.totalDiscount || 0,
+          redeemCreditAmount: order.redeemCreditAmount || 0,
+          redeemCreditType: order.redeemCreditType || "",
+          flatDiscountAmount: order.flatDiscountAmount || 0,
+          roundOff: order.roundOff || 0,
+          totalAmount: order.totalAmount || 0,
+          totalTaxAmount: order.totalTaxAmount || 0,
+        });
+
+        pdfPath = require("path").join(__dirname, "..", "..", "..", "..", "public", "invoices", pdfFileName);
+        console.log(`[PDF] Generated: ${pdfFileName}, full path: ${pdfPath}, exists: ${require("fs").existsSync(pdfPath)}`);
+        
+        const media = await MetaWhatsAppService.uploadMedia(account, pdfPath);
+        const mediaId = media?.id;
+        if (mediaId) {
+          components.unshift({
+            type: "header",
+            parameters: [
+              {
+                type: "document",
+                document: {
+                  id: mediaId,
+                  filename: `${order.orderNo || "Invoice"}.pdf`,
+                },
+              },
+            ],
+          });
+          pdfSent = true;
+        }
+      } catch (pdfError) {
+        console.error("PDF generation/upload error:", pdfError.message);
+      }
+    }
 
     let metaResult;
     try {
@@ -343,6 +407,9 @@ export const sendPosBill = async (req, res) => {
         components,
       });
     } catch (metaError) {
+      if (pdfPath) {
+        try { require("fs").unlinkSync(pdfPath); } catch (_) { /* cleanup */ }
+      }
       const errMsg = metaError?.response?.data?.error?.message || metaError.message;
       await createOne(metaMessageLogModel, {
         companyId, branchId, contactId: contact._id, accountId: account._id,
@@ -353,6 +420,10 @@ export const sendPosBill = async (req, res) => {
         createdBy: user?._id || null, updatedBy: user?._id || null,
       });
       return res.status(HTTP_STATUS.BAD_REQUEST).json(new apiResponse(HTTP_STATUS.BAD_REQUEST, COMMON_SEND_ERROR, {}, {}));
+    }
+
+    if (pdfPath) {
+      try { require("fs").unlinkSync(pdfPath); } catch (_) { /* cleanup */ }
     }
 
     const metaPricing = metaResult?.data?.messages?.[0]?.pricing || metaResult?.data?.pricing || {};
@@ -368,61 +439,7 @@ export const sendPosBill = async (req, res) => {
     };
     await createOne(metaMessageLogModel, logEntry);
 
-    let pdfSent = false;
-    const shouldSendPdf = template.sendAttachment || template.sendPdf;
-    if (shouldSendPdf && template.attachmentType === "pdf" && order.items?.length) {
-      try {
-        const { generatePosBillPdf } = require("../../helper/pdfGenerator");
-      const getTaxPercent = (item: any) => item?.productId?.salesTaxId?.percentage || 0;
-      const items = (order.items || []).map((item: any) => ({
-        name: item.productId?.name || "",
-        qty: item.qty || 0,
-        mrp: item.mrp || 0,
-        taxPercent: getTaxPercent(item),
-        netAmount: item.netAmount || 0,
-        discountAmount: (item.discountAmount || 0) + (item.additionalDiscountAmount || 0),
-      }));
-
-      const companyAddr = order.companyId?.address;
-      const addrParts = [companyAddr?.address, companyAddr?.city?.name, companyAddr?.state?.name, companyAddr?.country?.name].filter(Boolean);
-      if (companyAddr?.pinCode) addrParts.push(companyAddr.pinCode);
-
-      const pdfFileName = await generatePosBillPdf({
-        companyName: order.companyId?.name || "",
-        companyAddress: addrParts.join(", "),
-        companyPhone: order.companyId?.phoneNo ? `${order.companyId.phoneNo.countryCode || ""}${order.companyId.phoneNo.phoneNo || ""}` : "",
-        customerName: `${contact.firstName || ""} ${contact.lastName || ""}`.trim() || "Customer",
-        customerPhone: contact.phoneNo ? `${contact.phoneNo.countryCode || ""}${contact.phoneNo.phoneNo || ""}` : "",
-        orderNo: order.orderNo || "",
-        createdAt: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "",
-        items,
-        additionalCharges: (order.additionalCharges || []).map((ac: any) => ({ name: ac.chargeId?.name || "Charge", amount: ac.totalAmount || 0 })),
-        totalDiscount: order.totalDiscount || 0,
-        redeemCreditAmount: order.redeemCreditAmount || 0,
-        redeemCreditType: order.redeemCreditType || "",
-        flatDiscountAmount: order.flatDiscountAmount || 0,
-        roundOff: order.roundOff || 0,
-        totalAmount: order.totalAmount || 0,
-        totalTaxAmount: order.totalTaxAmount || 0,
-      });
-
-      const pdfPath = require("path").join(__dirname, "..", "..", "..", "..", "public", "invoices", pdfFileName);
-      console.log(`[PDF] Generated: ${pdfFileName}, full path: ${pdfPath}, exists: ${require("fs").existsSync(pdfPath)}`);
-      await MetaWhatsAppService.sendDocument({
-        account,
-        to: phone,
-        filePath: pdfPath,
-        caption: `Invoice: ${order.orderNo}`,
-      });
-      pdfSent = true;
-
-        try { require("fs").unlinkSync(pdfPath); } catch (_) { /* cleanup */ }
-      } catch (pdfError) {
-        console.error("PDF send error (non-fatal):", pdfError.message);
-      }
-    }
-
-    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, COMMON_SEND_SUCCESS + (pdfSent ? " (PDF bill also sent)" : ""), {}, {}));
+    return res.status(HTTP_STATUS.OK).json(new apiResponse(HTTP_STATUS.OK, COMMON_SEND_SUCCESS + (pdfSent ? " (PDF bill embedded in template)" : ""), {}, {}));
   } catch (error) {
     console.error(error);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(new apiResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, responseMessage?.internalServerError, {}, error));
