@@ -1,6 +1,6 @@
 import { apiResponse, HTTP_STATUS, PAY_LATER_STATUS, PAYMENT_MODE, POS_ORDER_STATUS, POS_PAYMENT_STATUS, POS_PAYMENT_TYPE, POS_VOUCHER_TYPE, REDEEM_CREDIT_TYPE, REDEEM_CREDIT_MODEL, CASH_REGISTER_STATUS, PREFIX_MODULES } from "../../common";
 import { contactModel, productModel, taxModel, branchModel, PosOrderModel, additionalChargeModel, PosPaymentModel, userModel, stockModel, couponModel, loyaltyPointsModel, returnPosOrderModel, PosCashRegisterModel, posCreditNoteModel, discountModel } from "../../database";
-import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkStockQty, countData, createOne, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, reqInfo, responseMessage, updateData } from "../../helper";
+import { applyDateFilter, checkBranch, checkCompany, checkIdExist, checkStockQty, countData, createOne, deductStock, getAndIncrementPrefix, getDataWithSorting, getFirstMatch, handleIncludeId, incrementStock, reqInfo, responseMessage, updateData } from "../../helper";
 import { addPosOrderSchema, deletePosOrderSchema, editPosOrderSchema, getPosOrderSchema, releasePosOrderSchema, getCustomerPosDetailsSchema } from "../../validation";
 import { applyCoupon, applyLoyalty, applyPosDiscount, applyRedeemCredit, revertCoupon, revertDiscount, revertLoyalty, revertRedeemCredit } from "./helper";
 
@@ -187,9 +187,9 @@ export const addPosOrder = async (req, res) => {
           stockMatchCriteria.variantId = { $exists: false };
         }
 
-        await stockModel.findOneAndUpdate(
+        await deductStock(
           stockMatchCriteria,
-          { $inc: { qty: -(item.qty * parentStockRatio) } },
+          item.qty * parentStockRatio
         );
       }
     }
@@ -487,9 +487,9 @@ export const editPosOrder = async (req, res) => {
           stockMatchCriteria.variantId = { $exists: false };
         }
 
-        await stockModel.findOneAndUpdate(
+        await incrementStock(
           stockMatchCriteria,
-          { $inc: { qty: item.qty * parentStockRatio } },
+          item.qty * parentStockRatio
         );
       }
     }
@@ -523,9 +523,9 @@ export const editPosOrder = async (req, res) => {
           stockMatchCriteria.variantId = { $exists: false };
         }
 
-        await stockModel.findOneAndUpdate(
+        await deductStock(
           stockMatchCriteria,
-          { $inc: { qty: -(item.qty * parentStockRatio) } },
+          item.qty * parentStockRatio
         );
       }
     }
@@ -691,9 +691,9 @@ export const deletePosOrder = async (req, res) => {
           stockMatchCriteria.variantId = { $exists: false };
         }
 
-        await stockModel.findOneAndUpdate(
+        await incrementStock(
           stockMatchCriteria,
-          { $inc: { qty: item.qty * parentStockRatio } },
+          item.qty * parentStockRatio
         );
       }
     }

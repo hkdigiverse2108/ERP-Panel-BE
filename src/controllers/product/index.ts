@@ -599,7 +599,7 @@ export const getAllProduct = async (req, res) => {
               barcode: variant.barcode ?? productObj.barcode ?? null,
               barcodeType: variant.barcodeType ?? productObj.barcodeType ?? null,
               sku: variant.sku ?? productObj.sku ?? null,
-              qty: stock?.qty ?? 0,
+              qty: Math.max(0, stock?.qty ?? 0),
               mrp: stock?.mrp ?? variant.mrp ?? productObj.mrp ?? 0,
               sellingPrice: stock?.sellingPrice ?? variant.sellingPrice ?? productObj.sellingPrice ?? 0,
               sellingDiscount: stock?.sellingDiscount ?? productObj.sellingDiscount ?? 0,
@@ -632,7 +632,7 @@ export const getAllProduct = async (req, res) => {
                 ...productObj,
                 variants: undefined,
                 variantId: null,
-                qty: parentStock.qty ?? 0,
+                qty: Math.max(0, parentStock.qty ?? 0),
                 mrp: parentStock.mrp ?? productObj.mrp ?? 0,
                 sellingPrice: parentStock.sellingPrice ?? productObj.sellingPrice ?? 0,
                 sellingDiscount: parentStock.sellingDiscount ?? productObj.sellingDiscount ?? 0,
@@ -657,7 +657,7 @@ export const getAllProduct = async (req, res) => {
 
           finalList.push({
             ...productObj,
-            qty: stock?.qty ?? 0,
+            qty: Math.max(0, stock?.qty ?? 0),
             mrp: stock?.mrp ?? productObj.mrp ?? 0,
             sellingPrice: stock?.sellingPrice ?? productObj.sellingPrice ?? 0,
             sellingDiscount: stock?.sellingDiscount ?? productObj.sellingDiscount ?? 0,
@@ -694,15 +694,16 @@ export const getAllProduct = async (req, res) => {
           const variantsWithStock = productObj.variants.map((v: any) => {
             const stockKey = `${product._id}_${v._id}`;
             const stock = stockByKey.get(stockKey);
+            const vQty = Math.max(0, stock?.qty ?? 0);
 
-            totalQty += stock?.qty ?? 0;
-            if (!firstStock && stock) {
+            totalQty += vQty;
+            if (!firstStock && stock && stock.qty > 0) {
               firstStock = stock;
             }
 
             return {
               ...v,
-              qty: stock?.qty ?? 0,
+              qty: vQty,
               mrp: stock?.mrp ?? v.mrp ?? productObj.mrp ?? 0,
               sellingPrice: stock?.sellingPrice ?? v.sellingPrice ?? productObj.sellingPrice ?? 0,
               sellingDiscount: stock?.sellingDiscount ?? productObj.sellingDiscount ?? 0,
@@ -720,8 +721,8 @@ export const getAllProduct = async (req, res) => {
 
           // Also check if parent product itself has stock
           const parentStock = stockByKey.get(String(product._id));
-          if (parentStock) {
-            totalQty += parentStock.qty ?? 0;
+          if (parentStock && parentStock.qty > 0) {
+            totalQty += parentStock.qty;
             if (!firstStock) {
               firstStock = parentStock;
             }
@@ -744,7 +745,7 @@ export const getAllProduct = async (req, res) => {
 
           productObj.variants = variantsWithStock;
           productObj.variantsWithStock = variantsWithStock;
-          productObj.qty = totalQty;
+          productObj.qty = Math.max(0, totalQty);
           productObj.mrp = mrp;
           productObj.sellingPrice = sellingPrice;
           productObj.sellingDiscount = sellingDiscount;
@@ -888,7 +889,7 @@ export const getProductDropdown = async (req, res) => {
         barcode: matchedVariant ? (matchedVariant.barcode ?? null) : (product.barcode ?? null),
         barcodeType: matchedVariant ? (matchedVariant.barcodeType ?? null) : (product.barcodeType ?? null),
         matchedVariant,
-        qty: matchedVariant && matchedVariant.deductFromParent !== false ? (stock?.qty ?? 0) / (matchedVariant.packQty || 1) : (stock?.qty ?? 0),
+        qty: Math.max(0, matchedVariant && matchedVariant.deductFromParent !== false ? (stock?.qty ?? 0) / (matchedVariant.packQty || 1) : (stock?.qty ?? 0)),
         mrp: matchedVariant?.mrp ?? stock?.mrp ?? productObj.mrp ?? 0,
         sellingPrice: matchedVariant?.sellingPrice ?? stock?.sellingPrice ?? productObj.sellingPrice ?? 0,
         sellingDiscount: stock?.sellingDiscount ?? productObj.sellingDiscount ?? 0,
@@ -1026,16 +1027,20 @@ export const getProductDropdown = async (req, res) => {
           const deductFromParent = variant.deductFromParent !== false;
 
           let stock = null;
-          let isParentStock = deductFromParent;
+          let isParentStock = false;
 
-          if (deductFromParent) {
-            stock = stockByProductId.get(String(product._id));
-            if (!stock) {
-              stock = stockByProductId.get(`${product._id}_${variant._id}`);
-              isParentStock = false;
-            }
+          const variantStock = stockByProductId.get(`${product._id}_${variant._id}`);
+          const parentStock = stockByProductId.get(String(product._id));
+
+          if (variantStock && variantStock.qty > 0) {
+            stock = variantStock;
+            isParentStock = false;
+          } else if (deductFromParent && parentStock && parentStock.qty > 0) {
+            stock = parentStock;
+            isParentStock = true;
           } else {
-            stock = stockByProductId.get(`${product._id}_${variant._id}`);
+            stock = variantStock || parentStock || null;
+            isParentStock = !variantStock && !!parentStock;
           }
 
           if ((isNewProduct !== "true" || isQuickPickFilter) && (!stock || (stockFilter === "true" && stock.qty <= 0))) {
@@ -1062,7 +1067,7 @@ export const getProductDropdown = async (req, res) => {
             productType: product.productType,
             barcode: variant.barcode ?? null,
             barcodeType: variant.barcodeType ?? null,
-            qty: isParentStock ? (stock?.qty ?? 0) / (variant.packQty || 1) : (stock?.qty ?? 0),
+            qty: Math.max(0, isParentStock ? (stock?.qty ?? 0) / (variant.packQty || 1) : (stock?.qty ?? 0)),
             purchasePrice: variant.purchasePrice ?? stock?.purchasePrice ?? product.purchasePrice,
             landingCost: stock?.landingCost ?? product.landingCost,
             mrp: variant.mrp ?? stock?.mrp ?? product.mrp,

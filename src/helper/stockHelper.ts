@@ -71,3 +71,21 @@ export const checkStockQty = async (items: any[], branchId: string, res: any, ol
     return false;
   }
 };
+
+export const deductStock = async (stockMatchCriteria: any, qtyToDeduct: number) => {
+  const stock = await stockModel.findOne(stockMatchCriteria);
+  if (stock) {
+    const currentQty = stock.qty || 0;
+    const newQty = Math.max(0, currentQty - qtyToDeduct);
+    await stockModel.updateOne({ _id: stock._id }, { qty: newQty });
+  }
+};
+
+export const incrementStock = async (stockMatchCriteria: any, qtyToAdd: number) => {
+  const stock = await stockModel.findOne(stockMatchCriteria);
+  if (stock) {
+    const currentQty = Math.max(0, stock.qty || 0);
+    await stockModel.updateOne({ _id: stock._id }, { qty: currentQty + qtyToAdd });
+  }
+};
+
